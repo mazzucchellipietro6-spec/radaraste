@@ -22,28 +22,44 @@
       '<br>' + (link ? '<a href="' + U.esc(link) + '" target="_blank" rel="noopener">Avviso ↗</a> · ' : '') + '<a href="calcolatore.html?id=' + encodeURIComponent(a.id) + '">Conviene?</a></li>';
   }
 
-  var ZOOM_PUNTI = 10, MAX_PUNTI = 3000, correnti = [], puntiLayer, provLayer, rendererCanvas;
+  var ZOOM_PROVINCE = 7, ZOOM_PUNTI = 10, MAX_PUNTI = 3000, correnti = [], gruppi = { prov: {}, reg: {} }, livello, rendererCanvas;
+
+  // centro di ogni regione = media dei capoluoghi di provincia
+  var CENTRI = {};
+  G.regioni.forEach(function (r) {
+    var pr = G.provinceDi(r), lat = 0, lng = 0;
+    pr.forEach(function (p) { lat += p.lat; lng += p.lng; });
+    CENTRI[r] = { lat: lat / pr.length, lng: lng / pr.length };
+  });
+
+  function bolla(lat, lng, n, titolo, popup) {
+    var d = Math.round(24 + Math.min(22, Math.sqrt(n) * 1.1));
+    var testo = n > 999 ? (Math.round(n / 100) / 10).toLocaleString('it-IT') + 'k' : n;
+    L.marker([lat, lng], { icon: L.divIcon({ className: '', html: '<div class="map-count" style="width:' + d + 'px;height:' + d + 'px">' + testo + '</div>', iconSize: [d, d] }), title: titolo + ': ' + n + ' aste' })
+      .bindPopup(popup).addTo(livello);
+  }
+
+  function elencoPopup(titolo, el, link) {
+    return function () {
+      var ord = el.slice().sort(function (a, b) { return (a.dataAsta || '').localeCompare(b.dataAsta || ''); });
+      return '<h5>' + U.esc(titolo) + ' (' + el.length.toLocaleString('it-IT') + ')</h5><ul>' + ord.slice(0, 20).map(voce).join('') + '</ul>' +
+        (el.length > 20 ? '<p><a href="' + link + '">Vedi tutte nell\'elenco →</a> o avvicina la mappa.</p>' : '');
+    };
+  }
 
   function render() {
     correnti = filtrate();
     var tutte = S.aste();
-    provLayer.clearLayers();
-    var perProv = {}, conCoord = 0, senza = [];
+    gruppi = { prov: {}, reg: {} };
+    var conCoord = 0, senza = [];
     correnti.forEach(function (a) {
       if (isFinite(a.lat) && isFinite(a.lng)) conCoord++;
-      if (a.provincia && G.province[a.provincia]) (perProv[a.provincia] = perProv[a.provincia] || []).push(a);
-      else if (!(isFinite(a.lat) && isFinite(a.lng))) senza.push(a);
+      if (a.provincia && G.province[a.provincia]) {
+        (gruppi.prov[a.provincia] = gruppi.prov[a.provincia] || []).push(a);
+        var r = G.province[a.provincia].regione; (gruppi.reg[r] = gruppi.reg[r] || []).push(a);
+      } else if (!(isFinite(a.lat) && isFinite(a.lng))) senza.push(a);
     });
-    Object.keys(perProv).forEach(function (sig) {
-      var pr = G.province[sig], el = perProv[sig], d = Math.round(26 + Math.min(30, Math.sqrt(el.length) * 2));
-      L.marker([pr.lat, pr.lng], { icon: L.divIcon({ className: '', html: '<div class="map-count" style="width:' + d + 'px;height:' + d + 'px">' + (el.length > 999 ? (Math.round(el.length / 100) / 10).toLocaleString('it-IT') + 'k' : el.length) + '</div>', iconSize: [d, d] }), title: pr.nome + ': ' + el.length + ' aste' })
-        .bindPopup(function () {
-          var ord = el.slice().sort(function (a, b) { return (a.dataAsta || '').localeCompare(b.dataAsta || ''); });
-          return '<h5>Provincia di ' + U.esc(pr.nome) + ' (' + el.length.toLocaleString('it-IT') + ')</h5><ul>' + ord.slice(0, 25).map(voce).join('') + '</ul>' +
-            (el.length > 25 ? '<p><a href="index.html?provincia=' + sig + '">Vedi tutte nell\'elenco →</a> o avvicina la mappa.</p>' : '');
-        }).addTo(provLayer);
-    });
-    disegnaPunti();
+    disegna();
 
     if (!tutte.length) {
       $('#mappaVuota').innerHTML = '<div class="panel empty"><h2>Nessuna asta da mostrare sulla mappa</h2><p>Non ci sono aste raccolte dalle fonti ufficiali né inserite da te. Qui non compaiono mai dati di esempio. <a href="fonti.html">Stato delle fonti</a> · <a href="index.html#boxAggiungi">Aggiungi un\'asta da un avviso reale</a></p></div>';
@@ -51,26 +67,35 @@
       $('#mappaVuota').innerHTML = '<div class="panel empty">Nessuna asta corrisponde ai filtri scelti.</div>';
     } else $('#mappaVuota').innerHTML = '';
 
-    $('#statoMappa').textContent = correnti.length ? correnti.length.toLocaleString('it-IT') + ' aste: i numeri sono raggruppati per provincia; avvicinando la mappa (zoom ' + ZOOM_PUNTI + '+) compaiono i punti precisi delle ' + conCoord.toLocaleString('it-IT') + ' aste con coordinate.' : '';
-    $('#senzaPosizione').innerHTML = senza.length ? '<div class="panel"><h3>Aste senza provincia riconosciuta (' + senza.length + ')</h3><ul class="tips" style="padding-left:18px">' + senza.slice(0, 100).map(voce).join('') + '</ul></div>' : '';
+    $('#statoMappa').textContent = correnti.length ? correnti.length.toLocaleString('it-IT') + ' aste. Vista d\'insieme: numeri per regione; avvicinando la mappa: per provincia, poi (zoom ' + ZOOM_PUNTI + '+) i punti precisi delle ' + conCoord.toLocaleString('it-IT') + ' aste con coordinate.' : '';
+    $('#senzaPosizione').innerHTML = senza.length ? '<div class="panel"><h3>Aste senza luogo riconosciuto (' + senza.length + ')</h3><ul class="tips" style="padding-left:18px">' + senza.slice(0, 100).map(voce).join('') + '</ul></div>' : '';
 
     var daGeo = correnti.filter(daGeocodificare);
     $('#geocodifica').hidden = !daGeo.length;
     $('#geocodifica').textContent = 'Posiziona con precisione le tue aste (' + daGeo.length + ')';
   }
 
-  function disegnaPunti() {
-    puntiLayer.clearLayers();
-    var vicino = mappa.getZoom() >= ZOOM_PUNTI;
-    if (vicino) { if (mappa.hasLayer(provLayer)) mappa.removeLayer(provLayer); }
-    else { if (!mappa.hasLayer(provLayer)) mappa.addLayer(provLayer); return; }
-    var b = mappa.getBounds(), n = 0;
-    for (var i = 0; i < correnti.length && n < MAX_PUNTI; i++) {
-      var a = correnti[i];
-      if (!(isFinite(a.lat) && isFinite(a.lng)) || !b.contains([a.lat, a.lng])) continue;
-      n++;
-      L.circleMarker([a.lat, a.lng], { renderer: rendererCanvas, radius: 7, color: '#fff', weight: 1.5, fillColor: COLORI[a.categoria] || '#555', fillOpacity: 0.9 })
-        .bindPopup('<ul style="padding-left:0;list-style:none">' + voce(a) + '</ul>').addTo(puntiLayer);
+  function disegna() {
+    livello.clearLayers();
+    var z = mappa.getZoom();
+    if (z < ZOOM_PROVINCE) {
+      Object.keys(gruppi.reg).forEach(function (r) {
+        bolla(CENTRI[r].lat, CENTRI[r].lng, gruppi.reg[r].length, r, elencoPopup(r, gruppi.reg[r], 'index.html'));
+      });
+    } else if (z < ZOOM_PUNTI) {
+      Object.keys(gruppi.prov).forEach(function (sig) {
+        var pr = G.province[sig];
+        bolla(pr.lat, pr.lng, gruppi.prov[sig].length, pr.nome, elencoPopup('Provincia di ' + pr.nome, gruppi.prov[sig], 'index.html?provincia=' + sig));
+      });
+    } else {
+      var b = mappa.getBounds(), n = 0;
+      for (var i = 0; i < correnti.length && n < MAX_PUNTI; i++) {
+        var a = correnti[i];
+        if (!(isFinite(a.lat) && isFinite(a.lng)) || !b.contains([a.lat, a.lng])) continue;
+        n++;
+        L.circleMarker([a.lat, a.lng], { renderer: rendererCanvas, radius: 7, color: '#fff', weight: 1.5, fillColor: COLORI[a.categoria] || '#555', fillOpacity: 0.9 })
+          .bindPopup('<ul style="padding-left:0;list-style:none">' + voce(a) + '</ul>').addTo(livello);
+      }
     }
   }
 
@@ -97,7 +122,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     $('#legenda').innerHTML = Object.keys(COLORI).map(function (k) { return '<span><span class="dot" style="background:' + COLORI[k] + '"></span>' + U.CATEGORIE[k] + '</span>'; }).join('') +
-      '<span><span class="dot" style="background:var(--accent);border:2px solid var(--surface)"></span>Numero di aste nel capoluogo di provincia</span>';
+      '<span><span class="dot" style="background:var(--accent);border:2px solid var(--surface)"></span>Numero di aste per regione o provincia</span>';
     if (!window.L) {
       $('#map').innerHTML = '<div class="empty">Impossibile caricare la libreria della mappa (assets/vendor/leaflet).</div>';
       return;
@@ -105,9 +130,8 @@
     mappa = L.map('map', { scrollWheelZoom: false }).setView([42.0, 12.6], 6);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(mappa);
     rendererCanvas = L.canvas({ padding: 0.3 });
-    provLayer = L.layerGroup().addTo(mappa);
-    puntiLayer = L.layerGroup().addTo(mappa);
-    mappa.on('moveend', disegnaPunti);
+    livello = L.layerGroup().addTo(mappa);
+    mappa.on('moveend', disegna);
     render();
     $('#mCat').addEventListener('click', function (e) {
       var b = e.target.closest('.chip'); if (!b) return; filtroCat = b.dataset.cat;

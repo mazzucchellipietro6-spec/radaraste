@@ -15,6 +15,18 @@ const ALIAS = {
   olbiatempio: 'SS', galluranordestsardegna: 'SS', nordestsardegna: 'SS', ogliastra: 'NU', roma: 'RM', romacapitale: 'RM'
 };
 
+// Sedi di tribunale che non sono capoluogo di provincia → provincia in cui si trovano.
+const TRIBUNALI = {
+  ivrea: 'TO', bustoarsizio: 'VA', monza: 'MB', rovereto: 'TN', urbino: 'PU', spoleto: 'PG',
+  tivoli: 'RM', velletri: 'RM', civitavecchia: 'RM', cassino: 'FR',
+  sulmona: 'AQ', avezzano: 'AQ', lanciano: 'CH', vasto: 'CH', larino: 'CB',
+  napolinord: 'CE', napolinordinaversa: 'CE', aversa: 'CE', santamariacapuavetere: 'CE', nola: 'NA', torreannunziata: 'NA',
+  nocerainferiore: 'SA', vallodellalucania: 'SA', lagonegro: 'PZ', melfi: 'PZ',
+  castrovillari: 'CS', paola: 'CS', lameziaterme: 'CZ', locri: 'RC', palmi: 'RC',
+  terminiimerese: 'PA', sciacca: 'AG', marsala: 'TP', gela: 'CL', caltagirone: 'CT',
+  barcellonapozzodigotto: 'ME', patti: 'ME', lanusei: 'NU', tempiopausania: 'SS'
+};
+
 const PER_NOME = {};
 for (const p of Object.values(GEO.province)) PER_NOME[chiave(p.nome)] = p.sigla;
 
@@ -22,8 +34,8 @@ export function provincia(nome) {
   if (!nome) return null;
   const t = String(nome).trim();
   if (/^[A-Za-z]{2}$/.test(t) && GEO.province[t.toUpperCase()]) return GEO.province[t.toUpperCase()];
-  const k = chiave(t);
-  const sigla = PER_NOME[k] || ALIAS[k];
+  const k = chiave(t.split(/\s+ex\s+/i)[0]); // "Potenza Ex Tribunale di Melfi" → Potenza
+  const sigla = PER_NOME[k] || ALIAS[k] || TRIBUNALI[k];
   return sigla ? GEO.province[sigla] : null;
 }
 

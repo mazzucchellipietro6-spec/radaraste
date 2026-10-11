@@ -30,6 +30,14 @@ test('province scritte in modi diversi', () => {
   assert.equal(provincia('Paese inesistente'), null);
 });
 
+test('sedi di tribunale non capoluogo', () => {
+  assert.equal(provincia('Napoli Nord in Aversa').sigla, 'CE');
+  assert.equal(provincia('Tivoli').sigla, 'RM');
+  assert.equal(provincia('Termini Imerese').sigla, 'PA');
+  assert.equal(provincia('Monza').sigla, 'MB');
+  assert.equal(provincia('Potenza Ex Tribunale di Melfi').sigla, 'PZ');
+});
+
 test('nomi di comuni in maiuscolo/minuscolo', () => {
   assert.equal(titolo('GRAVINA IN PUGLIA'), 'Gravina in Puglia');
   assert.equal(titolo('reggio di calabria'), 'Reggio di Calabria');
