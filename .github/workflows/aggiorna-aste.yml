@@ -1,0 +1,67 @@
+# Ogni giorno raccoglie le aste dalle fonti ufficiali e ripubblica il sito su GitHub Pages.
+# Prerequisito (una volta sola): Settings → Pages → Build and deployment → Source: "GitHub Actions".
+name: Aggiorna aste e pubblica il sito
+
+on:
+  schedule:
+    - cron: '17 4 * * *'   # ogni giorno alle 04:17 UTC (06:17 ora legale italiana)
+  workflow_dispatch:        # avvio manuale dal tab Actions
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  aggiorna:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test dei calcoli
+        run: npm test
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      # Se una fonte non risponde, il programma conserva le aste reali raccolte il giorno prima:
+      # per questo scarica il file pubblicato in precedenza (se esiste).
+      - name: Recupera i dati pubblicati in precedenza
+        run: curl -fsSL "${{ steps.pages.outputs.base_url }}/data/aste.js" -o data/aste.js || echo "Nessuna pubblicazione precedente"
+
+      - id: raccolta
+        name: Raccogli le aste dalle fonti ufficiali
+        continue-on-error: true
+        run: node scripts/raccogli.mjs
+
+      - name: Prepara il sito
+        run: |
+          mkdir _site
+          cp -r *.html assets config data js _site/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+      - name: Segnala se la raccolta è fallita
+        if: steps.raccolta.outcome == 'failure'
+        run: |
+          echo "::error::La raccolta delle aste non è riuscita per nessuna fonte: il sito è stato pubblicato con lo stato delle fonti aggiornato. Controlla il log del passo 'Raccogli le aste'."
+          exit 1

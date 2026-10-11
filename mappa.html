@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mappa delle aste – Radar Aste Italia</title>
+<meta name="description" content="Mappa delle aste in Italia: immobili, auto, moto e beni mobili per provincia.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+</head>
+<body>
+<header id="site-header"></header>
+
+<main class="wrap stack">
+  <div class="page-head">
+    <h1>Mappa delle <span>aste</span></h1>
+    <p class="sub">Tutte le aste raccolte dalle fonti ufficiali (e quelle inserite da te) sulla mappa d'Italia: i numeri indicano quante aste ci sono in ogni provincia; avvicinandoti compaiono i punti precisi.</p>
+  </div>
+
+  <div class="panel stack" style="gap:12px">
+    <div class="chips" id="mCat" role="group" aria-label="Categoria">
+      <button class="chip" type="button" aria-pressed="true" data-cat="">Tutte</button>
+      <button class="chip" type="button" aria-pressed="false" data-cat="immobile">Immobili</button>
+      <button class="chip" type="button" aria-pressed="false" data-cat="auto">Auto</button>
+      <button class="chip" type="button" aria-pressed="false" data-cat="moto">Moto</button>
+      <button class="chip" type="button" aria-pressed="false" data-cat="beni">Beni mobili</button>
+    </div>
+    <div class="row-actions">
+      <label class="check"><input type="checkbox" id="mSeguite"> Solo le aste che seguo</label>
+      <label class="check"><input type="checkbox" id="mPassate"> Mostra aste concluse</label>
+      <span class="spacer"></span>
+      <button class="btn small ghost" type="button" id="geocodifica" hidden>Posiziona con precisione</button>
+    </div>
+    <div class="legend" id="legenda"></div>
+  </div>
+
+  <div id="mappaVuota"></div>
+  <div id="map" role="region" aria-label="Mappa delle aste"></div>
+  <p class="note" id="statoMappa"></p>
+  <div id="senzaPosizione"></div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="config/fonti.js"></script>
+<script src="data/aste.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="js/pages/mappa.js"></script>
+</body>
+</html>

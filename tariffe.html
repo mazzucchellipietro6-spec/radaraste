@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tariffe e tasse – Radar Aste Italia</title>
+<meta name="description" content="Imposte sull'acquisto di immobili e veicoli all'asta, IMU, TARI, plusvalenza, IPT e bollo, con fonte e data di aggiornamento.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<header id="site-header"></header>
+
+<main class="wrap stack">
+  <div class="page-head">
+    <h1>Tariffe e <span>tasse</span></h1>
+    <p class="sub">Le aliquote usate dal calcolatore, con la fonte e la data dell'ultimo controllo accanto a ogni voce.</p>
+  </div>
+  <div class="callout" id="intro"></div>
+
+  <nav class="chips" aria-label="Vai alla sezione">
+    <a class="chip" href="#immobili">Acquisto immobili</a>
+    <a class="chip" href="#prezzo-valore">Prezzo-valore</a>
+    <a class="chip" href="#asta">Regole dell'asta</a>
+    <a class="chip" href="#imu">IMU e TARI</a>
+    <a class="chip" href="#plusvalenza">Plusvalenza</a>
+    <a class="chip" href="#veicoli">Auto e moto</a>
+    <a class="chip" href="#ipt">IPT per provincia</a>
+    <a class="chip" href="#bollo">Bollo per regione</a>
+  </nav>
+
+  <section id="immobili" class="stack">
+    <h2>Imposte sull'acquisto di immobili</h2>
+    <p class="note" style="margin:0">Valgono per il decreto di trasferimento dell'asta giudiziaria come per il rogito. Se il debitore è un'impresa e la vendita è soggetta a IVA, si usano le righe "Da impresa con IVA".</p>
+    <div class="tablebox"><table class="responsive" id="tabRegimi"></table></div>
+  </section>
+
+  <section id="prezzo-valore" class="panel stack">
+    <h2>Regola del prezzo-valore</h2>
+    <div id="pv"></div>
+    <div class="fields">
+      <label>Rendita catastale (€)<input type="number" id="pvRendita" min="0" step="10" inputmode="decimal"></label>
+      <div id="pvOut" class="result" style="align-self:end"></div>
+    </div>
+  </section>
+
+  <section id="asta" class="stack">
+    <h2>Regole dell'asta usate nei calcoli</h2>
+    <div class="tablebox"><table class="responsive" id="tabAsta"></table></div>
+  </section>
+
+  <section id="imu" class="stack">
+    <h2>IMU sulla seconda casa e TARI</h2>
+    <div id="imuTesto" class="panel"></div>
+    <div class="tablebox"><table class="responsive" id="tabImu"></table></div>
+  </section>
+
+  <section id="plusvalenza" class="panel" ></section>
+
+  <section id="veicoli" class="stack">
+    <h2>Auto e moto: passaggio di proprietà e diritti d'asta</h2>
+    <div class="tablebox"><table class="responsive" id="tabVeicoli"></table></div>
+  </section>
+
+  <section id="ipt" class="stack">
+    <h2>IPT – Imposta provinciale di trascrizione</h2>
+    <div id="iptTesto" class="panel"></div>
+    <details class="box">
+      <summary>IPT e maggiorazione provincia per provincia</summary>
+      <div class="inner stack">
+        <label style="max-width:320px">Filtra per regione<select id="iptRegione"></select></label>
+        <div class="tablebox"><table class="responsive" id="tabIpt"></table></div>
+      </div>
+    </details>
+  </section>
+
+  <section id="bollo" class="stack">
+    <h2>Bollo auto</h2>
+    <div id="bolloTesto" class="panel"></div>
+    <div class="tablebox"><table class="responsive" id="tabBollo"></table></div>
+    <details class="box">
+      <summary>Variazioni del bollo regione per regione</summary>
+      <div class="inner"><div class="tablebox"><table class="responsive" id="tabRegioni"></table></div></div>
+    </details>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="config/fonti.js"></script>
+<script src="data/aste.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/pages/tariffe.js"></script>
+</body>
+</html>
