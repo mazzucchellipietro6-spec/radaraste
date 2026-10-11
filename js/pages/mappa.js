@@ -36,7 +36,7 @@
     });
     Object.keys(perProv).forEach(function (sig) {
       var pr = G.province[sig], el = perProv[sig], d = Math.round(26 + Math.min(30, Math.sqrt(el.length) * 2));
-      L.marker([pr.lat, pr.lng], { icon: L.divIcon({ className: '', html: '<div class="map-count" style="width:' + d + 'px;height:' + d + 'px">' + (el.length > 999 ? Math.round(el.length / 100) / 10 + 'k' : el.length) + '</div>', iconSize: [d, d] }), title: pr.nome + ': ' + el.length + ' aste' })
+      L.marker([pr.lat, pr.lng], { icon: L.divIcon({ className: '', html: '<div class="map-count" style="width:' + d + 'px;height:' + d + 'px">' + (el.length > 999 ? (Math.round(el.length / 100) / 10).toLocaleString('it-IT') + 'k' : el.length) + '</div>', iconSize: [d, d] }), title: pr.nome + ': ' + el.length + ' aste' })
         .bindPopup(function () {
           var ord = el.slice().sort(function (a, b) { return (a.dataAsta || '').localeCompare(b.dataAsta || ''); });
           return '<h5>Provincia di ' + U.esc(pr.nome) + ' (' + el.length.toLocaleString('it-IT') + ')</h5><ul>' + ord.slice(0, 25).map(voce).join('') + '</ul>' +

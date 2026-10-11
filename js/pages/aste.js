@@ -28,8 +28,8 @@
     filtri.passate = $('#fPassate').checked; filtri.ordina = $('#ordina').value;
   }
 
+  var oggi = new Date().toISOString().slice(0, 10);
   function passa(a) {
-    var oggi = new Date().toISOString().slice(0, 10);
     if (filtri.cat && a.categoria !== filtri.cat) return false;
     if (filtri.regione && a.regione !== filtri.regione) return false;
     if (filtri.provincia && a.provincia !== filtri.provincia) return false;
