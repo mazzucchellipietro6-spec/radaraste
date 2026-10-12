@@ -106,7 +106,7 @@
       var dopo = t.slice(mm.index + mm[0].length).replace(/^[\s:,-]+/, '').split(/\s+/);
       var mod = [];
       for (var i = 0; i < dopo.length && mod.length < 3; i++) {
-        var w = dopo[i].replace(/[,;.)]+$/, '');
+        var w = dopo[i].replace(/[,;.:)]+$/, '');
         if (!w || STOP_MODELLO.test(w) || /^\d{4}$/.test(w) && +w > 1950) break;
         if (/^(mod\.?|modello)$/i.test(dopo[i])) continue;
         mod.push(w);
@@ -149,13 +149,59 @@
   }
 
   /* ---------- Segnali di rischio ---------- */
+  // Cerca la prima corrispondenza di "re" (globale) non preceduta da una negazione ("non", "nessuna", "senza"...).
+  function nonNegato(t, re, negazione) {
+    re.lastIndex = 0;
+    var m;
+    while ((m = re.exec(t))) {
+      var prima = t.slice(Math.max(0, m.index - 45), m.index);
+      if (!negazione.test(prima)) return m;
+      if (m[0] === '') re.lastIndex++;
+    }
+    return null;
+  }
+  var NEGAZIONE = /(?:\bnon\b|\bnessun\w*|\bassenz\w*|\bsenza\b|\bn[ée]\b|\bniente\b|\bprivo di\b)[^.;:]{0,30}$/i;
+
+  // Spese condominiali arretrate o insolute, con l'importo se scritto. Le formule generiche degli avvisi
+  // ("eventuali spese", "anno in corso e precedente", art. 63 disp. att. c.c.) non contano.
+  var RE_CONDOMINIO = /\b(?:spes\w*|oner\w*|quot\w*|rat\w*)\s+condominial\w*\s+(?:\w+\s+){0,3}?(?:insolut\w*|arretrat\w*|non\s+(?:pagat|versat|saldat|corrispost)\w*|scadut\w*|da\s+pagare)|\b(?:debit\w*|morosit\w*|insolut\w*|arretrat\w*|pendenz\w*|esposizion\w*)\s+(?:\w+\s+){0,4}?(?:condomin\w*)/gi;
+  function condominio(t) {
+    var re = new RegExp(RE_CONDOMINIO.source, 'gi'), m;
+    while ((m = re.exec(t))) {
+      var prima = t.slice(Math.max(0, m.index - 45), m.index), dopo = t.slice(m.index + m[0].length, m.index + m[0].length + 120);
+      var intorno = t.slice(Math.max(0, m.index - 80), m.index + m[0].length + 80);
+      if (NEGAZIONE.test(prima) || /^\s*(?:non\s+(?:risult|vi\s+sono|present|ce\s+ne)|assent|nessun)/i.test(dopo)) continue;
+      if (/eventual\w*|art\.?\s*63|anno in corso|biennio|precedente\s+(?:all'|alla|l')|tenut\w* al pagamento|obbligat\w* (?:in solido|al pagamento)/i.test(intorno)) continue;
+      var imp = dopo.match(/^[^.;]{0,70}?(?:€|euro|eur\.?)\s*(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)/i)
+        || dopo.match(/^[^.;]{0,70}?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+,\d{2})\s*(?:€|euro)/i);
+      if (imp) m.importo = numero(imp[1]);
+      return m;
+    }
+    return null;
+  }
+
   var RISCHI = [
     { chiave: 'abusi', etichetta: 'Abusi o difformità edilizie', re: /\b(abusiv\w*|difformit\w*|irregolarit\w* (?:urbanistic|edilizi|catastal)\w*|sanatori\w*|condono|non conform\w*|non sanabil\w*)/i },
     { chiave: 'quota', etichetta: 'Si vende solo una quota o un diritto parziale', test: quotaParziale },
+    { chiave: 'superficie', etichetta: 'Diritto di superficie (proprietà superficiaria, spesso a tempo)', re: /\b(diritt\w* di superficie|propriet(?:\u00e0|a'|\w*)\s+superficiari\w*)/i },
+    { chiave: 'condominio', etichetta: 'Spese condominiali arretrate', test: condominio },
     { chiave: 'vincoli', etichetta: 'Vincoli, servitù o edilizia convenzionata', re: /\b(vincol\w*|servit[uù]|prelazione|edilizia (?:convenzionata|economica e popolare)|peep|erp\b|convenzion\w* (?:ex )?art)/i },
     { chiave: 'degrado', etichetta: 'Immobile al grezzo, inagibile o degradato', re: /\b(al grezzo|inagibil\w*|fatiscent\w*|rudere|pericolant\w*|crollat\w*|non ultimat\w*|in corso di costruzione)/i },
     { chiave: 'occupazione', etichetta: 'Occupato o locato', re: /\b(occupat\w* (?:dal|da|con|senza)|locat\w* (?:a|con)|contratto di locazione|in corso di liberazione|comodato)/i },
-    { chiave: 'agricolo', etichetta: 'Terreno agricolo o fabbricato rurale', re: /\b(terren\w* agricol\w*|fabbricat\w* rural\w*|uso agricolo|seminativo|uliveto|vigneto|bosco)/i }
+    { chiave: 'agricolo', etichetta: 'Terreno agricolo o fabbricato rurale', re: /\b(terren\w* agricol\w*|fabbricat\w* rural\w*|uso agricolo|seminativo|uliveto|vigneto|bosco)/i },
+    // veicoli
+    { chiave: 'chiavi', etichetta: 'Veicolo senza chiavi', test: function (t) {
+      return t.match(/\b(?:senza|priv[oaie] d(?:elle|ella|i)|sprovvist\w* d(?:elle|ella|i)|mancan\w* (?:di |delle |della )?|in assenza d(?:elle|ella|i)|non (?:sono |è )?(?:disponibil\w*|present\w*|consegnat\w*) (?:le |la )?)\s*(?:le |la |alcuna |una )?chiav[ei]\b/i)
+        || nonNegato(t, /\bchiav[ei]\s+(?:del veicolo\s+|dell'auto\s+)?(?:non\s+(?:sono\s+|è\s+)?(?:disponibil|present|reperit|consegnat|rinvenut|fornit)\w*|assent\w*|mancant\w*|smarrit\w*)/gi, /\bcon\s*$/i);
+    } },
+    { chiave: 'documenti', etichetta: 'Veicolo senza documenti (libretto o certificato di proprietà)', test: function (t) {
+      var DOC = '(?:libretto(?: di circolazione)?|carta di circolazione|certificato di propriet\\w*|c\\.?d\\.?p\\.?|documenti(?: di circolazione)?|documentazione(?: del veicolo)?)';
+      return t.match(new RegExp('\\b(?:senza|priv[oaie] d(?:el|ella|ei|i|elle)|sprovvist\\w* d(?:el|ella|ei|i|elle)|mancan\\w* (?:del |della |dei |di )?|in assenza d(?:el|ella|ei|i))\\s*(?:il |la |i |le )?' + DOC + '(?![a-z])', 'i'))
+        || nonNegato(t, new RegExp('\\b' + DOC + '\\s+(?:non\\s+(?:sono\\s+|è\\s+)?(?:disponibil|present|reperit|consegnat|rinvenut|fornit)\\w*|assent\\w*|mancant\\w*|smarrit\\w*)', 'gi'), /\bcon\s*$/i);
+    } },
+    { chiave: 'marcia', etichetta: 'Non marciante, incidentato o da rottamare', test: function (t) {
+      return nonNegato(t, /\b(non\s+(?:è\s+|risulta\s+)?(?:marciant\w*|funzionant\w*|in grado di (?:circolare|marciare))|incidentat\w*|sinistrat\w*|da\s+rottamar\w*|da\s+demolir\w*|destinat\w* alla (?:rottamazione|demolizione)|senza\s+motore|motore\s+(?:fuso|grippato|rotto|non funzionante))/gi, /\b(?:non|mai)\s*$|\bchiav\w*\s*$/i);
+    } }
   ];
   // Quota parziale: frazione minore dell'intero (1/2, 500/1000...) o diritto parziale da solo.
   // "1/1", "1000/1000", "pari all'intero" e "1/1 di usufrutto e 1/1 di nuda proprietà" sono proprietà piena.
@@ -170,14 +216,17 @@
     var nuda = t.match(/nuda propriet\w*/i), usuf = t.match(/\busufrutto\b/i);
     if (nuda && !usuf) return nuda;
     if (usuf && !nuda) return usuf;
-    return t.match(/quota indivisa|diritto di superficie|propriet\w* superficiaria/i);
+    return t.match(/quota indivisa/i);
   }
 
   function rischi(s) {
     var t = testo(s), out = [];
     RISCHI.forEach(function (r) {
       var m = r.test ? r.test(t) : t.match(r.re);
-      if (m) out.push({ chiave: r.chiave, etichetta: r.etichetta, prova: prova(t, m.index, m.index + m[0].length) });
+      if (!m) return;
+      var x = { chiave: r.chiave, etichetta: r.etichetta, prova: prova(t, m.index, m.index + m[0].length) };
+      if (m.importo != null) x.importo = m.importo;
+      out.push(x);
     });
     return out;
   }
