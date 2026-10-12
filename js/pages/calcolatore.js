@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   var T = window.TARIFFE, U = window.UI, S = window.Store, C = window.Calcoli, $ = U.$, $$ = U.$$;
-  var astaCorrente = null, ultimo = { immobile: null, veicolo: null };
+  var astaCorrente = null, stimaCorrente = null, ultimo = { immobile: null, veicolo: null };
 
   function n(id) { var v = parseFloat($('#' + id).value); return isFinite(v) ? v : 0; }
   function riga(etichetta, valore, cls) { return '<div class="line' + (cls ? ' ' + cls : '') + '"><span>' + etichetta + '</span><b>' + valore + '</b></div>'; }
@@ -70,9 +70,45 @@
       dopo += riga('Guadagno netto stimato', U.eur(vend - r.totale - pv.imposta), 'total');
     }
     if (dopo) h += '<h3 style="margin-top:16px">Dopo l\'acquisto</h3>' + dopo;
+    h += bloccoStrategie(inp);
     h += bloccoSalva();
     out.innerHTML = h;
     ultimo.immobile = { tipo: 'immobile', input: inp, totale: r.totale, sconto: r.sconto, giudizio: r.giudizio.etichetta, tono: r.giudizio.tono, offertaMax: max };
+  }
+
+  function forchetta(f, fmt) {
+    fmt = fmt || U.eur;
+    if (!f) return '—';
+    return Math.round(f.min) === Math.round(f.max) || fmt(f.min) === fmt(f.max) ? fmt(f.min) : fmt(Math.min(f.min, f.max)) + ' – ' + fmt(Math.max(f.min, f.max));
+  }
+  function bloccoStrategie(inp) {
+    var mq = n('sMq'), canone = n('sCanone');
+    var lavoriRiv = n('sLavori') || (mq ? mq * T.rivendita.lavoriEuroMq.medi : 0);
+    var valMin = inp.valoreMercato, valMax = inp.valoreMercato;
+    if (stimaCorrente && stimaCorrente.min && !inp.valoreManuale) { valMin = stimaCorrente.min; valMax = stimaCorrente.max; }
+    var dopo = n('sValoreDopo');
+    var r = C.strategie({
+      prezzoBase: inp.prezzoBase, offerta: inp.offerta, rendita: inp.rendita, condominioCorrente: inp.condominioCorrente, condominioPrecedente: inp.condominioPrecedente,
+      liberazione: inp.liberazione, speseProcedura: inp.speseProcedura, altri: inp.altri, lavori: inp.lavori, lavoriRistrutturazione: lavoriRiv,
+      valore: { min: valMin, max: valMax }, valoreDopoLavori: dopo ? { min: dopo, max: dopo } : null,
+      canoneMese: canone ? { min: canone, max: canone } : (stimaCorrente && stimaCorrente.canoneMin ? { min: stimaCorrente.canoneMin, max: stimaCorrente.canoneMax } : null),
+      contratto: $('#sContratto').value, aliquotaImu: n('iImuAliquota') / 100, mesiOperazione: n('sMesi') || 12
+    }, T);
+    var pct = function (x) { return U.pct(x, 1); };
+    function card(titolo, corpo) { return '<div class="strategia"><h4>' + titolo + '</h4>' + corpo + '</div>'; }
+    function manca(cosa, dove) { return '<p class="muted" style="margin:0">Serve il ' + cosa + ': ' + dove + '.</p>'; }
+    var vivo = r.vivo.mancante ? manca('valore di mercato', 'inseriscilo sopra') :
+      '<div class="big mono">' + forchetta(r.vivo.risparmio) + '</div><p class="muted">risparmio rispetto a comprarla sul mercato (' + forchetta(r.vivo.percentuale, pct) + ')</p><div class="line"><span>Costo totale (prima casa)</span><b>' + U.eur(r.vivo.costoTotale) + '</b></div>';
+    var aff = r.affitto.mancante ? manca('canone di mercato al mese', 'inseriscilo qui sopra') :
+      '<div class="big mono">' + forchetta(r.affitto.rendimentoNetto, pct) + '</div><p class="muted">rendimento netto all\'anno (lordo ' + forchetta(r.affitto.rendimentoLordo, pct) + ')</p>' +
+      '<div class="line"><span>Netto all\'anno</span><b>' + forchetta(r.affitto.nettoAnno) + '</b></div><div class="line"><span>Cedolare secca</span><b>' + U.pct(r.affitto.aliquotaCedolare, 0) + '</b></div>' +
+      (r.affitto.imuMancante ? '<p class="note">IMU non inclusa: manca la rendita catastale.</p>' : '<div class="line"><span>IMU</span><b>' + U.eur(r.affitto.imu) + '</b></div>');
+    var riv = r.rivendo.mancante ? manca('valore di mercato', 'inseriscilo sopra') :
+      '<div class="big mono">' + forchetta(r.rivendo.guadagno) + '</div><p class="muted">guadagno dopo tasse in ' + r.rivendo.mesi + ' mesi (' + forchetta(r.rivendo.roi, pct) + ' sul capitale)</p>' +
+      '<div class="line"><span>Lavori</span><b>' + U.eur(lavoriRiv) + '</b></div><div class="line"><span>Vendita a</span><b>' + forchetta(r.rivendo.prezzoVendita) + '</b></div>' +
+      '<div class="line"><span>Agenzia + IVA</span><b>' + forchetta(r.rivendo.costiVendita) + '</b></div><div class="line"><span>Imposta plusvalenza 26%</span><b>' + forchetta(r.rivendo.tassaPlusvalenza) + '</b></div>';
+    return '<h3 style="margin-top:16px">Tre strategie</h3><div class="strategie">' + card('Ci vivo', vivo) + card('Lo affitto', aff) + card('Ristrutturo e rivendo', riv) + '</div>' +
+      '<p class="note">Ipotesi: ' + T.affitto.ipotesi.mesiSfitto + ' mese sfitto all\'anno, spese del proprietario ' + U.pct(T.affitto.ipotesi.speseProprietario, 0) + ' del canone, agenzia ' + U.pct(T.rivendita.provvigioneAgenzia, 0) + ' + IVA alla vendita. Si modificano in config/tariffe.js.</p>';
   }
 
   /* ---------- Veicoli ---------- */

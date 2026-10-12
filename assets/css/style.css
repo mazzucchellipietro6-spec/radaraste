@@ -192,3 +192,10 @@ dialog .dbody{padding:18px;display:grid;gap:14px}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--surface);color:var(--fg)}
 .leaflet-container .leaflet-control-attribution{background:var(--surface);color:var(--muted)}
 .leaflet-container .leaflet-control-attribution a{color:var(--accent)}
+
+/* Tre strategie */
+.strategie{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.strategia{border:1px solid var(--line);border-radius:9px;padding:12px;background:var(--surface-2);display:grid;gap:4px;align-content:start;min-width:0}
+.strategia h4{margin:0;font-size:14px}
+.strategia .big{font-size:20px;font-weight:600;color:var(--fg)}
+.strategia p{margin:0;font-size:12.5px}
