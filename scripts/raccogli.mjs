@@ -38,7 +38,7 @@ function argomenti() {
 
 // Formato compatto: elenco dei campi + una riga (array) per asta, per tenere leggero il file.
 const CAMPI = ['id', 'titolo', 'categoria', 'tipo', 'regione', 'provincia', 'comune', 'indirizzo', 'tribunale', 'rge', 'fonte',
-  'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'stato', 'linkAvviso', 'linkPerizia', 'linkPdf', 'lat', 'lng', 'descrizione', 'altriLink'];
+  'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'stato', 'linkAvviso', 'linkPerizia', 'linkPdf', 'lat', 'lng', 'descrizione', 'altriLink', 'pubblicata', 'vista'];
 
 async function precedente(file) {
   try {
@@ -92,6 +92,9 @@ async function main() {
     visti.add(a.id); delete a.altriLink; return true;
   }));
   const { aste: uniche, doppioni } = unisci(pulite);
+  // "vista": giorno in cui la raccolta ha trovato l'asta per la prima volta (serve per "nuove dall'ultima visita")
+  const giaViste = new Map(prima.aste.map((a) => [a.id, a.vista]));
+  for (const a of uniche) a.vista = giaViste.get(a.id) || oggi;
   if (doppioni) console.log(`  ${doppioni} aste già presenti su una fonte con priorità più alta: tenuto solo il link`);
   uniche.sort((a, b) => (a.dataAsta || '').localeCompare(b.dataAsta || ''));
   const dati = {

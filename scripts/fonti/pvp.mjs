@@ -58,6 +58,7 @@ function converti(x) {
     prezzoBase: x.prezzoBaseAsta ?? null,
     offertaMinima: x.offertaMinima ?? null,
     dataAsta: x.dataVendita || '',
+    pubblicata: x.dataPubblicazione || '',
     ora: x.orarioVendita || '',
     stato: stato(x.disponibilita),
     linkAvviso: AVVISO + x.id,

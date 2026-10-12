@@ -19,7 +19,7 @@
   }
   function nuovoId() { return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-  var CAMPI = ['titolo','categoria','tipo','regione','provincia','comune','indirizzo','tribunale','rge','fonte','prezzoBase','offertaMinima','dataAsta','ora','stato','linkAvviso','linkPerizia','linkPdf','valoreMercato','lat','lng','descrizione','altriLink'];
+  var CAMPI = ['titolo','categoria','tipo','regione','provincia','comune','indirizzo','tribunale','rge','fonte','prezzoBase','offertaMinima','dataAsta','ora','stato','linkAvviso','linkPerizia','linkPdf','valoreMercato','lat','lng','descrizione','altriLink','pubblicata','vista'];
   var NUMERICI = { prezzoBase: 1, offertaMinima: 1, valoreMercato: 1, lat: 1, lng: 1 };
 
   function dataIso(v) {

@@ -38,7 +38,7 @@ function categoriaBene(t, base) {
   return 'beni';
 }
 
-async function scheda(url, cat, titoloElenco, termine) {
+async function scheda(url, cat, titoloElenco, termine, pubblicata) {
   const h = await richiesta(url, { intervalloMs: INTERVALLO_MS });
   const t = testo(h);
   const campo = (nome) => { const m = t.match(new RegExp(nome + ':\\s*(.+?)\\s+(?:Regione|Provincia|Comune|Struttura responsabile|Data pubblicazione|Termine per|Nominativo|Documenti|Tipologia|Descrizione)[^:]{0,60}:')); return m ? m[1].trim() : ''; };
@@ -57,6 +57,7 @@ async function scheda(url, cat, titoloElenco, termine) {
     fonte: NOME,
     prezzoBase: null,
     dataAsta: scad ? scad.data : '',
+    pubblicata: pubblicata || '',
     ora: scad ? scad.ora : '',
     stato: 'nd',
     linkAvviso: url,
@@ -83,12 +84,12 @@ export async function raccogli({ oggi, log = console.log }) {
         const tit = testo(t);
         if (!eVendita(tit + ' ' + testo((corpo.match(/Tipo procedura:\s*<\/strong>([^<]+)/i) || [])[1]))) continue;
         if (!termine || termine.data < oggi) continue;
-        candidati.push({ url: BASE + link, titolo: tit, termine });
+        candidati.push({ url: BASE + link, titolo: tit, termine, pubblicata: pubbl ? pubbl.data : '' });
       }
       if (vecchie === schede.length) break; // pagina tutta più vecchia di un anno
     }
     for (const c of candidati) {
-      const a = await scheda(c.url, sez.categoria, c.titolo, c.termine);
+      const a = await scheda(c.url, sez.categoria, c.titolo, c.termine, c.pubblicata);
       if (a.dataAsta >= oggi) aste.push(a);
     }
     log(`  Demanio ${sez.percorso.split('/')[3]}: ${candidati.length} vendite in corso`);
