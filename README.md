@@ -48,7 +48,10 @@ js/parser.js                lettura del testo di un avviso incollato
 js/store.js                 archivio (aste raccolte + inserite + seguite)
 js/ui.js, js/pages/*.js     interfaccia
 scripts/raccogli.mjs        programma di raccolta (Node ≥ 20, nessuna dipendenza)
-scripts/fonti/*.mjs         un modulo per fonte (pvp, demanio)
+scripts/fonti/*.mjs         un modulo per fonte (pvp, demanio, astalegale, fallco)
+scripts/lib/doppioni.mjs    una sola scheda per vendita pubblicata su più fonti (con i link alle altre)
+scripts/artifact.mjs        prepara la versione da pubblicare su claude.ai
+data/italia.js              confini delle regioni (ISTAT 2026 via openpolis, CC BY 4.0)
 .github/workflows/aggiorna-aste.yml   raccolta quotidiana + pubblicazione
 tests/                      test (npm test)
 ```
@@ -88,6 +91,10 @@ Il workflow `.github/workflows/aggiorna-aste.yml` ogni giorno alle 04:17 UTC rac
 4. Il sito sarà su `https://mazzucchellipietro6-spec.github.io/radaraste/`.
 
 Se una fonte fallisce, il sito viene pubblicato lo stesso con le aste reali del giorno prima per quella fonte e lo stato aggiornato nella pagina Fonti; GitHub ti avvisa per email se la raccolta fallisce del tutto.
+
+### Versione su claude.ai (Artifact)
+
+`node scripts/artifact.mjs` prepara in `_artifact/` una copia del sito pubblicabile come Artifact di claude.ai (pagina privata, condivisibile dal menu Condividi). In quella versione i download possono essere bloccati: backup ed esportazioni hanno anche il pulsante "Copia". Lo sfondo OpenStreetMap non si carica, ma la mappa mostra comunque i confini delle regioni (ISTAT) inclusi nel sito. I dati si aggiornano solo quando l'Artifact viene ripubblicato dopo una nuova raccolta.
 
 In alternativa puoi pubblicare la cartella su Netlify, Cloudflare Pages o qualsiasi hosting statico, ma l'aggiornamento quotidiano va comunque eseguito da un job programmato che lanci `npm run raccogli`.
 
