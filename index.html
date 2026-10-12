@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar Aste Italia</title>
+<meta name="description" content="I migliori affari di oggi tra le aste di immobili, auto, moto e beni mobili in Italia, dalle fonti ufficiali.">
+<link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/hanken-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#0d6b4f" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<header id="site-header"></header>
+
+<main class="wrap stack home">
+  <section class="hero" aria-labelledby="h-oggi">
+    <p class="eyebrow" id="dataOggi"></p>
+    <h1 id="h-oggi">Migliori affari <span>di oggi</span></h1>
+    <p class="sub" id="aggiornamento">Aste di immobili, auto, moto e beni mobili raccolte ogni giorno dalle fonti ufficiali.</p>
+    <div class="kpi" id="kpi" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="h-migliori" class="stack" style="gap:10px">
+    <div class="sez-testa"><h2 id="h-migliori">I 10 migliori affari</h2><a href="aste.html" id="linkMigliori" class="link-sez">Tutte le aste →</a></div>
+    <div id="migliori"></div>
+  </section>
+
+  <section aria-labelledby="h-nuove" class="stack" style="gap:10px">
+    <div class="sez-testa"><h2 id="h-nuove">Nuove nelle ultime 24 ore</h2><a href="aste.html" data-passa="filtro:nuove" id="linkNuove" class="link-sez"></a></div>
+    <div class="cards" id="nuove"></div>
+  </section>
+
+  <section aria-labelledby="h-scadenza" class="stack" style="gap:10px">
+    <div class="sez-testa"><h2 id="h-scadenza">In scadenza questa settimana</h2><a href="aste.html" data-passa="filtro:settimana" id="linkScadenza" class="link-sez"></a></div>
+    <div class="cards" id="scadenza"></div>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="config/fonti.js"></script>
+<script src="data/riepilogo.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/store.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/cerca.js"></script>
+<script src="js/schede.js"></script>
+<script src="js/confronto.js"></script>
+<script src="js/pages/home.js"></script>
+</body>
+</html>

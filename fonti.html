@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fonti – Radar Aste Italia</title>
+<meta name="description" content="Da dove arrivano le aste di Radar Aste Italia: stato di ogni fonte ufficiale, API, robots.txt e termini d'uso.">
+<link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/hanken-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#0d6b4f" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<header id="site-header"></header>
+
+<main class="wrap stack">
+  <div class="page-head">
+    <h1>Da dove arrivano <span>le aste</span></h1>
+    <p class="sub">Radar Aste Italia mostra solo aste reali, ognuna con il link all'avviso originale. Qui c'è lo stato di ogni fonte, verificato su robots.txt e termini d'uso: se una fonte vieta la raccolta o blocca l'accesso, le sue aste non compaiono.</p>
+  </div>
+
+  <div id="riepilogo"></div>
+
+  <section class="stack">
+    <h2>Stato delle fonti</h2>
+    <div class="sources" id="fonti"></div>
+  </section>
+
+  <section class="panel stack">
+    <h2>Come funziona la raccolta</h2>
+    <ol class="tips" style="padding-left:20px;margin:0;display:grid;gap:8px">
+      <li><b>Prima i dati ufficiali.</b> Per ogni fonte si cerca un'API, un feed o un file scaricabile e, se c'è, si usa quello.</li>
+      <li><b>Pagine pubbliche solo se è permesso.</b> Senza API, un programma legge le pagine pubbliche degli annunci solo se <code>robots.txt</code> e i termini d'uso lo consentono, con al massimo una richiesta ogni pochi secondi e identificandosi in modo trasparente.</li>
+      <li><b>Aggiornamento quotidiano.</b> Il programma (<code>scripts/raccogli.mjs</code>) gira ogni giorno su GitHub Actions, riscrive <code>data/aste.js</code> e ripubblica il sito.</li>
+      <li><b>Link all'originale sempre.</b> Ogni asta salva il link all'avviso originale: senza link viene scartata.</li>
+      <li><b>Nessun riempitivo.</b> Se una fonte blocca l'accesso o vieta la raccolta, la si ferma e lo si segnala qui. Non vengono mai inventati dati per riempire l'elenco.</li>
+    </ol>
+  </section>
+
+  <section class="panel">
+    <h3>Prima di fare un'offerta</h3>
+    <ul class="tips" style="padding-left:18px;margin:0;display:grid;gap:6px">
+      <li>Leggi tutta la perizia: abusi edilizi, difformità catastali e vincoli costano denaro e tempo.</li>
+      <li>Verifica chi occupa l'immobile e quando è previsto il rilascio.</li>
+      <li>Chiedi all'amministratore il debito condominiale: rispondi in solido per l'anno in corso e il precedente.</li>
+      <li>Per i veicoli: controlla chilometri, revisione, fermi amministrativi e presenza di chiavi e libretto.</li>
+      <li>Prepara la cauzione (di solito il 10% dell'offerta) e calcola i tempi del saldo, spesso 60–120 giorni.</li>
+    </ul>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="config/fonti.js"></script>
+<script src="data/aste.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/store.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/cerca.js"></script>
+<script src="js/pages/fonti.js"></script>
+</body>
+</html>
