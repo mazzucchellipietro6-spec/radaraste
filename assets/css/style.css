@@ -199,3 +199,10 @@ dialog .dbody{padding:18px;display:grid;gap:14px}
 .strategia h4{margin:0;font-size:14px}
 .strategia .big{font-size:20px;font-weight:600;color:var(--fg)}
 .strategia p{margin:0;font-size:12.5px}
+
+/* Ricerche salvate e aste nuove */
+.ricerca{display:inline-flex;align-items:center;border-radius:999px}
+.ricerca .chip{border-top-right-radius:0;border-bottom-right-radius:0;display:inline-flex;align-items:center;gap:6px}
+.ricerca .x{font:inherit;border:1px solid var(--line);border-left:0;background:var(--surface);color:var(--muted);border-radius:0 999px 999px 0;padding:5px 10px;cursor:pointer;line-height:1}
+.ricerca .x:hover{color:var(--bad)}
+.card.nuova{border-color:var(--good);box-shadow:inset 3px 0 0 var(--good)}

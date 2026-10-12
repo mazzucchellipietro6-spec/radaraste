@@ -36,6 +36,15 @@
     </div>
     <form id="filtri" autocomplete="off" class="stack" style="gap:12px">
       <label>Cerca<input type="search" id="fTesto" placeholder="Parole, comune, n. procedura"></label>
+      <div class="row-actions" style="gap:6px">
+        <span class="muted" style="font-size:13px;font-weight:600">Le tue ricerche</span>
+        <div class="chips" id="ricercheSalvate" aria-live="polite"></div>
+        <button class="btn small ghost" type="button" id="salvaRicerca">+ Salva questa ricerca</button>
+      </div>
+      <div class="row-actions" id="formRicerca" hidden>
+        <label style="flex:1;min-width:180px" for="nomeRicerca">Nome della ricerca<input id="nomeRicerca" maxlength="60" placeholder="es. Bilocali liberi a Genova" enterkeyhint="done"></label>
+        <button class="btn small" type="button" id="confermaRicerca" style="align-self:end">Salva</button>
+      </div>
       <details id="altriFiltri" open>
       <summary class="btn small ghost" style="width:max-content;list-style:none">Altri filtri</summary>
       <div class="fields" style="margin-top:12px">
@@ -48,6 +57,7 @@
       <label>Data asta al<input type="date" id="fAl"></label>
       <label>Stato<select id="fStato"><option value="">Tutti</option><option value="libero">Libero</option><option value="occupato">Occupato</option><option value="nd">Non indicato</option></select></label>
       <label class="check" style="align-self:end"><input type="checkbox" id="fPassate"> Mostra aste concluse</label>
+      <label class="check" style="align-self:end"><input type="checkbox" id="fNuove"> Solo nuove dall'ultima visita</label>
       </div>
       </details>
     </form>
@@ -136,6 +146,7 @@
 <script src="js/formato.js"></script>
 <script src="js/store.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/ricerche.js"></script>
 <script src="js/pages/aste.js"></script>
 </body>
 </html>

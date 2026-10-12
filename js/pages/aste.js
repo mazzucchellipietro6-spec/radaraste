@@ -3,8 +3,10 @@
   'use strict';
   var T = window.TARIFFE, U = window.UI, S = window.Store, C = window.Calcoli, $ = U.$, $$ = U.$$;
   var K_FILTRI = 'radaraste.filtri';
-  var filtri = { cat: '', testo: '', regione: '', provincia: '', tribunale: '', min: '', max: '', dal: '', al: '', stato: '', passate: false, ordina: 'data' };
+  var VUOTI = { cat: '', testo: '', regione: '', provincia: '', tribunale: '', min: '', max: '', dal: '', al: '', stato: '', passate: false, nuove: false, ordina: 'data' };
+  var filtri = JSON.parse(JSON.stringify(VUOTI));
   var PASSO = 60, mostrate = PASSO, seguite = {};
+  var R = window.Ricerche, nuoveDal = R.visitaPrecedente(), ricercaAperta = null;
 
   /* ---------- Filtri ---------- */
   function caricaFiltri() {
@@ -18,19 +20,25 @@
     U.opzioniProvince($('#fProvincia'), filtri.regione, true); $('#fProvincia').value = filtri.provincia;
     $('#fTribunale').value = filtri.tribunale; $('#fPrezzoMin').value = filtri.min; $('#fPrezzoMax').value = filtri.max;
     $('#fDal').value = filtri.dal; $('#fAl').value = filtri.al; $('#fStato').value = filtri.stato;
-    $('#fPassate').checked = !!filtri.passate; $('#ordina').value = filtri.ordina;
+    $('#fPassate').checked = !!filtri.passate; $('#fNuove').checked = !!filtri.nuove; $('#ordina').value = filtri.ordina;
   }
 
   function leggiControlli() {
     filtri.testo = $('#fTesto').value.trim(); filtri.regione = $('#fRegione').value; filtri.provincia = $('#fProvincia').value;
     filtri.tribunale = $('#fTribunale').value.trim(); filtri.min = $('#fPrezzoMin').value; filtri.max = $('#fPrezzoMax').value;
     filtri.dal = $('#fDal').value; filtri.al = $('#fAl').value; filtri.stato = $('#fStato').value;
-    filtri.passate = $('#fPassate').checked; filtri.ordina = $('#ordina').value;
+    filtri.passate = $('#fPassate').checked; filtri.nuove = $('#fNuove').checked; filtri.ordina = $('#ordina').value;
   }
 
-  var oggi = new Date().toISOString().slice(0, 10), parole = [];
+  var oggi = new Date().toISOString().slice(0, 10);
   function senzaAccenti(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
-  function passa(a) {
+  // filtro per un insieme di filtri qualsiasi (quelli correnti o quelli di una ricerca salvata)
+  function filtro(filtri, dal) {
+    var parole = senzaAccenti(filtri.testo).split(/\s+/).filter(Boolean);
+    return function (a) { return passa(a, filtri, parole, dal); };
+  }
+  function passa(a, filtri, parole, dal) {
+    if (filtri.nuove && !R.nuovaDa(a, dal)) return false;
     if (filtri.cat && a.categoria !== filtri.cat) return false;
     if (filtri.regione && a.regione !== filtri.regione) return false;
     if (filtri.provincia && a.provincia !== filtri.provincia) return false;
@@ -58,8 +66,8 @@
     var avviso = U.linkSicuro(a.linkAvviso), perizia = U.linkSicuro(a.linkPerizia), pdf = U.linkSicuro(a.linkPdf);
     var statoPill = a.stato === 'libero' ? 'p-good' : a.stato === 'occupato' ? 'p-warn' : 'p-neutral';
     var q = U.quando(a.dataAsta);
-    return '<article class="card">' +
-      '<div class="top"><span class="pill p-info">' + U.esc(U.CATEGORIE[a.categoria] || a.categoria) + '</span>' +
+    return '<article class="card' + (R.nuovaDa(a, nuoveDal) ? ' nuova' : '') + '">' +
+      '<div class="top">' + (R.nuovaDa(a, nuoveDal) ? '<span class="pill p-good" title="Pubblicata dopo il ' + U.dataIt(nuoveDal) + '">Nuova</span>' : '') + '<span class="pill p-info">' + U.esc(U.CATEGORIE[a.categoria] || a.categoria) + '</span>' +
         '<span class="pill ' + statoPill + '">' + U.esc(U.STATI[a.stato] || 'Non indicato') + '</span>' +
         (a.tipo ? '<span class="tag">' + U.esc(a.tipo) + '</span>' : '') +
         (a.origine === 'raccolta' ? '<span class="tag" title="Raccolta automatica dalla fonte ufficiale">' + U.esc(a.fonte || 'fonte') + '</span>' : '<span class="tag" title="Copiata da te da un avviso">inserita da te' + (a.fonte ? ' · ' + U.esc(a.fonte) : '') + '</span>') +
@@ -96,10 +104,10 @@
 
   function render(mantieni) {
     if (!mantieni) mostrate = PASSO;
-    parole = senzaAccenti(filtri.testo).split(/\s+/).filter(Boolean);
     seguite = S.idSeguite();
     var tutte = S.aste();
-    var lista = ordina(tutte.filter(passa));
+    var lista = ordina(tutte.filter(filtro(filtri, nuoveDal)));
+    renderRicerche(tutte);
     $('#conteggio').textContent = lista.length.toLocaleString('it-IT') + ' di ' + tutte.length.toLocaleString('it-IT') + (tutte.length === 1 ? ' asta' : ' aste');
     if (!tutte.length) {
       $('#elenco').innerHTML = '<div class="empty panel" style="grid-column:1/-1"><h2>Nessuna asta da mostrare</h2>' +
@@ -136,8 +144,20 @@
   }
 
   function azzera() {
-    filtri = { cat: '', testo: '', regione: '', provincia: '', tribunale: '', min: '', max: '', dal: '', al: '', stato: '', passate: false, ordina: filtri.ordina };
+    var o = filtri.ordina; filtri = JSON.parse(JSON.stringify(VUOTI)); filtri.ordina = o;
+    ricercaAperta = null; nuoveDal = R.visitaPrecedente();
     salvaFiltri(); sincronizzaControlli(); render();
+  }
+
+  /* ---------- Ricerche salvate ---------- */
+  function renderRicerche(tutte) {
+    var l = R.tutte(), box = $('#ricercheSalvate');
+    if (!l.length) { box.innerHTML = '<span class="note" style="margin:0">Salva i filtri che usi spesso: vedrai quante aste nuove ci sono ogni volta che torni.</span>'; return; }
+    box.innerHTML = l.map(function (r) {
+      var n = tutte.filter(filtro(r.filtri, r.ultimaApertura)).filter(function (a) { return R.nuovaDa(a, r.ultimaApertura); }).length;
+      return '<span class="ricerca' + (ricercaAperta === r.id ? ' attiva' : '') + '"><button class="chip" type="button" data-apri="' + r.id + '" aria-pressed="' + (ricercaAperta === r.id) + '">' + U.esc(r.nome) +
+        (n ? ' <span class="pill p-good">' + n + ' nuove</span>' : '') + '</button><button class="x" type="button" data-togli="' + r.id + '" aria-label="Elimina la ricerca ' + U.esc(r.nome) + '">×</button></span>';
+    }).join('');
   }
 
   /* ---------- Form aggiunta / modifica ---------- */
@@ -195,6 +215,25 @@
     $('#filtri').addEventListener('submit', function (e) { e.preventDefault(); });
     $('#ordina').addEventListener('change', function () { leggiControlli(); salvaFiltri(); render(); });
     $('#azzera').addEventListener('click', azzera);
+
+    $('#salvaRicerca').addEventListener('click', function () { $('#formRicerca').hidden = !$('#formRicerca').hidden; if (!$('#formRicerca').hidden) $('#nomeRicerca').focus(); });
+    function salvaRicerca() {
+      var nome = $('#nomeRicerca').value.trim();
+      if (!nome) { $('#nomeRicerca').focus(); return; }
+      leggiControlli(); var r = R.salva(nome, filtri); ricercaAperta = r.id;
+      $('#nomeRicerca').value = ''; $('#formRicerca').hidden = true; render(true); U.toast('Ricerca salvata');
+    }
+    $('#confermaRicerca').addEventListener('click', salvaRicerca);
+    $('#nomeRicerca').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); salvaRicerca(); } });
+    $('#ricercheSalvate').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.togli) { U.conferma(b, 'Elimina?', function () { R.rimuovi(b.dataset.togli); if (ricercaAperta === b.dataset.togli) ricercaAperta = null; render(true); }); return; }
+      var x = R.apri(b.dataset.apri); if (!x) return;
+      var o = filtri.ordina; filtri = JSON.parse(JSON.stringify(VUOTI)); for (var k in x.ricerca.filtri) filtri[k] = x.ricerca.filtri[k]; filtri.ordina = o; filtri.nuove = false;
+      ricercaAperta = x.ricerca.id; nuoveDal = x.dal;   // evidenzia le aste nuove dall'ultima apertura di questa ricerca
+      salvaFiltri(); sincronizzaControlli(); render();
+      U.toast('Evidenziate le aste nuove dal ' + U.dataIt(x.dal));
+    });
 
     $('#elenco').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
@@ -257,7 +296,7 @@
       this.value = '';
     });
     $('#esportaCsv').addEventListener('click', function () {
-      var lista = ordina(S.aste().filter(passa));
+      var lista = ordina(S.aste().filter(filtro(filtri, nuoveDal)));
       U.offriFile('radar-aste.csv', U.csvStringify(lista, S.campi.concat(['origine'])), 'text/csv;charset=utf-8');
     });
     $('#esportaJson').addEventListener('click', function () {
