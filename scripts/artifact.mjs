@@ -12,6 +12,7 @@ const OUT = path.join(RADICE, '_artifact');
 await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 for (const dir of ['assets', 'config', 'data', 'js']) await cp(path.join(RADICE, dir), path.join(OUT, dir), { recursive: true });
+for (const f of ['manifest.webmanifest', 'sw.js']) await cp(path.join(RADICE, f), path.join(OUT, f));
 
 const pagine = (await readdir(RADICE)).filter((f) => f.endsWith('.html'));
 for (const p of pagine) {

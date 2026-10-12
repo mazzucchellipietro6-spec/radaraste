@@ -57,14 +57,18 @@
   var cacheRaccolte = null;
   function raccolte() {
     if (cacheRaccolte) return cacheRaccolte;
-    var R = root.ASTE_RACCOLTE, lista = [];
-    if (R && Array.isArray(R.righe) && Array.isArray(R.campi)) {
-      var c = R.campi;
-      lista = R.righe.map(function (r) { var o = {}; for (var i = 0; i < c.length; i++) if (r[i] !== null && r[i] !== undefined) o[c[i]] = r[i]; return o; });
-    } else if (R && Array.isArray(R.aste)) lista = R.aste;
-    cacheRaccolte = lista.filter(function (a) { return !valida(a); }).map(function (a) {
-      var o = normalizza(a, 'raccolta'); o.creata = R.aggiornato || ''; return o;
-    });
+    var R = root.ASTE_RACCOLTE;
+    var lista = R && root.Formato ? root.Formato.decodifica(R) : [];
+    // i dati raccolti sono già puliti dalla raccolta: si aggiunge solo l'origine (niente normalizzazione, molto più veloce)
+    cacheRaccolte = [];
+    for (var i = 0; i < lista.length; i++) {
+      var a = lista[i];
+      if (valida(a)) continue;
+      a.origine = 'raccolta'; a.creata = R.aggiornato || '';
+      if (!a.stato) a.stato = 'nd';
+      if (!a.categoria) a.categoria = 'immobile';
+      cacheRaccolte.push(a);
+    }
     return cacheRaccolte;
   }
   var indice = null;

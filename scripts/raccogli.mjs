@@ -20,6 +20,7 @@ const RADICE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 // Registro delle fonti con l'esito della verifica di robots.txt e termini d'uso (condiviso con il sito).
 const REGISTRO = require('../config/fonti.js');
+const Formato = require('../js/formato.js');
 // Modulo di raccolta di ogni fonte (scripts/fonti/<chiave>.mjs), caricato solo se la fonte è attiva.
 // L'ordine del registro è anche la priorità contro i doppioni: prima il PVP.
 async function modulo(chiave) {
@@ -44,8 +45,7 @@ async function precedente(file) {
   try {
     const t = await readFile(file, 'utf8');
     const j = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
-    const aste = Array.isArray(j.righe) ? j.righe.map((r) => Object.fromEntries(j.campi.map((c, i) => [c, r[i]]))) : (j.aste || []);
-    return { aste, fonti: j.fonti || [] };
+    return { aste: Formato.decodifica(j), fonti: j.fonti || [] };
   } catch { return { aste: [], fonti: [] }; }
 }
 
@@ -97,12 +97,7 @@ async function main() {
   for (const a of uniche) a.vista = giaViste.get(a.id) || oggi;
   if (doppioni) console.log(`  ${doppioni} aste già presenti su una fonte con priorità più alta: tenuto solo il link`);
   uniche.sort((a, b) => (a.dataAsta || '').localeCompare(b.dataAsta || ''));
-  const dati = {
-    aggiornato: new Date().toISOString(),
-    fonti: statoFonti,
-    campi: CAMPI,
-    righe: uniche.map((a) => CAMPI.map((c) => (a[c] === undefined || a[c] === '' ? null : a[c])))
-  };
+  const dati = { aggiornato: new Date().toISOString(), fonti: statoFonti, ...Formato.codifica(uniche, CAMPI) };
   const intestazione = '/* ASTE RACCOLTE DALLE FONTI UFFICIALI – file generato da scripts/raccogli.mjs il ' + dati.aggiornato + '.\n * Non modificarlo a mano: viene riscritto a ogni raccolta. Ogni asta ha il link all\'avviso originale (linkAvviso). */\n';
   await writeFile(file, intestazione + 'window.ASTE_RACCOLTE = ' + JSON.stringify(dati) + ';\n');
   console.log(`✓ ${uniche.length} aste scritte in ${path.relative(RADICE, file)} (${statoFonti.filter((s) => s.stato === 'attiva').length} fonti attive)`);

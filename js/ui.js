@@ -188,4 +188,9 @@
     CATEGORIE: CATEGORIE, STATI: STATI
   };
   document.addEventListener('DOMContentLoaded', layout);
+
+  // App installabile e funzionamento offline (dove il browser lo consente)
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  }
 })(window);

@@ -28,7 +28,8 @@
     filtri.passate = $('#fPassate').checked; filtri.ordina = $('#ordina').value;
   }
 
-  var oggi = new Date().toISOString().slice(0, 10);
+  var oggi = new Date().toISOString().slice(0, 10), parole = [];
+  function senzaAccenti(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
   function passa(a) {
     if (filtri.cat && a.categoria !== filtri.cat) return false;
     if (filtri.regione && a.regione !== filtri.regione) return false;
@@ -40,10 +41,9 @@
     if (filtri.al && !(a.dataAsta <= filtri.al)) return false;
     if (filtri.stato && a.stato !== filtri.stato) return false;
     if (!filtri.passate && a.dataAsta && a.dataAsta < oggi) return false;
-    if (filtri.testo) {
-      var t = filtri.testo.toLowerCase();
-      var h = [a.titolo, a.comune, a.indirizzo, a.tribunale, a.rge, a.fonte, a.descrizione].join(' ').toLowerCase();
-      if (h.indexOf(t) < 0) return false;
+    if (parole.length) {
+      if (a._cerca === undefined) a._cerca = senzaAccenti([a.titolo, a.tipo, a.comune, a.provincia, a.indirizzo, a.tribunale, a.rge, a.fonte, a.descrizione].join(' '));
+      for (var i = 0; i < parole.length; i++) if (a._cerca.indexOf(parole[i]) < 0) return false;
     }
     return true;
   }
@@ -96,6 +96,7 @@
 
   function render(mantieni) {
     if (!mantieni) mostrate = PASSO;
+    parole = senzaAccenti(filtri.testo).split(/\s+/).filter(Boolean);
     seguite = S.idSeguite();
     var tutte = S.aste();
     var lista = ordina(tutte.filter(passa));
@@ -184,9 +185,12 @@
       var b = e.target.closest('.chip'); if (!b) return;
       filtri.cat = b.dataset.cat; salvaFiltri(); sincronizzaControlli(); render();
     });
+    var attesa;
     $('#filtri').addEventListener('input', function (e) {
       if (e.target.id === 'fRegione') { U.opzioniProvince($('#fProvincia'), e.target.value, true); $('#fProvincia').value = ''; }
-      leggiControlli(); salvaFiltri(); render();
+      clearTimeout(attesa);
+      // la ricerca testuale aspetta che si smetta di scrivere; gli altri filtri sono immediati
+      attesa = setTimeout(function () { leggiControlli(); salvaFiltri(); render(); }, e.target.id === 'fTesto' ? 150 : 0);
     });
     $('#filtri').addEventListener('submit', function (e) { e.preventDefault(); });
     $('#ordina').addEventListener('change', function () { leggiControlli(); salvaFiltri(); render(); });

@@ -63,3 +63,19 @@ test('doppioni: senza tribunale o procedura non si unisce nulla', () => {
   assert.equal(r.aste.length, 2);
   assert.equal(numeroProcedura('R.G.E. 0412/2024'), '412');
 });
+
+import { createRequire } from 'node:module';
+const req = createRequire(import.meta.url);
+const Formato = req('../js/formato.js');
+
+test('formato compatto: andata e ritorno senza perdite', () => {
+  const aste = [
+    { id: 'pvp-1', titolo: 'Casa', categoria: 'immobile', fonte: 'Portale Vendite Pubbliche', dataAsta: '2026-11-18', prezzoBase: 1000, linkAvviso: 'https://pvp.giustizia.it/pvp/it/detail_annuncio.page?idAnnuncio=1' },
+    { id: 'dem-x', titolo: 'Terreno', categoria: 'immobile', fonte: 'Agenzia del Demanio', dataAsta: '2026-11-18', linkAvviso: 'https://www.agenziademanio.it/it/gare-aste/immobiliare/gara/X', altriLink: [['Astalegale', 'https://a/b']] }
+  ];
+  const campi = ['id', 'titolo', 'categoria', 'fonte', 'dataAsta', 'prezzoBase', 'linkAvviso', 'altriLink'];
+  const enc = Formato.codifica(aste, campi);
+  assert.equal(enc.dizionari.fonte.length, 2);
+  assert.match(enc.righe[0][6], /^~\d+~1$/);
+  assert.deepEqual(Formato.decodifica(JSON.parse(JSON.stringify(enc))), aste);
+});

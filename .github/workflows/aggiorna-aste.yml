@@ -51,7 +51,8 @@ jobs:
       - name: Prepara il sito
         run: |
           mkdir _site
-          cp -r *.html assets config data js _site/
+          cp -r *.html manifest.webmanifest sw.js assets config data js _site/
+          sed -i "s/__VERSIONE__/${GITHUB_SHA::8}-$(date -u +%Y%m%d)/" _site/sw.js
 
       - uses: actions/upload-pages-artifact@v3
         with:
