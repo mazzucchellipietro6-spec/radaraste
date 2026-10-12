@@ -4,7 +4,7 @@
 var VERSIONE = 'radaraste-__VERSIONE__';
 var STRUTTURA = [
   './', 'index.html', 'aste.html', 'mappa.html', 'calcolatore.html', 'mie-aste.html', 'tariffe.html', 'fonti.html',
-  'assets/css/style.css', 'assets/icon.svg', 'assets/icon-192.png', 'assets/vendor/leaflet/leaflet.js', 'assets/vendor/leaflet/leaflet.css',
+  'assets/css/style.css', 'assets/icon.svg', 'assets/fonts/archivo.woff2', 'assets/fonts/hanken-grotesk.woff2', 'assets/fonts/martian-mono.woff2', 'js/icone.js', 'js/schede.js', 'js/confronto.js', 'js/ricerche.js', 'js/riepilogo.js', 'assets/icon-192.png', 'assets/vendor/leaflet/leaflet.js', 'assets/vendor/leaflet/leaflet.css',
   'config/tariffe.js', 'config/fonti.js', 'data/geo.js', 'data/italia.js',
   'js/ui.js', 'js/store.js', 'js/formato.js', 'js/calcoli.js', 'js/parser.js', 'js/estrai.js'
 ];

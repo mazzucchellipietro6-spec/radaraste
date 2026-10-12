@@ -56,7 +56,7 @@
     var lista = seg.filter(function (s) { return !filtro || s.stato === filtro; })
       .sort(function (x, y) { var a = S.asta(x.id) || x.copia || {}, b = S.asta(y.id) || y.copia || {}; return (a.dataAsta || '9').localeCompare(b.dataAsta || '9'); });
     if (!seg.length) {
-      $('#lista').innerHTML = '<div class="panel empty"><h2>Non stai seguendo nessuna asta</h2><p>Nell\'<a href="index.html">elenco aste</a> premi <b>Segui</b> su quelle che ti interessano: le ritroverai qui con note e valutazione.</p></div>';
+      $('#lista').innerHTML = '<div class="panel empty"><h2>Non stai seguendo nessuna asta</h2><p>Nell\'<a href="aste.html">elenco aste</a> premi <b>Segui</b> su quelle che ti interessano: le ritroverai qui con note e valutazione.</p></div>';
     } else if (!lista.length) {
       $('#lista').innerHTML = '<div class="panel empty">Nessuna asta con stato "' + U.esc(nomeStato(filtro)) + '".</div>';
     } else $('#lista').innerHTML = lista.map(elemento).join('');

@@ -2,13 +2,8 @@
 (function (root) {
   'use strict';
 
-  var PAGINE = [
-    ['index.html', 'Aste'], ['mappa.html', 'Mappa'], ['calcolatore.html', 'Conviene?'],
-    ['mie-aste.html', 'Le mie aste'], ['tariffe.html', 'Tariffe e tasse'], ['fonti.html', 'Fonti']
-  ];
   var CATEGORIE = { immobile: 'Immobile', auto: 'Auto', moto: 'Moto', beni: 'Beni mobili' };
   var STATI = { libero: 'Libero', occupato: 'Occupato', nd: 'Non indicato' };
-  var TEMI = { auto: 'Tema: auto', light: 'Tema: chiaro', dark: 'Tema: scuro' };
 
   function $(sel, ctx) { return (ctx || document).querySelector(sel); }
   function $$(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
@@ -95,40 +90,124 @@
   }
 
   /* ---- Tema ---- */
+  var ICONA_TEMA = { auto: 'automatico', light: 'sole', dark: 'luna' };
+  var NOME_TEMA = { auto: 'automatico', light: 'chiaro', dark: 'scuro' };
   function temaCorrente() { try { return localStorage.getItem('radaraste.tema') || 'auto'; } catch (e) { return 'auto'; } }
   function applicaTema(t) {
     if (t === 'auto') document.documentElement.removeAttribute('data-theme');
     else document.documentElement.setAttribute('data-theme', t);
     try { localStorage.setItem('radaraste.tema', t); } catch (e) {}
-    var b = $('#themeBtn'); if (b) b.textContent = TEMI[t];
+    $$('.theme-btn').forEach(function (b) { b.innerHTML = icona(ICONA_TEMA[t]); b.setAttribute('aria-label', 'Tema ' + NOME_TEMA[t] + ': cambia tema'); b.title = 'Tema ' + NOME_TEMA[t]; });
     try { document.dispatchEvent(new CustomEvent('radaraste:tema')); } catch (e) {}
   }
+  function ciclaTema() { var ord = ['auto', 'light', 'dark']; applicaTema(ord[(ord.indexOf(temaCorrente()) + 1) % 3]); toast('Tema ' + NOME_TEMA[temaCorrente()]); }
+  function icona(n, cls) { return root.Icone ? root.Icone.svg(n, cls) : ''; }
 
-  /* ---- Layout ---- */
+  /* ---- Struttura da app: intestazione, barra in basso, foglio "Altro", piè di pagina ---- */
+  var NAV = [
+    { href: 'index.html', nome: 'Oggi', icona: 'radar' },
+    { href: 'aste.html', nome: 'Aste', icona: 'lista' },
+    { href: 'mappa.html', nome: 'Mappa', icona: 'mappa' },
+    { href: 'calcolatore.html', nome: 'Conviene?', icona: 'calcolo' },
+    { href: 'mie-aste.html', nome: 'Le mie aste', breve: 'Seguite', icona: 'stella' }
+  ];
+  var ALTRO = [
+    { href: 'calcolatore.html', nome: 'Conviene?', nota: 'Costi, margine e punteggio con i cursori', icona: 'calcolo' },
+    { href: 'confronta.html', nome: 'Confronta', nota: 'Fino a 3 aste fianco a fianco', icona: 'confronta' },
+    { href: 'tariffe.html', nome: 'Tariffe e tasse', nota: 'Aliquote con fonte e data', icona: 'tasse' },
+    { href: 'fonti.html', nome: 'Fonti dei dati', nota: 'Da dove arrivano le aste', icona: 'fonti' }
+  ];
+  var MARCHIO = '<svg class="marchio" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><circle cx="16" cy="16" r="10" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.6"/><circle cx="16" cy="16" r="5.5" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.6"/><path d="M16 16 L24.5 10.5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="#fff"/><circle cx="21.5" cy="20.5" r="1.6" fill="var(--signal)"/></svg>';
+
+  function paginaCorrente() { return location.pathname.split('/').pop() || 'index.html'; }
+
   function layout() {
-    var qui = location.pathname.split('/').pop() || 'index.html';
+    var qui = paginaCorrente();
     var h = $('#site-header');
     if (h) {
       h.className = 'site-header';
       h.innerHTML = '<div class="wrap">' +
-        '<a class="brand" href="index.html"><svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2" opacity=".35"/><circle cx="16" cy="16" r="8" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"/><path d="M16 16 L27 9" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="16" r="2.5" fill="var(--accent)"/></svg>Radar <span>Aste</span> Italia</a>' +
-        '<nav class="nav" aria-label="Sezioni">' + PAGINE.map(function (p) {
-          return '<a href="' + p[0] + '"' + (p[0] === qui ? ' aria-current="page"' : '') + '>' + p[1] + '</a>';
+        '<a class="brand" href="index.html" aria-label="Radar Aste Italia, pagina iniziale">' + MARCHIO + '<span>Radar <b>Aste</b></span></a>' +
+        '<nav class="nav" aria-label="Sezioni">' + NAV.map(function (p) {
+          return '<a href="' + p.href + '"' + (p.href === qui ? ' aria-current="page"' : '') + '>' + icona(p.icona) + '<span>' + p.nome + '</span></a>';
         }).join('') + '</nav>' +
-        '<button class="theme-btn" id="themeBtn" type="button" aria-label="Cambia tema (automatico, chiaro, scuro)"></button></div>';
-      $('#themeBtn').addEventListener('click', function () {
-        var ord = ['auto', 'light', 'dark']; applicaTema(ord[(ord.indexOf(temaCorrente()) + 1) % 3]);
-      });
-      applicaTema(temaCorrente());
+        '<button class="cerca-btn" type="button" data-cerca aria-label="Cerca aste, comuni, tribunali">' + icona('cerca') + '<span class="testo">Cerca comune, tribunale, asta…</span><kbd>/</kbd></button>' +
+        '<button class="theme-btn" type="button"></button></div>';
+    }
+    // barra in basso (visibile su telefono)
+    if (!$('.tabbar')) {
+      var nSeguite = 0; try { nSeguite = JSON.parse(localStorage.getItem('radaraste.v1.seguite') || '[]').length; } catch (e) {}
+      var tab = document.createElement('nav'); tab.className = 'tabbar'; tab.setAttribute('aria-label', 'Navigazione');
+      tab.innerHTML = NAV.filter(function (p) { return p.href !== 'calcolatore.html'; }).map(function (p) {
+        return '<a href="' + p.href + '"' + (p.href === qui ? ' aria-current="page"' : '') + '>' + icona(p.icona) + '<span>' + (p.breve || p.nome) + '</span>' +
+          (p.href === 'mie-aste.html' && nSeguite ? '<span class="badge">' + nSeguite + '</span>' : '') + '</a>';
+      }).join('') + '<button type="button" data-altro' + (ALTRO.some(function (a) { return a.href === qui; }) ? ' aria-current="page"' : '') + '>' + icona('altro') + '<span>Altro</span></button>';
+      document.body.appendChild(tab);
     }
     var f = $('#site-footer');
     if (f) {
       var agg = root.TARIFFE ? dataIt(root.TARIFFE.aggiornamento) : '';
       f.className = 'site-footer';
       f.innerHTML = '<div class="wrap">' + avvertenza() +
-        '<div>Radar Aste Italia · aliquote aggiornate al ' + esc(agg) + ' (file <code>config/tariffe.js</code>) · I dati delle aste restano salvati in questo browser.</div></div>';
+        '<div class="row-actions" style="gap:18px"><a href="tariffe.html">Tariffe e tasse</a><a href="fonti.html">Fonti dei dati</a><a href="confronta.html">Confronta</a><span class="spacer"></span>' +
+        '<span>Aliquote aggiornate al ' + esc(agg) + ' · dati personali solo in questo browser</span></div></div>';
     }
+    applicaTema(temaCorrente());
+    $$('.theme-btn').forEach(function (b) { b.addEventListener('click', ciclaTema); });
+    animazioniDiPagina();
   }
+
+  // foglio dal basso con le altre sezioni; si chiude toccando fuori o trascinandolo giù
+  function apriAltro() {
+    var d = $('#foglioAltro');
+    if (!d) {
+      d = document.createElement('div'); d.id = 'foglioAltro'; d.className = 'foglio'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Altre sezioni');
+      d.innerHTML = '<div class="corpo"><div class="maniglia"></div><div class="voci">' + ALTRO.map(function (a) {
+        return '<a href="' + a.href + '">' + icona(a.icona) + '<span>' + a.nome + '<small>' + a.nota + '</small></span></a>';
+      }).join('') + '<button type="button" data-tema>' + icona('luna') + '<span>Cambia tema<small>Automatico, chiaro o scuro</small></span></button></div></div>';
+      document.body.appendChild(d);
+      d.addEventListener('click', function (e) { if (e.target === d) chiudiFoglio(d); if (e.target.closest('[data-tema]')) ciclaTema(); });
+      trascinaPerChiudere(d);
+    }
+    requestAnimationFrame(function () { d.setAttribute('data-aperto', ''); });
+  }
+  function chiudiFoglio(d) { d.removeAttribute('data-aperto'); d.querySelector('.corpo').style.removeProperty('--trascina'); }
+  function trascinaPerChiudere(d) {
+    var corpo = d.querySelector('.corpo'), y0 = null, dy = 0;
+    corpo.addEventListener('touchstart', function (e) { if (corpo.scrollTop > 0) return; y0 = e.touches[0].clientY; dy = 0; corpo.style.transition = 'none'; }, { passive: true });
+    corpo.addEventListener('touchmove', function (e) { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); corpo.style.setProperty('--trascina', dy + 'px'); }, { passive: true });
+    corpo.addEventListener('touchend', function () { if (y0 === null) return; corpo.style.transition = ''; y0 = null; if (dy > 90) chiudiFoglio(d); else corpo.style.setProperty('--trascina', '0px'); });
+  }
+
+  // effetto onda sui pulsanti e comparsa delle sezioni durante lo scorrimento
+  function animazioniDiPagina() {
+    document.addEventListener('pointerdown', function (e) {
+      var b = e.target.closest && e.target.closest('.btn, .chip');
+      if (!b || b.disabled) return;
+      var r = b.getBoundingClientRect(), o = document.createElement('span'), d = Math.max(r.width, r.height);
+      o.className = 'onda'; o.style.cssText = 'width:' + d + 'px;height:' + d + 'px;left:' + (e.clientX - r.left - d / 2) + 'px;top:' + (e.clientY - r.top - d / 2) + 'px';
+      if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
+      b.style.overflow = 'hidden'; b.appendChild(o); setTimeout(function () { o.remove(); }, 650);
+    });
+    osservaComparsa(document);
+  }
+  var osservatore = 'IntersectionObserver' in root ? new IntersectionObserver(function (voci) {
+    voci.forEach(function (v) { if (v.isIntersecting) { v.target.classList.add('vista'); osservatore.unobserve(v.target); } });
+  }, { rootMargin: '0px 0px -8% 0px' }) : null;
+  function osservaComparsa(ctx) {
+    $$('.rivela:not(.vista)', ctx).forEach(function (el) { if (osservatore) osservatore.observe(el); else el.classList.add('vista'); });
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('[data-altro]')) apriAltro();
+    if (e.target.closest && e.target.closest('[data-cerca]') && root.Cerca) root.Cerca.apri();
+  });
+  document.addEventListener('keydown', function (e) {
+    var dig = e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
+    if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !dig)) { if (root.Cerca) { e.preventDefault(); root.Cerca.apri(); } }
+    if (e.key === 'Escape') { var d = $('#foglioAltro[data-aperto]'); if (d) chiudiFoglio(d); }
+  });
+
   function avvertenza() {
     return '<div class="disclaimer" role="note"><strong>Calcoli indicativi.</strong> Le stime di Radar Aste Italia sono orientative e non sostituiscono il parere di un notaio, di un avvocato o di un commercialista. Verifica sempre l\'avviso di vendita, la perizia e le aliquote in vigore prima di fare un\'offerta.</div>';
   }
@@ -183,6 +262,7 @@
   root.UI = {
     $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando,
     linkSicuro: linkSicuro, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
+    icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro,
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,
     csvParse: csvParse, csvStringify: csvStringify, scarica: scarica, leggiFile: leggiFile,
     CATEGORIE: CATEGORIE, STATI: STATI

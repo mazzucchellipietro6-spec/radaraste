@@ -21,6 +21,7 @@ const require = createRequire(import.meta.url);
 // Registro delle fonti con l'esito della verifica di robots.txt e termini d'uso (condiviso con il sito).
 const REGISTRO = require('../config/fonti.js');
 const Formato = require('../js/formato.js');
+const Riepilogo = require('../js/riepilogo.js');
 // Modulo di raccolta di ogni fonte (scripts/fonti/<chiave>.mjs), caricato solo se la fonte è attiva.
 // L'ordine del registro è anche la priorità contro i doppioni: prima il PVP.
 async function modulo(chiave) {
@@ -100,6 +101,10 @@ async function main() {
   const dati = { aggiornato: new Date().toISOString(), fonti: statoFonti, ...Formato.codifica(uniche, CAMPI) };
   const intestazione = '/* ASTE RACCOLTE DALLE FONTI UFFICIALI – file generato da scripts/raccogli.mjs il ' + dati.aggiornato + '.\n * Non modificarlo a mano: viene riscritto a ogni raccolta. Ogni asta ha il link all\'avviso originale (linkAvviso). */\n';
   await writeFile(file, intestazione + 'window.ASTE_RACCOLTE = ' + JSON.stringify(dati) + ';\n');
+  // riepilogo leggero per la home (stessa cartella del file delle aste)
+  const riepilogo = { aggiornato: dati.aggiornato, fonti: statoFonti.map((f) => ({ nome: f.nome, stato: f.stato })), ...Riepilogo.calcola(uniche, oggi) };
+  await writeFile(path.join(path.dirname(file), path.basename(file).replace(/aste\.js$/, 'riepilogo.js').replace(/^(?!riepilogo)(.*)\.js$/, '$1-riepilogo.js')),
+    '/* Riepilogo per la home, generato da scripts/raccogli.mjs il ' + dati.aggiornato + '. */\nwindow.RIEPILOGO = ' + JSON.stringify(riepilogo) + ';\n');
   console.log(`✓ ${uniche.length} aste scritte in ${path.relative(RADICE, file)} (${statoFonti.filter((s) => s.stato === 'attiva').length} fonti attive)`);
   if (!statoFonti.some((s) => s.stato === 'attiva')) process.exitCode = 1;
 }

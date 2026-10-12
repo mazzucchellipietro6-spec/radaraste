@@ -58,38 +58,7 @@
 
   /* ---------- Elenco ---------- */
   function scheda(a) {
-    var seg = seguite[a.id];
-    var st = C.stimaRapida(a, T);
-    var min = a.offertaMinima || (a.prezzoBase ? C.offertaMinima(a.prezzoBase, T) : null);
-    var luogo = [a.comune ? a.comune + (a.provincia ? ' (' + a.provincia + ')' : '') : (a.provincia ? (window.GEO.province[a.provincia] || {}).nome || a.provincia : ''),
-      a.tribunale ? 'Trib. ' + a.tribunale : '', a.rge ? 'Proc. n. ' + a.rge : ''].filter(Boolean).join(' · ');
-    var avviso = U.linkSicuro(a.linkAvviso), perizia = U.linkSicuro(a.linkPerizia), pdf = U.linkSicuro(a.linkPdf);
-    var statoPill = a.stato === 'libero' ? 'p-good' : a.stato === 'occupato' ? 'p-warn' : 'p-neutral';
-    var q = U.quando(a.dataAsta);
-    return '<article class="card' + (R.nuovaDa(a, nuoveDal) ? ' nuova' : '') + '">' +
-      '<div class="top">' + (R.nuovaDa(a, nuoveDal) ? '<span class="pill p-good" title="Pubblicata dopo il ' + U.dataIt(nuoveDal) + '">Nuova</span>' : '') + '<span class="pill p-info">' + U.esc(U.CATEGORIE[a.categoria] || a.categoria) + '</span>' +
-        '<span class="pill ' + statoPill + '">' + U.esc(U.STATI[a.stato] || 'Non indicato') + '</span>' +
-        (a.tipo ? '<span class="tag">' + U.esc(a.tipo) + '</span>' : '') +
-        (a.origine === 'raccolta' ? '<span class="tag" title="Raccolta automatica dalla fonte ufficiale">' + U.esc(a.fonte || 'fonte') + '</span>' : '<span class="tag" title="Copiata da te da un avviso">inserita da te' + (a.fonte ? ' · ' + U.esc(a.fonte) : '') + '</span>') +
-      '</div>' +
-      '<h4>' + U.esc(a.titolo) + '</h4>' +
-      (luogo ? '<div class="where">' + U.esc(luogo) + '</div>' : '') +
-      '<dl class="kv">' +
-        '<div><dt>' + (a.fonte === 'Agenzia del Demanio' ? 'Termine offerte' : 'Data asta') + '</dt><dd>' + U.dataIt(a.dataAsta) + (a.ora ? ' ' + U.esc(a.ora) : '') + (q ? ' <span class="muted" style="font-size:12px">(' + q + ')</span>' : '') + '</dd></div>' +
-        '<div><dt>Prezzo base</dt><dd>' + (a.prezzoBase ? U.eur(a.prezzoBase) : '<span class="muted">nell\'avviso</span>') + '</dd></div>' +
-        '<div><dt>Offerta minima</dt><dd>' + (min ? U.eur(min) : '—') + '</dd></div>' +
-        (st ? '<div><dt>Sconto stimato*</dt><dd><span class="pill p-' + st.giudizio.tono + '" title="Costo totale stimato al prezzo base: ' + U.eur(st.totale) + '">' + U.pct(st.sconto, 0) + ' · ' + st.giudizio.etichetta + '</span></dd></div>'
-            : '<div><dt>Valore di mercato</dt><dd class="muted">non indicato</dd></div>') +
-      '</dl>' +
-      '<div class="links">' + (avviso ? '<a href="' + U.esc(avviso) + '" target="_blank" rel="noopener">Avviso originale ↗</a>' : '<span class="muted">Avviso mancante</span>') +
-        (pdf ? '<a href="' + U.esc(pdf) + '" target="_blank" rel="noopener">Avviso PDF ↗</a>' : '') +
-        (perizia ? '<a href="' + U.esc(perizia) + '" target="_blank" rel="noopener">Perizia ↗</a>' : (a.origine === 'raccolta' && !pdf ? '<span class="muted">Perizia tra gli allegati dell\'avviso</span>' : (pdf ? '' : '<span class="muted">Perizia non indicata</span>'))) + '</div>' +
-        (Array.isArray(a.altriLink) && a.altriLink.length ? '<div class="links" style="font-size:13px"><span class="muted">Anche su:</span>' + a.altriLink.filter(function (l) { return U.linkSicuro(l[1]); }).map(function (l) { return '<a href="' + U.esc(l[1]) + '" target="_blank" rel="noopener">' + U.esc(l[0]) + ' ↗</a>'; }).join('') + '</div>' : '') +
-      '<div class="actions">' +
-        '<a class="btn small" href="calcolatore.html?id=' + encodeURIComponent(a.id) + '" data-passa="id:' + U.esc(a.id) + '">Conviene?</a>' +
-        '<button class="btn small ghost" type="button" data-segui="' + U.esc(a.id) + '" aria-pressed="' + !!seg + '">' + (seg ? 'Seguita ✓' : 'Segui') + '</button>' +
-        (a.origine === 'manuale' ? '<button class="btn small ghost" type="button" data-modifica="' + U.esc(a.id) + '">Modifica</button><button class="btn small danger" type="button" data-elimina="' + U.esc(a.id) + '">Elimina</button>' : '') +
-      '</div></article>';
+    return window.Schede.card(a, { seguita: !!seguite[a.id], nuova: R.nuovaDa(a, nuoveDal), confronto: true, selezionata: window.Confronto.ha(a.id) });
   }
 
   function ordina(lista) {
@@ -192,8 +161,14 @@
   /* ---------- Avvio ---------- */
   document.addEventListener('DOMContentLoaded', function () {
     caricaFiltri();
+    // filtri arrivati da altre pagine (ricerca istantanea, mappa, home)
     var pq = U.parametro('provincia');
-    if (pq && window.GEO.province[pq]) { filtri.provincia = pq; filtri.regione = window.GEO.province[pq].regione; salvaFiltri(); }
+    if (pq && window.GEO.province[pq]) { filtri = JSON.parse(JSON.stringify(VUOTI)); filtri.provincia = pq; filtri.regione = window.GEO.province[pq].regione; salvaFiltri(); }
+    var pf = U.parametro('filtri');
+    if (pf) { try { var fx = JSON.parse(pf); filtri = JSON.parse(JSON.stringify(VUOTI)); for (var kf in fx) filtri[kf] = fx[kf]; salvaFiltri(); } catch (e) {} }
+    var pz = U.parametro('filtro');
+    if (pz === 'nuove') { filtri = JSON.parse(JSON.stringify(VUOTI)); filtri.nuove = true; nuoveDal = window.Riepilogo ? window.Riepilogo.piu(oggi, -2) : nuoveDal; salvaFiltri(); }
+    if (pz === 'settimana') { filtri = JSON.parse(JSON.stringify(VUOTI)); filtri.dal = oggi; filtri.al = window.Riepilogo ? window.Riepilogo.piu(oggi, 7) : ''; salvaFiltri(); }
     // sul telefono i filtri avanzati partono chiusi (si aprono da soli se ce n'è uno attivo)
     if (window.matchMedia('(max-width: 700px)').matches && !(filtri.regione || filtri.provincia || filtri.tribunale || filtri.min || filtri.max || filtri.dal || filtri.al || filtri.stato || filtri.passate)) $('#altriFiltri').open = false;
     U.opzioniRegioni($('#fRegione'), true);

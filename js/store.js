@@ -132,7 +132,7 @@
       var l = Store.seguite(), s = l.filter(function (x) { return x.id === id; })[0];
       if (!s) { s = { id: id, stato: 'da-valutare', note: '', aggiunta: new Date().toISOString() }; l.push(s); }
       // copia dell'asta, così resta visibile anche se sparisce dal file delle aste raccolte
-      var a = Store.asta(id); if (a) s.copia = a;
+      var a = Store.asta(id); if (a) s.copia = a;   // (la home passa la copia nei dati, perché non carica tutte le aste)
       if (dati) for (var k in dati) s[k] = dati[k];
       scrivi(K_SEGUITE, l); return s;
     },

@@ -243,7 +243,7 @@
     if (id && !aste.some(function (a) { return a.id === id; }) && S.asta(id)) aste.unshift(S.asta(id));
     aste.sort(function (a, b) { return (a.dataAsta || '').localeCompare(b.dataAsta || ''); });
     $('#selAsta').innerHTML += aste.map(function (a) { return '<option value="' + U.esc(a.id) + '">' + U.esc(a.titolo.slice(0, 70)) + ' – ' + U.dataIt(a.dataAsta) + '</option>'; }).join('');
-    if (!aste.length) $('#infoAsta').innerHTML = 'Nessuna asta seguita: apri "Conviene?" da una scheda dell\'<a href="index.html">elenco aste</a>, oppure fai un calcolo libero.';
+    if (!aste.length) $('#infoAsta').innerHTML = 'Nessuna asta seguita: apri "Conviene?" da una scheda dell\'<a href="aste.html">elenco aste</a>, oppure fai un calcolo libero.';
     $('#selAsta').addEventListener('change', function () {
       history.replaceState(null, '', this.value ? '?id=' + encodeURIComponent(this.value) : location.pathname);
       caricaAsta(this.value);

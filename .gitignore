@@ -2,3 +2,4 @@ node_modules/
 # Generato da "npm run raccogli" (in locale) o dal workflow quotidiano: non va nel repository.
 data/aste.js
 _artifact/
+data/riepilogo.js

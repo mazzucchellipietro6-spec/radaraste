@@ -62,7 +62,7 @@
     disegna();
 
     if (!tutte.length) {
-      $('#mappaVuota').innerHTML = '<div class="panel empty"><h2>Nessuna asta da mostrare sulla mappa</h2><p>Non ci sono aste raccolte dalle fonti ufficiali né inserite da te. Qui non compaiono mai dati di esempio. <a href="fonti.html">Stato delle fonti</a> · <a href="index.html#boxAggiungi">Aggiungi un\'asta da un avviso reale</a></p></div>';
+      $('#mappaVuota').innerHTML = '<div class="panel empty"><h2>Nessuna asta da mostrare sulla mappa</h2><p>Non ci sono aste raccolte dalle fonti ufficiali né inserite da te. Qui non compaiono mai dati di esempio. <a href="fonti.html">Stato delle fonti</a> · <a href="aste.html#boxAggiungi">Aggiungi un\'asta da un avviso reale</a></p></div>';
     } else if (!correnti.length) {
       $('#mappaVuota').innerHTML = '<div class="panel empty">Nessuna asta corrisponde ai filtri scelti.</div>';
     } else $('#mappaVuota').innerHTML = '';
@@ -80,12 +80,12 @@
     var z = mappa.getZoom();
     if (z < ZOOM_PROVINCE) {
       Object.keys(gruppi.reg).forEach(function (r) {
-        bolla(CENTRI[r].lat, CENTRI[r].lng, gruppi.reg[r].length, r, elencoPopup(r, gruppi.reg[r], 'index.html'));
+        bolla(CENTRI[r].lat, CENTRI[r].lng, gruppi.reg[r].length, r, elencoPopup(r, gruppi.reg[r], 'aste.html'));
       });
     } else if (z < ZOOM_PUNTI) {
       Object.keys(gruppi.prov).forEach(function (sig) {
         var pr = G.province[sig];
-        bolla(pr.lat, pr.lng, gruppi.prov[sig].length, pr.nome, elencoPopup('Provincia di ' + pr.nome, gruppi.prov[sig], 'index.html?provincia=' + sig));
+        bolla(pr.lat, pr.lng, gruppi.prov[sig].length, pr.nome, elencoPopup('Provincia di ' + pr.nome, gruppi.prov[sig], 'aste.html?provincia=' + sig));
       });
     } else {
       var b = mappa.getBounds(), n = 0;

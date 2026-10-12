@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elenco aste – Radar Aste Italia</title>
+<meta name="description" content="Raccogli le aste di immobili, auto, moto e beni mobili in Italia, filtra e capisci se conviene partecipare.">
+<link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/hanken-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#0d6b4f" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<header id="site-header"></header>
+
+<main class="wrap stack">
+  <div class="page-head">
+    <h1>Tutte le <span>aste</span></h1>
+    <p class="sub">Le aste di immobili, auto, moto e beni mobili raccolte ogni giorno dalle fonti ufficiali, con il link all'avviso originale. Filtrale e valuta in un clic se conviene partecipare.</p>
+  </div>
+
+  <!-- FILTRI -->
+  <section class="panel" aria-labelledby="h-filtri">
+    <h2 id="h-filtri" class="sr-only">Filtri</h2>
+    <div class="chips" id="fCat" role="group" aria-label="Categoria" style="margin-bottom:12px">
+      <button class="chip" type="button" aria-pressed="true" data-cat="">Tutte</button>
+      <button class="chip" type="button" aria-pressed="false" data-cat="immobile">Immobili</button>
+      <button class="chip" type="button" aria-pressed="false" data-cat="auto">Auto</button>
+      <button class="chip" type="button" aria-pressed="false" data-cat="moto">Moto</button>
+      <button class="chip" type="button" aria-pressed="false" data-cat="beni">Beni mobili</button>
+    </div>
+    <form id="filtri" autocomplete="off" class="stack" style="gap:12px">
+      <label>Cerca<input type="search" id="fTesto" placeholder="Parole, comune, n. procedura"></label>
+      <div class="row-actions" style="gap:6px">
+        <span class="muted" style="font-size:13px;font-weight:600">Le tue ricerche</span>
+        <div class="chips" id="ricercheSalvate" aria-live="polite"></div>
+        <button class="btn small ghost" type="button" id="salvaRicerca">+ Salva questa ricerca</button>
+      </div>
+      <div class="row-actions" id="formRicerca" hidden>
+        <label style="flex:1;min-width:180px" for="nomeRicerca">Nome della ricerca<input id="nomeRicerca" maxlength="60" placeholder="es. Bilocali liberi a Genova" enterkeyhint="done"></label>
+        <button class="btn small" type="button" id="confermaRicerca" style="align-self:end">Salva</button>
+      </div>
+      <details id="altriFiltri" open>
+      <summary class="btn small ghost" style="width:max-content;list-style:none">Altri filtri</summary>
+      <div class="fields" style="margin-top:12px">
+      <label>Regione<select id="fRegione"></select></label>
+      <label>Provincia<select id="fProvincia"></select></label>
+      <label>Tribunale<input id="fTribunale" list="listaTribunali" placeholder="Tutti"></label>
+      <label>Prezzo base da (€)<input type="number" id="fPrezzoMin" min="0" step="1000" inputmode="numeric"></label>
+      <label>Prezzo base a (€)<input type="number" id="fPrezzoMax" min="0" step="1000" inputmode="numeric"></label>
+      <label>Data asta dal<input type="date" id="fDal"></label>
+      <label>Data asta al<input type="date" id="fAl"></label>
+      <label>Stato<select id="fStato"><option value="">Tutti</option><option value="libero">Libero</option><option value="occupato">Occupato</option><option value="nd">Non indicato</option></select></label>
+      <label class="check" style="align-self:end"><input type="checkbox" id="fPassate"> Mostra aste concluse</label>
+      <label class="check" style="align-self:end"><input type="checkbox" id="fNuove"> Solo nuove dall'ultima visita</label>
+      </div>
+      </details>
+    </form>
+    <datalist id="listaTribunali"></datalist>
+  </section>
+
+  <!-- RISULTATI -->
+  <div id="statoRaccolta"></div>
+
+  <section aria-labelledby="h-elenco">
+    <div class="toolbar">
+      <h2 id="h-elenco" style="margin:0">Elenco aste</h2>
+      <span class="count" id="conteggio"></span>
+      <span class="spacer"></span>
+      <label style="display:flex;align-items:center;gap:6px">Ordina
+        <select id="ordina" style="width:auto">
+          <option value="data">Data asta</option>
+          <option value="prezzo-asc">Prezzo crescente</option>
+          <option value="prezzo-desc">Prezzo decrescente</option>
+          <option value="sconto">Sconto sul mercato</option>
+        </select>
+      </label>
+      <button class="btn small ghost" type="button" id="azzera">Azzera filtri</button>
+    </div>
+    <div class="cards" id="elenco" aria-live="polite"></div>
+  </section>
+
+  <!-- AGGIUNTA -->
+  <details class="box" id="boxAggiungi">
+    <summary id="titoloForm">Aggiungi un'asta</summary>
+    <div class="inner stack">
+      <div class="callout">Hai trovato un'asta che non è nell'elenco (per esempio su un sito non raccolto automaticamente)? Copiala qui <b>da un avviso reale</b>: incolla il testo dell'avviso o della pagina e i campi si compilano da soli. Il <b>link all'avviso originale è obbligatorio</b>, così puoi sempre verificare.</div>
+      <label>Testo dell'avviso o della pagina dell'asta
+        <textarea id="incolla" placeholder="Es.: TRIBUNALE DI GENOVA – R.G.E. n. 412/2024 – Appartamento sito in Genova (GE)… Prezzo base € 120.000,00… vendita il giorno 18/11/2026…"></textarea>
+      </label>
+      <div class="row-actions"><button class="btn ghost" type="button" id="analizza">Compila dai dati incollati</button><span class="note" id="esitoAnalisi" style="margin:0"></span></div>
+
+      <form class="fields" id="formAsta" autocomplete="off">
+        <input type="hidden" id="aId">
+        <label class="wide">Titolo / descrizione breve *<input id="aTitolo" required placeholder="Trilocale 85 mq con box"></label>
+        <label>Categoria<select id="aCategoria"><option value="immobile">Immobile</option><option value="auto">Auto</option><option value="moto">Moto</option><option value="beni">Beni mobili</option></select></label>
+        <label>Regione<select id="aRegione"></select></label>
+        <label>Provincia<select id="aProvincia"></select></label>
+        <label>Comune<input id="aComune"></label>
+        <label>Indirizzo (per la mappa)<input id="aIndirizzo" placeholder="Via Roma 10"></label>
+        <label>Tribunale / ente<input id="aTribunale" list="listaTribunali"></label>
+        <label>R.G.E. / n. procedura<input id="aRge" placeholder="412/2024"></label>
+        <label>Prezzo base (€) *<input type="number" id="aPrezzoBase" required min="0" step="100" inputmode="decimal"></label>
+        <label>Offerta minima (€)<input type="number" id="aOffertaMinima" min="0" step="100" inputmode="decimal" placeholder="75% del prezzo base"></label>
+        <label>Data asta *<input type="date" id="aData" required></label>
+        <label>Stato<select id="aStato"><option value="nd">Non indicato</option><option value="libero">Libero</option><option value="occupato">Occupato</option></select></label>
+        <label>Valore di mercato stimato (€)<input type="number" id="aMercato" min="0" step="100" inputmode="decimal"></label>
+        <label>Fonte<select id="aFonte"><option value="">—</option><option>Portale Vendite Pubbliche</option><option>Aste Giudiziarie Inlinea</option><option>Astalegale</option><option>Fallco Aste</option><option>IVG</option><option>Agenzia del Demanio</option><option>Altro</option></select></label>
+        <label class="wide">Link all'avviso originale *<input type="url" id="aLinkAvviso" required pattern="https?://.+" placeholder="https://pvp.giustizia.it/…"></label>
+        <label class="wide">Link alla perizia<input type="url" id="aLinkPerizia" placeholder="https://…/perizia.pdf"></label>
+        <div class="row-actions wide">
+          <button class="btn" type="submit" id="salvaAsta">Aggiungi all'elenco</button>
+          <button class="btn ghost" type="button" id="annullaModifica" hidden>Annulla modifica</button>
+        </div>
+      </form>
+    </div>
+  </details>
+
+  <details class="box">
+    <summary>Importa o esporta le aste inserite da te (CSV / JSON)</summary>
+    <div class="inner stack">
+      <p class="note" style="margin:0">Il file CSV deve avere una riga di intestazione con questi nomi di colonna (separatore <code>;</code> o <code>,</code>): <code id="colonneCsv"></code>. Le date nel formato AAAA-MM-GG o GG/MM/AAAA. Le righe senza <code>linkAvviso</code> vengono scartate.</p>
+      <div class="row-actions">
+        <label class="btn ghost" style="display:inline-flex">Importa file CSV o JSON<input type="file" id="fileImport" accept=".csv,.json,text/csv,application/json" class="sr-only"></label>
+        <button class="btn ghost" type="button" id="esportaCsv">Esporta le aste filtrate (CSV)</button>
+        <button class="btn ghost" type="button" id="esportaJson">Backup delle tue aste (JSON)</button>
+        <button class="btn ghost" type="button" id="modelloCsv">Scarica modello CSV</button>
+      </div>
+    </div>
+  </details>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="config/fonti.js"></script>
+<script src="data/aste.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/store.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/cerca.js"></script>
+<script src="js/ricerche.js"></script>
+<script src="js/riepilogo.js"></script>
+<script src="js/schede.js"></script>
+<script src="js/confronto.js"></script>
+<script src="js/pages/aste.js"></script>
+</body>
+</html>
