@@ -78,7 +78,7 @@
     'Seat', 'Skoda', 'Smart', 'SsangYong', 'Subaru', 'Suzuki', 'SYM', 'Tata', 'Tesla', 'Toyota', 'Triumph', 'Vespa', 'Volkswagen', 'VW', 'Volvo', 'Yamaha'];
   var RE_MARCA = new RegExp('\\b(' + MARCHE.map(function (m) { return m.replace(/[-\s]/g, '[-\\s]?'); }).join('|') + ')\\b', 'i');
   var NORMA = { 'mercedes benz': 'Mercedes-Benz', 'mercedes': 'Mercedes-Benz', 'vw': 'Volkswagen', 'citroen': 'Citroën', 'harley davidson': 'Harley-Davidson', 'range rover': 'Land Rover' };
-  var STOP_MODELLO = /^(targ\w*|tg\b.*|telaio|anno|immatricol\w*|data|di|del|della|colore|cilindrata|alimentazione|km|kw|cc|con|in|e|ed|per|,|;|\(.*|-|–|stato|modello|mod\.?|tipo|versione|benzina|gasolio|diesel|gpl|metano|ibrid\w*|elettric\w*|auto|immatricolat\w*|vendita\w*|lotto|n\.?)$/i;
+  var STOP_MODELLO = /^(targ\w*|tg\b.*|telaio|revision\w*|scadenz\w*|anno|immatricol\w*|data|di|del|della|colore|cilindrata|alimentazione|km|kw|cc|con|in|e|ed|per|,|;|\(.*|-|–|stato|modello|mod\.?|tipo|versione|benzina|gasolio|diesel|gpl|metano|ibrid\w*|elettric\w*|auto|immatricolat\w*|vendita\w*|lotto|n\.?)$/i;
 
   function nomeMarca(m) {
     var k = m.toLowerCase().replace(/-/g, ' ');
@@ -91,10 +91,12 @@
     var t = testo(s);
     if (!t) return null;
     var out = {};
-    var tipo = t.match(/\b(autovettura|automobile|autocarro|furgone|motociclo|motoveicolo|ciclomotore|scooter|trattore stradale|trattore|semirimorchio|rimorchio|camper|autocaravan|quadriciclo|minivan|autobus)\b/i);
+    // "n.3AUTOVETTURA": il tipo può essere attaccato a una cifra
+    var ts = t.replace(/(\d)([A-Za-z\u00C0-\u00FF])/g, '$1 $2');
+    var tipo = ts.match(/\b(autovettura|automobile|autocarro|furgone|motociclo|motoveicolo|ciclomotore|scooter|trattore stradale|trattore|semirimorchio|rimorchio|camper|autocaravan|quadriciclo|minivan|autobus)\b/i);
     if (tipo) out.tipo = tipo[1].toLowerCase();
     // lotti con più veicoli (a) ... b) ...; più tipi o più marche diverse): niente stima unica
-    var tipi = t.match(/\b(autovettur\w*|automezz\w*|autocarr\w*|furgon\w*|motocicl\w*|motoveicol\w*|ciclomotor\w*)\b/gi) || [];
+    var tipi = ts.match(/\b(autovettur\w*|automezz\w*|autocarr\w*|furgon\w*|motocicl\w*|motoveicol\w*|ciclomotor\w*)\b/gi) || [];
     var marche = (t.match(new RegExp(RE_MARCA.source, 'gi')) || []).map(function (x) { return nomeMarca(x); });
     if (tipi.length > 1 && new Set(marche).size > 1 || /\b[a-c]\)\s*(?:automezz|autovettur|autocarr)/i.test(t) || /\blotti di\b|\bn\.\s*\d+\s+(?:autovetture|veicoli|automezzi)/i.test(t)) out.multiplo = true;
     var mm = t.match(RE_MARCA);
@@ -115,14 +117,16 @@
       if (out.modello) out.modello = out.modello.replace(/[.,;:]+$/, '').replace(/\s+d['’]epoca$/i, '');
       out.provaMarca = prova(t, mm.index, mm.index + mm[0].length);
     }
-    var anno = t.match(/immatricolat\w*[^\d]{0,30}(?:\d{1,2}[\/.\-]\d{1,2}[\/.\-])?((?:19|20)\d{2})/i)
-      || t.match(/immatricolazione[^\d]{0,30}(?:\d{1,2}\s+\w+\s+)?((?:19|20)\d{2})/i)
-      || t.match(/\banno\s*(?:di\s*(?:prima\s*)?immatricolazione)?\s*:?\s*((?:19|20)\d{2})\b/i)
+    // "immatricolata il 30/10/2023", "data di immatricolazione 06/2013", "immatricolazione 3 marzo 2015", "anno 05/2018"
+    var anno = t.match(/immatricola\w*[^\d]{0,30}(?:\d{1,2}[\/.\-](?:\d{1,2}[\/.\-])?|\d{1,2}\s+[a-z\u00C0-\u00FF]+\s+)?((?:19|20)\d{2})\b/i)
+      || t.match(/\banno\s*(?:di\s*(?:prima\s*)?immatricolazione)?\s*:?\s*(?:\d{1,2}[\/.\-])?((?:19|20)\d{2})\b/i)
       || t.match(/\(((?:19[5-9]|20[0-2])\d)\)/);
     var oggiAnno = new Date().getFullYear();
     if (anno && +anno[1] <= oggiAnno && +anno[1] >= 1950) out.anno = +anno[1];
-    var km = t.match(/(\d{1,3}(?:[.\s]\d{3})+|\d{2,7})\s*(?:km|chilometri)\b/i)
-      || t.match(/(?:km|chilometri|kilometraggio|chilometraggio|percorrenza)[^\d]{0,25}(\d{1,3}(?:[.\s]\d{3})+|\d{2,7})/i);
+    // prima "Km 151.457" / "chilometraggio: 151.457", poi "151.457 km" ("... novembre 27 Km 151.457" → 151457)
+    var km = t.match(/\b(?:km|chilometri|kilometri)\.?\s*(?:rilevat\w*|percors\w*|total\w*|circa|indicat\w*|dichiarat\w*|segnat\w*|effettiv\w*)?\s*:?\s*(\d{1,3}(?:[.\s]\d{3})+|\d{2,7})(?!\d|[.,]\d)/i)
+      || t.match(/(?:kilometraggio|chilometraggio|percorrenza|contachilometri)[^\d]{0,25}(\d{1,3}(?:[.\s]\d{3})+|\d{2,7})/i)
+      || t.match(/(\d{1,3}(?:[.\s]\d{3})+|\d{2,7})\s*(?:km|chilometri)\b/i);
     if (km) { var k = numero(km[1].replace(/\s/g, '.')); if (k >= 10 && k < 2000000) out.km = k; }
     var al = t.match(/\b(benzina\s*\/\s*ibrid\w*(?:\s+elettric\w*)?|ibrid\w*|hybrid|elettric[ao]|full electric|benzina|gasolio|diesel|gpl|metano)\b/i);
     if (al) {

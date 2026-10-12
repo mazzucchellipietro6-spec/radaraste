@@ -3,3 +3,7 @@ node_modules/
 data/aste.js
 _artifact/
 data/riepilogo.js
+
+# Indice storico delle vendite passate (cache della raccolta, non si pubblica)
+data/storico-indice.json
+data/storico-indice.json.tmp
