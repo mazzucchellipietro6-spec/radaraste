@@ -186,3 +186,9 @@ dialog .dbody{padding:18px;display:grid;gap:14px}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (prefers-reduced-motion:no-preference){.tabs button,.nav a,.chip{transition:color .15s,background-color .15s,border-color .15s}}
 @media print{.site-header,.site-footer .theme-btn,.actions,.btn{display:none!important}}
+/* Controlli e popup di Leaflet con i colori del tema */
+.leaflet-container{background:var(--surface-2);font-family:var(--f-body)}
+.leaflet-bar a,.leaflet-bar a:hover{background:var(--surface);color:var(--fg);border-color:var(--line)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--surface);color:var(--fg)}
+.leaflet-container .leaflet-control-attribution{background:var(--surface);color:var(--muted)}
+.leaflet-container .leaflet-control-attribution a{color:var(--accent)}

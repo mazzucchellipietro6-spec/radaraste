@@ -19,7 +19,7 @@
   function voce(a) {
     var link = U.linkSicuro(a.linkAvviso);
     return '<li><b>' + U.esc(a.titolo) + '</b><br>' + U.esc(U.CATEGORIE[a.categoria]) + ' · ' + U.dataIt(a.dataAsta) + (a.prezzoBase ? ' · base ' + U.eur(a.prezzoBase) : '') +
-      '<br>' + (link ? '<a href="' + U.esc(link) + '" target="_blank" rel="noopener">Avviso ↗</a> · ' : '') + '<a href="calcolatore.html?id=' + encodeURIComponent(a.id) + '">Conviene?</a></li>';
+      '<br>' + (link ? '<a href="' + U.esc(link) + '" target="_blank" rel="noopener">Avviso ↗</a> · ' : '') + '<a href="calcolatore.html?id=' + encodeURIComponent(a.id) + '" data-passa="id:' + U.esc(a.id) + '">Conviene?</a></li>';
   }
 
   var ZOOM_PROVINCE = 7, ZOOM_PUNTI = 10, MAX_PUNTI = 3000, correnti = [], gruppi = { prov: {}, reg: {} }, livello, rendererCanvas;
@@ -43,7 +43,7 @@
     return function () {
       var ord = el.slice().sort(function (a, b) { return (a.dataAsta || '').localeCompare(b.dataAsta || ''); });
       return '<h5>' + U.esc(titolo) + ' (' + el.length.toLocaleString('it-IT') + ')</h5><ul>' + ord.slice(0, 20).map(voce).join('') + '</ul>' +
-        (el.length > 20 ? '<p><a href="' + link + '">Vedi tutte nell\'elenco →</a> o avvicina la mappa.</p>' : '');
+        (el.length > 20 ? '<p><a href="' + link + '"' + (link.indexOf('provincia=') > 0 ? ' data-passa="provincia:' + link.split('provincia=')[1] + '"' : '') + '>Vedi tutte nell\'elenco →</a> o avvicina la mappa.</p>' : '');
     };
   }
 
@@ -99,6 +99,12 @@
     }
   }
 
+  function stileConfini() {
+    var cs = getComputedStyle(document.documentElement);
+    return { color: cs.getPropertyValue('--muted').trim() || '#5b6b65', weight: 1, opacity: 0.7,
+      fillColor: cs.getPropertyValue('--accent-soft').trim() || '#e1efe9', fillOpacity: 0.45 };
+  }
+
   // solo le aste inserite a mano si possono aggiornare con le coordinate
   function daGeocodificare(a) { return a.origine === 'manuale' && !(isFinite(a.lat) && isFinite(a.lng)) && (a.indirizzo || a.comune); }
 
@@ -130,6 +136,14 @@
     mappa = L.map('map', { scrollWheelZoom: false }).setView([42.0, 12.6], 6);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(mappa);
     rendererCanvas = L.canvas({ padding: 0.3 });
+    // Confini regionali inclusi nel sito: la mappa resta leggibile anche se lo sfondo OpenStreetMap non si carica.
+    if (window.ITALIA_REGIONI) {
+      var confini = L.geoJSON(window.ITALIA_REGIONI, { interactive: false, style: stileConfini }).addTo(mappa);
+      mappa.attributionControl.addAttribution('Confini: ISTAT (CC BY)');
+      var ridisegna = function () { confini.setStyle(stileConfini); };
+      document.addEventListener('radaraste:tema', ridisegna);
+      try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ridisegna); } catch (e) {}
+    }
     livello = L.layerGroup().addTo(mappa);
     mappa.on('moveend', disegna);
     render();

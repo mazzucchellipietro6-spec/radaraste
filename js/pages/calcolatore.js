@@ -202,7 +202,7 @@
     });
 
     // nel menu: le aste che segui + quella aperta dall'elenco (l'elenco completo è troppo lungo)
-    var id = new URLSearchParams(location.search).get('id');
+    var id = U.parametro('id');
     var aste = S.seguite().map(function (s) { return S.asta(s.id) || s.copia; }).filter(Boolean);
     if (id && !aste.some(function (a) { return a.id === id; }) && S.asta(id)) aste.unshift(S.asta(id));
     aste.sort(function (a, b) { return (a.dataAsta || '').localeCompare(b.dataAsta || ''); });

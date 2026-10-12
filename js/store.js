@@ -19,7 +19,7 @@
   }
   function nuovoId() { return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-  var CAMPI = ['titolo','categoria','tipo','regione','provincia','comune','indirizzo','tribunale','rge','fonte','prezzoBase','offertaMinima','dataAsta','ora','stato','linkAvviso','linkPerizia','linkPdf','valoreMercato','lat','lng','descrizione'];
+  var CAMPI = ['titolo','categoria','tipo','regione','provincia','comune','indirizzo','tribunale','rge','fonte','prezzoBase','offertaMinima','dataAsta','ora','stato','linkAvviso','linkPerizia','linkPdf','valoreMercato','lat','lng','descrizione','altriLink'];
   var NUMERICI = { prezzoBase: 1, offertaMinima: 1, valoreMercato: 1, lat: 1, lng: 1 };
 
   function dataIso(v) {
@@ -35,6 +35,7 @@
       if (v === undefined || v === null || v === '') return;
       if (NUMERICI[c]) { var n = typeof v === 'number' ? v : (root.Parser ? root.Parser.numeroIt(v) : parseFloat(v)); if (isFinite(n)) o[c] = n; }
       else if (c === 'dataAsta') o[c] = dataIso(v);
+      else if (Array.isArray(v)) o[c] = v;
       else o[c] = String(v).trim();
     });
     if (!o.categoria) o.categoria = 'immobile';

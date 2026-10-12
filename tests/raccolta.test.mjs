@@ -42,3 +42,24 @@ test('nomi di comuni in maiuscolo/minuscolo', () => {
   assert.equal(titolo('GRAVINA IN PUGLIA'), 'Gravina in Puglia');
   assert.equal(titolo('reggio di calabria'), 'Reggio di Calabria');
 });
+
+import { unisci, numeroProcedura } from '../scripts/lib/doppioni.mjs';
+
+test('doppioni: stessa vendita su PVP e su un gestore', () => {
+  const pvp = [{ id: 'pvp-1', fonte: 'Portale Vendite Pubbliche', tribunale: 'Genova', rge: '412', dataAsta: '2026-11-18', prezzoBase: 120000, linkAvviso: 'https://pvp/1' }];
+  const al = [
+    { id: 'al-1', fonte: 'Astalegale', tribunale: 'GENOVA', rge: '412/2024', dataAsta: '2026-11-18', prezzoBase: 120000.4, linkAvviso: 'https://al/1' },
+    { id: 'al-2', fonte: 'Astalegale', tribunale: 'Genova', rge: '412/2024', dataAsta: '2026-11-18', prezzoBase: 80000, linkAvviso: 'https://al/2' }, // altro lotto
+    { id: 'al-3', fonte: 'Astalegale', tribunale: 'Milano', rge: '9/2025', dataAsta: '2026-12-01', prezzoBase: 50000, linkAvviso: 'https://al/3' }
+  ];
+  const r = unisci([pvp, al]);
+  assert.equal(r.doppioni, 1);
+  assert.deepEqual(r.aste.map((a) => a.id), ['pvp-1', 'al-2', 'al-3']);
+  assert.deepEqual(r.aste[0].altriLink, [['Astalegale', 'https://al/1']]);
+});
+
+test('doppioni: senza tribunale o procedura non si unisce nulla', () => {
+  const r = unisci([[{ id: 'a', fonte: 'X', dataAsta: '2026-11-18', linkAvviso: 'u1' }], [{ id: 'b', fonte: 'Y', dataAsta: '2026-11-18', linkAvviso: 'u2' }]]);
+  assert.equal(r.aste.length, 2);
+  assert.equal(numeroProcedura('R.G.E. 0412/2024'), '412');
+});

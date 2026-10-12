@@ -40,9 +40,58 @@
       ? '<span class="pill p-good" title="Riscontrato su fonte ufficiale">confermato</span>'
       : '<span class="pill p-warn" title="Riscontrato solo su fonti secondarie o valore predefinito: verifica">da verificare</span>';
   }
-  function toast(msg) {
+  function toast(msg, durata) {
     var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
-    document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600);
+    document.body.appendChild(t); setTimeout(function () { t.remove(); }, durata || 2600);
+  }
+
+  /* Conferma in due tempi sul pulsante stesso (niente confirm(): in alcuni contesti non compare). */
+  function conferma(btn, testo, azione) {
+    if (btn.dataset.armato === '1') { btn.dataset.armato = ''; azione(); return; }
+    var orig = btn.textContent;
+    btn.dataset.armato = '1'; btn.textContent = testo;
+    setTimeout(function () { if (btn.isConnected && btn.dataset.armato === '1') { btn.dataset.armato = ''; btn.textContent = orig; } }, 4000);
+  }
+
+  /* File da salvare: finestra con "Scarica" e, in alternativa, "Copia" (dove i download sono bloccati). */
+  function offriFile(nome, contenuto, tipo) {
+    var d = document.getElementById('dlgFile');
+    if (!d) {
+      d = document.createElement('dialog'); d.id = 'dlgFile';
+      d.innerHTML = '<div class="dhead"><h2 style="margin:0;font-size:18px" id="dlgFileTitolo"></h2><button class="btn small ghost" type="button" id="dlgFileChiudi">Chiudi</button></div>' +
+        '<div class="dbody"><p class="note" style="margin:0" id="dlgFileInfo"></p><div class="row-actions"><a class="btn" id="dlgFileScarica">Scarica il file</a><button class="btn ghost" type="button" id="dlgFileCopia">Copia il contenuto</button></div>' +
+        '<p class="note" style="margin:0">Se il download non parte (per esempio quando il sito è aperto dentro Claude), usa "Copia il contenuto" e incollalo in un file di testo.</p></div>';
+      document.body.appendChild(d);
+      d.querySelector('#dlgFileChiudi').addEventListener('click', function () { d.close(); });
+    }
+    var url = URL.createObjectURL(new Blob([contenuto], { type: tipo }));
+    var a = d.querySelector('#dlgFileScarica'); a.href = url; a.download = nome;
+    d.querySelector('#dlgFileTitolo').textContent = nome;
+    var byte = new Blob([contenuto]).size;
+    d.querySelector('#dlgFileInfo').textContent = byte < 1024 ? byte + ' byte' : (byte / 1024).toLocaleString('it-IT', { maximumFractionDigits: 0 }) + ' KB';
+    var c = d.querySelector('#dlgFileCopia');
+    c.onclick = function () {
+      var ok = function () { toast('Copiato negli appunti'); }, ko = function () { toast('Copia non riuscita: usa "Scarica il file"', 4000); };
+      try { navigator.clipboard.writeText(contenuto).then(ok, ko); } catch (e) { ko(); }
+    };
+    if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+  }
+
+  /* Parametri tra pagine: ?nome=valore, oppure il valore lasciato dal link cliccato
+     (attributo data-passa="nome:valore"), utile dove l'indirizzo non conserva la query. */
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[data-passa]');
+    if (a) { try { sessionStorage.setItem('radaraste.passa', a.getAttribute('data-passa')); } catch (err) {} }
+  }, true);
+  function parametro(nome) {
+    var v = new URLSearchParams(location.search).get(nome);
+    if (v) return v;
+    try {
+      var p = sessionStorage.getItem('radaraste.passa') || '';
+      var i = p.indexOf(':');
+      if (i > 0 && p.slice(0, i) === nome) { sessionStorage.removeItem('radaraste.passa'); return p.slice(i + 1); }
+    } catch (err) {}
+    return null;
   }
 
   /* ---- Tema ---- */
@@ -52,6 +101,7 @@
     else document.documentElement.setAttribute('data-theme', t);
     try { localStorage.setItem('radaraste.tema', t); } catch (e) {}
     var b = $('#themeBtn'); if (b) b.textContent = TEMI[t];
+    try { document.dispatchEvent(new CustomEvent('radaraste:tema')); } catch (e) {}
   }
 
   /* ---- Layout ---- */
@@ -132,7 +182,7 @@
 
   root.UI = {
     $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando,
-    linkSicuro: linkSicuro, badgeStato: badgeStato, toast: toast, layout: layout, avvertenza: avvertenza,
+    linkSicuro: linkSicuro, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,
     csvParse: csvParse, csvStringify: csvStringify, scarica: scarica, leggiFile: leggiFile,
     CATEGORIE: CATEGORIE, STATI: STATI

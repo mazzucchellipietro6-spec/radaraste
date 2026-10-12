@@ -14,15 +14,17 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { FonteBloccata } from './lib/http.mjs';
-import * as pvp from './fonti/pvp.mjs';
-import * as demanio from './fonti/demanio.mjs';
+import { unisci } from './lib/doppioni.mjs';
 
 const RADICE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 // Registro delle fonti con l'esito della verifica di robots.txt e termini d'uso (condiviso con il sito).
 const REGISTRO = require('../config/fonti.js');
-const MODULI = { pvp, demanio };
-const FONTI = REGISTRO.map((f) => ({ ...f, modulo: f.stato === 'attiva' ? MODULI[f.chiave] : null }));
+// Modulo di raccolta di ogni fonte (scripts/fonti/<chiave>.mjs), caricato solo se la fonte è attiva.
+// L'ordine del registro è anche la priorità contro i doppioni: prima il PVP.
+async function modulo(chiave) {
+  try { return await import(`./fonti/${chiave}.mjs`); } catch (e) { console.error(`  ✗ modulo ${chiave} non disponibile: ${e.message}`); return null; }
+}
 
 function argomenti() {
   const a = process.argv.slice(2), o = {};
@@ -36,7 +38,7 @@ function argomenti() {
 
 // Formato compatto: elenco dei campi + una riga (array) per asta, per tenere leggero il file.
 const CAMPI = ['id', 'titolo', 'categoria', 'tipo', 'regione', 'provincia', 'comune', 'indirizzo', 'tribunale', 'rge', 'fonte',
-  'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'stato', 'linkAvviso', 'linkPerizia', 'linkPdf', 'lat', 'lng', 'descrizione'];
+  'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'stato', 'linkAvviso', 'linkPerizia', 'linkPdf', 'lat', 'lng', 'descrizione', 'altriLink'];
 
 async function precedente(file) {
   try {
@@ -52,11 +54,13 @@ async function main() {
   const file = path.resolve(RADICE, opz.output || 'data/aste.js');
   const oggi = new Date().toISOString().slice(0, 10);
   const prima = await precedente(file);
-  const risultato = [], statoFonti = [];
+  const perFonte = [], statoFonti = [];
 
-  for (const f of FONTI) {
+  for (const f of REGISTRO) {
     const base = { nome: f.nome, url: f.url, controllo: oggi };
-    if (!f.modulo) { statoFonti.push({ ...base, stato: f.stato, motivo: f.motivo, controllo: f.verificato }); continue; }
+    const m = f.stato === 'attiva' ? await modulo(f.chiave) : null;
+    if (!m) { statoFonti.push({ ...base, stato: f.stato === 'attiva' ? 'errore' : f.stato, motivo: f.motivo, controllo: f.verificato }); continue; }
+    const risultato = []; perFonte.push(risultato);
     const vecchie = prima.aste.filter((a) => a.fonte === f.nome && a.dataAsta >= oggi);
     const vecchioStato = prima.fonti.find((x) => x.nome === f.nome);
     if (opz.solo && opz.solo !== f.chiave) {
@@ -67,7 +71,7 @@ async function main() {
     console.log(`→ ${f.nome}`);
     const inizio = Date.now();
     try {
-      const { aste, nota } = await f.modulo.raccogli({ oggi, maxPagine: opz.maxPagine });
+      const { aste, nota } = await m.raccogli({ oggi, maxPagine: opz.maxPagine });
       risultato.push(...aste);
       statoFonti.push({ ...base, stato: 'attiva', metodo: f.metodo, motivo: `${f.motivo} Ultima raccolta: ${nota}`, aste: aste.length, ultimaRaccolta: new Date().toISOString(), durataSec: Math.round((Date.now() - inizio) / 1000) });
     } catch (e) {
@@ -81,7 +85,14 @@ async function main() {
     }
   }
 
-  const uniche = [...new Map(risultato.map((a) => [a.id, a])).values()].filter((a) => /^https?:\/\//.test(a.linkAvviso || '') && a.titolo);
+  // stesso id una sola volta, solo aste con titolo e link all'avviso, poi niente doppioni tra fonti
+  const visti = new Set();
+  const pulite = perFonte.map((lista) => lista.filter((a) => {
+    if (visti.has(a.id) || !a.titolo || !/^https?:\/\//.test(a.linkAvviso || '')) return false;
+    visti.add(a.id); delete a.altriLink; return true;
+  }));
+  const { aste: uniche, doppioni } = unisci(pulite);
+  if (doppioni) console.log(`  ${doppioni} aste già presenti su una fonte con priorità più alta: tenuto solo il link`);
   uniche.sort((a, b) => (a.dataAsta || '').localeCompare(b.dataAsta || ''));
   const dati = {
     aggiornato: new Date().toISOString(),

@@ -41,7 +41,7 @@
         (link ? '<a href="' + U.esc(link) + '" target="_blank" rel="noopener">Avviso originale ↗</a>' : '') +
         (perizia ? '<a href="' + U.esc(perizia) + '" target="_blank" rel="noopener">Perizia ↗</a>' : '') +
         '<span class="spacer"></span>' +
-        '<a class="btn small" href="calcolatore.html?id=' + encodeURIComponent(s.id) + '">' + (v ? 'Ricalcola' : 'Valuta convenienza') + '</a>' +
+        '<a class="btn small" href="calcolatore.html?id=' + encodeURIComponent(s.id) + '" data-passa="id:' + U.esc(s.id) + '">' + (v ? 'Ricalcola' : 'Valuta convenienza') + '</a>' +
         '<button class="btn small danger" type="button" data-smetti>Smetti di seguire</button>' +
       '</div></article>';
   }
@@ -80,13 +80,13 @@
     $('#lista').addEventListener('click', function (e) {
       if (!e.target.matches('[data-smetti]')) return;
       var id = e.target.closest('[data-id]').dataset.id;
-      if (confirm('Smettere di seguire questa asta? Note e valutazione verranno cancellate.')) { S.smetti(id); render(); }
+      U.conferma(e.target, 'Conferma: cancella note e valutazione', function () { S.smetti(id); render(); U.toast('Non segui più questa asta'); });
     });
-    $('#backup').addEventListener('click', function () { U.scarica('radar-aste-backup.json', JSON.stringify(S.backup(), null, 2), 'application/json'); });
+    $('#backup').addEventListener('click', function () { U.offriFile('radar-aste-backup.json', JSON.stringify(S.backup(), null, 2), 'application/json'); });
     $('#ripristina').addEventListener('change', function () {
       var f = this.files[0]; if (!f) return;
-      U.leggiFile(f).then(function (t) { var e = S.ripristina(JSON.parse(t)); render(); alert('Backup ripristinato (' + e.importate + ' aste).'); })
-        .catch(function (err) { alert('Ripristino non riuscito: ' + err.message); });
+      U.leggiFile(f).then(function (t) { var e = S.ripristina(JSON.parse(t)); render(); U.toast('Backup ripristinato (' + e.importate + ' aste).', 4000); })
+        .catch(function (err) { U.toast('Ripristino non riuscito: ' + err.message, 5000); });
       this.value = '';
     });
   });

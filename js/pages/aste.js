@@ -76,8 +76,9 @@
       '<div class="links">' + (avviso ? '<a href="' + U.esc(avviso) + '" target="_blank" rel="noopener">Avviso originale ↗</a>' : '<span class="muted">Avviso mancante</span>') +
         (pdf ? '<a href="' + U.esc(pdf) + '" target="_blank" rel="noopener">Avviso PDF ↗</a>' : '') +
         (perizia ? '<a href="' + U.esc(perizia) + '" target="_blank" rel="noopener">Perizia ↗</a>' : (a.origine === 'raccolta' && !pdf ? '<span class="muted">Perizia tra gli allegati dell\'avviso</span>' : (pdf ? '' : '<span class="muted">Perizia non indicata</span>'))) + '</div>' +
+        (Array.isArray(a.altriLink) && a.altriLink.length ? '<div class="links" style="font-size:13px"><span class="muted">Anche su:</span>' + a.altriLink.filter(function (l) { return U.linkSicuro(l[1]); }).map(function (l) { return '<a href="' + U.esc(l[1]) + '" target="_blank" rel="noopener">' + U.esc(l[0]) + ' ↗</a>'; }).join('') + '</div>' : '') +
       '<div class="actions">' +
-        '<a class="btn small" href="calcolatore.html?id=' + encodeURIComponent(a.id) + '">Conviene?</a>' +
+        '<a class="btn small" href="calcolatore.html?id=' + encodeURIComponent(a.id) + '" data-passa="id:' + U.esc(a.id) + '">Conviene?</a>' +
         '<button class="btn small ghost" type="button" data-segui="' + U.esc(a.id) + '" aria-pressed="' + !!seg + '">' + (seg ? 'Seguita ✓' : 'Segui') + '</button>' +
         (a.origine === 'manuale' ? '<button class="btn small ghost" type="button" data-modifica="' + U.esc(a.id) + '">Modifica</button><button class="btn small danger" type="button" data-elimina="' + U.esc(a.id) + '">Elimina</button>' : '') +
       '</div></article>';
@@ -170,7 +171,7 @@
   /* ---------- Avvio ---------- */
   document.addEventListener('DOMContentLoaded', function () {
     caricaFiltri();
-    var pq = new URLSearchParams(location.search).get('provincia');
+    var pq = U.parametro('provincia');
     if (pq && window.GEO.province[pq]) { filtri.provincia = pq; filtri.regione = window.GEO.province[pq].regione; salvaFiltri(); }
     // sul telefono i filtri avanzati partono chiusi (si aprono da soli se ce n'è uno attivo)
     if (window.matchMedia('(max-width: 700px)').matches && !(filtri.regione || filtri.provincia || filtri.tribunale || filtri.min || filtri.max || filtri.dal || filtri.al || filtri.stato || filtri.passate)) $('#altriFiltri').open = false;
@@ -200,7 +201,7 @@
       } else if (b.dataset.modifica) modalitaModifica(S.asta(b.dataset.modifica));
       else if (b.dataset.elimina) {
         var a = S.asta(b.dataset.elimina);
-        if (a && confirm('Eliminare "' + a.titolo + '"? Verrà tolta anche da "Le mie aste".')) { S.rimuovi(a.id); render(); U.toast('Asta eliminata'); }
+        if (a) U.conferma(b, 'Conferma: elimina', function () { S.rimuovi(a.id); render(true); U.toast('Asta eliminata'); });
       }
     });
 
@@ -232,7 +233,7 @@
       try {
         if (id) { S.aggiorna(id, d); U.toast('Modifiche salvate'); }
         else { S.aggiungi(d); U.toast('Asta aggiunta'); }
-      } catch (err) { alert(err.message); return; }
+      } catch (err) { U.toast(err.message, 5000); return; }
       $('#incolla').value = ''; $('#esitoAnalisi').textContent = '';
       modalitaModifica(null); render();
     });
@@ -247,18 +248,19 @@
           esito = Array.isArray(j) ? S.importa(j) : S.ripristina(j);
         } else esito = S.importa(U.csvParse(testo));
         render();
-        alert('Importate ' + esito.importate + ' aste.' + (esito.scartate ? ' Scartate ' + esito.scartate + ' righe senza link all\'avviso o senza titolo.' : ''));
-      }).catch(function (err) { alert('Importazione non riuscita: ' + err.message); });
+        U.toast('Importate ' + esito.importate + ' aste.' + (esito.scartate ? ' Scartate ' + esito.scartate + ' righe senza link all\'avviso o senza titolo.' : ''), 5000);
+      }).catch(function (err) { U.toast('Importazione non riuscita: ' + err.message, 5000); });
       this.value = '';
     });
     $('#esportaCsv').addEventListener('click', function () {
-      U.scarica('radar-aste.csv', U.csvStringify(S.aste(), S.campi.concat(['origine'])), 'text/csv;charset=utf-8');
+      var lista = ordina(S.aste().filter(passa));
+      U.offriFile('radar-aste.csv', U.csvStringify(lista, S.campi.concat(['origine'])), 'text/csv;charset=utf-8');
     });
     $('#esportaJson').addEventListener('click', function () {
-      U.scarica('radar-aste-backup.json', JSON.stringify(S.backup(), null, 2), 'application/json');
+      U.offriFile('radar-aste-backup.json', JSON.stringify(S.backup(), null, 2), 'application/json');
     });
     $('#modelloCsv').addEventListener('click', function () {
-      U.scarica('modello-aste.csv', U.csvStringify([], S.campi), 'text/csv;charset=utf-8');
+      U.offriFile('modello-aste.csv', U.csvStringify([], S.campi), 'text/csv;charset=utf-8');
     });
   });
 })();
