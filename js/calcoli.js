@@ -211,6 +211,72 @@
     return { plusvalenza: guadagno, imposta: dovuta ? Math.round(guadagno * P.aliquotaSostitutiva) : 0, dovuta: dovuta };
   }
 
+  /* ---------- Tre strategie per un immobile ----------
+   * input: { offerta, prezzoBase, rendita, condominioCorrente, condominioPrecedente, liberazione, speseProcedura, altri,
+   *          lavori (per viverci), lavoriRistrutturazione (per rivendere),
+   *          valore: {min, max}  valore di mercato attuale,
+   *          valoreDopoLavori: {min, max}  (facoltativo; se manca si usa il massimo del valore attuale),
+   *          canoneMese: {min, max}  canone di mercato mensile (facoltativo),
+   *          contratto: 'libero' | 'concordato', aliquotaImu, mesiSfitto, speseProprietario, mesiOperazione }
+   * Ogni risultato è una forchetta {min, max}; se manca un dato la strategia ha "mancante" invece dei numeri. */
+  function strategie(input, T) {
+    var A = T.affitto, R = T.rivendita;
+    var base = {}; for (var k in input) base[k] = input[k];
+    function costo(regime, lavori) { var c = {}; for (var k2 in base) c[k2] = base[k2]; c.regime = regime; c.lavori = lavori || 0; return costoImmobile(c, T); }
+    var v = input.valore || {};
+    var haValore = num(v.min) > 0 && num(v.max) > 0;
+    var out = {};
+
+    // 1. Ci vivo: risparmio rispetto a comprare la stessa casa sul mercato (prezzo + imposte prima casa + agenzia)
+    var cVivo = costo('prima-privato', input.lavori);
+    if (haValore) {
+      var mercato = function (val) { return val + imposteImmobile({ prezzo: val, regime: 'prima-privato', rendita: input.rendita }, T).totale + val * R.provvigioneAgenzia * (1 + R.ivaProvvigione) + num(input.lavori); };
+      out.vivo = { costoTotale: cVivo.totale, risparmio: { min: mercato(num(v.min)) - cVivo.totale, max: mercato(num(v.max)) - cVivo.totale } };
+      out.vivo.percentuale = { min: out.vivo.risparmio.min / mercato(num(v.min)), max: out.vivo.risparmio.max / mercato(num(v.max)) };
+    } else out.vivo = { costoTotale: cVivo.totale, mancante: 'valore di mercato' };
+
+    // 2. Lo affitto: rendimento netto con cedolare secca
+    var cInv = costo('seconda-privato', input.lavori);
+    var cm = input.canoneMese || {};
+    if (num(cm.min) > 0 && num(cm.max) > 0) {
+      var aliq = input.contratto === 'concordato' ? A.cedolareConcordato.aliquota : A.cedolareLibero.aliquota;
+      var mesi = 12 - (input.mesiSfitto == null ? A.ipotesi.mesiSfitto : num(input.mesiSfitto));
+      var spese = input.speseProprietario == null ? A.ipotesi.speseProprietario : num(input.speseProprietario);
+      var imu = num(input.rendita) > 0 ? imuAnnua({ rendita: input.rendita, aliquota: input.aliquotaImu }, T).importo : null;
+      var calcola = function (canone) {
+        var lordo = canone * mesi;
+        var netto = lordo - lordo * aliq - canone * 12 * spese - (imu || 0);
+        return { lordoAnno: lordo, nettoAnno: netto, rendimentoLordo: (canone * 12) / cInv.totale, rendimentoNetto: netto / cInv.totale };
+      };
+      var lo = calcola(num(cm.min)), hi = calcola(num(cm.max));
+      out.affitto = { costoTotale: cInv.totale, aliquotaCedolare: aliq, imu: imu, imuMancante: imu === null,
+        nettoAnno: { min: lo.nettoAnno, max: hi.nettoAnno }, rendimentoLordo: { min: lo.rendimentoLordo, max: hi.rendimentoLordo },
+        rendimentoNetto: { min: lo.rendimentoNetto, max: hi.rendimentoNetto } };
+    } else out.affitto = { costoTotale: cInv.totale, mancante: 'canone di mercato' };
+
+    // 3. Ristrutturo e rivendo: guadagno dopo costi di vendita e tassa sulla plusvalenza (vendita entro 5 anni)
+    var cRiv = costo('seconda-privato', input.lavoriRistrutturazione);
+    var vd = input.valoreDopoLavori || (haValore ? { min: num(v.max), max: num(v.max) } : null);
+    if (vd && num(vd.min) > 0) {
+      var mesiOp = input.mesiOperazione == null ? R.mesiOperazione : num(input.mesiOperazione);
+      var imuOp = num(input.rendita) > 0 ? imuAnnua({ rendita: input.rendita, aliquota: input.aliquotaImu }, T).importo * mesiOp / 12 : 0;
+      var guadagno = function (prezzo) {
+        var vendita = prezzo * R.provvigioneAgenzia * (1 + R.ivaProvvigione);
+        // costo fiscale: prezzo di acquisto + imposte + spese di procedura + lavori (documentati); prudenzialmente non si deducono i costi di vendita
+        var costoFiscale = cRiv.offerta + cRiv.imposte.totale + num(input.speseProcedura) + num(input.lavoriRistrutturazione) + num(input.liberazione);
+        var pv = plusvalenza({ prezzoVendita: prezzo, costoAcquisto: costoFiscale, costiInerenti: 0, anniPossesso: mesiOp / 12 }, T);
+        var netto = prezzo - vendita - cRiv.totale - imuOp - pv.imposta;
+        return { netto: netto, tassa: pv.imposta, costiVendita: vendita };
+      };
+      var g1 = guadagno(num(vd.min)), g2 = guadagno(num(vd.max));
+      out.rivendo = { costoTotale: cRiv.totale, mesi: mesiOp, imuPeriodo: imuOp,
+        prezzoVendita: { min: num(vd.min), max: num(vd.max) }, costiVendita: { min: g1.costiVendita, max: g2.costiVendita },
+        tassaPlusvalenza: { min: g1.tassa, max: g2.tassa }, guadagno: { min: g1.netto, max: g2.netto },
+        roi: { min: g1.netto / cRiv.totale, max: g2.netto / cRiv.totale } };
+    } else out.rivendo = { costoTotale: cRiv.totale, mancante: 'valore di mercato' };
+    return out;
+  }
+
   /* Stima rapida per l'elenco: offerta = prezzo base, ipotesi prudenti
    * (immobile senza agevolazioni prima casa, spese di procedura standard). */
   var IPOTESI_RAPIDE = { regime: 'seconda-privato', speseProcedura: 1500, liberazioneOccupato: 3000, kw: 70 };
@@ -226,7 +292,7 @@
   }
 
   var Calcoli = {
-    stimaRapida: stimaRapida, IPOTESI_RAPIDE: IPOTESI_RAPIDE,
+    stimaRapida: stimaRapida, IPOTESI_RAPIDE: IPOTESI_RAPIDE, strategie: strategie,
     offertaMinima: offertaMinima, giudizio: giudizio, imposteImmobile: imposteImmobile,
     valoreCatastale: valoreCatastale, costoImmobile: costoImmobile, costoVeicolo: costoVeicolo,
     offertaMassima: offertaMassima, ipt: ipt, passaggioProprieta: passaggioProprieta,

@@ -259,6 +259,42 @@
     },
 
     /* ============================================================
+     * AFFITTO E RIVENDITA (strategie "lo affitto" e "ristrutturo e rivendo")
+     * ============================================================ */
+    affitto: {
+      cedolareLibero: {
+        aliquota: 0.21, nota: 'Cedolare secca sui contratti a canone libero (4+4).',
+        fonte: 'Agenzia delle Entrate – Cedolare secca', url: 'https://www.agenziaentrate.gov.it/portale/aree-tematiche/casa/affitto/cedolare-secca',
+        verificato: OGGI, stato: 'confermato'
+      },
+      cedolareConcordato: {
+        aliquota: 0.10, nota: 'Cedolare secca sui contratti a canone concordato (comuni ad alta tensione abitativa e altri previsti).',
+        fonte: 'Agenzia delle Entrate – Cedolare secca', url: 'https://www.agenziaentrate.gov.it/portale/aree-tematiche/casa/affitto/cedolare-secca',
+        verificato: OGGI, stato: 'confermato'
+      },
+      cedolareBrevi: {
+        aliquota: 0.26, aliquotaPrimoImmobile: 0.21,
+        nota: 'Locazioni brevi: 21% per un solo immobile scelto in dichiarazione, 26% per gli altri; dal 2026 la cedolare spetta solo fino a due appartamenti destinati a locazione breve.',
+        fonte: 'Agenzia delle Entrate – Le locazioni brevi e la cedolare secca (guida aprile 2026)', url: 'https://www.agenziaentrate.gov.it/portale/le-locazioni-brevi-e-la-cedolare-secca',
+        verificato: OGGI, stato: 'confermato'
+      },
+      // Ipotesi di calcolo (non sono norme): modificabili dal calcolatore
+      ipotesi: {
+        mesiSfitto: 1,             // mesi all'anno senza inquilino
+        speseProprietario: 0.10,   // manutenzione, assicurazione, quote condominiali non ripetibili (quota del canone)
+        nota: 'Ipotesi prudenti di uso comune, non dati ufficiali: cambiale nel calcolatore.',
+        verificato: OGGI, stato: 'da-verificare'
+      }
+    },
+    rivendita: {
+      provvigioneAgenzia: 0.03, ivaProvvigione: 0.22,
+      lavoriEuroMq: { leggeri: 250, medi: 600, completi: 1000 },
+      mesiOperazione: 12,
+      nota: 'Ipotesi di mercato, non dati ufficiali: provvigione dell\'agenzia per la vendita (3% + IVA è una prassi diffusa, non una tariffa) e costi indicativi di ristrutturazione al mq. Cambiale nel calcolatore.',
+      verificato: OGGI, stato: 'da-verificare'
+    },
+
+    /* ============================================================
      * VEICOLI
      * ============================================================ */
     veicoli: {
