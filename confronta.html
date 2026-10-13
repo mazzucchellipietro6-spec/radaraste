@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confronta le aste – Radar Aste Italia</title>
+<meta name="description" content="Fino a tre aste fianco a fianco: prezzo, valore, sconto, costo totale, punteggio, superficie, rischi e date, con il migliore di ogni riga.">
+<link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/hanken-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/pagine.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#060a13" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body class="pg-confronta">
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <div class="page-head">
+    <h1>Confronta le <span>aste</span></h1>
+    <p class="sub">Fino a tre aste fianco a fianco. In ogni riga il dato migliore è evidenziato in verde, solo quando c'è per almeno due aste.</p>
+  </div>
+
+  <div id="confronto" aria-live="polite" aria-busy="true">
+    <div class="cf-attesa" role="status">
+      <span class="sr-only">Carico le aste da confrontare…</span>
+      <div class="scheletro" aria-hidden="true" style="min-height:220px"></div>
+      <div class="scheletro" aria-hidden="true" style="min-height:420px"></div>
+    </div>
+  </div>
+  <noscript><div class="panel empty"><h2>Serve JavaScript</h2><p>Il confronto si costruisce nel browser. Attiva JavaScript o apri l'<a href="aste.html">elenco delle aste</a>.</p></div></noscript>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<!-- niente data/aste.js (qualche MB): ogni asta arriva dal suo pezzo in data/dettagli/ e l'elenco solo se serve -->
+<script src="data/riepilogo.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/estrai.js"></script>
+<script src="js/punteggio.js"></script>
+<script src="js/dettagli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="js/schede.js"></script>
+<script src="js/confronto.js"></script>
+<script src="js/asta.js"></script>
+<script src="js/pages/confronta.js"></script>
+</body>
+</html>

@@ -24,27 +24,7 @@
     return u ? '<a class="' + (cls || '') + '" href="' + esc(u) + '" target="_blank" rel="noopener">' + testo + ' <span aria-hidden="true">↗</span><span class="sr-only"> (si apre in una nuova scheda)</span></a>' : '';
   }
 
-  // istante (ms) di una data e ora di Roma, qualunque sia il fuso del browser
-  function scartoRoma(t) {
-    try {
-      var p = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Rome', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(t));
-      var x = {}; p.forEach(function (q) { x[q.type] = +q.value; });
-      return Date.UTC(x.year, x.month - 1, x.day, x.hour % 24, x.minute, x.second) - t;
-    } catch (e) { return -new Date(t).getTimezoneOffset() * 60000; }
-  }
-  function istante(data, ora) {
-    var m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{1,2}):(\d{2}))?/.exec(data || '');
-    if (!m) return null;
-    var o = /^(\d{1,2})[:.](\d{2})/.exec(ora || '');
-    var hh = o ? +o[1] : m[4] ? +m[4] : 23, mi = o ? +o[2] : m[5] ? +m[5] : 59;
-    var g = Date.UTC(+m[1], +m[2] - 1, +m[3], hh, mi);
-    var t = g - scartoRoma(g);
-    return g - scartoRoma(t);
-  }
-  function oraDi(data, ora) {
-    var o = /^(\d{1,2})[:.](\d{2})/.exec(ora || '') || /T(\d{1,2}):(\d{2})/.exec(data || '');
-    return o ? o[1].padStart(2, '0') + ':' + o[2] : '';
-  }
+  var istante = A.istante, oraDi = A.oraDi;
   function quandoEsteso(data, ora) {
     if (!data) return '';
     var h = oraDi(data, ora);
