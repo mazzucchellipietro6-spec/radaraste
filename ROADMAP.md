@@ -2,164 +2,210 @@
 
 Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce cambia stato.
 
-Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ in attesa di una decisione · ⛔ non si può fare (motivo indicato)
+Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ aspetta una tua decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 13/10/2026, 09:30 UTC
-
----
-
-## ☀️ Per domattina (aggiornato il 13/10 alle 09:30 UTC)
-
-**Com'è andata la notte.** Gli agenti in parallelo si sono fermati due volte per il limite di sessione dell'account: dalle 22:30 alle 02:40 e dalle 04:55 alle 09:20 UTC. Il lavoro parziale è salvato su GitHub, i test passano (120 su 120) e alle 09:25 è ripartito dal punto in cui si era fermato.
-
-**Fatto e salvato su GitHub (branch di lavoro, nessun merge su `main`):**
-- ✅ Pubblicazione automatica: GitHub Pages funziona. La raccolta di stanotte (programmata alle 04:17 UTC, partita alle 04:39 per il solito ritardo di GitHub) è andata a buon fine.
-- ✅ Controllo completo del sito, con l'elenco preciso dei problemi (sotto, "Problemi trovati").
-- ✅ Punteggio affare 0-100 (`js/punteggio.js`): valore con forchetta, fonte e affidabilità, controlli di coerenza; 12 test.
-- ✅ Agente Cacciatore di affari, la parte logica (`js/cacciatore.js`, `scripts/cacciatore.mjs`) con 8 test. Provato sui dati reali di ieri: senza stime del perito non propone nulla e lo dice ("valore non stimabile"), come deve.
-- ✅ Moduli pronti per mutuo (`js/mutuo.js`), calendario `.ics` (`js/calendario.js`) e invio Telegram (`scripts/telegram.mjs`, spento finché non metti il token).
-- ✅ `CONSULENTE.md`: progetto del consulente AI con 3 servizi a confronto e i costi per 10/100/1000 utenti. Nessun servizio attivato.
-
-**In corso (ripartiti alle 09:25):**
-- 🔄 Dati arricchiti: descrizioni, metri quadri, stime, foto, scadenze, storico dei tentativi e punteggio dentro i dati.
-- 🔄 Correzioni del sito, più le nuove pagine Scheda asta e Confronta (oggi i link portano a pagine inesistenti).
-- ⏳ Poi: mappa interattiva nuova (una parte del lavoro è già fatta), sezione "Affari di oggi" nella home, anteprima su claude.ai.
-
-**Da decidere tu:** vedi la sezione "Da decidere" più sotto (domini da sbloccare, OMI, Astalegale/Fallco, Telegram, consulente AI, "Combinazioni d'oro").
+Ultimo aggiornamento: 13/10/2026, sera.
 
 ---
 
-## Regole di lavoro (decise dall'utente)
+## In breve
 
-- Una cosa alla volta: realizzarla, provarla sui dati reali, controllare che il resto funzioni ancora, mandare screenshot da computer e telefono, salvare su GitHub nel branch di lavoro, aggiornare questo file.
-- Mai dati inventati. Se una fonte è bloccata o vietata: fermarsi su quella voce, scriverlo in "Da decidere" e passare alla successiva.
-- Servizi a pagamento o chiavi API: mai attivarli senza il via dell'utente.
-- **Niente merge su `main`**: l'utente guarda l'anteprima prima di pubblicare.
-- Abbonamenti: non iniziare finché l'utente non dà il via.
-- Branch di lavoro: `claude/radar-aste-italia-9b0g40`, pull request [#1](https://github.com/mazzucchellipietro6-spec/radaraste/pull/1) (già unita a `main` dall'utente il 12/10).
+**Fatto in questa sessione** (tutto salvato sul branch `claude/radar-aste-italia-9b0g40`):
+- i **cinque assistenti** sono nel sito, ognuno con la sua pagina sotto "Assistenti": Cacciatore di affari, Consulente d'asta (chat), Stratega d'asta, Combinazioni d'oro, Agente di arricchimento;
+- **menu nuovo** a sei sezioni (Home, Aste, Mappa, Assistenti, Strumenti, Le mie aste) e **stile "Classica"** in tutte le pagine;
+- **home nuova** con la domanda al consulente in alto;
+- valori di mercato **più prudenti**: con fonti discordanti si usa il valore più basso e il punteggio si ferma a "Da valutare";
+- **README** e documentazione riscritti; **182 test** automatici.
 
----
+**Resta da fare:** zona abbonamenti in modalità TEST (preparata dopo la pubblicazione, senza attivare nulla), aste auto dall'estero, report PDF, Radar 3D, idee extra. Elenco completo sotto.
 
-## Ordine dei lavori
-
-| # | Voce | Stato |
-|---|---|---|
-| 0 | Pubblicazione su GitHub Pages e raccolta automatica giornaliera | ✅ prima pubblicazione riuscita il 12/10 alle 22:11 UTC |
-| 1 | Correggere ciò che è rotto o a metà (vedi "Problemi trovati") | 🔄 |
-| 2a | Mappa interattiva OpenStreetMap perfetta | ⬜ |
-| 2b | Design premium e interattivo (home d'impatto, schede, animazioni, grafici, calcolatore a cursori) | 🔄 base fatta (design system, icone, barra in basso, ricerca istantanea) |
-| 2c | Velocità: apertura sotto i 2 secondi con migliaia di aste | ⬜ |
-| 2d | Agente di arricchimento (foto e dettagli da avvisi e perizie, storico dei tentativi) | 🔄 in esecuzione |
-| 2e | Agente Cacciatore di affari + sezione "Affari di oggi" | ⬜ (piano già approvato, vedi sotto) |
-| 2f | Aste auto dall'estero (solo siti che lo consentono) | ⬜ |
-| 2g | Simulatore mutuo, guida all'asta telematica, promemoria con calendario, dati di zona, report PDF | ⬜ |
-| 2h | Notifiche Telegram | ⏸ serve il token del bot (gratuito, lo crei tu) |
-| 7 | **Radar 3D** (MapLibre + deck.gl, colonne luminose, esagoni, viaggio nel tempo, "Mostrami il miglior affare") | ⬜ solo dopo mappa e design perfetti |
-| 8 | **Consulente d'asta AI**: progetto in `CONSULENTE.md` + interfaccia chat e parti senza AI | ⬜ nessun servizio a pagamento attivato |
-| 6 | Idee extra s–x (vedi sotto) | ⬜ dopo tutto il resto |
-| 9 | **Stratega d'asta** (ottimizzatore con Monte Carlo) | ⬜ dopo tutto il resto |
-| — | Abbonamenti | ⏸ non iniziare senza il via dell'utente |
-
-### Dettaglio delle voci future
-
-**2a – Mappa interattiva.** Leaflet con tile OpenStreetMap (nomi di regioni, province, città e strade; zoom e trascinamento; attribuzione OSM). Ogni asta un puntino colorato per punteggio affare, raggruppati in cluster. Passando su una regione: numero di aste, sconto medio, miglior affare. Clic su un puntino: anteprima con foto, prezzo, sconto, punteggio e link alla scheda. Filtri collegati alla lista e pulsante "Cerca in questa zona". Fluida con le dita e con migliaia di aste. Se le tile sono bloccate (es. dentro claude.ai): confini e nomi delle regioni.
-
-**2e – Agente Cacciatore di affari** (piano mostrato all'utente il 12/10). Ogni mattina dopo raccolta e arricchimento:
-- analizza le aste nuove o ribassate nelle ultime 24 ore;
-- ricontrolla i numeri: valore, costo totale, punteggio, coerenza;
-- cerca i segnali di affare e quelli di pericolo;
-- sceglie i 5-10 migliori con un riassunto scritto a regole (gratis, nessuna AI a pagamento): perché conviene, rischi, offerta massima, scadenza, cosa non sappiamo.
-
-Dove si vede: "Affari di oggi" in cima alla home, preferenze personali (zona, budget, categoria, strategia). Tiene uno storico delle aste segnalate con il loro esito e misura se ci ha preso.
-
-**7 – Radar 3D.**
-- Mappa 3D inclinabile e ruotabile, con MapLibre GL + deck.gl e tile vettoriali gratuite, OpenFreeMap: termini d'uso da verificare.
-- Colonne luminose: altezza = sconto, colore = punteggio. Vista d'insieme a esagoni 3D, che zoomando si separano nelle singole aste.
-- "Viaggio nel tempo" con una barra dei mesi.
-- Clic su una colonna: la telecamera vola sul punto e si apre la scheda. Pulsante "Mostrami il miglior affare".
-- Se il dispositivo è lento passa alla mappa 2D.
-
-**8 – Consulente d'asta AI.**
-- Chat da esperto. Capisce budget, obiettivo, zona e rischio accettato; sceglie 3-5 aste reali spiegando perché; legge le perizie; calcola costi, tasse, mutuo e rendimento.
-- Indica l'offerta massima e guida fino all'invio dell'offerta. Ricorda le preferenze e avvisa quando esce l'asta giusta.
-- Mai dati inventati, fonte per ogni numero.
-- Stanotte solo `CONSULENTE.md`, con 2-3 servizi AI a confronto e i costi per 10/100/1000 utenti, più l'interfaccia della chat con ricerca, filtri, calcoli e schede, **senza AI a pagamento**.
-
-**6 – Idee extra (solo dopo tutto il resto).**
-- s) Storico delle aste concluse: esito, prezzo finale se pubblicato, "a quanto si vendono davvero" immobili simili nella stessa zona.
-- t) Affitti: valori di locazione OMI → affitto mensile stimato, rendimento lordo e netto (serve OMI, vedi "Da decidere").
-- u) Mappa di calore degli sconti medi per zona, attivabile sulla mappa.
-- v) Linea del tempo di ogni asta: pubblicazione, ribassi, scadenze, esito.
-- w) "Simula la tua offerta": probabilità di vincere e margine, in base allo storico.
-- x) Pagina "Come funziona" in 3 passaggi.
-
-**9 – Stratega d'asta.** Ottimizzatore che, dati capitale, entrate mensili, mutuo possibile e rischio accettato, costruisce il miglior piano di partecipazione alle aste reali.
-- Vincoli di cassa: cauzioni bloccate fino all'esito, scadenze del saldo, tempi del mutuo, costi di lavori e liberazione. **Non deve mai proporre un piano che non si può pagare.**
-- Probabilità di aggiudicazione stimata dallo storico. Mette in relazione l'offerta con la probabilità di vincere, conta i ribassi già avvenuti e stima la probabilità che l'asta vada deserta, cioè quando conviene aspettare.
-- Simulazione Monte Carlo di migliaia di scenari (vinco o perdo, ribassi, sforamento dei lavori, tempi di affitto o vendita). Risultati: valore atteso, caso peggiore al 5%, caso migliore.
-- Strategia in più mosse su 1-5 anni: cosa comprare, quando, quanto offrire, come reinvestire affitti e guadagni. Comprende le "Combinazioni d'oro" (da definire con l'utente, vedi "Da decidere").
-- Grafico interattivo del patrimonio nel tempo con la forchetta di rischio. Cambiando i parametri il piano si ricalcola.
-- Ogni numero con fonte e affidabilità, più un avviso chiaro: è una simulazione, non consulenza finanziaria.
+**Da decidere tu:** sezione "Da decidere" in fondo. Le più urgenti:
+- il repository privato per i file OMI;
+- il bot Telegram;
+- il servizio AI del consulente;
+- gli account per gli abbonamenti.
 
 ---
 
-## Problemi trovati (registro)
+## Regole di lavoro (decise da te)
 
-Controllo completo del 12/10, sera (agenti per area, poi verifica incrociata dei difetti). Ogni riga diventa ✅ quando è corretta.
-
-### Raccolta e pubblicazione
-- ✅ Il workflow quotidiano non era mai partito (main vuoto): l'utente ha unito la PR e attivato Pages, prima pubblicazione riuscita.
-- ⬜ Azioni GitHub su Node 20 (avviso di deprecazione, girano forzate su Node 24): aggiornare le versioni.
-- ⬜ Coordinate sbagliate dal PVP: 14 aste a (1,1), una a Washington, una in Ungheria → scartare le coordinate fuori dall'Italia.
-- ⬜ Biciclette classificate come "auto" (36 aste) → metterle tra i beni; 49 "beni" che sono veicoli.
-- ⬜ Prezzo base 0 € salvato come numero (387 aste) → trattarlo come mancante.
-- ⬜ Aste di oggi già chiuse tenute in elenco (si guarda solo la data, non l'ora).
-- ⬜ Titoli tagliati a 110 caratteri (69%), in maiuscolo (7%), con prefissi "(Lotto n.1) -".
-- ⬜ Offerta minima più alta del prezzo base in 97 aste (dato della fonte): segnalarlo.
-- 🔄 Descrizione completa del PVP non salvata (0 aste con descrizione) → in corso con l'arricchimento.
-- 🔄 Numero del lotto e anno della procedura non salvati → in corso con l'arricchimento.
-- ⬜ Nome del file di riepilogo sbagliato con `--output prova-aste.js`.
-- ⬜ Service worker: elenco dei file in cache incompleto (cerca.js, pagine, icone); nella versione Artifact la versione della cache non cambia.
-- ⬜ README non aggiornato (elenco in aste.html, nuovi file).
-- ⏸ Astalegale e Fallco: moduli scritti ma con problemi aperti, e attivarli è una decisione legale tua (vedi "Da decidere").
-
-### Sito
-_(in compilazione: risultati del controllo di pagine e design)_
+- Una cosa alla volta: realizzarla, provarla sui dati reali, controllare che il resto funzioni ancora, salvare su GitHub nel branch di lavoro, aggiornare questo file.
+- Mai dati inventati: se una fonte è bloccata o vietata, fermarsi su quella voce e scriverlo in "Da decidere".
+- Servizi a pagamento o chiavi API: mai attivarli senza il tuo via. Le chiavi solo nelle variabili d'ambiente, mai nel codice.
+- Per le scelte normali decido io e lo scrivo qui; quello che spetta a te va in "Da decidere".
+- Pubblicazione su `main` solo quando lo chiedi tu: il 13/10 hai chiesto di pubblicare a fine lavoro.
 
 ---
 
-## Da decidere (per l'utente)
+## Fatto ✅
 
-1. **Dominio del sito pubblicato bloccato da qui.** La rete di questo ambiente non raggiunge `mazzucchellipietro6-spec.github.io`, quindi controllo il sito servendo in locale lo stesso codice di `main`. Per controllarlo davvero online: impostazioni dell'ambiente → Network access → aggiungi il dominio.
-2. **Foto e perizie del PVP**: stanno su `resource-pvp.giustizia.it`, bloccato dalla rete di questo ambiente. Il sito salva i link, e nel browser degli utenti le foto si vedono. Per leggere le perizie in automatico (abusi, spese condominiali, metri quadri) va aggiunto quel dominio alla rete dell'ambiente.
-3. **Valori OMI** (valore di mercato e affitti per zona). Servono le tue credenziali SPID/CIE per scaricarli dall'Agenzia delle Entrate due volte l'anno; non c'è un'API. Senza OMI il valore si basa sulla stima del perito e il rendimento da affitto non è stimabile.
-4. **Astalegale e Fallco**: attivarle o no? Robots.txt lo consente, ma sono banche dati private tutelate (art. 102-bis L.d.A.) e duplicano il PVP.
-5. **Telegram**: crea il bot con @BotFather (gratis) e metti il token nei Secrets del repository. Le istruzioni passo passo arriveranno con la funzione.
-6. **Consulente AI**: quale servizio usare e se attivarlo (vedi `CONSULENTE.md`).
-7. **"Combinazioni d'oro"** dello Stratega: cosa intendi esattamente? Non l'ho trovato definito.
-8. **Frane e alluvioni (ISPRA IdroGEO), verificato il 13/10.**
-   - Cosa c'è: l'API pubblica dà per ogni comune le aree e la popolazione a rischio frana (P1-P4) e alluvione (P1-P3). Esempio: Genova ha il 2,7% della superficie a pericolosità idraulica elevata.
-   - Il blocco: il `robots.txt` di idrogeo.isprambiente.it **vieta ai programmi automatici** sia `/api/` sia `/opendata/`. Per questo non li uso in automatico: mi sono fermato dopo 6 richieste di prova.
-   - Alternativa: scarichi tu una volta il file dei dati per comune dal sito ISPRA (licenza da verificare sulla pagina, di solito CC BY 4.0) e lo inseriamo nel sito con l'attribuzione.
-   - Oppure chiediamo il permesso a ISPRA.
-9. **Domini bloccati da questo ambiente** che serviranno più avanti:
-   - `tiles.openfreemap.org` (sfondo vettoriale del Radar 3D);
-   - `unpkg.com` e `cdn.jsdelivr.net` (librerie: in alternativa le scarico dal registro npm, che è raggiungibile);
-   - `pst.giustizia.it` (manuali ufficiali dell'offerta telematica);
-   - `www.istat.it` (codici dei comuni).
+### Il sito
+- ✅ **Pubblicazione su GitHub Pages e raccolta automatica ogni mattina** (04:17 UTC): prima pubblicazione il 12/10.
+- ✅ **Menu chiaro**, uguale in tutte le pagine.
+  - Su computer: tendine per Assistenti e Strumenti.
+  - Su telefono: barra in basso (Home, Aste, Mappa, Assistenti, Menu) e foglio "Menu" con tutto il resto.
+  - Piè di pagina a colonne.
+  - Nessuna pagina doppia: il test `tests/sito.test.mjs` lo controlla.
+- ✅ **Design "Classica"** in tutte le pagine:
+  - Source Serif 4 per i titoli, Inter per testi e numeri con cifre tabulari;
+  - carta calda e un solo colore principale, il blu notte;
+  - tema chiaro e scuro, nessun effetto vistoso.
+- ✅ **Home**: domanda al consulente, Affari di oggi, stato dei cinque assistenti, migliori affari in corso, nuove nelle ultime 24 ore, in scadenza, "Nuovo alle aste? Tre passi".
+- ✅ **Mappa interattiva**:
+  - OpenStreetMap con cluster colorati per punteggio e dati per regione al passaggio;
+  - anteprima dell'asta e "Cerca in questa zona";
+  - su telefono fogli dal basso;
+  - se lo sfondo è bloccato restano confini e nomi delle regioni.
+  - Il foglio di stile della mappa mancava del tutto: ora c'è.
+- ✅ **Scheda asta**:
+  - valore con forchetta, fonte e affidabilità, controlli di coerenza;
+  - costi e "Simula la tua offerta";
+  - rischi con la frase che li prova, storico dei tentativi;
+  - "Promemoria" (file per il calendario), "Chiedi al consulente", "Posso permettermela?".
+- ✅ **Le mie aste**: note, stato, backup, promemoria in calendario di tutte le aste seguite.
+- ✅ **Strumenti**:
+  - calcolatore "Conviene?";
+  - simulatore mutuo: tasso inserito da te, imposte dalle aliquote ufficiali;
+  - confronto fino a tre aste;
+  - guida all'asta in 15 passi con le norme;
+  - tariffe e fonti.
+- ✅ **Controllo su telefono**: nessuna delle 18 pagine è più larga dello schermo e nessuna ha errori JavaScript (controllo automatico del 13/10).
 
-   Overpass (servizi vicini da OpenStreetMap) risponde.
+### I cinque assistenti
+- ✅ **Cacciatore di affari** (`affari.html`, `js/cacciatore.js`, `scripts/cacciatore.mjs`).
+  - Ogni mattina analizza le aste nuove o ribassate e scarta quelle con dati incoerenti.
+  - Cerca segnali di affare (compresa la domanda di affitti dalla zona OMI) e di pericolo.
+  - Sceglie al massimo 10 affari, con perché conviene, rischi, offerta massima e scadenza.
+  - Preferenze personali: zona, budget, categoria, strategia.
+  - Tiene lo storico delle segnalate, conservato da un giorno all'altro, e prepara il messaggio Telegram.
+  - Il 13/10, su 1.138 aste nuove o ribassate, ne passano 3: le altre hanno un valore poco affidabile. Meglio pochi affari veri.
+- ✅ **Consulente d'asta** (`consulente.html`, `js/consulente.js`).
+  - Chat che capisce domande in italiano: luoghi, tipi, importi, date, domande di seguito.
+  - Cerca, spiega un'asta, fa i conti (costi, mutuo, rendimento) e risponde sulle regole.
+  - Fonti e affidabilità sotto ogni risposta.
+  - Collegamento AI pronto ma **spento**: `functions/api/consulente.js` e `config/consulente.js`, costi e attivazione in `CONSULENTE.md`.
+- ✅ **Stratega d'asta** (`stratega.html`, `js/stratega.js`, `scripts/lib/statistiche.mjs`).
+  - Con capitale, mutuo, orizzonte, strategia e prudenza sceglie le aste e dice quanto offrire, la cauzione e quando pagare.
+  - Non propone mai un piano che non si può pagare.
+  - Simulazione Monte Carlo (5.000 giri, riproducibile) con le probabilità tratte dagli **esiti reali** delle vendite passate.
+  - Istogramma delle aste vinte, ipotesi, cosa non sappiamo, avviso "simulazione, non consulenza".
+- ✅ **Combinazioni d'oro** (`combinazioni.html`, `js/combinazioni.js`).
+  - Lotti della stessa procedura che insieme valgono di più: casa e box, più abitazioni, casa e terreno, spazi per un'attività.
+  - Somme dai lotti, risparmio fiscale "prima casa" sulle pertinenze calcolato con le aliquote, avvisi su quote e occupati.
+  - Il 13/10: 1.042 combinazioni tra 2.106 procedure con più lotti.
+- ✅ **Agente di arricchimento** (`arricchimento.html`).
+  - Ogni giorno legge fino a 600 schede di dettaglio del Portale (descrizione, foto, documenti, stima, termine), ricostruisce i tentativi e legge rischi e metri quadri dal testo.
+  - Collega la zona OMI.
+  - La pagina mostra a che punto è e da dove vengono i valori.
+
+### Dati e calcoli
+- ✅ **Quotazioni OMI** (semestre 2025/2): valore e affitto per zona.
+  - 3.728 immobili con quotazione, 514 con la zona riconosciuta dall'indirizzo.
+  - Verifica su 42 aste reali: rapporto mediano 0,94 tra valore OMI e prezzo della prima asta.
+- ✅ **Valore prudente** (`js/punteggio.js`).
+  - L'OMI della zona e il perito (o la prima asta) si controllano a vicenda: se concordano l'affidabilità è alta, se no si usa il valore più basso.
+  - Lotti con più unità e OMI oltre 3 volte il prezzo base senza conferma → affidabilità bassa.
+  - Con affidabilità bassa il punteggio si ferma a 54 ("Da valutare").
+- ✅ **`scripts/ricalcola.mjs`**: ricalcola valori, punteggi, combinazioni e statistiche senza nessuna richiesta in rete. Serve dopo l'aggiornamento OMI o un cambio di regole.
+- ✅ **Workflow quotidiano**:
+  - OMI da un repository privato (`vars.OMI_REPO` + `secrets.OMI_TOKEN`);
+  - Cacciatore e Telegram dopo la raccolta;
+  - storico del Cacciatore conservato;
+  - cartella OMI e indice storico mai pubblicati.
+- ✅ **Codice fiscale tolto** dai nomi dei file OMI e da tutta la storia di git (13/10). I file OMI originali sono fuori dal repository per le condizioni d'uso dell'Agenzia delle Entrate.
+
+### Codice e documentazione
+- ✅ 182 test automatici (`npm test`): calcoli, punteggio, OMI, raccolta, storico, assistenti, consulente, stratega, combinazioni, calendario, integrità del sito.
+- ✅ README riscritto: cosa fa il sito, come si aggiorna, **come si aggiornano i file OMI ogni semestre**.
+- ✅ Font vecchi, proposte di stile e regole CSS non usate eliminati; icona dell'app nei colori nuovi.
 
 ---
 
-## Fatto (storico)
+## In corso 🔄
 
-- ✅ Elenco delle aste reali con filtri (PVP + Agenzia del Demanio), link all'avviso originale, nessun dato inventato.
-- ✅ Calcolatore "Conviene?" per immobili e veicoli, tre strategie (ci vivo / affitto / rivendo), offerta massima.
-- ✅ Tariffe e tasse in un unico file con fonte e data (`config/tariffe.js`).
-- ✅ Le mie aste (seguite, note, backup), ricerche salvate con le nuove dall'ultima visita.
-- ✅ App installabile (manifest, service worker, icone), tema chiaro/scuro/automatico.
-- ✅ Design system nuovo: font e icone propri, barra in basso su telefono, ricerca istantanea (/ o Ctrl+K).
-- ✅ Estrattori dai testi: superficie, stato di conservazione, dati dei veicoli, rischi.
-- ✅ Punteggio affare 0-100 (`js/punteggio.js`): valore con forchetta, fonte e affidabilità; controlli di coerenza; 12 test.
-- ✅ Pubblicazione automatica giornaliera su GitHub Pages (04:17 UTC).
+- 🔄 Anteprima privata su claude.ai e pubblicazione sul sito (fine di questa sessione).
+- 🔄 **Zona abbonamenti in modalità TEST**: la preparo dopo la pubblicazione, sul branch di lavoro, senza collegarla al menu e senza attivare pagamenti né account (vedi "Da decidere", punto 2).
+
+---
+
+## Da fare ⬜ (in ordine)
+
+1. ⬜ **Aste auto dall'estero**: solo siti che lo consentono (da verificare robots.txt e condizioni d'uso uno per uno).
+2. ⬜ **Report PDF** dell'asta: versione stampabile della scheda, con valore, costi, rischi e fonti.
+3. ⬜ **Dati di zona** nella scheda: compravendite OMI del comune, servizi vicini (OpenStreetMap). Rischio frane e alluvioni solo con il tuo via (punto 8 di "Da decidere").
+4. ⬜ **Stratega su più anni**:
+   - strategia in più mosse su 1-5 anni e grafico del patrimonio nel tempo;
+   - reinvestimento di affitti e guadagni;
+   - sforamento dei lavori e tempi di vendita nella simulazione.
+   - Oggi l'orizzonte arriva a 12 mesi e la simulazione considera vittorie e cassa.
+5. ⬜ **Consulente**: lettura delle perizie (serve il dominio `resource-pvp.giustizia.it`) e avvisi quando esce l'asta giusta.
+6. ⬜ **Radar 3D** (MapLibre + deck.gl, colonne per sconto e punteggio, esagoni, "viaggio nel tempo", "Mostrami il miglior affare", ritorno al 2D sui dispositivi lenti). Le librerie si possono prendere dal registro npm. Lo sfondo vettoriale OpenFreeMap è bloccato da questo ambiente e i suoi termini sono da verificare.
+7. ⬜ **Idee extra**:
+   - s) storico delle aste concluse e "a quanto si vendono davvero" (il Portale non pubblica il prezzo di aggiudicazione: si può dire solo se è stata aggiudicata);
+   - t) affitti: ✅ affitto OMI e rendimento lordo già nel punteggio e nella scheda; resta il rendimento netto;
+   - u) mappa di calore degli sconti;
+   - v) linea del tempo di ogni asta;
+   - w) "Simula la tua offerta" con la probabilità di vincere (le probabilità dello Stratega sono pronte da riusare);
+   - x) "Come funziona": ✅ tre passi in home e guida.
+8. ⬜ Azioni di GitHub su Node 24 (oggi avviso di deprecazione, funzionano).
+
+---
+
+## Scelte fatte da me (puoi cambiarle)
+
+- **Stile "Classica"** (proposta A) invece di "Istituzionale" (B): più riconoscibile, da rapporto finanziario. Cambiare è solo questione di colori e caratteri in `assets/css/style.css`.
+- **Probabilità dello Stratega dalle ultime 4 settimane di esiti.** Nell'indice del Portale le vendite più vecchie perdono quasi sempre l'esito "aggiudicata": sull'intero periodo verrebbe un 3% falso, sulle ultime 4 settimane circa il 27%. Il metodo è spiegato nella pagina, con la forchetta minima e massima.
+- **Combinazioni d'oro** = lotti della stessa procedura che insieme valgono di più, come hai scritto il 13/10. L'unico vantaggio in euro calcolato è quello fiscale; gli altri sono motivi scritti.
+- **Probabilità di vincere con altri offerenti**: è un'ipotesi che sceglie l'utente (30% di partenza), perché nessun dato pubblico la misura.
+
+---
+
+## Da decidere ⏸ (per te)
+
+1. **Repository privato per i file OMI.** Crea `radaraste-omi` privato, caricaci gli zip, poi aggiungi il secret `OMI_TOKEN` e la variabile `OMI_REPO`: passi esatti nel README, sezione "Quotazioni OMI". Senza, il sito pubblicato usa solo perizie e prima asta. Le quotazioni OMI ci sono solo nella mia copia locale e nell'anteprima.
+2. **Abbonamenti.** Nel messaggio del 13/10 hai scritto prima "lascia stare gli abbonamenti" e poi "zona abbonamenti in modalità TEST".
+   - Li preparo solo in TEST: nessun pagamento reale, nessun account creato, pagine non collegate al menu.
+   - Per farli funzionare servono account e chiavi che puoi creare solo tu:
+     - Cloudflare Pages;
+     - Supabase (database utenti, piano gratuito);
+     - Stripe in modalità test;
+     - un servizio per le email.
+   - Vanno approvati anche i prezzi che ti proporrò.
+3. **Telegram**: crea il bot con @BotFather (gratis) e metti `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` nei Secrets (passi nel README). Il messaggio del mattino è già pronto ogni giorno.
+4. **Consulente AI**: se attivarlo, con quale servizio (consiglio Claude Sonnet 5.5) e con quale tetto di spesa. Costi per 10/100/1000 utenti in `CONSULENTE.md`. Serve anche Cloudflare Pages (punto 2).
+5. **Astalegale e Fallco**: attivarle o no? Il robots.txt lo consente, ma sono banche dati private tutelate (art. 102-bis L.d.A.) e duplicano il PVP.
+6. **Domini bloccati da questo ambiente** (impostazioni dell'ambiente → accesso alla rete):
+   - `mazzucchellipietro6-spec.github.io`, per controllare il sito pubblicato da qui;
+   - `resource-pvp.giustizia.it`, per leggere le perizie in automatico; le foto nel browser degli utenti si vedono già;
+   - `tiles.openfreemap.org`, per il Radar 3D;
+   - `pst.giustizia.it`, per i manuali dell'offerta telematica;
+   - `www.istat.it`.
+7. **Perimetri delle zone OMI (KML)**: se li scarichi insieme alle quotazioni, la zona si riconosce dalle coordinate dell'asta (51% delle aste le hanno) e non solo dall'indirizzo. Oggi si riconosce per il 14% degli immobili con quotazione.
+8. **Frane e alluvioni (ISPRA IdroGEO)**: il robots.txt vieta i programmi automatici su `/api/` e `/opendata/`. Due strade:
+   - scarichi tu una volta il file per comune (licenza da verificare);
+   - chiediamo il permesso a ISPRA.
+
+---
+
+## Registro dei controlli
+
+### Verifica delle stime OMI (13/10/2026, 42 aste reali)
+- Valore OMI / prezzo della prima asta: mediana 0,94 su 25 aste, 12 su 25 entro ±35%.
+- Perito / OMI:
+  - 0,96 a San Severino Marche e 1,00 a Gualdo Tadino;
+  - 0,61 per un capannone a Lecce;
+  - 3,22 per il villino di Augusta (metri quadri parziali);
+  - 6,6 per la tenuta di Santa Croce Camerina (lotto con più unità letto come box).
+- Da questi casi sono nate le regole su lotti con più unità, box e superfici diverse.
+- Casi reali del 13/10 corretti con il valore prudente:
+  - Bonea, fabbricato antico: OMI 117.000 € contro 51.770 € della prima asta;
+  - Albosaggia, quattro unità: perizia 36.600 € contro OMI 68.880 €;
+  - Agrigento: OMI 6 volte il prezzo base senza perizia.
+
+### Problemi trovati e risolti
+- ✅ Foglio di stile della mappa mancante (la pagina era senza impaginazione).
+- ✅ Termine delle offerte con l'ora (`AAAA-MM-GGTHH:MM`) letto male da Cacciatore e calendario.
+- ✅ Il ricalcolo sostituiva le descrizioni complete delle schede con quelle brevi: corretto e verificato.
+- ✅ Sul telefono la riga di esempi della chat allargava la pagina.
+- ✅ Coordinate fuori dall'Italia, biciclette tra le auto, prezzi base a zero, aste di oggi già iniziate, titoli tagliati, offerte minime sopra il prezzo base: corretti nella raccolta del 12-13/10.
+- ⬜ Azioni di GitHub su Node 20 (avviso di deprecazione).

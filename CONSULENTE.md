@@ -1,6 +1,6 @@
 # Consulente d'asta AI – progetto
 
-**Stato:** solo progettazione. Nessun servizio a pagamento attivato e nessuna chiave API usata. Decidi tu se e quale servizio usare, dopo aver letto questo documento.
+**Stato (13/10/2026):** la chat è nel sito (`consulente.html`) e risponde **con le regole del sito**, gratis e senza mandare dati a nessuno. Il collegamento a un servizio AI è **pronto ma spento**: nessun servizio a pagamento attivato e nessuna chiave API usata. Decidi tu se e quale servizio usare, dopo aver letto questo documento (sezione 6: come attivarlo).
 
 > **Avvertenza.** I prezzi dei servizi AI di OpenAI, Google, Groq, OpenRouter e Mistral vengono da estratti di ricerca. La rete di questo ambiente non ha permesso di aprire le pagine ufficiali dei listini: **vanno ricontrollati a mano prima di decidere** (link nella tabella). I prezzi di Claude vengono dalla documentazione ufficiale di Anthropic (listino al 06/10/2026).
 
@@ -106,13 +106,33 @@ A questo si aggiunge il ponte serverless, gratuito nei piani base fino a un cert
 
 ---
 
-## 5. Cosa è già pronto senza AI (da costruire stanotte)
+## 5. Cosa è già pronto senza AI
 
-- **Interfaccia della chat** (`consulente.html`): conversazione, suggerimenti di domande, schede delle aste dentro la chat, calcoli, fonti accanto ai numeri.
-- **Modalità senza AI** (gratuita, già utile): capisce frasi semplici con regole, cioè importi in euro, regioni, province e comuni, obiettivi ("vivere", "affittare", "rendita", "rivendere", "ristrutturare"), rischio e lavori. Poi cerca, calcola e mostra 3-5 aste con il "perché" scritto a regole, partendo dai numeri. Dichiara sempre che è una modalità semplice.
-- Quando attiverai un servizio AI, la stessa interfaccia passerà le domande al ponte. Gli strumenti saranno quelli già usati dalla modalità senza AI.
+- **Interfaccia della chat** (`consulente.html`, `js/pages/consulente.js`): conversazione, domande di esempio, domande arrivate dalla home o da una scheda (`consulente.html?q=…`), aste dentro la chat con punteggio e sconto, conti con affidabilità e ipotesi, fonti sotto ogni risposta. La conversazione resta nella scheda del browser.
+- **Modalità regole** (`js/consulente.js`, 9 test in `tests/consulente.test.js`), gratuita e attiva. Capisce:
+  - ricerche con luogo (comune, provincia, regione), tipo (appartamento, villa, box, terreno, negozio, auto…), importi scritti in tutti i modi ("150 mila", "150k", "tra 50 e 80 mila"), "solo liberi", "buoni affari", date ("entro novembre");
+  - domande di seguito ("e a Lecce?", "e sotto i 100 mila?", "e se fosse prima casa?"), mentre una domanda completa riparte da zero;
+  - spiegazione di un'asta, costi totali con le imposte (`js/calcoli.js`), rata e budget del mutuo (`js/mutuo.js`: senza tasso lo chiede, non lo inventa), rendimento dell'affitto, affari di oggi, 15 voci di guida alla procedura con le norme (le stesse della pagina `guida.html`).
 
-## 6. Cosa devi decidere
+## 6. Il collegamento AI (pronto, spento)
+
+Come funziona, se un giorno lo attivi:
+
+- il browser manda la conversazione a una funzione "ponte" (`functions/api/consulente.js`, funzione di Cloudflare Pages);
+- la funzione aggiunge la chiave segreta (variabile d'ambiente, **mai nel codice**) e chiama il modello con due strumenti: `consulente_regole` (tutto il motore a regole) e `scheda_asta`;
+- **il modello non riceve i dati delle aste**: quando gli serve un numero chiede al browser di usare uno strumento, il browser esegue le regole del sito e gli rimanda il risultato; massimo 5 giri per domanda (`config/consulente.js`, `maxTurni`);
+- sotto la risposta scritta dal modello restano visibili i riquadri con aste, conti e fonti calcolati dal sito, più l'avviso che il testo è scritto da un servizio AI.
+
+Per attivarlo (solo dopo la tua decisione):
+
+1. pubblicare il sito su Cloudflare Pages (le funzioni non girano su GitHub Pages);
+2. in Cloudflare → Pages → Impostazioni → Variabili e segreti: `ANTHROPIC_API_KEY` (segreto), `CONSULENTE_MODELLO` (es. `claude-sonnet-5-5`), `ORIGINE` (indirizzo del sito);
+3. impostare un tetto di spesa nella console del fornitore;
+4. in `config/consulente.js` scrivere `ponte: '/api/consulente'`: nella pagina si sblocca la scelta "Intelligenza artificiale".
+
+Se la chiave manca la funzione risponde "non configurato" e la chat torna da sola alle regole.
+
+## 7. Cosa devi decidere
 
 1. Se attivare il consulente AI e con quale servizio (raccomandato: Claude Sonnet 5.5).
 2. Tetto di spesa mensile e limite di messaggi per utente.

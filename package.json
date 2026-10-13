@@ -2,11 +2,15 @@
   "name": "radar-aste-italia",
   "version": "1.0.0",
   "private": true,
-  "description": "Radar Aste Italia: elenco, mappa e calcolatore di convenienza per le aste in Italia",
+  "description": "Radar Aste Italia: aste pubbliche italiane con valore di mercato, costi, rischi e cinque assistenti",
   "scripts": {
     "start": "python3 -m http.server 8080",
     "test": "node --test tests/*.test.js tests/*.test.mjs",
-    "raccogli": "node scripts/raccogli.mjs"
+    "raccogli": "node scripts/raccogli.mjs",
+    "ricalcola": "node scripts/ricalcola.mjs",
+    "cacciatore": "node scripts/cacciatore.mjs",
+    "omi": "node scripts/omi.mjs",
+    "anteprima": "node scripts/artifact.mjs"
   },
   "license": "UNLICENSED",
   "engines": {
