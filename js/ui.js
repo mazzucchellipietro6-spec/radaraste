@@ -139,10 +139,16 @@
   var NAV = [
     { href: 'index.html', nome: 'Home', icona: 'home' },
     { href: 'aste.html', nome: 'Aste', icona: 'lista', anche: ['scheda.html'] },
-    { href: 'mappa.html', nome: 'Mappa', icona: 'mappa' },
+    { href: 'mappa.html', nome: 'Mappa', icona: 'mappa', anche: ['radar3d.html'] },
     { href: 'assistenti.html', nome: 'Assistenti', icona: 'assistenti', voci: ASSISTENTI },
     { href: 'strumenti.html', nome: 'Strumenti', icona: 'strumenti', voci: STRUMENTI },
-    { href: 'mie-aste.html', nome: 'Le mie aste', icona: 'stella' }
+    { href: 'mie-aste.html', nome: 'Le mie aste', icona: 'stella', anche: ['account.html', 'accedi.html'] }
+  ];
+  // pagine di servizio nel piè di pagina: abbonamenti (in modalità test finché non vengono attivati) e bozze legali
+  var SERVIZIO = [
+    { href: 'prezzi.html', nome: 'Prezzi e abbonamenti' }, { href: 'account.html', nome: 'Il mio account' },
+    { href: 'termini.html', nome: 'Termini d\'uso' }, { href: 'privacy.html', nome: 'Privacy' }, { href: 'cookie.html', nome: 'Cookie' },
+    { href: 'recesso.html', nome: 'Recesso' }, { href: 'avvertenze.html', nome: 'Non è consulenza finanziaria' }
   ];
   // su telefono: le prime quattro sezioni nella barra in basso, il resto nel foglio "Menu"
   var TAB = ['index.html', 'aste.html', 'mappa.html', 'assistenti.html'];
@@ -199,7 +205,8 @@
           '<div class="piede-marchio"><a class="brand" href="index.html">' + MARCHIO + '<span>Radar <b>Aste</b></span></a><p>Le aste pubbliche italiane raccolte ogni giorno dalle fonti ufficiali, con i conti fatti in chiaro.</p></div>' +
           col('Sezioni', NAV.filter(function (p) { return !p.voci; })) + col('Assistenti', ASSISTENTI) + col('Strumenti', STRUMENTI) +
         '</div>' + avvertenza() +
-        '<div class="row-actions piede-link"><span>Aliquote aggiornate al ' + esc(agg) + '</span><span class="spacer"></span><span>Dati personali solo in questo browser · nessun dato inventato</span></div></div>';
+        '<nav class="row-actions piede-servizio" aria-label="Informazioni legali e abbonamenti">' + SERVIZIO.map(function (v) { return '<a href="' + v.href + '">' + esc(v.nome) + '</a>'; }).join('') + '</nav>' +
+        '<div class="row-actions piede-link"><span>Aliquote aggiornate al ' + esc(agg) + '</span><span class="spacer"></span><span>Nessun dato inventato</span></div></div>';
     }
     applicaTema(temaCorrente());
     $$('.theme-btn').forEach(function (b) { b.addEventListener('click', ciclaTema); });
@@ -369,7 +376,7 @@
   root.UI = {
     $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando, oggi: oggi,
     linkSicuro: linkSicuro, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
-    icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI,
+    icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI, SERVIZIO: SERVIZIO,
     finestra: finestra, apriFinestra: apriFinestra, chiudiFinestra: chiudiFinestra, focusabili: focusabili, menoMovimento: function () { return menoMovimento.matches; },
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,
     csvParse: csvParse, csvStringify: csvStringify, scarica: scarica, leggiFile: leggiFile,
