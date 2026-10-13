@@ -32,6 +32,7 @@ const RE_EMAIL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g;
 const RE_CF = /\b[A-Z]{6}\s?\d{2}\s?[A-Z]\s?\d{2}\s?[A-Z]\s?\d{3}\s?[A-Z]\b/gi;
 const RE_PIVA = /\b((?:p\.?\s?iva|partita\s+iva|c\.?\s?f\.?|cod(?:ice|\.)\s+fiscale)(?:\s*(?:e|\/)\s*(?:p\.?\s?iva|partita\s+iva))?\s*[:n.°]*\s*)\d{11}\b/gi;
 const RE_CELL = /(?:\+39[\s.]?)?\b3\d{2}[\s./-]?\d{3}[\s./-]?\d{3,4}\b/g;
+const RE_IBAN = /\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]){11,30}\b/g;
 const RE_FISSO = /\b(?:tel\w*|telefon\w*|cell\w*|mob\w*|fax|recapit\w*|contatt\w*|chiamare|whatsapp|n\.\s?verde)\.?\s*:?\s*(?:\+39[\s.]?)?\(?0\d{1,4}\)?[\s./-]?\d{2,4}[\s./-]?\d{2,4}(?:[\s./-]?\d{2,4})?/gi;
 
 const OMISSIS = '[omissis]';
@@ -43,6 +44,7 @@ const nomeVero = (nome) => !NON_NOMI.test(String(nome).split(/\s+/)[0].replace(/
 export function pulisci(testo) {
   let t = String(testo || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ');
   t = t.replace(RE_EMAIL, OMISSIS);
+  t = t.replace(RE_IBAN, (m) => (/\d{6}/.test(m.replace(/\s/g, '')) ? OMISSIS : m));
   t = t.replace(RE_CF, OMISSIS).replace(RE_PIVA, '$1' + OMISSIS);
   t = t.replace(RE_FISSO, (m) => m.replace(/\(?\+?\d[\d\s./()-]{5,}$/, ' ' + OMISSIS));
   t = t.replace(RE_CELL, (m, i, tutto) => (/(?:€|euro|eur\.?)\s*$/i.test(tutto.slice(Math.max(0, i - 6), i)) ? m : OMISSIS));
@@ -153,7 +155,7 @@ function foto(beni) {
     for (const a of b.allegati || []) {
       const link = a && a.linkAllegato;
       if (!link) continue;
-      if (!(/IMMAGINE/i.test(a.descrizione || '') || /^\/?immagini-beni\//.test(link)) || !IMMAGINE.test(link)) continue;
+      if (!(/IMMAGINE/i.test(a.descrizione || '') || /^\/?immagini-beni\//.test(link)) || !IMMAGINE.test(link) || !nomeFileSicuro(link)) continue;
       const u = urlRisorsa(link);
       if (u && !out.includes(u)) out.push(u);
     }
@@ -161,9 +163,17 @@ function foto(beni) {
   return out;
 }
 
-const REDATTA = /privacy|epurat|oscurat|anonim|omissis|dati sens|versione pubblic/i;
+// nome del file senza dati personali riconoscibili (email, codici fiscali, telefoni, "avv. Nome Cognome"...)
+export function nomeFileSicuro(link) {
+  let nome = String(link || '').split('?')[0].split('/').pop();
+  try { nome = decodeURIComponent(nome); } catch { /* resta com'è */ }
+  nome = nome.replace(/\.[a-z0-9]{2,4}$/i, '').replace(/[_]+/g, ' ');
+  return pulisci(nome) === nome.replace(/\s+/g, ' ').trim();
+}
+
+const REDATTA = /privacy|pivacy|epurat|oscurat|anonim|omissis|dati sens|versione pubblic/i;
 function allegati(lista) {
-  const L = (lista || []).filter((a) => a && a.linkAllegato);
+  const L = (lista || []).filter((a) => a && a.linkAllegato && nomeFileSicuro(a.linkAllegato));
   const testo = (a) => (a.descrizione || '') + ' ' + (a.nomeFile || '');
   const perizie = L.filter((a) => a.codiceTipoAllegato === 'PERIZ');
   const perizia = perizie.find((a) => REDATTA.test(testo(a))) || perizie[0];
@@ -191,7 +201,7 @@ export function estrai(b, { oggi, descLotto } = {}) {
   const spese = cauzione(b.datiDeposito && b.datiDeposito.depositoContoSpese);
   const anno = parseInt(proc.numeAnnoRg, 10);
   const s = {
-    letto: oggi || new Date().toISOString().slice(0, 10),
+    dettaglio: oggi || new Date().toISOString().slice(0, 10),
     descrizione: descrizione(descLotto || lotto.descLotto, beni),
     foto: fotoTutte.slice(0, MAX_FOTO),
     fotoTotali: fotoTutte.length,
@@ -199,7 +209,7 @@ export function estrai(b, { oggi, descLotto } = {}) {
     catasto: catasto(beni),
     vani: primo(beni, (x) => { const v = typeof x.numeroVani === 'number' ? x.numeroVani : parseFloat(String(x.numeroVani || '').replace(',', '.')); return v > 0 && v < 100 ? v : null; }),
     piano: primo(beni, (x) => breve(x.piano, 30)),
-    mq: superficieBeni(beni),
+    mqScheda: superficieBeni(beni),
     cauzione: cauz.testo,
     cauzionePerc: cauz.perc,
     contoSpese: spese.testo,

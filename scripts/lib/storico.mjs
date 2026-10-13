@@ -109,7 +109,10 @@ export function unisciRighe(vecchie, nuove, { copertoDa, oggi, dal }) {
 // Aggiorna (o costruisce) l'indice. `pagina(n)` restituisce il corpo di una pagina della ricerca (iniettabile nei test).
 // Se lo scaricamento si interrompe si salva comunque ciò che è stato letto: un indice incompleto viene
 // ricostruito per intero alla raccolta successiva (le righe già presenti non vanno perse).
-export async function aggiornaIndice({ file, oggi, anni = ANNI, log = console.log, pagina = paginaPvp, maxPagine = Infinity } = {}) {
+// `primaPagina`: da quale pagina partire. Le prime pagine contengono solo vendite future (già lette dalla raccolta):
+// la raccolta passa quante sono, e si parte una pagina prima del confine. Se la pagina di partenza non contiene
+// nessuna vendita futura (il confine potrebbe essere più indietro) si riparte da 0.
+export async function aggiornaIndice({ file, oggi, anni = ANNI, log = console.log, pagina = paginaPvp, maxPagine = Infinity, primaPagina = 0 } = {}) {
   const vecchio = await leggiIndice(file);
   const dal = menoAnni(oggi, anni);
   const completo = Boolean(vecchio && vecchio.completo && vecchio.righe.length);
@@ -119,11 +122,17 @@ export async function aggiornaIndice({ file, oggi, anni = ANNI, log = console.lo
   log(`  storico: ${vecchio ? vecchio.righe.length + ' vendite nell\'indice' + (completo ? '' : ' (incompleto)') : 'indice assente'}; scarico le vendite fino al ${fino}`);
   const nuove = [];
   let finito = false, piuVecchia = null, richieste = 0, errore = null;
+  let partenza = Math.max(0, primaPagina | 0);
   try {
-    for (let n = 0; n < maxPagine; n++) {
+    for (let n = partenza; n < partenza + maxPagine; n++) {
       const b = await pagina(n);
       richieste++;
       if (!b || !Array.isArray(b.content)) throw new Error('risposta inattesa dalla ricerca del PVP');
+      if (n === partenza && partenza > 0 && b.content.length && !(b.content[0].dataVendita >= oggi)) {
+        log(`  storico: la pagina ${n + 1} non contiene vendite future, riparto dalla prima`);
+        partenza = 0; n = -1; continue;
+      }
+      if (n === partenza && partenza > 0) log(`  storico: salto le prime ${partenza} pagine (solo vendite future, già lette dalla raccolta)`);
       for (const x of b.content) {
         if (!x.dataVendita || x.dataVendita >= oggi) continue;
         if (x.dataVendita < fino) { finito = true; continue; }

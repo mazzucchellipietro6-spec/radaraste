@@ -8,6 +8,7 @@ export class FonteBloccata extends Error {
 }
 
 const ultimaRichiesta = new Map(); // host -> timestamp
+export const richiestePerHost = new Map(); // host -> numero di richieste fatte (robots.txt compreso)
 const robotsCache = new Map();     // host -> regole
 
 const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -62,6 +63,8 @@ async function regoleRobots(origine) {
   if (robotsCache.has(origine)) return robotsCache.get(origine);
   let regole = [];
   try {
+    const host = new URL(origine).host;
+    richiestePerHost.set(host, (richiestePerHost.get(host) || 0) + 1);
     const r = await fetch(origine + '/robots.txt', { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(20000) });
     if (r.ok) regole = analizzaRobots(await r.text());
     else if (r.status === 401 || r.status === 403) throw new FonteBloccata(`robots.txt non accessibile (HTTP ${r.status})`);
@@ -83,6 +86,7 @@ export async function richiesta(url, { metodo = 'GET', corpo, intestazioni = {},
 
   for (let i = 1; i <= tentativi; i++) {
     await rispettaPausa(u.host, intervalloMs);
+    richiestePerHost.set(u.host, (richiestePerHost.get(u.host) || 0) + 1);
     let r;
     try {
       r = await fetch(url, {

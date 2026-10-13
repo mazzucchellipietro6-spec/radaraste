@@ -16,7 +16,7 @@
   }
   function tabella(id, intest, righe) {
     $('#' + id).innerHTML = '<thead><tr>' + intest.map(function (h) { return '<th' + (h[1] ? ' class="num"' : '') + '>' + h[0] + '</th>'; }).join('') + '</tr></thead><tbody>' +
-      righe.map(function (r) { return '<tr>' + r.map(function (c, i) { var h = intest[i]; return '<td data-label="' + U.esc(h[0]) + '"' + (h[1] ? ' class="num"' : h[2] ? ' class="src"' : '') + '>' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody>';
+      righe.map(function (r) { return '<tr>' + r.map(function (c, i) { var h = intest[i]; return '<td data-label="' + U.esc(h[0]) + '"' + (h[1] ? ' class="num"' : h[2] ? ' class="src"' : '') + '><div class="v">' + c + '</div></td>'; }).join('') + '</tr>'; }).join('') + '</tbody>';
   }
 
   document.addEventListener('DOMContentLoaded', function () {

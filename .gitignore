@@ -7,3 +7,8 @@ data/riepilogo.js
 # Indice storico delle vendite passate (cache della raccolta, non si pubblica)
 data/storico-indice.json
 data/storico-indice.json.tmp
+# Schede a pezzi generate dalla raccolta (pubblicate dal workflow, non nel repository)
+data/dettagli/
+data/*-dettagli/
+data/*-riepilogo.js
+*.js.tmp

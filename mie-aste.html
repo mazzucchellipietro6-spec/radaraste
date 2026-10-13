@@ -11,14 +11,15 @@
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<meta name="theme-color" content="#0d6b4f" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#060a13" media="(prefers-color-scheme: dark)">
 <script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
 <body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
 <header id="site-header"></header>
 
-<main class="wrap stack">
+<main class="wrap stack" id="contenuto" tabindex="-1">
   <div class="page-head">
     <h1>Le mie <span>aste</span></h1>
     <p class="sub">Le aste che segui, con le tue note, a che punto sei e il giudizio di convenienza salvato dal calcolatore.</p>
@@ -33,21 +34,21 @@
     <label class="btn small ghost">Ripristina backup<input type="file" id="ripristina" accept=".json,application/json" class="sr-only"></label>
   </div>
 
-  <div id="lista" class="stack" aria-live="polite"></div>
+  <div id="lista" class="stack" aria-live="polite" aria-busy="true"><div class="scheletro" aria-hidden="true" style="min-height:220px"></div><div class="scheletro" aria-hidden="true" style="min-height:220px"></div></div>
 </main>
 
 <footer id="site-footer"></footer>
 
 <script src="config/tariffe.js"></script>
 <script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
 <script src="config/fonti.js"></script>
 <script src="data/aste.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/calcoli.js"></script>
 <script src="js/formato.js"></script>
-<script src="js/store.js"></script>
-<script src="js/icone.js"></script>
-<script src="js/ui.js"></script>
 <script src="js/cerca.js"></script>
 <script src="js/pages/mie-aste.js"></script>
 </body>

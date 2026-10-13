@@ -3,10 +3,15 @@
  * - dati delle aste (data/aste.js): prima la rete (dati del giorno), la cache solo se manca la connessione. */
 var VERSIONE = 'radaraste-__VERSIONE__';
 var STRUTTURA = [
-  './', 'index.html', 'aste.html', 'mappa.html', 'calcolatore.html', 'mie-aste.html', 'tariffe.html', 'fonti.html',
-  'assets/css/style.css', 'assets/icon.svg', 'assets/fonts/archivo.woff2', 'assets/fonts/hanken-grotesk.woff2', 'assets/fonts/martian-mono.woff2', 'js/icone.js', 'js/schede.js', 'js/confronto.js', 'js/ricerche.js', 'js/riepilogo.js', 'assets/icon-192.png', 'assets/vendor/leaflet/leaflet.js', 'assets/vendor/leaflet/leaflet.css',
+  './', 'index.html', 'aste.html', 'mappa.html', 'calcolatore.html', 'mie-aste.html', 'tariffe.html', 'fonti.html', 'scheda.html', 'confronta.html',
+  'manifest.webmanifest', 'assets/css/style.css', 'assets/icon.svg', 'assets/icon-180.png', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-maskable-512.png',
+  'assets/fonts/archivo.woff2', 'assets/fonts/hanken-grotesk.woff2', 'assets/fonts/martian-mono.woff2',
+  'assets/vendor/leaflet/leaflet.js', 'assets/vendor/leaflet/leaflet.css',
   'config/tariffe.js', 'config/fonti.js', 'data/geo.js', 'data/italia.js',
-  'js/ui.js', 'js/store.js', 'js/formato.js', 'js/calcoli.js', 'js/parser.js', 'js/estrai.js'
+  'js/ui.js', 'js/store.js', 'js/formato.js', 'js/calcoli.js', 'js/parser.js', 'js/estrai.js', 'js/punteggio.js', 'js/dettagli.js',
+  'js/icone.js', 'js/schede.js', 'js/confronto.js', 'js/ricerche.js', 'js/riepilogo.js', 'js/cerca.js',
+  'js/pages/home.js', 'js/pages/aste.js', 'js/pages/mappa.js', 'js/pages/calcolatore.js', 'js/pages/mie-aste.js', 'js/pages/tariffe.js', 'js/pages/fonti.js',
+  'js/pages/scheda.js', 'js/pages/confronta.js'
 ];
 
 self.addEventListener('install', function (e) {

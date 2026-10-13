@@ -20,7 +20,25 @@
   // superfici accessorie da non scambiare per la superficie dell'immobile
   var ACCESSORIE = /(giardin|cortil|corte\b|terren|area\b|aree\b|terrazz|balcon|lastric|scopert|cantin|box\b|garage|autorimess|posto auto|soffitt|magazzin|deposit|piazzal|pertinenz|lotto di terreno|fondo\b|particella)/i;
   var MQ = /(\d{1,3}(?:[.\s]\d{3})+(?:,\d{1,2})?|\d{1,5}(?:[.,]\d{1,2})?)\s*(?:mq\b|m\.q\.?|m2\b|m²|metri\s+quadr[ia]?|mt\.?\s?q\.?)/gi;
+  // unità prima del numero: "mq. 145", "MQ 208 CATASTALI", "m.q. 95,50"
+  var MQ_PRIMA = /(?:\bmq\b|\bm\.q\.|\bm2\b|m²|\bmetri\s+quadr[ia]?\b|\bmt\.?\s?q\.)\.?\s*(?:di\s+|circa\s+|:\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d{1,5}(?:,\d{1,2})?)(?![\d.,]*\s*(?:%|\/|mq\b|m2\b))/gi;
   var SUP_ETICHETTA = /superficie\s+(?:commerciale|lorda|complessiva|convenzionale|catastale|utile|netta|calpestabile)?[^.;\d]{0,40}?(\d{1,3}(?:[.\s]\d{3})+(?:,\d{1,2})?|\d{1,5}(?:[.,]\d{1,2})?)\s*(?:mq|m\.q\.?|m2|m²|metri\s+quadr)/i;
+  // dopo la misura: "1.000 mq di terreno", "mq 300 di giardino"
+  var ACCESSORIA_DOPO = /^\s*(?:circa\s+)?(?:di|ad?|adibit\w*\s+a|destinat\w*\s+a)\s+(?:uso\s+)?(giardin|cortil|corte\b|terren|area\b|aree\b|terrazz|balcon|lastric|scopert|cantin|box\b|garage|autorimess|posto auto|soffitt|magazzin|deposit|piazzal|pertinenz)/i;
+
+  function misure(t) {
+    var out = [], x;
+    MQ.lastIndex = 0;
+    while ((x = MQ.exec(t))) out.push({ i: x.index, inizio: x.index, fine: x.index + x[0].length, num: x[1] });
+    MQ_PRIMA.lastIndex = 0;
+    while ((x = MQ_PRIMA.exec(t))) {
+      var i = x.index;
+      // la stessa misura già trovata come "numero + unità" (es. "100 mq 200": vince la prima lettura)
+      if (out.some(function (m) { return i >= m.inizio && i < m.fine; })) continue;
+      out.push({ i: i, inizio: i, fine: i + x[0].length, num: x[1] });
+    }
+    return out.sort(function (a, b) { return a.i - b.i; });
+  }
 
   function superficie(s) {
     var t = testo(s);
@@ -30,18 +48,21 @@
       var v = numero(m[1]);
       if (v >= 10 && v <= 20000) return { mq: v, metodo: 'superficie indicata', prova: prova(t, m.index, m.index + m[0].length) };
     }
-    MQ.lastIndex = 0;
-    var x, accessoria = null;
-    // se il lotto stesso è un terreno, la superficie del terreno è quella giusta
-    var eTerreno = /^(?:\W*(?:lotto\s*\w*\W*)?)(?:piena propriet\w*\s*(?:di|del|su)?\s*)?(?:un\s+|una\s+)?(terren|appezzament|fondo|area|lotto di terreno)/i.test(t);
-    while ((x = MQ.exec(t))) {
-      var prima = t.slice(Math.max(0, x.index - 30), x.index);
-      var n = numero(x[1]);
+    var accessoria = null;
+    // se il lotto stesso è un terreno (o un box, una cantina, un magazzino...), la sua superficie è quella giusta
+    var eTerreno = /^(?:\W*(?:lotto\s*\w*\W*)?)(?:piena propriet\w*\s*(?:di|del|su)?\s*)?(?:un\s+|una\s+)?(terren|appezzament|fondo|area|lotto di terreno|box|garage|autorimess|posto auto|cantin|magazzin|deposit)/i.test(t);
+    var lista = misure(t);
+    for (var k = 0; k < lista.length; k++) {
+      var x = lista[k];
+      // solo l'ultimo pezzo prima della misura ("giardino e appartamento di 120 mq": conta "appartamento di")
+      var prima = t.slice(Math.max(0, x.inizio - 30), x.inizio).split(/[,;]|\s(?:e|ed|con|oltre a|oltre|più)\s/i).pop();
+      var dopo = t.slice(x.fine, x.fine + 40);
+      var n = numero(x.num);
       if (!(n >= 15 && n <= 200000)) continue;
-      if (ACCESSORIE.test(prima)) { if (!accessoria) accessoria = { mq: n, prova: prova(t, x.index, x.index + x[0].length) }; continue; }
-      if (n <= 20000) return { mq: n, metodo: 'prima superficie citata', prova: prova(t, x.index, x.index + x[0].length) };
+      if (ACCESSORIE.test(prima) || ACCESSORIA_DOPO.test(dopo)) { if (!accessoria) accessoria = { mq: n, prova: prova(t, x.inizio, x.fine) }; continue; }
+      if (n <= 20000) return { mq: n, metodo: 'prima superficie citata', prova: prova(t, x.inizio, x.fine) };
     }
-    if (eTerreno && accessoria) return { mq: accessoria.mq, metodo: 'superficie del terreno', prova: accessoria.prova };
+    if (eTerreno && accessoria) return { mq: accessoria.mq, metodo: 'superficie del lotto', prova: accessoria.prova };
     var vani = t.match(/(?:consistenza\s*(?:di\s*)?)?(\d{1,2}(?:[.,]5)?)\s*vani\b/i);
     if (vani) {
       var nv = numero(vani[1]);

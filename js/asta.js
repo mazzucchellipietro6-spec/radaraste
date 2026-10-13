@@ -52,8 +52,7 @@
     }, function () { return { scheda: null, mancante: true }; });
   }
 
-  // le aste inserite a mano senza passare da Store.asta(), che altrimenti memorizzerebbe un elenco vuoto
-  // finché data/aste.js non è caricato
+  // aste inserite a mano (in questo browser): non serve nessun file
   function manuale(id) { return (S.backup().aste || []).filter(function (a) { return a.id === id; })[0] || null; }
 
   function unisci(base, scheda, origine) {
@@ -96,15 +95,8 @@
     return o;
   }
 
-  /* Segue l'asta. Se data/aste.js non è caricato non si passa da Store.segui() (che cercherebbe l'asta
-   * nell'elenco non ancora caricato e lo memorizzerebbe vuoto per il resto della pagina): si aggiunge
-   * la voce con la stessa struttura tramite Store.ripristina(). */
-  function segui(a) {
-    var copia = copiaBreve(a);
-    if (root.ASTE_RACCOLTE || a._origine === 'manuale') return S.segui(a.id, { copia: copia });
-    S.ripristina({ aste: [], seguite: [{ id: a.id, stato: 'da-valutare', note: '', aggiunta: new Date().toISOString(), copia: copia }] });
-    return S.seguita(a.id);
-  }
+  // segue l'asta salvando una copia corta (resta visibile anche se l'asta sparisce dall'elenco)
+  function segui(a) { return S.segui(a.id, { copia: copiaBreve(a) }); }
 
   /* ---------- rischi ---------- */
 
@@ -158,9 +150,12 @@
   }
 
   /* Semafori: verde = cercato nel testo e non trovato, rosso = trovato (con la frase), giallo = dato incerto,
-   * grigio = non verificabile (testo dell'avviso non disponibile). */
+   * grigio = non verificabile (testo dell'avviso non disponibile).
+   * Il testo è "controllato" se c'è qui la descrizione oppure se la raccolta l'ha già letto (rischi: [] = nessuno). */
   function semafori(a, testo) {
     var tr = trovati(a, testo), lista = PER_CATEGORIA[categoria(a)].slice();
+    var controllato = !!testo || Array.isArray(a.rischi);
+    var dove = testo ? 'nel testo dell\'avviso' : 'nel testo dell\'avviso letto dalla raccolta';
     Object.keys(tr).forEach(function (k) { if (lista.indexOf(k) < 0) lista.push(k); });
     return lista.map(function (k) {
       var x = tr[k], s = { chiave: k, titolo: TITOLI[k] || k, prova: x && x.prova || null };
@@ -169,7 +164,7 @@
         else if (a.stato === 'libero' && x) { s.colore = 'giallo'; s.testo = 'Indicato come libero, ma il testo parla di occupazione o locazione: chiedi al custode.'; }
         else if (a.stato === 'libero') { s.colore = 'verde'; s.testo = 'L\'avviso lo indica come libero.'; }
         else if (x) { s.colore = 'rosso'; s.testo = TROVATO[k] + '.'; }
-        else if (testo) { s.colore = 'giallo'; s.testo = 'Stato non indicato dalla fonte e nessun segnale nel testo: chiedi al custode.'; }
+        else if (controllato) { s.colore = 'giallo'; s.testo = 'Stato non indicato dalla fonte e nessun segnale ' + dove + ': chiedi al custode.'; }
         else { s.colore = 'grigio'; s.testo = 'Stato non indicato e testo dell\'avviso non ancora disponibile.'; }
         return s;
       }
@@ -177,7 +172,7 @@
         s.colore = 'rosso';
         s.testo = TROVATO[k] + (x.importo ? ' (importo indicato: ' + U.eur(x.importo) + ')' : '') + '.';
         if (!x.prova) s.testo += ' La frase esatta è nell\'avviso.';
-      } else if (testo) { s.colore = 'verde'; s.testo = 'Nessun segnale nel testo dell\'avviso.'; }
+      } else if (controllato) { s.colore = 'verde'; s.testo = 'Nessun segnale ' + dove + '.'; }
       else { s.colore = 'grigio'; s.testo = 'Non verificabile: il testo dell\'avviso non è ancora disponibile qui.'; }
       return s;
     });
@@ -224,36 +219,43 @@
     r.nRischi = verificabili.length ? r.semafori.filter(function (s) { return s.colore === 'rosso'; }).length : null;
     r.nVerificati = verificabili.length;
 
-    // punteggio: stessi rischi della raccolta; se l'elenco non li ha ma il testo ne mostra, si contano (prudenza)
+    // 1. valori già calcolati dalla raccolta (con il confronto delle perizie della zona): stessi numeri dell'elenco
+    var pre = a.punteggio != null && a.parti && typeof a.parti === 'object';
+    // 2. altrimenti si calcola qui con js/punteggio.js, sugli stessi dati; i rischi sono quelli della raccolta
+    //    (elenco vuoto = testo controllato) e, se la raccolta non li ha, quelli trovati qui nel testo (per prudenza)
     var x = {}, k;
     for (k in a) x[k] = a[k];
     var ch = chiaviRischi(a);
     var dalTesto = r.semafori.filter(function (s) { return s.colore === 'rosso' && s.chiave !== 'occupazione'; }).map(function (s) { return s.chiave; });
-    x.rischi = ch && ch.length ? ch : dalTesto.length ? dalTesto : undefined;
+    x.rischi = ch ? ch : dalTesto.length ? dalTesto : undefined;
     r.valuta = P && base ? P.valuta(x, { T: T }) : null;
     var vv = r.valuta && r.valuta.valore;
 
-    if (vv) {
+    if (a.valore > 0) {
+      r.valore = { centrale: a.valore, min: a.valoreMin || a.valore, max: a.valoreMax || a.valore, fonte: a.fonteValore,
+        etichetta: a.valoreEtichetta || (vv && vv.fonte === a.fonteValore && vv.etichetta) || FONTI_VALORE[a.fonteValore] || 'Valore stimato dalla raccolta',
+        affidabilita: a.affidabilita || (vv && vv.affidabilita) || null,
+        controlli: Array.isArray(a.controlli) ? a.controlli.slice() : vv ? vv.controlli.slice() : [],
+        zona: a.zona && typeof a.zona === 'object' ? a.zona : null };
+    } else if (vv) {
       r.valore = { centrale: vv.centrale, min: vv.min, max: vv.max, fonte: vv.fonte, etichetta: vv.etichetta,
-        affidabilita: a.affidabilita || vv.affidabilita, controlli: vv.controlli.slice(), zona: !!(a.affidabilita && a.affidabilita !== vv.affidabilita) };
-    } else if (a.valore > 0) {
-      r.valore = { centrale: a.valore, min: a.valoreMin || a.valore, max: a.valoreMax || a.valore, fonte: a.fonteValore, etichetta: FONTI_VALORE[a.fonteValore] || 'Valore stimato dalla raccolta',
-        affidabilita: a.affidabilita || null, controlli: [] };
+        affidabilita: vv.affidabilita, controlli: vv.controlli.slice(), zona: vv.zona, senzaZona: true };
     } else if (a.valoreMercato > 0) {
       r.valore = { centrale: a.valoreMercato, min: a.valoreMercato, max: a.valoreMercato, fonte: 'manuale', etichetta: FONTI_VALORE.manuale, affidabilita: null, controlli: [] };
     } else r.valore = null;
 
     r.costo = base ? costo(a, base, r.valore && r.valore.centrale) : null;
     if (r.valore && r.costo) {
-      r.sconto = r.valuta && r.valuta.sconto != null && vv ? r.valuta.sconto : r.costo.sconto;
+      r.sconto = a.sconto != null && isFinite(a.sconto) ? a.sconto : r.costo.sconto;
       r.giudizio = C.giudizio(r.sconto, T);
-      r.offertaMax = r.valuta && r.valuta.offertaMax != null && vv ? r.valuta.offertaMax : offertaMassima(a, r.valore.min);
-    } else { r.sconto = a.sconto != null ? a.sconto : null; r.offertaMax = a.offertaMax > 0 ? a.offertaMax : null; }
+      r.offertaMax = a.offertaMax != null && isFinite(a.offertaMax) ? a.offertaMax : vv && r.valuta.offertaMax != null ? r.valuta.offertaMax : offertaMassima(a, r.valore.min);
+    } else { r.sconto = null; r.offertaMax = null; }
 
-    if (r.valuta && r.valuta.punteggio != null) r.punteggio = { valore: r.valuta.punteggio, parti: r.valuta.parti, completo: r.valuta.completo };
-    else if (a.punteggio != null) r.punteggio = { valore: Math.round(a.punteggio), parti: null, completo: !!a.punteggioCompleto };
+    if (pre) r.punteggio = { valore: Math.round(a.punteggio), parti: a.parti, completo: a.punteggioCompleto !== false };
+    else if (r.valuta && r.valuta.punteggio != null) r.punteggio = { valore: r.valuta.punteggio, parti: r.valuta.parti, completo: r.valuta.completo };
+    else if (a.punteggio != null) r.punteggio = { valore: Math.round(a.punteggio), parti: null, completo: a.punteggioCompleto !== false };
     else r.punteggio = null;
-    r.mancanti = r.valuta ? r.valuta.mancanti.slice() : base ? [] : ['prezzo base'];
+    r.mancanti = pre && Array.isArray(a.mancanti) ? a.mancanti.slice() : r.valuta ? r.valuta.mancanti.slice() : base ? [] : ['prezzo base'];
     return r;
   }
 

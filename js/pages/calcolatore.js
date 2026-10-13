@@ -36,7 +36,7 @@
     var inp = inputImmobile(), out = $('#outImm');
     if (!inp.offerta || !inp.valoreMercato) {
       out.innerHTML = '<h3>Risultato</h3><p class="muted">Inserisci almeno la tua offerta e il valore di mercato.</p>';
-      ultimo.immobile = null; return;
+      ultimo.immobile = null; aggiornaRiepilogo(); return;
     }
     var r = C.costoImmobile(inp, T);
     var max = C.offertaMassima(C.costoImmobile, inp, T);
@@ -74,6 +74,7 @@
     h += bloccoSalva();
     out.innerHTML = h;
     ultimo.immobile = { tipo: 'immobile', input: inp, totale: r.totale, sconto: r.sconto, giudizio: r.giudizio.etichetta, tono: r.giudizio.tono, offertaMax: max };
+    aggiornaRiepilogo();
   }
 
   function forchetta(f, fmt) {
@@ -132,7 +133,7 @@
     var inp = inputVeicolo(), out = $('#outVei');
     if (!inp.offerta || !inp.valoreMercato) {
       out.innerHTML = '<h3>Risultato</h3><p class="muted">Inserisci almeno il prezzo di aggiudicazione e il valore di mercato.</p>';
-      ultimo.veicolo = null; return;
+      ultimo.veicolo = null; aggiornaRiepilogo(); return;
     }
     var r = C.costoVeicolo(inp, T);
     var max = C.offertaMassima(C.costoVeicolo, inp, T);
@@ -158,13 +159,47 @@
     h += bloccoSalva();
     out.innerHTML = h;
     ultimo.veicolo = { tipo: 'veicolo', input: inp, totale: r.totale, sconto: r.sconto, giudizio: r.giudizio.etichetta, tono: r.giudizio.tono, offertaMax: max };
+    aggiornaRiepilogo();
+  }
+
+  /* ---------- Riepilogo fisso (telefono) ---------- */
+  var risultatoVisibile = false;
+  function tabCorrente() { return $('#pan-immobile').hidden ? 'veicolo' : 'immobile'; }
+  function aggiornaRiepilogo() {
+    var box = $('#riepilogoFisso'); if (!box) return;
+    var v = ultimo[tabCorrente()];
+    box.hidden = false;
+    document.body.classList.add('con-riepilogo');
+    box.className = 'riepilogo-fisso' + (v ? ' v-' + v.tono : '') + (risultatoVisibile ? ' nascosto' : '');
+    if (v) {
+      $('#rfGiudizio').textContent = v.giudizio;
+      $('#rfNumeri').innerHTML = '<span>Sconto <b>' + U.pct(v.sconto, 0) + '</b></span><span>Costo totale <b>' + U.eur(v.totale) + '</b></span>';
+    } else {
+      $('#rfGiudizio').textContent = 'Risultato';
+      $('#rfNumeri').textContent = tabCorrente() === 'immobile' ? 'Inserisci offerta e valore di mercato' : 'Inserisci aggiudicazione e valore di mercato';
+    }
+  }
+  function osservaRisultato() {
+    if (!('IntersectionObserver' in window)) return;
+    var vis = {};
+    var io = new IntersectionObserver(function (voci) {
+      voci.forEach(function (x) { vis[x.target.id] = x.isIntersecting; });
+      risultatoVisibile = !!vis[tabCorrente() === 'immobile' ? 'outImm' : 'outVei'];
+      aggiornaRiepilogo();
+    }, { threshold: 0.15 });
+    io.observe($('#outImm')); io.observe($('#outVei'));
   }
 
   /* ---------- Asta collegata ---------- */
-  function mostraTab(t) {
-    $$('.tabs [role=tab]').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === t)); });
+  function mostraTab(t, fuoco) {
+    $$('.tabs [role=tab]').forEach(function (b) {
+      var on = b.dataset.tab === t;
+      b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1;
+      if (on && fuoco) b.focus();
+    });
     $('#pan-immobile').hidden = t !== 'immobile';
     $('#pan-veicolo').hidden = t !== 'veicolo';
+    aggiornaRiepilogo();
   }
 
   function caricaAsta(id) {
@@ -224,6 +259,19 @@
     $('#fImm').addEventListener('submit', function (e) { e.preventDefault(); });
     $('#fVei').addEventListener('submit', function (e) { e.preventDefault(); });
     $$('.tabs [role=tab]').forEach(function (b) { b.addEventListener('click', function () { mostraTab(b.dataset.tab); }); });
+    // schede accessibili da tastiera: frecce sinistra/destra, Home e Fine
+    $('.tabs').addEventListener('keydown', function (e) {
+      var tab = $$('.tabs [role=tab]'), i = tab.indexOf(document.activeElement);
+      if (i < 0) return;
+      var j = e.key === 'ArrowRight' ? (i + 1) % tab.length : e.key === 'ArrowLeft' ? (i - 1 + tab.length) % tab.length : e.key === 'Home' ? 0 : e.key === 'End' ? tab.length - 1 : -1;
+      if (j < 0) return;
+      e.preventDefault(); mostraTab(tab[j].dataset.tab, true);
+    });
+    $('#rfDettagli').addEventListener('click', function () {
+      var out = $(tabCorrente() === 'immobile' ? '#outImm' : '#outVei');
+      out.scrollIntoView({ block: 'start', behavior: U.menoMovimento() ? 'auto' : 'smooth' });
+    });
+    osservaRisultato();
 
     document.addEventListener('click', function (e) {
       var u = e.target.closest('[data-usa]');
@@ -250,5 +298,6 @@
     });
     if (id) { $('#selAsta').value = id; caricaAsta(id); }
     else { calcImmobile(); calcVeicolo(); }
+    aggiornaRiepilogo();
   });
 })();

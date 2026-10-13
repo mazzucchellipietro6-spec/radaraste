@@ -21,7 +21,8 @@ concurrency:
 jobs:
   aggiorna:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # raccolta (~5 min) + storico (~2 min) + fino a 600 dettagli del PVP, uno ogni 3 s (~35 min)
+    timeout-minutes: 110
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -43,15 +44,54 @@ jobs:
       - name: Recupera i dati pubblicati in precedenza
         run: curl -fsSL "${{ steps.pages.outputs.base_url }}/data/aste.js" -o data/aste.js || echo "Nessuna pubblicazione precedente"
 
+      # Indice storico delle vendite passate (serve per i tentativi, NON si pubblica) e schede a pezzi con i
+      # dettagli già letti: si conservano da un giorno all'altro nella cache delle Actions. La chiave cambia a ogni
+      # esecuzione (run_id), quindi si ripristina sempre la più recente (restore-keys) e se ne salva una nuova.
+      # Se la cache manca la raccolta riparte: ricostruisce l'indice e arricchisce un po' alla volta.
+      - name: Ripristina indice storico e schede a pezzi
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/storico-indice.json
+            data/dettagli/
+          key: aste-arricchimento-${{ github.run_id }}
+          restore-keys: |
+            aste-arricchimento-
+
+      # Senza cache, le schede già pubblicate sul sito valgono come punto di partenza (dettagli già letti).
+      - name: Recupera le schede pubblicate (se la cache manca)
+        if: steps.cache.outputs.cache-matched-key == ''
+        run: |
+          mkdir -p data/dettagli
+          for i in $(seq 0 127); do
+            k=$(printf '%02x' "$i")
+            curl -fsSL "${{ steps.pages.outputs.base_url }}/data/dettagli/$k.js" -o "data/dettagli/$k.js" || rm -f "data/dettagli/$k.js"
+          done
+          echo "Schede recuperate: $(ls data/dettagli | wc -l)"
+
       - id: raccolta
         name: Raccogli le aste dalle fonti ufficiali
         continue-on-error: true
-        run: node scripts/raccogli.mjs
+        run: node scripts/raccogli.mjs --max-dettagli 600 --tempo-max 85
+
+      - name: Salva indice storico e schede a pezzi
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/storico-indice.json
+            data/dettagli/
+          key: aste-arricchimento-${{ github.run_id }}
 
       - name: Prepara il sito
         run: |
           mkdir _site
           cp -r *.html manifest.webmanifest sw.js assets config data js _site/
+          # l'indice storico è una cache della raccolta: non si pubblica
+          rm -f _site/data/storico-indice.json _site/data/storico-indice.json.tmp _site/data/*.tmp _site/data/dettagli/*.tmp
+          test ! -e _site/data/storico-indice.json
+          echo "Schede pubblicate: $(ls _site/data/dettagli 2>/dev/null | wc -l) pezzi"
           sed -i "s/__VERSIONE__/${GITHUB_SHA::8}-$(date -u +%Y%m%d)/" _site/sw.js
 
       - uses: actions/upload-pages-artifact@v3

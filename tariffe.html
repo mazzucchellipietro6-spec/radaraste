@@ -11,14 +11,15 @@
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<meta name="theme-color" content="#0d6b4f" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#060a13" media="(prefers-color-scheme: dark)">
 <script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
 <body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
 <header id="site-header"></header>
 
-<main class="wrap stack">
+<main class="wrap stack" id="contenuto" tabindex="-1">
   <div class="page-head">
     <h1>Tariffe e <span>tasse</span></h1>
     <p class="sub">Le aliquote usate dal calcolatore, con la fonte e la data dell'ultimo controllo accanto a ogni voce.</p>
@@ -96,13 +97,13 @@
 
 <script src="config/tariffe.js"></script>
 <script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
 <script src="config/fonti.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/calcoli.js"></script>
 <script src="js/formato.js"></script>
-<script src="js/store.js"></script>
-<script src="js/icone.js"></script>
-<script src="js/ui.js"></script>
 <script src="js/cerca.js"></script>
 <script src="js/pages/tariffe.js"></script>
 </body>

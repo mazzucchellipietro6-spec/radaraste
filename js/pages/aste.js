@@ -3,14 +3,43 @@
   'use strict';
   var T = window.TARIFFE, U = window.UI, S = window.Store, C = window.Calcoli, $ = U.$, $$ = U.$$;
   var K_FILTRI = 'radaraste.filtri';
-  var VUOTI = { cat: '', testo: '', regione: '', provincia: '', tribunale: '', min: '', max: '', dal: '', al: '', stato: '', passate: false, nuove: false, ordina: 'data' };
-  var filtri = JSON.parse(JSON.stringify(VUOTI));
+  // comune: comune esatto (dalla ricerca istantanea); bbox: [sud, ovest, nord, est], zona scelta sulla mappa
+  var VUOTI = { cat: '', testo: '', regione: '', provincia: '', comune: '', tribunale: '', min: '', max: '', dal: '', al: '', stato: '', passate: false, nuove: false, bbox: null, ordina: 'data' };
+  var ORDINI = ['data', 'prezzo-asc', 'prezzo-desc', 'punteggio', 'sconto'];
+  var filtri = vuoti();
   var PASSO = 60, mostrate = PASSO, seguite = {};
   var R = window.Ricerche, nuoveDal = R.visitaPrecedente(), ricercaAperta = null;
 
   /* ---------- Filtri ---------- */
+  function vuoti() { return JSON.parse(JSON.stringify(VUOTI)); }
+  function bboxValido(v) {
+    if (typeof v === 'string') { try { v = JSON.parse(v); } catch (e) { return null; } }
+    if (!Array.isArray(v) || v.length !== 4) return null;
+    var n = v.map(Number);
+    if (!n.every(isFinite)) return null;
+    var sud = Math.min(n[0], n[2]), nord = Math.max(n[0], n[2]), ovest = Math.min(n[1], n[3]), est = Math.max(n[1], n[3]);
+    if (sud < -90 || nord > 90 || ovest < -180 || est > 180) return null;
+    return [sud, ovest, nord, est];
+  }
+  // filtri da indirizzo, ricerca istantanea, mappa o memoria del browser: si tengono solo le chiavi note e valori sensati
+  function applica(fx, base) {
+    var f = base || vuoti();
+    if (!fx || typeof fx !== 'object') return f;
+    Object.keys(VUOTI).forEach(function (k) {
+      if (!(k in fx) || fx[k] == null) return;
+      if (k === 'bbox') f.bbox = bboxValido(fx.bbox);
+      else if (typeof VUOTI[k] === 'boolean') f[k] = !!fx[k];
+      else f[k] = String(fx[k]).trim();
+    });
+    var G = window.GEO;
+    if (f.provincia && !G.province[f.provincia]) f.provincia = '';
+    if (f.provincia && !f.regione) f.regione = G.province[f.provincia].regione;
+    if (f.regione && G.regioni.indexOf(f.regione) < 0) { f.regione = ''; f.provincia = ''; }
+    if (ORDINI.indexOf(f.ordina) < 0) f.ordina = 'data';
+    return f;
+  }
   function caricaFiltri() {
-    try { var f = JSON.parse(localStorage.getItem(K_FILTRI) || 'null'); if (f) for (var k in f) filtri[k] = f[k]; } catch (e) {}
+    try { var f = JSON.parse(localStorage.getItem(K_FILTRI) || 'null'); if (f) filtri = applica(f); } catch (e) {}
   }
   function salvaFiltri() { try { localStorage.setItem(K_FILTRI, JSON.stringify(filtri)); } catch (e) {} }
 
@@ -30,7 +59,7 @@
     filtri.passate = $('#fPassate').checked; filtri.nuove = $('#fNuove').checked; filtri.ordina = $('#ordina').value;
   }
 
-  var oggi = new Date().toISOString().slice(0, 10);
+  var oggi = U.oggi();   // data locale, come quella delle etichette (non UTC)
   function senzaAccenti(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
   // filtro per un insieme di filtri qualsiasi (quelli correnti o quelli di una ricerca salvata)
   function filtro(filtri, dal) {
@@ -42,6 +71,11 @@
     if (filtri.cat && a.categoria !== filtri.cat) return false;
     if (filtri.regione && a.regione !== filtri.regione) return false;
     if (filtri.provincia && a.provincia !== filtri.provincia) return false;
+    if (filtri.comune && a.comune !== filtri.comune) return false;
+    if (filtri.bbox) {
+      var b = filtri.bbox;   // [sud, ovest, nord, est]: solo aste con coordinate dentro il riquadro
+      if (a.lat == null || a.lng == null || a.lat < b[0] || a.lat > b[2] || a.lng < b[1] || a.lng > b[3]) return false;
+    }
     if (filtri.tribunale && (a.tribunale || '').toLowerCase().indexOf(filtri.tribunale.toLowerCase()) < 0) return false;
     if (filtri.min && !(a.prezzoBase >= +filtri.min)) return false;
     if (filtri.max && !(a.prezzoBase <= +filtri.max)) return false;
@@ -61,14 +95,96 @@
     return window.Schede.card(a, { seguita: !!seguite[a.id], nuova: R.nuovaDa(a, nuoveDal), confronto: true, selezionata: window.Confronto.ha(a.id) });
   }
 
+  // valore per l'ordinamento; null = dato mancante, che finisce sempre in fondo (qualunque sia il verso)
+  function chiave(a, f) {
+    if (f === 'prezzo-asc' || f === 'prezzo-desc') return a.prezzoBase > 0 ? a.prezzoBase : null;
+    if (f === 'punteggio') return a.punteggio != null && isFinite(a.punteggio) ? a.punteggio : null;
+    if (f === 'sconto') {
+      if (a.sconto != null && isFinite(a.sconto)) return a.sconto;
+      var st = C.stimaRapida(a, T); return st ? st.sconto : null;
+    }
+    return null;
+  }
   function ordina(lista) {
-    var f = filtri.ordina;
+    var f = filtri.ordina, verso = f === 'prezzo-asc' ? 1 : -1;
+    function perData(a, b) { return (a.dataAsta || '9999').localeCompare(b.dataAsta || '9999'); }
+    if (f === 'data') return lista.sort(perData);
+    lista.forEach(function (a) { a._ord = chiave(a, f); });
     return lista.sort(function (a, b) {
-      if (f === 'prezzo-asc') return (a.prezzoBase || 0) - (b.prezzoBase || 0);
-      if (f === 'prezzo-desc') return (b.prezzoBase || 0) - (a.prezzoBase || 0);
-      if (f === 'sconto') { var x = C.stimaRapida(a, T), y = C.stimaRapida(b, T); return (y ? y.sconto : -9) - (x ? x.sconto : -9); }
-      return (a.dataAsta || '9999').localeCompare(b.dataAsta || '9999');
+      var x = a._ord, y = b._ord;
+      if (x === null && y === null) return perData(a, b);
+      if (x === null) return 1;
+      if (y === null) return -1;
+      return verso * (x - y) || perData(a, b);
     });
+  }
+
+  /* ---------- Filtri attivi, conteggio, foglio "Filtri" su telefono ---------- */
+  function quantiFiltri() {
+    var n = 0;
+    ['provincia', 'comune', 'tribunale', 'min', 'max', 'dal', 'al', 'stato'].forEach(function (k) { if (filtri[k]) n++; });
+    if (filtri.regione && !filtri.provincia) n++;
+    if (filtri.passate) n++;
+    if (filtri.nuove) n++;
+    if (filtri.bbox) n++;
+    return n;
+  }
+  // chip con ✕ per i filtri che non hanno un controllo visibile (comune, zona della mappa) e, su telefono, per quelli chiusi nel foglio
+  function chipFiltri() {
+    var c = [];
+    function chip(testo, chiavi, sempre) { c.push('<button class="chip attivo' + (sempre ? '' : ' solo-tel') + '" type="button" data-togli="' + chiavi + '" aria-label="Togli il filtro: ' + U.esc(testo) + '">' + U.esc(testo) + ' <span aria-hidden="true">✕</span></button>'); }
+    if (filtri.bbox) chip('Zona scelta sulla mappa', 'bbox', true);
+    if (filtri.comune) chip('Comune: ' + filtri.comune, 'comune', true);
+    if (filtri.provincia) { var p = window.GEO.province[filtri.provincia]; chip('Provincia di ' + (p ? p.nome : filtri.provincia), 'provincia,regione,comune'); }
+    else if (filtri.regione) chip(filtri.regione, 'regione,provincia,comune');
+    if (filtri.tribunale) chip('Tribunale: ' + filtri.tribunale, 'tribunale');
+    if (filtri.min || filtri.max) chip('Prezzo ' + (filtri.min ? 'da ' + U.eur(filtri.min) + ' ' : '') + (filtri.max ? 'fino a ' + U.eur(filtri.max) : ''), 'min,max');
+    if (filtri.dal || filtri.al) chip('Asta ' + (filtri.dal ? 'dal ' + U.dataIt(filtri.dal) + ' ' : '') + (filtri.al ? 'al ' + U.dataIt(filtri.al) : ''), 'dal,al');
+    if (filtri.stato) chip(U.STATI[filtri.stato] || filtri.stato, 'stato');
+    if (filtri.nuove) chip(R.primaVisita() && nuoveDal === R.visitaPrecedente() ? 'Solo nuove (ultime 24 ore)' : 'Solo nuove', 'nuove');
+    if (filtri.passate) chip('Anche concluse', 'passate');
+    $('#filtriAttivi').innerHTML = c.join('');
+    var n = quantiFiltri(), nf = $('#nFiltri');
+    nf.hidden = !n; nf.textContent = n;
+    $('#apriFiltri').setAttribute('aria-label', 'Filtri' + (n ? ' (' + n + ' attivi)' : ''));
+  }
+  function testoNuove() {
+    var prec = R.visitaPrecedente();
+    $('#fNuoveTesto').textContent = R.primaVisita()
+      ? 'Solo nuove nelle ultime 24 ore (è la tua prima visita)'
+      : 'Solo nuove dall\'ultima visita (' + U.dataIt(prec) + ')';
+  }
+
+  var mqFoglio = window.matchMedia('(max-width: 899px)');
+  function foglio() { return $('#pannelloFiltri'); }
+  function apriFiltri() {
+    var p = foglio(); if (!mqFoglio.matches || p.hasAttribute('data-aperto')) return;
+    var v = $('#veloFiltri');
+    if (!v) { v = document.createElement('div'); v.id = 'veloFiltri'; v.className = 'velo'; v.addEventListener('click', chiudiFiltri); document.body.appendChild(v); void v.offsetWidth; }
+    v.setAttribute('data-aperto', ''); p.setAttribute('data-aperto', '');
+    $('#apriFiltri').setAttribute('aria-expanded', 'true');
+    document.documentElement.classList.add('foglio-aperto');
+    U.apriFinestra(p, $('#chiudiFiltri'));
+  }
+  function chiudiFiltri() {
+    var p = foglio(); if (!p.hasAttribute('data-aperto')) return;
+    p.removeAttribute('data-aperto'); var v = $('#veloFiltri'); if (v) v.removeAttribute('data-aperto');
+    $('#apriFiltri').setAttribute('aria-expanded', 'false');
+    document.documentElement.classList.remove('foglio-aperto');
+    U.chiudiFinestra(p);
+  }
+  // su telefono il pannello è una finestra (chiusa = inert); su computer è un pannello normale
+  function modoFiltri() {
+    var p = foglio();
+    if (mqFoglio.matches) {
+      U.finestra(p, chiudiFiltri);
+      if (!p.hasAttribute('data-aperto')) { p.inert = true; p.setAttribute('inert', ''); }
+      $('#apriFiltri').setAttribute('aria-expanded', String(p.hasAttribute('data-aperto')));
+    } else {
+      chiudiFiltri();
+      p.inert = false; p.removeAttribute('inert'); p.removeAttribute('role'); p.removeAttribute('aria-modal');
+      $('#apriFiltri').removeAttribute('aria-expanded');
+    }
   }
 
   function render(mantieni) {
@@ -78,6 +194,9 @@
     var lista = ordina(tutte.filter(filtro(filtri, nuoveDal)));
     renderRicerche(tutte);
     $('#conteggio').textContent = lista.length.toLocaleString('it-IT') + ' di ' + tutte.length.toLocaleString('it-IT') + (tutte.length === 1 ? ' asta' : ' aste');
+    $('#mostraRisultati').textContent = lista.length ? 'Mostra ' + lista.length.toLocaleString('it-IT') + (lista.length === 1 ? ' asta' : ' aste') : 'Nessuna asta: cambia i filtri';
+    $('#elenco').removeAttribute('aria-busy');
+    chipFiltri();
     if (!tutte.length) {
       $('#elenco').innerHTML = '<div class="empty panel" style="grid-column:1/-1"><h2>Nessuna asta da mostrare</h2>' +
         '<p>Non ci sono aste raccolte dalle fonti ufficiali (la raccolta non è ancora stata eseguita o nessuna fonte ha restituito dati) e non hai inserito aste a mano. Qui non vengono mai mostrati dati di esempio o inventati.</p>' +
@@ -91,7 +210,8 @@
       var pagina = lista.slice(0, mostrate);
       $('#elenco').innerHTML = pagina.map(scheda).join('') +
         (lista.length > mostrate ? '<div style="grid-column:1/-1;text-align:center"><button class="btn ghost" type="button" id="altre">Mostra altre ' + Math.min(PASSO, lista.length - mostrate) + ' (ne restano ' + (lista.length - mostrate).toLocaleString('it-IT') + ')</button></div>' : '') +
-        (pagina.some(function (a) { return C.stimaRapida(a, T); }) ? '<p class="note" style="grid-column:1/-1">* Sconto stimato al prezzo base con ipotesi prudenti (niente agevolazione prima casa, 1.500 € di spese di procedura, 3.000 € di liberazione se occupato). Per una stima vera usa "Conviene?".</p>' : '');
+        (pagina.some(function (a) { return a.sconto == null && C.stimaRapida(a, T); }) ? '<p class="note" style="grid-column:1/-1">"Sconto stimato": calcolato al prezzo base con il valore di mercato che hai inserito e ipotesi prudenti (niente agevolazione prima casa, 1.500 € di spese di procedura, 3.000 € di liberazione se occupato). Per una stima vera usa "Conviene?".</p>' : '') +
+        (filtri.ordina !== 'data' && lista.some(function (a) { return a._ord === null; }) ? '<p class="note" style="grid-column:1/-1">Le aste senza il dato usato per ordinare (prezzo, punteggio o sconto) sono in fondo all\'elenco.</p>' : '');
       var b = $('#altre'); if (b) b.addEventListener('click', function () { mostrate += PASSO; render(true); });
     }
     var trib = {}; tutte.forEach(function (a) { if (a.tribunale) trib[a.tribunale] = 1; });
@@ -104,7 +224,7 @@
     var problemi = (R.fonti || []).filter(function (f) { return f.stato === 'bloccata' || (f.stato === 'errore' && f.ultimaRaccolta !== undefined); });
     var box = $('#statoRaccolta');
     if (attive.length && R.aggiornato) {
-      box.innerHTML = '<p class="note" style="margin:0">Aste raccolte automaticamente da: ' + attive.map(function (f) { return U.esc(f.nome); }).join(', ') +
+      box.innerHTML = '<p class="note info-raccolta" style="margin:0">Aste raccolte automaticamente da: ' + attive.map(function (f) { return U.esc(f.nome); }).join(', ') +
         ' · ultimo aggiornamento ' + U.dataIt(R.aggiornato.slice(0, 10)) + ' alle ' + new Date(R.aggiornato).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) + ' · <a href="fonti.html">stato delle fonti</a></p>' +
         (problemi.length ? '<div class="callout warn" style="margin-top:8px">Problemi con: ' + problemi.map(function (f) { return U.esc(f.nome); }).join(', ') + '. <a href="fonti.html">Dettagli</a></div>' : '');
     } else {
@@ -113,7 +233,7 @@
   }
 
   function azzera() {
-    var o = filtri.ordina; filtri = JSON.parse(JSON.stringify(VUOTI)); filtri.ordina = o;
+    var o = filtri.ordina; filtri = vuoti(); filtri.ordina = o;
     ricercaAperta = null; nuoveDal = R.visitaPrecedente();
     salvaFiltri(); sincronizzaControlli(); render();
   }
@@ -161,20 +281,34 @@
   /* ---------- Avvio ---------- */
   document.addEventListener('DOMContentLoaded', function () {
     caricaFiltri();
-    // filtri arrivati da altre pagine (ricerca istantanea, mappa, home)
-    var pq = U.parametro('provincia');
-    if (pq && window.GEO.province[pq]) { filtri = JSON.parse(JSON.stringify(VUOTI)); filtri.provincia = pq; filtri.regione = window.GEO.province[pq].regione; salvaFiltri(); }
+    // filtri arrivati da altre pagine (ricerca istantanea, mappa, home): ?provincia=, ?regione=, ?comune=, ?filtri={json}
+    // (anche tramite data-passa, vedi UI.parametro). Es. zona della mappa: ?filtri={"bbox":[sud,ovest,nord,est]}
+    var pq = U.parametro('provincia'), pr = U.parametro('regione'), pc = U.parametro('comune');
+    if (pq || pr || pc) { filtri = applica({ provincia: pq || '', regione: pr || '', comune: pc || '' }); salvaFiltri(); }
     var pf = U.parametro('filtri');
-    if (pf) { try { var fx = JSON.parse(pf); filtri = JSON.parse(JSON.stringify(VUOTI)); for (var kf in fx) filtri[kf] = fx[kf]; salvaFiltri(); } catch (e) {} }
+    if (pf) { try { filtri = applica(JSON.parse(pf)); salvaFiltri(); } catch (e) { U.toast('Filtri nell\'indirizzo non validi: li ignoro'); } }
     var pz = U.parametro('filtro');
-    if (pz === 'nuove') { filtri = JSON.parse(JSON.stringify(VUOTI)); filtri.nuove = true; nuoveDal = window.Riepilogo ? window.Riepilogo.piu(oggi, -2) : nuoveDal; salvaFiltri(); }
-    if (pz === 'settimana') { filtri = JSON.parse(JSON.stringify(VUOTI)); filtri.dal = oggi; filtri.al = window.Riepilogo ? window.Riepilogo.piu(oggi, 7) : ''; salvaFiltri(); }
-    // sul telefono i filtri avanzati partono chiusi (si aprono da soli se ce n'è uno attivo)
-    if (window.matchMedia('(max-width: 700px)').matches && !(filtri.regione || filtri.provincia || filtri.tribunale || filtri.min || filtri.max || filtri.dal || filtri.al || filtri.stato || filtri.passate)) $('#altriFiltri').open = false;
+    if (pz === 'nuove') { filtri = vuoti(); filtri.nuove = true; nuoveDal = R.ultimeOre24(); salvaFiltri(); }
+    if (pz === 'settimana') { filtri = vuoti(); filtri.dal = oggi; filtri.al = window.Riepilogo ? window.Riepilogo.piu(oggi, 7) : ''; salvaFiltri(); }
     U.opzioniRegioni($('#fRegione'), true);
     U.opzioniRegioni($('#aRegione')); U.opzioniProvince($('#aProvincia'), '');
+    testoNuove();
     sincronizzaControlli(); statoRaccolta(); render();
     $('#colonneCsv').textContent = S.campi.join(';');
+
+    modoFiltri();
+    if (mqFoglio.addEventListener) mqFoglio.addEventListener('change', modoFiltri); else if (mqFoglio.addListener) mqFoglio.addListener(modoFiltri);
+    $('#apriFiltri').addEventListener('click', apriFiltri);
+    $('#chiudiFiltri').addEventListener('click', chiudiFiltri);
+    $('#mostraRisultati').addEventListener('click', function () { chiudiFiltri(); $('#h-elenco').scrollIntoView({ block: 'start', behavior: U.menoMovimento() ? 'auto' : 'smooth' }); });
+    $('#azzeraFoglio').addEventListener('click', azzera);
+    $('#filtriAttivi').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-togli]'); if (!b) return;
+      b.dataset.togli.split(',').forEach(function (k) { filtri[k] = VUOTI[k]; });
+      if (b.dataset.togli === 'nuove') nuoveDal = R.visitaPrecedente();
+      salvaFiltri(); sincronizzaControlli(); render();
+      var dopo = $('#filtriAttivi .chip') || $('#fTesto'); if (dopo) dopo.focus();
+    });
 
     $('#fCat').addEventListener('click', function (e) {
       var b = e.target.closest('.chip'); if (!b) return;
@@ -204,7 +338,7 @@
       var b = e.target.closest('button'); if (!b) return;
       if (b.dataset.togli) { U.conferma(b, 'Elimina?', function () { R.rimuovi(b.dataset.togli); if (ricercaAperta === b.dataset.togli) ricercaAperta = null; render(true); }); return; }
       var x = R.apri(b.dataset.apri); if (!x) return;
-      var o = filtri.ordina; filtri = JSON.parse(JSON.stringify(VUOTI)); for (var k in x.ricerca.filtri) filtri[k] = x.ricerca.filtri[k]; filtri.ordina = o; filtri.nuove = false;
+      var o = filtri.ordina; filtri = applica(x.ricerca.filtri); filtri.ordina = o; filtri.nuove = false;
       ricercaAperta = x.ricerca.id; nuoveDal = x.dal;   // evidenzia le aste nuove dall'ultima apertura di questa ricerca
       salvaFiltri(); sincronizzaControlli(); render();
       U.toast('Evidenziate le aste nuove dal ' + U.dataIt(x.dal));
@@ -213,9 +347,11 @@
     $('#elenco').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       if (b.dataset.segui) {
-        var id = b.dataset.segui;
-        if (S.seguita(id)) { S.smetti(id); U.toast('Rimossa da "Le mie aste"'); } else { S.segui(id); U.toast('Aggiunta a "Le mie aste"'); }
-        render(true);
+        var id = b.dataset.segui, on = !S.seguita(id);
+        if (on) S.segui(id); else S.smetti(id);
+        seguite = S.idSeguite();
+        window.Schede.aggiornaSegui(b, on);
+        U.toast(on ? 'Aggiunta a "Le mie aste"' : 'Rimossa da "Le mie aste"');
       } else if (b.dataset.modifica) modalitaModifica(S.asta(b.dataset.modifica));
       else if (b.dataset.elimina) {
         var a = S.asta(b.dataset.elimina);
@@ -266,7 +402,8 @@
           esito = Array.isArray(j) ? S.importa(j) : S.ripristina(j);
         } else esito = S.importa(U.csvParse(testo));
         render();
-        U.toast('Importate ' + esito.importate + ' aste.' + (esito.scartate ? ' Scartate ' + esito.scartate + ' righe senza link all\'avviso o senza titolo.' : ''), 5000);
+        U.toast('Importate ' + esito.importate + (esito.importate === 1 ? ' asta' : ' aste') + '.' + (esito.seguite ? ' Ripristinate ' + esito.seguite + ' aste seguite.' : '') +
+          (esito.scartate ? ' Scartate ' + esito.scartate + ' righe senza link all\'avviso o senza titolo.' : ''), 5000);
       }).catch(function (err) { U.toast('Importazione non riuscita: ' + err.message, 5000); });
       this.value = '';
     });

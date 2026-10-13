@@ -34,5 +34,6 @@
           '<dt>Ultimo controllo</dt><dd>' + U.dataIt(f.controllo) + '</dd>' +
         '</dl></div>';
     }).join('') || '<div class="panel empty">Nessuna fonte configurata.</div>';
+    $('#fonti').removeAttribute('aria-busy');
   });
 })();

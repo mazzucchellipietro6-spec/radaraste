@@ -11,8 +11,13 @@ const OUT = path.join(RADICE, '_artifact');
 
 await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
-for (const dir of ['assets', 'config', 'data', 'js']) await cp(path.join(RADICE, dir), path.join(OUT, dir), { recursive: true });
-for (const f of ['manifest.webmanifest', 'sw.js']) await cp(path.join(RADICE, f), path.join(OUT, f));
+// l'indice storico (data/storico-indice.json) è una cache della raccolta: non si pubblica
+const daEscludere = (f) => /storico-indice\.json|\.tmp$/.test(f);
+for (const dir of ['assets', 'config', 'data', 'js']) await cp(path.join(RADICE, dir), path.join(OUT, dir), { recursive: true, filter: (f) => !daEscludere(f) });
+await cp(path.join(RADICE, 'manifest.webmanifest'), path.join(OUT, 'manifest.webmanifest'));
+// versione della cache del service worker: data e ora di generazione (AAAAMMGG-HHMM, UTC), così ogni pubblicazione aggiorna i file
+const versione = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 13);
+await writeFile(path.join(OUT, 'sw.js'), (await readFile(path.join(RADICE, 'sw.js'), 'utf8')).replace(/__VERSIONE__/g, versione));
 
 const pagine = (await readdir(RADICE)).filter((f) => f.endsWith('.html'));
 for (const p of pagine) {
@@ -27,4 +32,4 @@ for (const p of pagine) {
   }
   await writeFile(path.join(OUT, p), html);
 }
-console.log('Pronto in _artifact/:', pagine.join(', '));
+console.log('Pronto in _artifact/:', pagine.join(', '), '· versione della cache', versione);
