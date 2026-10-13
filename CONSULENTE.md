@@ -99,7 +99,7 @@ A questo si aggiunge il ponte serverless, gratuito nei piani base fino a un cert
 
 ### Raccomandazione
 
-- **Per partire: Claude Sonnet 5.5** con tetto di spesa mensile (es. 30 $) e limite di 10 messaggi al giorno per utente. Ha il miglior equilibrio tra qualità del ragionamento con gli strumenti, italiano e costo. Fra 10 e 100 utenti la spesa resta fra 12 e 125 $ al mese.
+- **Per partire: Claude Sonnet 5.5** con tetto di spesa mensile (es. 30 $) e limite di 10 messaggi al giorno per utente. Ha il miglior equilibrio tra qualità del ragionamento con gli strumenti, italiano e costo. Fra 10 e 100 utenti la spesa resta fra 12 e 124 $ al mese.
 - **Se il costo conta più della qualità:** Claude Haiku 5.5 per le domande semplici (ricerca e spiegazione) e Sonnet 5.5 solo quando serve leggere una perizia o fare un piano. È più complesso da gestire: da valutare dopo i primi test.
 - **Da evitare per un servizio pubblico:** i piani gratuiti (limiti, uso dei dati, divieto UE per Gemini) e i modelli nel browser (troppo deboli).
 - Con gli abbonamenti (quando deciderai) il consulente può essere una funzione riservata agli abbonati, che ne copre il costo.
