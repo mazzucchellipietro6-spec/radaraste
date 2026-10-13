@@ -121,7 +121,7 @@
         return cella(a.tentativo + '°', a.tentativo === 1 ? 'prima asta' : a.deserte ? a.deserte + (a.deserte === 1 ? ' andata deserta' : ' andate deserte') : 'aste precedenti senza esito noto');
       } },
     { et: 'Data dell\'asta', crit: 'più tempo per prepararsi', meglio: 'max',
-      v: function (a) { var q = quando(a); return q && q.futura ? q.t : null; },
+      v: function (a) { var q = quando(a); return q && q.futura ? q.giorni : null; }, // a giorni: un'ora di scarto non conta
       mostra: function (a) {
         var q = quando(a);
         if (!q) return cella(manca(a));
@@ -171,7 +171,7 @@
     var posti = n < 3 ? n + 1 : n; // una colonna in più per aggiungere un'asta
     var h = '<div class="cf-barra"><p><b>' + n + '</b> di ' + Confronto.MAX + ' aste nel confronto</p><span class="spacer"></span>' +
       (n < Confronto.MAX ? '<a class="btn small ghost" href="aste.html">' + U.icona('piu') + 'Aggiungi aste</a>' : '') +
-      '<button class="btn small ghost" type="button" id="cfSvuota">' + U.icona('chiudi') + 'Svuota il confronto</button></div>';
+      '<button class="btn small ghost" type="button" id="cfSvuota">' + U.icona('chiudi') + '<span>Svuota il confronto</span></button></div>';
     if (n === 1) h += '<div class="callout">Con una sola asta non c\'è niente da confrontare: aggiungine almeno un\'altra dall\'<a href="aste.html">elenco</a> o dalle <a href="mie-aste.html">aste che segui</a>.</div>';
     h += '<p class="cf-suggerimento" aria-hidden="true">' + U.icona('freccia') + 'Scorri di lato per vedere tutte le aste</p>';
     var righe = '<div class="riga cf-intestazione" role="row"><div role="columnheader"><span>Asta</span></div>' + colonne.map(testaColonna).join('') + (posti > n ? aggiungi() : '') + '</div>';
@@ -224,7 +224,7 @@
       var b = e.target.closest('[data-togli]');
       if (b) { togli(b.dataset.togli); return; }
       if (e.target.closest('#cfSvuota')) {
-        U.conferma(e.target.closest('#cfSvuota'), 'Conferma: svuota', function () {
+        U.conferma($('#cfSvuota span'), 'Conferma: svuota', function () {
           Confronto.ids().forEach(function (id) { Confronto.togli(id); });
           colonne = []; vuoto(); U.toast('Confronto svuotato');
           $('#contenuto').focus();

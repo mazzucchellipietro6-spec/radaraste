@@ -364,7 +364,7 @@
       var p = window.GEO.province[this.value]; if (p && !$('#aRegione').value) { $('#aRegione').value = p.regione; U.opzioniProvince($('#aProvincia'), p.regione); this.value = p.sigla; }
     });
     $('#aPrezzoBase').addEventListener('input', function () {
-      $('#aOffertaMinima').placeholder = this.value ? '75% = ' + U.eur(C.offertaMinima(this.value, T)) : '75% del prezzo base';
+      $('#aOffertaMinima').placeholder = this.value ? '75% = ' + U.eur(C.offertaMinima(this.value, T)) : 'se vuota: 75%';
     });
     $('#aLinkAvviso').addEventListener('change', function () {
       var f = window.Parser.fonteDaLink(this.value); if (f && !$('#aFonte').value) $('#aFonte').value = f;

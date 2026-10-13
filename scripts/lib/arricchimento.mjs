@@ -10,7 +10,7 @@ import { readFile, writeFile, mkdir, readdir, rename, rm } from 'node:fs/promise
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { aggiornaIndice, leggiIndice, riga, daRiga, raggruppa, catena } from './storico.mjs';
-import { estrai, descrizione, scarica, ordina } from './dettaglio-pvp.mjs';
+import { estrai, descrizione, scarica, ordina, pulisci } from './dettaglio-pvp.mjs';
 import { prezzo } from './correzioni.mjs';
 
 const require = createRequire(import.meta.url);
@@ -81,12 +81,17 @@ export async function scriviSchede(cartella, records) {
 
 const pulito = (o) => { for (const k of Object.keys(o)) if (o[k] === null || o[k] === undefined || o[k] === '' || (Array.isArray(o[k]) && !o[k].length && k !== 'rischi')) delete o[k]; return o; };
 
+const TESTI = ['descrizione', 'cauzione', 'contoSpese'];
+export function ripulisci(o) { for (const k of TESTI) if (typeof o[k] === 'string') o[k] = pulisci(o[k]) || undefined; return o; }
+
 // dati del dettaglio già letti in una raccolta precedente (dal record del pezzo)
 export function daVecchia(v) {
   const letto = v && (v.dettaglio || v.letto);
   if (!letto) return null;
   const d = { dettaglio: letto };
   for (const k of DAL_DETTAGLIO) if (v[k] !== undefined && v[k] !== null) d[k] = v[k];
+  // i testi conservati si ripuliscono ogni volta: le regole sui dati personali migliorate valgono anche per il passato
+  ripulisci(d);
   if (v.mq) d.mqScheda = v.mq;
   else if (v.superficieDa === 'scheda' && v.superficieMq) d.mqScheda = v.superficieMq;
   if (d.fotoTotali == null && Array.isArray(v.foto)) d.fotoTotali = v.foto.length;
@@ -183,7 +188,7 @@ export async function arricchisci({ aste, prima = [], oggi, cartella, fileIndice
     const daLeggere = ordina(pvp.filter((a) => !daVecchia(vecchieSchede.get(a.id))), oggi);
     log(`  dettagli: ${pvp.length - daLeggere.length} già letti, ${daLeggere.length} da leggere, ne leggo al massimo ${maxDettagli}`);
     const r = await scarica(daLeggere.map((a) => a._pvp.id), { max: maxDettagli, log, scadenza: scadenzaDettagli, ...(leggiDettaglio ? { leggi: leggiDettaglio } : {}) });
-    nuovi = r.dettagli; stat.richiesteDettagli = r.richieste; stat.dettagliNuovi = r.dettagli.size; stat.dettagliFermo = r.fermo;
+    nuovi = r.dettagli; stat.richiesteDettagli = r.richieste; stat.dettagliNuovi = r.dettagli.size; stat.dettagliFermo = r.fermo; stat.dettagliRifiutati = r.rifiutate || 0;
   }
 
   // 3. schede e campi corti
@@ -194,6 +199,7 @@ export async function arricchisci({ aste, prima = [], oggi, cartella, fileIndice
       if (v) {
         const s = {};
         for (const k of LUNGHI) if (v[k] !== undefined) s[k] = v[k];
+        ripulisci(s);
         if (v.dettaglio && !a.dettaglio) a.dettaglio = v.dettaglio;
         schede.set(a.id, s); stat.schedeConservate++;
       }

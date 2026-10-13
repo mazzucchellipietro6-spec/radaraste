@@ -3,8 +3,9 @@
 
 export const USER_AGENT = 'RadarAsteItalia/1.0 (+https://github.com/mazzucchellipietro6-spec/radaraste)';
 
+// stato: 'bloccata' (il sito rifiuta), 'vietata' (robots.txt), 'errore' (rete o server); http: codice HTTP se c'è
 export class FonteBloccata extends Error {
-  constructor(messaggio, stato = 'bloccata') { super(messaggio); this.stato = stato; }
+  constructor(messaggio, stato = 'bloccata', http = null) { super(messaggio); this.stato = stato; this.http = http; }
 }
 
 const ultimaRichiesta = new Map(); // host -> timestamp
@@ -100,8 +101,8 @@ export async function richiesta(url, { metodo = 'GET', corpo, intestazioni = {},
       await pausa(5000 * i);
       continue;
     }
-    if (r.status === 401 || r.status === 403) throw new FonteBloccata(`accesso negato dal sito (HTTP ${r.status})`);
-    if (r.status === 429) throw new FonteBloccata('il sito chiede di rallentare (HTTP 429): raccolta interrotta');
+    if (r.status === 401 || r.status === 403) throw new FonteBloccata(`accesso negato dal sito (HTTP ${r.status})`, 'bloccata', r.status);
+    if (r.status === 429) throw new FonteBloccata('il sito chiede di rallentare (HTTP 429): raccolta interrotta', 'bloccata', 429);
     if (r.status >= 500) {
       if (i === tentativi) throw new FonteBloccata(`errore del sito (HTTP ${r.status})`, 'errore');
       await pausa(10000 * i);

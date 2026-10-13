@@ -233,6 +233,8 @@
     perizia: 'Stima del perito indicata nell\'avviso',
     'primo-prezzo': 'Prezzo base della prima asta, che di norma coincide con la stima del perito',
     'prima-asta': 'È la prima asta: il prezzo base di norma coincide con la stima del perito',
+    omi: 'Quotazioni OMI della zona (Agenzia delle Entrate) per la superficie indicata',
+    'omi-comune': 'Quotazioni OMI tipiche del comune per la superficie indicata',
     manuale: 'Valore inserito da te'
   };
 

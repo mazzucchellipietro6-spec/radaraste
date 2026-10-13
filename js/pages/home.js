@@ -47,8 +47,10 @@
     var t1 = tile('Aste attive', [['immobile', 'immobili'], ['auto', 'auto'], ['moto', 'moto'], ['beni', 'beni']].filter(function (c) { return cat[c[0]]; })
       .map(function (c) { return cat[c[0]].toLocaleString('it-IT') + ' ' + c[1]; }).join(' · '));
     var t2 = tile('Nuove nelle ultime 24 ore', 'pubblicate dal ' + U.dataIt(R.nuove.dal), R.nuove.totale ? 'good' : '');
-    var pb = R.prezziBase;
-    var t3 = tile('Valore totale dei prezzi base', pb ? 'somma di ' + pb.conPrezzo.toLocaleString('it-IT') + ' aste attive con il prezzo indicato' : NON_DISPONIBILE + ': arriva con il prossimo aggiornamento dei dati');
+    // somma dei prezzi base delle aste attive: R.valoreTotale (js/riepilogo.js); manca nei riepiloghi generati prima di quel campo
+    var tot = R.valoreTotale > 0 ? R.valoreTotale : R.prezziBase && R.prezziBase.totale > 0 ? R.prezziBase.totale : null;
+    var pb = tot ? { totale: tot } : null;
+    var t3 = tile('Valore totale dei prezzi base', pb ? 'somma dei prezzi base delle aste attive (dove indicato)' : NON_DISPONIBILE + ': arriva con il prossimo aggiornamento dei dati');
     var t4 = tile('Sconto medio sul valore', R.sconto ? 'su ' + R.sconto.campione.toLocaleString('it-IT') + ' aste con il valore di mercato' : NON_DISPONIBILE + ': serve il valore di mercato (stima del perito)', R.sconto ? 'good' : '');
     [t1, t2, t3, t4].forEach(function (t) { box.appendChild(t); });
     conta(t1.querySelector('.t-val'), R.attive, intero);

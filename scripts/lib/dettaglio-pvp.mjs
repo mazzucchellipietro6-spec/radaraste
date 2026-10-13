@@ -16,10 +16,25 @@ export const urlDettaglio = (id) => `${DETTAGLIO}${encodeURIComponent(id)}/restr
 
 // rende "maiuscole/minuscole indifferenti" solo una parte del pattern (il nome che segue resta con l'iniziale maiuscola)
 const ci = (src) => src.replace(/\[[^\]]*\]|\\.|[a-z]| /g, (x) => (x === ' ' ? '\\s+' : x[0] === '[' ? x.slice(0, -1) + x.slice(1, -1).toUpperCase() + ']' : x[0] === '\\' ? x : '[' + x + x.toUpperCase() + ']'));
-const TITOLI = ci("(?:sig(?:\\.ra|\\.na|nora|nore|nor|\\.)|signor[ae]?|dott(?:\\.ssa|oressa|ore|\\.)|dr\\.|avv(?:\\.to|ocat[oa]|\\.)|geom(?:etra|\\.)|arch(?:itetto|\\.)|ing(?:egnere|\\.)|rag(?:ioniere|\\.)|notai[oa]|prof(?:essore|\\.ssa|\\.)|p\\. ?i\\.|per\\. ?ind\\.)");
+// anche senza il punto ("l'avv Rossi", "CTU Ing Bianchi": "(?![a-z])" = l'abbreviazione finisce lì)
+const TITOLI = ci("(?:sig(?:\\.ra|\\.na|nora|nore|nor|\\.|(?![a-z]))|signor[ae]?|dott(?:\\.ssa|oressa|ore|\\.|(?![a-z]))|dr\\.|avv(?:\\.to|ocat[oa]|\\.|(?![a-z]))|geom(?:etra|\\.|(?![a-z]))|arch(?:itetto|\\.)|ing(?:egnere|\\.|(?![a-z]))|rag(?:ioniere|\\.)|notai[oa]|prof(?:essore|\\.ssa|\\.|(?![a-z]))|p\\. ?i\\.|per\\. ?ind\\.|perito ind(?:ustriale|\\.))");
+// parole con l'iniziale maiuscola che, dopo un titolo o un ruolo, NON sono nomi di persona
+const NON_NOMI_SRC = "avv|avvocat[oa]|dott|dottor\\w*|dr|geom|geometra|arch|architetto|ing|ingegnere|rag|ragioniere|sig|signor\\w*|notai[oa]|prof|professor\\w*|p|per|giudiziari[oa]|nominat[oa]|incaricat[oa]|alla|della|del|dell|delegat[oa]|vendita|tribunale|istituto|ivg|ufficio|il|la|lo|sede|presso|competente|fallimentare|liquidazione|procedura|esecutat[oai]|esecuzione|occupante|occupato|in|che|come|ed|e|con|dal|dalla|soc\\w*|s\\.?r\\.?l|s\\.?p\\.?a";
+const NON_NOMI = new RegExp('^(?:' + NON_NOMI_SRC + ')$', 'i');
+const nomeVero = (nome) => {
+  const w = String(nome).split(/\s+/);
+  const primo = w.length > 1 && PARTICELLA_RE.test(w[0]) ? w[1] : w[0];
+  return !NON_NOMI.test(primo.replace(/[.,;:]+$/, ''));
+};
+// una parola del nome non può essere un titolo o un ruolo: così "Notaio incaricato Dott. Mario Rossi" e
+// "Dott. Ing. Mario Rossi" non "consumano" il titolo che precede il nome vero
+const NON_NOME = '(?!(?:' + ci(NON_NOMI_SRC) + ")(?![A-Za-zÀ-ÿ'’]))";
 // nome: da 1 a 3 parole con l'iniziale maiuscola, anche iniziali puntate ("M.")
-const PAROLA = "[A-ZÀ-Ý][A-Za-zÀ-ÿ'’]+", PAROLA_MAIUSCOLA = "[A-ZÀ-Ý][A-ZÀ-Ý'’]+", INIZIALE = '[A-Z]\\.';
-const nome = (p) => `(?:${p}|${INIZIALE})(?:\\s+(?:${p}|${INIZIALE})){0,2}`;
+const PAROLA = NON_NOME + "[A-ZÀ-Ý][A-Za-zÀ-ÿ'’]+", PAROLA_MAIUSCOLA = NON_NOME + "[A-ZÀ-Ý][A-ZÀ-Ý'’]+", INIZIALE = '[A-Z]\\.';
+// cognomi con particella: "Sig. Lo Re", "Avv. De Luca", "dott.ssa Della Valle" (la particella conta solo se segue un'altra parola)
+const PARTICELLA = "(?:D[aeio]|De[il]|Dell[aeo]?|Dal(?:la)?|L[aeio]|DA|DE|DI|DEL|DELL[AEO]?|DAL(?:LA)?|L[AEIO])";
+const PARTICELLA_RE = new RegExp('^' + PARTICELLA + '$');
+const nome = (p) => `(?:${PARTICELLA}\\s+(?=[A-ZÀ-Ý]))?(?:${p}|${INIZIALE})(?:\\s+(?:${p}|${INIZIALE})){0,2}`;
 const NOME = nome(PAROLA), NOME_MAIUSCOLO = nome(PAROLA_MAIUSCOLA);
 const RE_TITOLO = new RegExp('\\b(' + TITOLI + ')\\s*(' + NOME + ')', 'g');
 // ruoli seguiti dal nome di una persona (o di una ditta: si toglie lo stesso)
@@ -36,21 +51,23 @@ const RE_IBAN = /\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]){11,30}\b/g;
 const RE_FISSO = /\b(?:tel\w*|telefon\w*|cell\w*|mob\w*|fax|recapit\w*|contatt\w*|chiamare|whatsapp|n\.\s?verde)\.?\s*:?\s*(?:\+39[\s.]?)?\(?0\d{1,4}\)?[\s./-]?\d{2,4}[\s./-]?\d{2,4}(?:[\s./-]?\d{2,4})?/gi;
 
 const OMISSIS = '[omissis]';
-
-// parole con l'iniziale maiuscola che, dopo un titolo o un ruolo, NON sono nomi di persona
-const NON_NOMI = /^(avv|avvocat[oa]|dott|dottor\w*|dr|geom|geometra|arch|architetto|ing|ingegnere|rag|ragioniere|sig|signor\w*|notai[oa]|prof|professor\w*|p|per|giudiziari[oa]|nominat[oa]|incaricat[oa]|alla|della|del|dell|delegat[oa]|vendita|tribunale|istituto|ivg|ufficio|il|la|lo|sede|presso|competente|fallimentare|liquidazione|procedura|esecutat[oai]|esecuzione|occupante|occupato|in|che|come|ed|e|con|dal|dalla|soc\w*|s\.?r\.?l|s\.?p\.?a)$/i;
-const nomeVero = (nome) => !NON_NOMI.test(String(nome).split(/\s+/)[0].replace(/[.,;:]+$/, ''));
+const MESI = '(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)';
+const RE_NASCITA = new RegExp("\\b(nat[oaie])\\s+(?:a\\s+[A-ZÀ-Ý][A-Za-zÀ-ÿ'’]+(?:\\s+[A-ZÀ-Ýa-zà-ÿ'’]+){0,3}?\\s*(?:\\([A-Z]{2}\\))?\\s*,?\\s*)?(?:il|in data)\\s+\\d{1,2}(?:\\s*[./-]\\s*\\d{1,2}\\s*[./-]\\s*\\d{2,4}|°?\\s+" + MESI + "\\s+\\d{4})", 'gi');
+const STRADA_PRIMA = /\b(?:via|viale|v\.le|piazza|p\.zza|piazzale|corso|c\.so|largo|vicolo|vico|contrada|c\.da|strada|lungomare|lungotevere|salita|traversa|rione|borgo|galleria)\s*$/i;
 
 export function pulisci(testo) {
   let t = String(testo || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ');
   t = t.replace(RE_EMAIL, OMISSIS);
   t = t.replace(RE_IBAN, (m) => (/\d{6}/.test(m.replace(/\s/g, '')) ? OMISSIS : m));
   t = t.replace(RE_CF, OMISSIS).replace(RE_PIVA, '$1' + OMISSIS);
+  t = t.replace(RE_NASCITA, '$1 ' + OMISSIS);
   t = t.replace(RE_FISSO, (m) => m.replace(/\(?\+?\d[\d\s./()-]{5,}$/, ' ' + OMISSIS));
   t = t.replace(RE_CELL, (m, i, tutto) => (/(?:€|euro|eur\.?)\s*$/i.test(tutto.slice(Math.max(0, i - 6), i)) ? m : OMISSIS));
   // titolo + nome: "dott. Mario Rossi" → "dott. [omissis]"; nei testi tutti maiuscoli anche "AVV. MARIO ROSSI"
   const maiuscolo = t.replace(/[^A-Za-zÀ-ÿ]/g, '').length > 20 && t === t.toUpperCase();
-  const sostituisci = (m, ruolo, nome) => (nomeVero(nome) ? m.slice(0, m.length - nome.length) + OMISSIS : m);
+  // il nome di una strada ("via Dott. Giuseppe Mazzini", "piazza Avv. ...") resta: è un indirizzo, non una persona coinvolta
+  const sostituisci = (m, ruolo, nome, i, tutto) => (nomeVero(nome) && !STRADA_PRIMA.test(tutto.slice(Math.max(0, i - 25), i))
+    ? m.slice(0, m.length - nome.length) + OMISSIS : m);
   if (maiuscolo) t = t.replace(RE_TITOLO_MAIUSCOLO, sostituisci).replace(RE_RUOLO_FORTE_MAIUSCOLO, sostituisci);
   else t = t.replace(RE_TITOLO, sostituisci).replace(RE_RUOLO, sostituisci);
   // "[omissis] e Anna Bianchi" → "[omissis]"
@@ -67,6 +84,10 @@ export function taglia(t, max) {
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9à-ÿ]/g, '');
 
+// spazio mancante dopo il punto tra due frasi ("piano S2.Trattasi di", "Frosinone.Identificato"): le sigle
+// ("S.p.A.", "Fg.19", "mq.208") restano come sono
+export const spazi = (t) => String(t || '').replace(/([A-Za-zÀ-ÿ\d][a-zà-ÿ\d])\.([A-ZÀ-Ý][a-zà-ÿ]{2})/g, '$1. $2');
+
 // descLotto + descrizioni dei beni, senza ripetizioni, ripulite, al massimo 1500 caratteri
 export function descrizione(descLotto, beni = []) {
   const parti = [];
@@ -82,7 +103,7 @@ export function descrizione(descLotto, beni = []) {
     visti.push(n); parti.push(t);
   }
   if (!parti.length) return null;
-  return taglia(pulisci(parti.map((t) => /[.!?…]$/.test(t) ? t : t + '.').join(' ')), MAX_DESCRIZIONE);
+  return taglia(spazi(pulisci(parti.map((t) => /[.!?…]$/.test(t) ? t : t + '.').join(' '))), MAX_DESCRIZIONE);
 }
 
 /* ---------- campi del dettaglio ---------- */
@@ -242,27 +263,46 @@ export function ordina(aste, oggi) {
       : (x[1].dataAsta || '').localeCompare(y[1].dataAsta || '') || (x[1].ora || '').localeCompare(y[1].ora || ''))).map((x) => x[1]);
 }
 
-// Scarica i dettagli (id numerici del PVP) uno ogni 3 secondi. Si ferma se il sito blocca (401/403/429) o dopo
-// 5 errori di fila; i singoli errori (es. 404) si saltano. Restituisce Map id → corpo della risposta.
+// Scarica i dettagli (id numerici del PVP) uno ogni 3 secondi. Restituisce Map id → corpo della risposta.
+//   - errori singoli (es. 404) si saltano; dopo 5 errori di fila ci si ferma;
+//   - 401/403 su una vendita si salta: il PVP rifiuta alcune vendite una per una (verificato il 13/10/2026: la
+//     vendita 4644696, appena pubblicata, rifiutata con 403 mentre la successiva rispondeva). Dopo 3 rifiuti di fila
+//     si riprova UNA vendita già letta in questa raccolta: se rifiuta anche quella il sito ci sta bloccando e ci si
+//     ferma (anche se non c'è ancora nessuna vendita letta da riprovare);
+//   - 429 (rallentare) o robots.txt: ci si ferma subito.
 export async function scarica(ids, { max = 600, log = console.log, leggi = leggiDettaglio, scadenza = Infinity } = {}) {
   const out = new Map();
-  let errori = 0, richieste = 0, fermo = null;
+  let errori = 0, richieste = 0, fermo = null, negati = 0, rifiutate = 0, controllo = null;
   for (const id of ids) {
     if (out.size >= max || Date.now() > scadenza) break;
     richieste++;
     try {
       const b = await leggi(id);
-      if (b && typeof b === 'object') { out.set(id, b); errori = 0; } else errori++;
+      if (b && typeof b === 'object') { out.set(id, b); errori = 0; negati = 0; controllo = id; } else errori++;
     } catch (e) {
-      if (e instanceof FonteBloccata && e.stato !== 'errore') { fermo = e.message; break; }
-      errori++;
-      log(`  ✗ dettaglio ${id}: ${e.message}`);
+      if (e instanceof FonteBloccata && e.stato !== 'errore') {
+        if (e.http !== 401 && e.http !== 403) { fermo = e.message; break; }
+        rifiutate++; negati++;
+        log(`  ✗ dettaglio ${id}: ${e.message}, saltato`);
+        if (negati >= 3) {
+          let bloccato = true;
+          if (controllo != null) {
+            richieste++;
+            try { await leggi(controllo); bloccato = false; } catch (e2) { bloccato = e2 instanceof FonteBloccata; }
+          }
+          if (bloccato) { fermo = `${e.message} su 3 vendite di fila` + (controllo != null ? ' e su una già letta' : ''); break; }
+          negati = 0;
+        }
+      } else {
+        errori++;
+        log(`  ✗ dettaglio ${id}: ${e.message}`);
+      }
     }
     if (errori >= 5) { fermo = '5 errori di fila'; break; }
     if (richieste % 50 === 0) log(`  dettagli: ${out.size} letti su ${richieste} richieste`);
   }
   if (fermo) log(`  ✗ lettura dei dettagli interrotta: ${fermo}`);
-  return { dettagli: out, richieste, fermo };
+  return { dettagli: out, richieste, fermo, rifiutate };
 }
 
 export async function leggiDettaglio(id) {

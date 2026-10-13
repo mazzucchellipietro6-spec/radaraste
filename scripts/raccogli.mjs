@@ -168,9 +168,10 @@ async function main() {
     arricchimento = {
       conDettaglio: uniche.filter((a) => a.dettaglio).length, dettagliLettiOggi: s.dettagliNuovi, richiesteDettagli: s.richiesteDettagli,
       conStorico: uniche.filter((a) => a.tentativo).length, catene: s.catene, ambigue: s.ambigue, indice: s.indice || null,
+      ...(s.dettagliRifiutati ? { dettagliRifiutati: s.dettagliRifiutati } : {}),
       ...(s.dettagliFermo ? { dettagliFermo: s.dettagliFermo } : {})
     };
-    console.log(`  ✓ ${s.dettagliNuovi} dettagli letti ora (${s.richiesteDettagli} richieste), ${s.dettagliConservati} conservati dalle raccolte precedenti, ` +
+    console.log(`  ✓ ${s.dettagliNuovi} dettagli letti ora (${s.richiesteDettagli} richieste${s.dettagliRifiutati ? `, ${s.dettagliRifiutati} vendite rifiutate dal sito e saltate` : ''}), ${s.dettagliConservati} conservati dalle raccolte precedenti, ` +
       `${s.catene} aste con tentativi precedenti, ${s.ambigue} catene ambigue non collegate (${s.durataSec} s)` + (s.dettagliFermo ? ` – dettagli interrotti: ${s.dettagliFermo}` : ''));
   } catch (e) {
     console.error(`  ✗ arricchimento non riuscito: ${e.stack || e.message}`);

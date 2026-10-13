@@ -27,7 +27,7 @@
 
   <div class="panel row-actions" id="sceltaAsta">
     <label style="flex:1;min-width:240px">Valuta un'asta che segui
-      <select id="selAsta"><option value="">— Calcolo libero, senza asta collegata —</option></select>
+      <select id="selAsta"><option value="">Calcolo libero (nessuna asta)</option></select>
     </label>
     <div id="infoAsta" class="note" style="flex-basis:100%;margin:0"></div>
   </div>
@@ -72,7 +72,7 @@
         <summary>Tre strategie: ci vivo, lo affitto, ristrutturo e rivendo</summary>
         <div class="inner fields">
           <label>Canone di mercato al mese (€)<input type="number" id="sCanone" min="0" step="10" inputmode="decimal" placeholder="da annunci"></label>
-          <label>Contratto d'affitto<select id="sContratto"><option value="libero">Canone libero (cedolare 21%)</option><option value="concordato">Canone concordato (cedolare 10%)</option></select></label>
+          <label>Contratto d'affitto<select id="sContratto"><option value="libero">Libero (cedolare 21%)</option><option value="concordato">Concordato (cedolare 10%)</option></select></label>
           <label>Lavori per rivendere (€)<input type="number" id="sLavori" min="0" step="1000" inputmode="decimal" placeholder="vuoto: 600 €/mq"></label>
           <label>Superficie (mq)<input type="number" id="sMq" min="0" step="1" inputmode="decimal"></label>
           <label>Valore dopo i lavori (€)<input type="number" id="sValoreDopo" min="0" step="1000" inputmode="decimal" placeholder="vuoto: mercato"></label>

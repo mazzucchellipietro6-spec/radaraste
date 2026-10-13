@@ -104,6 +104,10 @@ test('titoli: prefissi tolti, maiuscolo → frase normale, sigle e comune scritt
   assert.match(t, /^Appartamento al piano secondo sito in Genova, via Roma 10, composto/);
   assert.ok(t.endsWith('…'));
   assert.equal(titolo(x({ descLotto: 'Lotto 1' }), 'Genova', 'GE'), 'Immobile residenziale – Genova');
+  // spazio mancante tra due frasi (pvp-4630987), sigle intatte
+  assert.equal(titolo(x({ descLotto: 'Appartamento a Frosinone (FR) - Vicolo Moccia 78, piano S2.Trattasi di un appartamento' }), 'Frosinone', 'FR'),
+    'Appartamento a Frosinone (FR) - Vicolo Moccia 78, piano S2. Trattasi di un appartamento');
+  assert.equal(titolo(x({ descLotto: 'Capannone della Rossi S.p.A. al Fg.19 di 1.200 mq' }), 'Genova', 'GE'), 'Capannone della Rossi S.p.A. al Fg.19 di 1.200 mq');
 });
 
 /* f. offerta minima sopra il prezzo base */

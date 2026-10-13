@@ -24,7 +24,17 @@ test('pulisci: email, telefoni, codici fiscali, IBAN e nomi dopo titoli o ruoli'
     ['IMMOBILE INTESTATO A ROSSI MARIO E BIANCHI ANNA, C.F. RSSMRA80A01H501U', /ROSSI|BIANCHI|RSSMRA/],
     ['Delegato alla vendita: Dott.ssa Paola Neri', /Paola|Neri/],
     ['bonifico su IBAN IT60X0542811101000000123456 intestato alla procedura', /IT60X/],
-    ['C.F. e P.IVA 06669950963', /06669950963/]
+    ['C.F. e P.IVA 06669950963', /06669950963/],
+    // casi reali della raccolta del 13/10/2026: un titolo o un ruolo prima del titolo vero non deve "coprire" il nome
+    ['La vendita avverrà a cura del Notaio Incaricato Dott. Mario Rossi, mediante la Rete Aste Notarili', /Mario|Rossi/],
+    ['supplemento di perizia redatta dal Dott. Ing. Luca Bianchi.', /Luca|Bianchi/],
+    ['PERIZIA DEL DOTT. ING. MARIO ROSSI, IMMOBILE INTESTATO A ROSSI MARIO', /MARIO|ROSSI/],
+    ['Km non rilevabili. Il Sig. Lo Re dichiara circa 2 milioni di km', /Lo Re/],
+    ['Avv. De Luca Giovanni custode; dott.ssa Della Valle', /Luca|Giovanni|Valle/],
+    ['ELABORATO PERITALE A CURA DEL PERITO IND. EDILE MOLTENI. VENDITA COMPETITIVA', /MOLTENI/],
+    ["per visite contattare l'avv Biliotti; stima CTU Ing Ammendola", /Biliotti|Ammendola/],
+    ['quota del debitore esecutato nato il 18 settembre 1945, porzione di fabbricato', /1945|settembre/],
+    ['intestata a soggetto nata a San Giovanni Rotondo (FG) il 01/02/1960, residente', /1960/]
   ];
   for (const [t, vietato] of casi) {
     const p = pulisci(t);
@@ -35,6 +45,8 @@ test('pulisci: email, telefoni, codici fiscali, IBAN e nomi dopo titoli o ruoli'
   assert.equal(pulisci('prezzo base euro 312.500,00, offerta minima 234.375,00'), 'prezzo base euro 312.500,00, offerta minima 234.375,00');
   assert.equal(pulisci('foglio 43 particella 845 sub 3, cat. A/2'), 'foglio 43 particella 845 sub 3, cat. A/2');
   assert.equal(pulisci("L'immobile verrà consegnato libero a cura del Custode Giudiziario."), "L'immobile verrà consegnato libero a cura del Custode Giudiziario.");
+  // le strade intitolate a una persona restano (sono indirizzi)
+  assert.equal(pulisci('immobile in Via Dott. Giuseppe Mazzini 4, custode Avv. Paolo Neri'), 'immobile in Via Dott. Giuseppe Mazzini 4, custode Avv. [omissis]');
 });
 
 test('nomi dei file allegati: scartati se contengono dati personali', () => {
@@ -149,6 +161,33 @@ test('scaricamento: tetto massimo, errori singoli saltati, stop se il sito blocc
   assert.equal(r.fermo, '5 errori di fila');
 });
 
+test('scaricamento: 403 su una vendita si salta; ci si ferma solo se il sito rifiuta anche una vendita già letta', async () => {
+  const negato = () => new FonteBloccata('accesso negato dal sito (HTTP 403)', 'bloccata', 403);
+  // una vendita rifiutata (come la 4644696 del PVP): si salta e si continua
+  let chiamate = [];
+  let r = await scarica([1, 2, 3], { log: () => {}, leggi: async (id) => { chiamate.push(id); if (id === 2) throw negato(); return { id }; } });
+  assert.deepEqual([...r.dettagli.keys()], [1, 3]);
+  assert.equal(r.fermo, null);
+  assert.equal(r.rifiutate, 1);
+  // tre rifiuti di fila ma la vendita già letta risponde: si continua
+  chiamate = [];
+  r = await scarica([1, 2, 3, 4, 5], { log: () => {}, leggi: async (id) => { chiamate.push(id); if (id >= 2 && id <= 4 && chiamate.length <= 4) throw negato(); return { id }; } });
+  assert.deepEqual(chiamate, [1, 2, 3, 4, 1, 5]);
+  assert.deepEqual([...r.dettagli.keys()], [1, 5]);
+  assert.equal(r.richieste, 6);
+  assert.equal(r.fermo, null);
+  // blocco vero: rifiuta anche la vendita già letta → stop
+  chiamate = [];
+  let primo = true;
+  r = await scarica([1, 2, 3, 4, 5, 6], { log: () => {}, leggi: async (id) => { chiamate.push(id); if (primo) { primo = false; return { id }; } throw negato(); } });
+  assert.deepEqual(chiamate, [1, 2, 3, 4, 1]);
+  assert.match(r.fermo, /403.*3 vendite di fila e su una già letta/);
+  // tre rifiuti all'inizio, nessuna vendita da riprovare: stop
+  r = await scarica([1, 2, 3, 4], { log: () => {}, leggi: async () => { throw negato(); } });
+  assert.equal(r.richieste, 3);
+  assert.match(r.fermo, /3 vendite di fila$/);
+});
+
 /* ---------- composizione della scheda ---------- */
 
 const asta = (o = {}) => ({
@@ -197,6 +236,9 @@ test('componi: dettaglio nuovo (superficie dai beni) e dettaglio conservato da u
   assert.equal(dopo.corti.superficieMq, 92.5);
   assert.equal(dopo.scheda.foto.length, MAX_FOTO);
   assert.equal(daVecchia({ id: 'x', descrizione: 'solo ricerca' }), null);
+  // un testo conservato (salvato con regole più vecchie) si ripulisce di nuovo
+  const vecchio = daVecchia({ id: 'x', dettaglio: '2026-10-12', descrizione: 'Vendita a cura del Notaio Incaricato Dott. Mario Rossi.' });
+  assert.equal(vecchio.descrizione, 'Vendita a cura del Notaio Incaricato Dott. [omissis].');
 });
 
 test('componi: ribasso da un giorno all\'altro (stesso id) e conservato finché il prezzo resta quello', () => {

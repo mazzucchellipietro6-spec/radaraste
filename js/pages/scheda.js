@@ -83,7 +83,7 @@
     var striscia = $('.sc-foto', g), n = +g.dataset.n, caricate = 0;
     g.addEventListener('load', function (e) { if (e.target.tagName === 'IMG') caricate++; }, true);
     g.addEventListener('error', function (e) {
-      if (e.target.tagName !== 'IMG') return;
+      if (e.target.tagName !== 'IMG' || !g.isConnected) return; // galleria già sostituita dalla copertina
       var fig = e.target.closest('figure');
       // la prima foto non si carica e nessun'altra è arrivata: il server delle foto non è raggiungibile da qui
       if (!caricate) { g.outerHTML = '<div class="sc-galleria vuota">' + copertina(a, 'Foto non disponibili qui: aprile dall\'avviso') + '</div>'; return; }
@@ -218,7 +218,7 @@
   }
   var PARTI = [
     ['sconto', 'Sconto sul valore'], ['tentativo', 'Tentativi già andati a vuoto'], ['occupazione', 'Libero o occupato'],
-    ['rischi', 'Rischi trovati nel testo'], ['zona', 'Domanda della zona']
+    ['rischi', 'Rischi trovati nel testo'], ['zona', 'Affitto della zona (OMI)']
   ];
   function dettaglioParte(k, a, r) {
     var ch = Array.isArray(a.rischi) ? a.rischi.length : null;
@@ -227,7 +227,9 @@
       case 'tentativo': return a.tentativo ? a.tentativo + '° tentativo' + (a.deserte ? ', ' + a.deserte + (a.deserte === 1 ? ' deserta' : ' deserte') : '') : 'non noto';
       case 'occupazione': return a.categoria !== 'immobile' ? 'non si applica: punteggio neutro' : a.stato === 'libero' ? 'libero' : a.stato === 'occupato' ? 'occupato' : 'non indicato: punteggio neutro';
       case 'rischi': return ch === null ? 'testo non controllato: punteggio neutro' : ch ? ch + (ch === 1 ? ' rischio trovato' : ' rischi trovati') : 'nessuno nel testo';
-      case 'zona': return 'neutro: servono i dati OMI';
+      case 'zona':
+        var rend = a.rendimento != null ? a.rendimento : r.valuta && r.valuta.rendimento;
+        return rend != null && isFinite(rend) ? 'affitto OMI della zona: rendimento lordo ' + U.pct(rend, 1) + ' l\'anno sul costo totale' : 'neutro: manca l\'affitto OMI della zona';
     }
     return '';
   }
@@ -237,9 +239,14 @@
     'stato di occupazione': 'Stato di occupazione: l\'avviso non dice se è libero o occupato.',
     'controllo dei rischi nel testo': 'Controllo dei rischi: il testo dell\'avviso non è ancora stato letto (punteggio neutro).',
     'domanda della zona (servono i dati OMI)': 'Domanda della zona: servono i valori OMI dell\'Agenzia delle Entrate, non ancora collegati (punteggio neutro).',
+    'affitto della zona (quotazione OMI di locazione non disponibile)': 'Affitto della zona: quotazione OMI di locazione non disponibile per questa asta (punteggio della zona neutro).',
     'valore di mercato (manca la stima del perito)': 'Valore di mercato: manca la stima del perito e non è la prima asta. Senza valore il punteggio non si calcola.'
   };
-  function testoMancante(m) { return MANCA[m] || maiuscola(m) + '.'; }
+  function testoMancante(m, a) {
+    // "non è la prima asta" solo se il numero del tentativo è noto
+    if (/^valore di mercato/.test(m) && !(a && a.tentativo > 1)) return 'Valore di mercato: manca la stima del perito e non sappiamo ancora se è la prima asta. Senza valore il punteggio non si calcola.';
+    return MANCA[m] || maiuscola(m) + '.';
+  }
 
   function sezPunteggio(a, r) {
     var p = r.punteggio, h = '';
@@ -260,18 +267,18 @@
         '<p class="sc-spiega">Il punteggio si calcola solo con un valore di mercato attendibile: la stima del perito o il prezzo della prima asta. Per questa asta non c\'è ancora, e non lo inventiamo.</p></div>';
     }
     var manca = r.mancanti.filter(function (m) { return !(p && /^valore di mercato/.test(m)); });
-    if (manca.length) h += '<div class="sc-manca"><h3>Cosa manca</h3><ul>' + manca.map(function (m) { return '<li>' + esc(testoMancante(m)) + '</li>'; }).join('') + '</ul></div>';
+    if (manca.length) h += '<div class="sc-manca"><h3>Cosa manca</h3><ul>' + manca.map(function (m) { return '<li>' + esc(testoMancante(m, a)) + '</li>'; }).join('') + '</ul></div>';
     if (p && !p.completo) h += '<p class="note">Punteggio <b>parziale</b>: alcuni dati sono incerti o mancanti, quindi va preso con prudenza.</p>';
     return '<section class="panel sc-sez" id="sez-punteggio" aria-labelledby="h-punteggio"><div class="sc-sez-testa"><h2 id="h-punteggio">Punteggio affare</h2>' +
       '<span class="pill ' + (p ? (p.valore >= 55 ? 'p-good' : p.valore >= 35 ? 'p-warn' : 'p-bad') : 'p-neutral') + '">' + esc(fascia) + '</span></div>' + h +
-      '<p class="note">Somma di cinque voci: sconto (fino a 40 punti), tentativi andati a vuoto (12), occupazione (13), rischi nel testo (20) e zona (15).</p></section>';
+      '<p class="note">Somma di cinque voci: sconto (fino a 40 punti), tentativi andati a vuoto (12), occupazione (13), rischi nel testo (20) e affitto della zona rispetto al costo (15).</p></section>';
   }
 
   /* ---------- valore di mercato ---------- */
 
   var AFFIDABILITA = {
-    alta: ['p-good', 'Alta', 'stima del perito coerente con le perizie della stessa zona'],
-    media: ['p-info', 'Media', 'stima del perito, senza un confronto sufficiente con la zona'],
+    alta: ['p-good', 'Alta', 'due fonti indipendenti concordano (stima del perito, quotazioni OMI o perizie della zona)'],
+    media: ['p-info', 'Media', 'una fonte attendibile (stima del perito o quotazione OMI della zona), senza una seconda conferma'],
     bassa: ['p-warn', 'Bassa', 'valore ricavato in modo indiretto o con dati incoerenti: verificalo']
   };
 
@@ -316,7 +323,9 @@
         (v.zona && v.zona.mediana ? '<li class="ok">' + U.icona('mappa') + '<span>Confronto con la zona: mediana delle perizie di ' + esc(v.zona.livello === 'comune' ? v.zona.nome : 'provincia ' + v.zona.nome) + ' ' + Number(v.zona.mediana).toLocaleString('it-IT') + ' €/m² su ' + v.zona.n + ' perizie' + (r.mq ? '; questa: ' + Math.round(v.centrale / r.mq).toLocaleString('it-IT') + ' €/m²' : '') + '.</span></li>' : '') +
         (v.senzaZona && a.categoria === 'immobile' ? '<li class="info">' + U.icona('mappa') + '<span>Confronto con le perizie della zona non disponibile in questa scheda.</span></li>' : '') +
         '</ul></div>' +
-        (v.fonte !== 'manuale' ? '<p class="note">La forchetta è ±10% intorno alla stima del perito, ±15% quando il valore è ricavato dal prezzo della prima asta. Il valore reale dipende dallo stato dell\'immobile: leggi la perizia.</p>' : '');
+        (a.omiAffMin > 0 && a.omiAffMax >= a.omiAffMin ? '<p class="note">Affitto tipico della zona (OMI) per questa superficie: da <b class="num">' + U.eur(a.omiAffMin) + '</b> a <b class="num">' + U.eur(a.omiAffMax) + '</b> al mese.</p>' : '') +
+        (v.fonte === 'manuale' ? '' : /^omi/.test(v.fonte) ? '<p class="note">La forchetta è quella delle quotazioni OMI (minimo e massimo al m² della zona) moltiplicate per la superficie. Il valore reale dipende dallo stato dell\'immobile: leggi la perizia.</p>'
+          : '<p class="note">La forchetta è ±10% intorno alla stima del perito, ±15% quando il valore è ricavato dal prezzo della prima asta. Il valore reale dipende dallo stato dell\'immobile: leggi la perizia.</p>');
     }
     return '<section class="panel sc-sez" id="sez-valore" aria-labelledby="h-valore"><div class="sc-sez-testa"><h2 id="h-valore">Valore di mercato</h2>' +
       (v && AFFIDABILITA[v.affidabilita] ? '<span class="pill ' + AFFIDABILITA[v.affidabilita][0] + '">Affidabilità ' + AFFIDABILITA[v.affidabilita][1].toLowerCase() + '</span>' : '') + '</div>' + h + '</section>';
@@ -365,7 +374,7 @@
       } else h += '<p class="note">L\'offerta massima consigliata si calcola quando c\'è il valore di mercato.</p>';
     }
     return '<section class="panel sc-sez" id="sez-costi" aria-labelledby="h-costi"><div class="sc-sez-testa"><h2 id="h-costi">Quanto costa davvero</h2>' +
-      (r.giudizio ? '<span class="pill p-' + r.giudizio.tono + '">' + esc(r.giudizio.etichetta) + ' · ' + U.pct(r.sconto, 0) + '</span>' : '') + '</div>' + h + '</section>';
+      (r.giudizio ? '<span class="pill p-' + r.giudizio.tono + '" title="Giudizio con un\'offerta pari al prezzo base">Al prezzo base: ' + esc(r.giudizio.etichetta.toLowerCase()) + ' · ' + U.pct(r.sconto, 0) + '</span>' : '') + '</div>' + h + '</section>';
   }
 
   /* ---------- mini calcolatore ---------- */
@@ -487,7 +496,7 @@
       if (!fatto && !prossimo) { cls = 'prossimo'; prossimo = true; }
       return '<li class="' + cls + (e.qui ? ' qui' : '') + '"><span class="punto" aria-hidden="true"></span><div><b class="sc-t-tit">' + esc(e.titolo) + '</b>' + (e.nota ? '<small>' + esc(e.nota) + '</small>' : '') + '</div><b>' + esc(U.dataIt(String(e.data).slice(0, 10))) + (oraDi(e.data, '') ? ' ' + oraDi(e.data, '') : '') + '</b></li>';
     }).join('');
-    li += '<li><span class="punto" aria-hidden="true"></span><div><b class="sc-t-tit">Saldo del prezzo</b><small>Di norma entro 120 giorni dall\'aggiudicazione: verifica nell\'avviso.</small></div><b>—</b></li>';
+    li += '<li><span class="punto" aria-hidden="true"></span><div><b class="sc-t-tit">Saldo del prezzo</b><small>Di norma entro 120 giorni dall\'aggiudicazione: verifica nell\'avviso.</small></div><b class="sc-senza-data" aria-hidden="true">—</b></li>';
     var note = '';
     if (!storico.length && a.tentativo > 1) note += '<p class="note">Prima di questa asta ci sono stati ' + (a.tentativo - 1) + (a.tentativo - 1 === 1 ? ' tentativo' : ' tentativi') + (a.deserte ? ' (' + a.deserte + ' andati deserti)' : '') + ': date non disponibili.</p>';
     else if (!storico.length && a.tentativo === 1) note += '<p class="note">È il primo tentativo di vendita trovato nello storico del portale.</p>';
@@ -503,7 +512,9 @@
   function voce(dt, dd) { return '<div><dt>' + dt + '</dt><dd>' + dd + '</dd></div>'; }
   function sezDettagli(a, r) {
     var d = r.testo, h = '';
-    h += d ? '<div class="sc-descr"><p>' + esc(d) + '</p></div>'
+    // testo che finisce a metà parola: la fonte lo ha tagliato, lo si dice invece di farlo sembrare completo
+    var tagliato = d && d.length > 200 && !/[.!?;:)\]»"'”]\s*$/.test(d);
+    h += d ? '<div class="sc-descr"><p>' + esc(d) + (tagliato ? '…' : '') + '</p>' + (tagliato ? '<p class="note">Il testo è stato accorciato dalla fonte: leggilo per intero nell\'avviso originale.</p>' : '') + '</div>'
       : '<div class="sc-vuoto-sez">' + U.icona('documento') + '<div><p><b>Descrizione completa ' + (letto(a) ? 'non pubblicata nei dati del portale' : 'non ancora disponibile') + '.</b> La trovi nell\'avviso originale e nella perizia.</p></div></div>';
     var kv = '';
     if (a.categoria === 'immobile') {

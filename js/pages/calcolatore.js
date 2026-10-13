@@ -237,7 +237,7 @@
       return '<optgroup label="' + U.esc(g) + '">' + gruppi[g].map(function (r) { return '<option value="' + r.id + '">' + U.esc(r.nome) + '</option>'; }).join('') + '</optgroup>';
     }).join('');
     $('#iRegime').value = 'prima-privato';
-    $('#iImuComune').innerHTML = '<option value="">Aliquota massima ordinaria (' + U.pct(T.imu.aliquotaMassima, 2) + ')</option>' +
+    $('#iImuComune').innerHTML = '<option value="">Massima ordinaria (' + U.pct(T.imu.aliquotaMassima, 2) + ')</option>' +
       T.imu.comuni.map(function (c, i) { return '<option value="' + i + '">' + U.esc(c.comune + ' (' + c.provincia + ')') + ' – ' + U.pct(c.aliquota, 2) + '</option>'; }).join('');
     $('#iImuAliquota').value = (T.imu.aliquotaMassima * 100).toFixed(2);
     $('#iImuComune').addEventListener('change', function () {

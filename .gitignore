@@ -18,3 +18,6 @@ data/*-riepilogo.js
 data/omi/grezzi/
 data/omi/indice.json
 *.zip
+
+# Proposte di stile (solo per gli screenshot di scelta, non pubblicate)
+_proposte/

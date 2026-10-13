@@ -8,14 +8,21 @@ Sito in italiano che raccoglie ogni giorno le aste in Italia (immobili, auto, mo
 
 | Pagina | Contenuto |
 |---|---|
-| **Aste** (`index.html`) | Elenco delle aste raccolte con filtri: categoria, regione/provincia, tribunale, prezzo, data, stato (libero/occupato). Per ogni asta: prezzo base, offerta minima (75%, art. 571 c.p.c.), data, **link all'avviso originale**. Puoi anche aggiungere a mano un'asta copiata da un avviso reale (link obbligatorio). |
-| **Mappa** (`mappa.html`) | Aste raggruppate per provincia; avvicinando la mappa compaiono i punti precisi (coordinate fornite dal Portale Vendite Pubbliche). |
-| **Conviene?** (`calcolatore.html`) | Immobili: offerta + imposte + condominio arretrato (anno in corso e precedente) + lavori + liberazione + spese di procedura, confronto col mercato e giudizio (Affare ≥25%, Conviene 15–25%, Margine stretto 5–15%, Non conviene <5%), offerta massima per restare ~20% sotto mercato, IMU e plusvalenza. Auto, moto e beni: aggiudicazione + diritti d'asta + IVA + passaggio di proprietà (IPT per provincia, ACI, bollo, Motorizzazione) + riparazioni + trasporto; bollo annuo. |
-| **Le mie aste** (`mie-aste.html`) | Aste seguite con note, stato ("Interessato", "Offerta presentata", …) e giudizio salvato. Salvate nel browser, con backup/ripristino JSON. |
+| **Oggi** (`index.html`, la home) | I numeri del giorno (aste attive, nuove nelle ultime 24 ore, valore totale dei prezzi base, sconto medio quando il valore di mercato è disponibile), i 10 migliori affari per punteggio (solo se ci sono aste con il punteggio: altrimenti lo spiega), le aste nuove e quelle in scadenza questa settimana. Legge solo `data/riepilogo.js`, quindi si apre subito. |
+| **Aste** (`aste.html`) | Elenco di tutte le aste raccolte con filtri: categoria, ricerca libera, regione/provincia/comune, tribunale, prezzo, data, stato (libero/occupato), solo nuove, zona scelta sulla mappa. Su telefono i filtri sono in un foglio dal basso (pulsante "Filtri" con il numero di filtri attivi). Ricerche salvate con il conteggio delle aste nuove. Puoi anche aggiungere a mano un'asta copiata da un avviso reale (link obbligatorio) e importare/esportare CSV o JSON. |
+| **Scheda** (`scheda.html?id=…`) | Tutti i dati di un'asta: prezzi, date, valore e punteggio quando disponibili, descrizione, foto, documenti (perizia, avviso, ordinanza), storico dei tentativi, rischi con il pezzo di testo che li prova. I dati mancanti sono indicati come "non indicato nell'avviso" o "non ancora disponibile". |
+| **Confronta** (`confronta.html`) | Fino a 3 aste fianco a fianco (si scelgono con la casella "Confronta" sulle schede). |
+| **Mappa** (`mappa.html`) | Aste sulla mappa (OpenStreetMap) raggruppate e, avvicinando, i punti precisi (coordinate del Portale Vendite Pubbliche). Una zona della mappa si può aprire nell'elenco. |
+| **Conviene?** (`calcolatore.html`) | Immobili: offerta + imposte + condominio arretrato (anno in corso e precedente) + lavori + liberazione + spese di procedura, confronto col mercato e giudizio (Affare ≥25%, Conviene 15–25%, Margine stretto 5–15%, Non conviene <5%), offerta massima per restare ~20% sotto mercato, IMU e plusvalenza, tre strategie (ci vivo, affitto, rivendo). Auto, moto e beni: aggiudicazione + diritti d'asta + IVA + passaggio di proprietà (IPT per provincia, ACI, bollo, Motorizzazione) + riparazioni + trasporto; bollo annuo. Su telefono un riepilogo fisso in basso (giudizio, sconto, costo totale) si aggiorna mentre scrivi. |
+| **Le mie aste** (`mie-aste.html`) | Aste seguite (stella sulle schede) con note, stato ("Interessato", "Offerta presentata", …) e giudizio salvato. Salvate nel browser, con backup/ripristino JSON. |
 | **Tariffe e tasse** (`tariffe.html`) | Tutte le aliquote con **fonte e data di verifica** accanto a ogni voce. |
 | **Fonti** (`fonti.html`) | Stato di ogni fonte (attiva, vietata, non raggiungibile…), metodo di raccolta e data dell'ultima raccolta. |
 
-Tema chiaro/scuro (automatico o scelto), pensato per il telefono.
+Filtri da altre pagine o da un link: `aste.html?provincia=GE`, `?regione=Liguria`, `?comune=Genova`, `?filtri={"bbox":[sud,ovest,nord,est]}` (zona della mappa) o qualunque combinazione di filtri in `?filtri={…}`.
+
+Ricerca istantanea in ogni pagina (pulsante Cerca, tasto `/` o Ctrl/Cmd+K): comuni, province, tribunali, tipologie e singole aste.
+
+Tema chiaro/scuro (automatico o scelto), pensato per il telefono (barra in basso, bersagli da toccare di almeno 44 px), usabile da tastiera (link "Salta al contenuto", finestre che tengono il fuoco e si chiudono con Esc) e installabile come app con funzionamento offline (`sw.js`).
 
 ## Fonti dei dati
 
@@ -37,21 +44,37 @@ Il programma di raccolta (`scripts/raccogli.mjs`) si identifica con uno user-age
 ## Struttura del progetto
 
 ```
-index.html, mappa.html, calcolatore.html, mie-aste.html, tariffe.html, fonti.html
-assets/css/style.css        stile (tema chiaro/scuro)
+index.html                  home "Oggi"
+aste.html, scheda.html, confronta.html, mappa.html, calcolatore.html, mie-aste.html, tariffe.html, fonti.html
+sw.js, manifest.webmanifest app installabile e offline (la versione della cache la scrive scripts/artifact.mjs)
+assets/css/style.css        design system (tema chiaro/scuro, componenti .copertina, .anello, .nastro, .tempi, .confronto…)
+assets/css/pagine.css, assets/css/mappa.css   stili delle pagine scheda/confronto e della mappa
 config/tariffe.js           ★ UNICO file con tutte le aliquote, fonti e date
 config/fonti.js             registro delle fonti ed esito della verifica (robots.txt, termini d'uso)
 data/geo.js                 regioni, province, coordinate dei capoluoghi
-data/aste.js                aste raccolte: generato da scripts/raccogli.mjs, non è nel repository
+data/italia.js              confini delle regioni (ISTAT 2026 via openpolis, CC BY 4.0)
+data/aste.js                aste raccolte (formato compatto, vedi js/formato.js): generato da scripts/raccogli.mjs, non è nel repository
+data/riepilogo.js           numeri e piccole liste per la home (js/riepilogo.js), generato con le aste (non nel repository)
+data/dettagli/XX.js         schede complete a pezzi (descrizione, foto, documenti, storico, rischi), lette da js/dettagli.js (generate, non nel repository)
 js/calcoli.js               motore dei calcoli (funzioni pure, testate)
+js/punteggio.js             valore di mercato, costo totale, sconto e punteggio affare (solo da dati reali)
+js/formato.js, js/estrai.js formato compatto dei dati e lettura del testo degli avvisi (raccolta e sito)
 js/parser.js                lettura del testo di un avviso incollato
 js/store.js                 archivio (aste raccolte + inserite + seguite)
-js/ui.js, js/pages/*.js     interfaccia
+js/asta.js, js/dettagli.js  dati completi di un'asta per scheda e confronto
+js/schede.js                scheda di un'asta in elenco (home, elenco, mappa)
+js/cerca.js, js/ricerche.js ricerca istantanea; ricerche salvate e aste nuove dall'ultima visita
+js/confronto.js             aste scelte per il confronto (barra "Confronta")
+js/riepilogo.js             calcolo del riepilogo della home
+js/cacciatore.js, js/affari.js   "Cacciatore di affari" (migliori del giorno) e sua sezione
+js/mutuo.js, js/calendario.js    simulatore del mutuo, promemoria .ics
+js/ui.js, js/icone.js       struttura comune (intestazione, barra in basso, finestre, tema), icone
+js/pages/*.js               una per pagina
 scripts/raccogli.mjs        programma di raccolta (Node ≥ 20, nessuna dipendenza)
 scripts/fonti/*.mjs         un modulo per fonte (pvp, demanio, astalegale, fallco)
-scripts/lib/doppioni.mjs    una sola scheda per vendita pubblicata su più fonti (con i link alle altre)
+scripts/lib/*.mjs           doppioni tra fonti, correzioni, arricchimento e dettaglio PVP, storico dei tentativi, richieste HTTP
+scripts/cacciatore.mjs, scripts/telegram.mjs   affari del mattino e invio Telegram (solo con i Secrets)
 scripts/artifact.mjs        prepara la versione da pubblicare su claude.ai
-data/italia.js              confini delle regioni (ISTAT 2026 via openpolis, CC BY 4.0)
 .github/workflows/aggiorna-aste.yml   raccolta quotidiana + pubblicazione
 tests/                      test (npm test)
 ```
