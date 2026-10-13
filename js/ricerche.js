@@ -4,7 +4,12 @@
 (function (root) {
   'use strict';
   var K_RICERCHE = 'radaraste.ricerche', K_VISITA = 'radaraste.visita', K_PRECEDENTE = 'radaraste.visitaPrecedente';
-  var oggi = new Date().toISOString().slice(0, 10);
+  // data locale (non UTC): dopo mezzanotte in Italia è già il giorno dopo
+  function dataLocale(d) { return root.UI && root.UI.oggi ? root.UI.oggi(d) : d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  var oggi = dataLocale(new Date());
+  // "nuova" = pubblicata dopo questa data; alla prima visita si usano le ultime 24 ore (pubblicate da ieri in poi)
+  var d2 = new Date(); d2.setDate(d2.getDate() - 2);
+  var ultime24 = dataLocale(d2);
 
   function leggi(k, def, mem) { try { var s = (mem || localStorage).getItem(k); return s ? JSON.parse(s) : def; } catch (e) { return def; } }
   function scrivi(k, v, mem) { try { (mem || localStorage).setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -24,8 +29,11 @@
   }
 
   var Ricerche = {
-    visitaPrecedente: function () { return precedente; },
-    nuova: function (a) { return nuovaDa(a, precedente); },
+    // data da cui un'asta è "nuova": l'ultima visita o, alla prima visita, le ultime 24 ore
+    visitaPrecedente: function () { return precedente || ultime24; },
+    primaVisita: function () { return !precedente; },
+    ultimeOre24: function () { return ultime24; },
+    nuova: function (a) { return nuovaDa(a, precedente || ultime24); },
     nuovaDa: nuovaDa,
     tutte: function () { return leggi(K_RICERCHE, []); },
     salva: function (nome, filtri) {

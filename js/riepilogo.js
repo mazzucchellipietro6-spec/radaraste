@@ -3,7 +3,7 @@
 (function (root) {
   'use strict';
   var CAMPI = ['id', 'titolo', 'categoria', 'tipo', 'comune', 'provincia', 'tribunale', 'fonte', 'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'stato',
-    'linkAvviso', 'pubblicata', 'vista', 'punteggio', 'sconto', 'stima'];
+    'linkAvviso', 'pubblicata', 'vista', 'punteggio', 'punteggioCompleto', 'sconto', 'stima', 'valore', 'fonteValore', 'affidabilita', 'termineOfferte', 'regione'];
 
   function compatta(a) { var o = {}; CAMPI.forEach(function (c) { if (a[c] !== undefined && a[c] !== null && a[c] !== '') o[c] = a[c]; }); return o; }
   function piu(data, giorni) { var d = new Date(data + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + giorni); return d.toISOString().slice(0, 10); }
@@ -20,12 +20,17 @@
     var conPunteggio = attive.filter(function (a) { return a.punteggio != null && a.punteggioCompleto; })
       .sort(function (x, y) { return y.punteggio - x.punteggio; });
     var sconti = attive.filter(function (a) { return a.sconto != null && isFinite(a.sconto); }).map(function (a) { return a.sconto; });
-    var perCategoria = {};
-    attive.forEach(function (a) { perCategoria[a.categoria] = (perCategoria[a.categoria] || 0) + 1; });
+    var perCategoria = {}, sommaBase = 0, conBase = 0;
+    attive.forEach(function (a) {
+      perCategoria[a.categoria] = (perCategoria[a.categoria] || 0) + 1;
+      if (a.prezzoBase > 0 && isFinite(a.prezzoBase)) { sommaBase += a.prezzoBase; conBase++; }
+    });
     return {
       oggi: oggi,
       attive: attive.length,
       perCategoria: perCategoria,
+      // somma dei prezzi base delle aste attive che lo indicano (le altre non si contano: niente stime)
+      prezziBase: { totale: Math.round(sommaBase), conPrezzo: conBase },
       nuove: { totale: nuove.length, dal: ieri, lista: nuove.slice(0, opz.quanteNuove || 12).map(compatta) },
       inScadenza: { totale: scadenza.length, al: fra7, lista: scadenza.slice(0, opz.quanteScadenza || 12).map(compatta) },
       migliori: { totale: conPunteggio.length, lista: conPunteggio.slice(0, 10).map(compatta) },

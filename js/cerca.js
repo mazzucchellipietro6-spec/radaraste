@@ -40,10 +40,15 @@
     });
     var perProv = {}, perReg = {};
     lista.forEach(function (a) { if (a.provincia) perProv[a.provincia] = (perProv[a.provincia] || 0) + 1; if (a.regione) perReg[a.regione] = (perReg[a.regione] || 0) + 1; });
+    // il comune filtra per comune esatto (non per testo libero: "Genova" troverebbe anche "Via Genova")
     return {
-      luoghi: root.GEO.regioni.map(function (r) { return { tipo: 'regione', nome: r, n: perReg[r] || 0, filtri: { regione: r } }; })
-        .concat(Object.keys(root.GEO.province).map(function (s) { var p = root.GEO.province[s]; return { tipo: 'provincia', nome: p.nome + ' (' + s + ')', n: perProv[s] || 0, filtri: { regione: p.regione, provincia: s } }; }))
-        .concat(Object.keys(comuni).map(function (k) { var x = k.split('|'); return { tipo: 'comune', nome: x[0] + (x[1] ? ' (' + x[1] + ')' : ''), n: comuni[k], filtri: { testo: x[0] } }; })),
+      luoghi: root.GEO.regioni.map(function (r) { return { tipo: 'Regione', nome: r, n: perReg[r] || 0, filtri: { regione: r } }; })
+        .concat(Object.keys(root.GEO.province).map(function (s) { var p = root.GEO.province[s]; return { tipo: 'Provincia', nome: p.nome + ' (' + s + ')', n: perProv[s] || 0, filtri: { regione: p.regione, provincia: s } }; }))
+        .concat(Object.keys(comuni).map(function (k) {
+          var x = k.split('|'), p = x[1] && root.GEO.province[x[1]], f = { comune: x[0] };
+          if (p) { f.provincia = x[1]; f.regione = p.regione; }
+          return { tipo: 'Comune', nome: x[0] + (x[1] ? ' (' + x[1] + ')' : ''), n: comuni[k], filtri: f };
+        })),
       tribunali: Object.keys(tribunali).map(function (t) { return { tipo: 'tribunale', nome: 'Tribunale di ' + t, n: tribunali[t], filtri: { tribunale: t } }; }),
       tipi: Object.keys(tipi).map(function (t) { return { tipo: 'tipologia', nome: t, n: tipi[t], filtri: { testo: t } }; })
     };
@@ -74,7 +79,8 @@
     }
     if (indice) {
       var l = filtra(indice.luoghi, 6), t = filtra(indice.tribunali, 3), ti = filtra(indice.tipi, 3);
-      if (l.length) out.push({ gruppo: 'Luoghi', voci: l.map(function (x) { return { nome: x.nome, nota: x.n.toLocaleString('it-IT') + ' aste', href: linkFiltri(x.filtri), passa: 'filtri:' + JSON.stringify(x.filtri), icona: 'luogo' }; }) });
+      // "Genova (GE)" può essere la provincia o il comune: il tipo è scritto accanto
+      if (l.length) out.push({ gruppo: 'Luoghi', voci: l.map(function (x) { return { nome: x.nome, tipo: x.tipo, nota: x.n.toLocaleString('it-IT') + ' aste', href: linkFiltri(x.filtri), passa: 'filtri:' + JSON.stringify(x.filtri), icona: 'luogo' }; }) });
       if (t.length) out.push({ gruppo: 'Tribunali', voci: t.map(function (x) { return { nome: x.nome, nota: x.n.toLocaleString('it-IT') + ' aste', href: linkFiltri(x.filtri), passa: 'filtri:' + JSON.stringify(x.filtri), icona: 'tribunale' }; }) });
       if (ti.length) out.push({ gruppo: 'Tipologie', voci: ti.map(function (x) { return { nome: x.nome, nota: x.n.toLocaleString('it-IT') + ' aste', href: linkFiltri(x.filtri), passa: 'filtri:' + JSON.stringify(x.filtri), icona: 'casa' }; }) });
     }
@@ -101,21 +107,26 @@
       g.voci.forEach(function (v) {
         var i = voci.length; voci.push(v);
         h += '<a class="voce" role="option" id="voce' + i + '" href="' + U.esc(v.href) + '"' + (v.passa ? ' data-passa="' + U.esc(v.passa) + '"' : '') + ' aria-selected="' + (i === selezione) + '">' +
-          U.icona(v.icona) + '<span>' + evidenzia(v.nome, parole) + '</span>' + (v.nota ? '<small>' + U.esc(v.nota) + '</small>' : '') + '</a>';
+          U.icona(v.icona) + '<span>' + evidenzia(v.nome, parole) + '</span>' + (v.tipo ? '<em class="tipo">' + U.esc(v.tipo) + '</em>' : '') + (v.nota ? '<small>' + U.esc(v.nota) + '</small>' : '') + '</a>';
       });
     });
     if (!voci.length) h = '<div class="vuoto">' + (aste ? 'Nessun risultato per “' + U.esc(q) + '”.' : 'Carico le aste…') + '</div>';
     $('#paletteRisultati').innerHTML = h;
+    var campo = $('#paletteCampo');
+    if (voci.length) campo.setAttribute('aria-activedescendant', 'voce' + selezione); else campo.removeAttribute('aria-activedescendant');
   }
 
+  // Finestra modale (UI.finestra): Esc chiude da qualunque punto, il fuoco resta dentro e torna al pulsante Cerca.
+  // Su telefono i suggerimenti da tastiera (frecce, Esc) sono nascosti e c'è il pulsante "Chiudi".
   function apri() {
     var p = $('#palette');
     if (!p) {
-      p = document.createElement('div'); p.id = 'palette'; p.className = 'palette'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Ricerca');
-      p.innerHTML = '<div class="box"><div class="campo">' + U.icona('cerca') + '<input id="paletteCampo" type="search" autocomplete="off" placeholder="Comune, provincia, tribunale, tipologia o parole dell\'avviso" aria-controls="paletteRisultati" aria-autocomplete="list" enterkeyhint="search">' +
-        '<button class="btn small quiet" type="button" id="paletteChiudi">Esc</button></div><div class="risultati" id="paletteRisultati" role="listbox"></div>' +
-        '<div class="piede"><span>↑↓ per scegliere</span><span>Invio per aprire</span><span>Esc per chiudere</span></div></div>';
+      p = document.createElement('div'); p.id = 'palette'; p.className = 'palette';
+      p.innerHTML = '<div class="box"><div class="campo">' + U.icona('cerca') + '<input id="paletteCampo" type="search" autocomplete="off" placeholder="Comune, tribunale, tipologia, parole…" aria-label="Cerca aste, luoghi e tribunali" aria-controls="paletteRisultati" aria-autocomplete="list" enterkeyhint="search">' +
+        '<button class="btn small quiet" type="button" id="paletteChiudi" aria-label="Chiudi la ricerca"><span class="solo-tastiera">Esc</span><span class="solo-tocco">Chiudi</span></button></div><div class="risultati" id="paletteRisultati" role="listbox" aria-label="Risultati"></div>' +
+        '<div class="piede solo-tastiera" aria-hidden="true"><span>↑↓ per scegliere</span><span>Invio per aprire</span><span>Esc per chiudere</span></div></div>';
       document.body.appendChild(p);
+      U.finestra(p, chiudi, 'Ricerca');
       var campo = $('#paletteCampo');
       p.addEventListener('click', function (e) { if (e.target === p || e.target.closest('#paletteChiudi')) chiudi(); });
       campo.addEventListener('input', function () { selezione = 0; disegna(campo.value); });
@@ -125,14 +136,16 @@
           selezione = (selezione + (e.key === 'ArrowDown' ? 1 : -1) + voci.length) % voci.length; disegna(campo.value);
           var el = $('#voce' + selezione); if (el) el.scrollIntoView({ block: 'nearest' });
         } else if (e.key === 'Enter') { var el2 = $('#voce' + selezione); if (el2) { e.preventDefault(); el2.click(); } }
-        else if (e.key === 'Escape') chiudi();
       });
+      void p.offsetWidth; // la prima apertura si anima
     }
-    requestAnimationFrame(function () { p.setAttribute('data-aperta', ''); $('#paletteCampo').focus(); });
+    if (p.hasAttribute('data-aperta')) return;
+    p.setAttribute('data-aperta', '');
+    U.apriFinestra(p, $('#paletteCampo'));
     disegna($('#paletteCampo').value);
     carica().then(function (l) { if (!indice) indice = costruisciIndice(l); disegna($('#paletteCampo').value); });
   }
-  function chiudi() { var p = $('#palette'); if (p) p.removeAttribute('data-aperta'); }
+  function chiudi() { var p = $('#palette'); if (!p || !p.hasAttribute('data-aperta')) return; p.removeAttribute('data-aperta'); U.chiudiFinestra(p); }
   // precarica in background quando il browser è libero, così la prima ricerca è immediata
   if ('requestIdleCallback' in root) root.requestIdleCallback(function () { if (root.ASTE_RACCOLTE) carica(); }, { timeout: 4000 });
 

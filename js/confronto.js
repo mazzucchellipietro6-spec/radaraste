@@ -7,8 +7,10 @@
 
   function barra() {
     var l = leggi(), b = document.getElementById('barraConfronto');
+    // la pagina lascia spazio in fondo alla barra, così non copre la fine del contenuto
+    if (document.body) document.body.classList.toggle('con-confronto', l.length > 0);
     if (!l.length) { if (b) b.remove(); return; }
-    if (!b) { b = document.createElement('div'); b.id = 'barraConfronto'; b.className = 'barra-confronto'; document.body.appendChild(b); }
+    if (!b) { b = document.createElement('div'); b.id = 'barraConfronto'; b.className = 'barra-confronto'; b.setAttribute('role', 'region'); b.setAttribute('aria-label', 'Aste da confrontare'); document.body.appendChild(b); }
     b.innerHTML = '<span><b>' + l.length + '</b> di ' + MAX + ' aste da confrontare</span><span class="spacer"></span>' +
       '<button class="btn small ghost" type="button" id="svuotaConfronto">Svuota</button>' +
       '<a class="btn small" href="confronta.html">Confronta →</a>';

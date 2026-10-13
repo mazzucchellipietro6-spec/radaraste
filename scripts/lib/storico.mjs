@@ -46,8 +46,9 @@ export function paroleVia(via, comune) {
 }
 
 // due indirizzi sono compatibili se uno manca o se hanno almeno una parola significativa in comune
-export function stessaVia(a, b) {
-  if (!a.size || !b.size) return true;
+// (con "severo" devono esserci entrambi)
+export function stessaVia(a, b, severo = false) {
+  if (!a.size || !b.size) return !severo;
   for (const w of a) if (b.has(w)) return true;
   return false;
 }
@@ -181,9 +182,18 @@ export function catena(v, gruppi, oggi, { max = 10 } = {}) {
   const k = chiave(v);
   if (!k) return null;
   const cv = normalizzaComune(v.comune), pv = paroleVia(v.via, v.comune);
-  // candidati: stessa chiave, stesso comune (se indicato), data precedente
-  const candidati = (gruppi.get(k) || []).filter((x) => x.id !== v.id && x.data && x.data < v.data &&
-    (!cv || !normalizzaComune(x.comune) || normalizzaComune(x.comune) === cv));
+  // senza comune né indirizzo non si distinguono le procedure omonime: tentativo sconosciuto
+  if (!cv && !pv.size) return null;
+  // candidati: stessa chiave, data precedente, stesso comune (se il comune manca da una delle due parti serve
+  // almeno una parola dell'indirizzo in comune); per i beni mobili anche la stessa categoria (per gli immobili
+  // la categoria a volte cambia da un tentativo all'altro: bastano indirizzo e prezzi)
+  const candidati = (gruppi.get(k) || []).filter((x) => {
+    if (x.id === v.id || !x.data || x.data >= v.data) return false;
+    if (v.tipo !== 'I' && v.categoria && x.categoria && v.categoria !== x.categoria) return false;
+    const cx = normalizzaComune(x.comune);
+    if (cv && cx) return cx === cv;
+    return stessaVia(paroleVia(x.via, x.comune), pv, true);
+  });
   // una vendita per data: due lotti diversi nello stesso giorno con la stessa chiave = ambiguità
   const perData = new Map();
   for (const x of candidati) {
@@ -204,7 +214,8 @@ export function catena(v, gruppi, oggi, { max = 10 } = {}) {
       if (successivo.prezzo < x.prezzo * (1 - RIBASSO_MAX)) { motivo = 'ribasso troppo forte'; break; }
     }
     precedenti.push(x);
-    if (x.esito !== 'SOSPE') successivo = x;
+    // il confronto dei prezzi si fa con l'ultimo tentativo svolto con un prezzo valido (prezzo 0 = dato mancante)
+    if (x.esito !== 'SOSPE' && x.prezzo > 0) successivo = x;
   }
   if (!precedenti.length && motivo) return { ambigua: true, motivo };
   precedenti.reverse(); // dal più vecchio

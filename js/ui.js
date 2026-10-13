@@ -16,6 +16,11 @@
     if (isNaN(d)) return iso;
     return d.toLocaleDateString('it-IT', lunga ? { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' } : { day: 'numeric', month: 'short', year: 'numeric' });
   }
+  // data di oggi (o di d) nel fuso del browser, AAAA-MM-GG: è quella che l'utente vede sul calendario
+  function oggi(d) {
+    d = d || new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
   function giorniA(iso) {
     if (!iso) return null;
     var oggi = new Date(); oggi.setHours(0, 0, 0, 0);
@@ -93,9 +98,19 @@
   var ICONA_TEMA = { auto: 'automatico', light: 'sole', dark: 'luna' };
   var NOME_TEMA = { auto: 'automatico', light: 'chiaro', dark: 'scuro' };
   function temaCorrente() { try { return localStorage.getItem('radaraste.tema') || 'auto'; } catch (e) { return 'auto'; } }
+  var COLORE_BARRA = { light: '#f3f5f9', dark: '#060a13' };
+  // colore della barra del browser: segue il tema scelto (in automatico decidono i media dei meta)
+  function coloreBarra(t) {
+    $$('meta[name="theme-color"]').forEach(function (m) {
+      if (m.dataset.media === undefined) { m.dataset.media = m.getAttribute('media') || ''; m.dataset.colore = m.getAttribute('content') || ''; }
+      if (t === 'auto') { if (m.dataset.media) m.setAttribute('media', m.dataset.media); m.setAttribute('content', m.dataset.colore); }
+      else { m.removeAttribute('media'); m.setAttribute('content', COLORE_BARRA[t]); }
+    });
+  }
   function applicaTema(t) {
     if (t === 'auto') document.documentElement.removeAttribute('data-theme');
     else document.documentElement.setAttribute('data-theme', t);
+    coloreBarra(t);
     try { localStorage.setItem('radaraste.tema', t); } catch (e) {}
     $$('.theme-btn').forEach(function (b) { b.innerHTML = icona(ICONA_TEMA[t]); b.setAttribute('aria-label', 'Tema ' + NOME_TEMA[t] + ': cambia tema'); b.title = 'Tema ' + NOME_TEMA[t]; });
     try { document.dispatchEvent(new CustomEvent('radaraste:tema')); } catch (e) {}
@@ -136,20 +151,19 @@
     }
     // barra in basso (visibile su telefono)
     if (!$('.tabbar')) {
-      var nSeguite = 0; try { nSeguite = JSON.parse(localStorage.getItem('radaraste.v1.seguite') || '[]').length; } catch (e) {}
       var tab = document.createElement('nav'); tab.className = 'tabbar'; tab.setAttribute('aria-label', 'Navigazione');
       tab.innerHTML = NAV.filter(function (p) { return p.href !== 'calcolatore.html'; }).map(function (p) {
-        return '<a href="' + p.href + '"' + (p.href === qui ? ' aria-current="page"' : '') + '>' + icona(p.icona) + '<span>' + (p.breve || p.nome) + '</span>' +
-          (p.href === 'mie-aste.html' && nSeguite ? '<span class="badge">' + nSeguite + '</span>' : '') + '</a>';
-      }).join('') + '<button type="button" data-altro' + (ALTRO.some(function (a) { return a.href === qui; }) ? ' aria-current="page"' : '') + '>' + icona('altro') + '<span>Altro</span></button>';
+        return '<a href="' + p.href + '"' + (p.href === qui ? ' aria-current="page"' : '') + '>' + icona(p.icona) + '<span>' + (p.breve || p.nome) + '</span></a>';
+      }).join('') + '<button type="button" data-altro aria-haspopup="dialog"' + (ALTRO.some(function (a) { return a.href === qui; }) ? ' aria-current="page"' : '') + '>' + icona('altro') + '<span>Altro</span></button>';
       document.body.appendChild(tab);
+      aggiornaSeguite();
     }
     var f = $('#site-footer');
     if (f) {
       var agg = root.TARIFFE ? dataIt(root.TARIFFE.aggiornamento) : '';
       f.className = 'site-footer';
       f.innerHTML = '<div class="wrap">' + avvertenza() +
-        '<div class="row-actions" style="gap:18px"><a href="tariffe.html">Tariffe e tasse</a><a href="fonti.html">Fonti dei dati</a><a href="confronta.html">Confronta</a><span class="spacer"></span>' +
+        '<div class="row-actions piede-link"><a href="tariffe.html">Tariffe e tasse</a><a href="fonti.html">Fonti dei dati</a><a href="confronta.html">Confronta</a><span class="spacer"></span>' +
         '<span>Aliquote aggiornate al ' + esc(agg) + ' · dati personali solo in questo browser</span></div></div>';
     }
     applicaTema(temaCorrente());
@@ -157,21 +171,71 @@
     animazioniDiPagina();
   }
 
-  // foglio dal basso con le altre sezioni; si chiude toccando fuori o trascinandolo giù
+  /* ---- Finestre sovrapposte (ricerca, foglio "Altro", filtri su telefono) ----
+   * Aperte: il fuoco resta dentro (Tab e Maiusc+Tab girano tra i loro controlli), Esc le chiude da qualunque punto,
+   * alla chiusura il fuoco torna al pulsante che le ha aperte. Chiuse: attributo inert (e visibility:hidden nel CSS),
+   * quindi il Tab non le raggiunge. */
+  var pila = [];
+  var FOCUSABILI = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+  function focusabili(el) {
+    return $$(FOCUSABILI, el).filter(function (x) { return x.getClientRects().length && getComputedStyle(x).visibility !== 'hidden' && !x.closest('[inert]'); });
+  }
+  // el: contenitore della finestra; chiudi: funzione che la chiude (chiamata da Esc)
+  function finestra(el, chiudi, etichetta) {
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    if (etichetta) el.setAttribute('aria-label', etichetta);
+    el._chiudi = chiudi;
+    if (pila.indexOf(el) < 0) { el.inert = true; el.setAttribute('inert', ''); }
+  }
+  function apriFinestra(el, primo) {
+    if (pila.indexOf(el) >= 0) return;
+    var att = document.activeElement;
+    el._prima = att && att !== document.body ? att : null;
+    el.inert = false; el.removeAttribute('inert'); pila.push(el);
+    var f = primo || focusabili(el)[0];
+    if (f) { try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }
+  }
+  function chiudiFinestra(el, restaQui) {
+    var i = pila.indexOf(el); if (i < 0) return;
+    pila.splice(i, 1); el.inert = true; el.setAttribute('inert', '');
+    var p = el._prima; el._prima = null;
+    if (!restaQui && p && p.focus && document.contains(p)) { try { p.focus({ preventScroll: true }); } catch (e) { p.focus(); } }
+  }
+  function finestraAperta() { return pila[pila.length - 1] || null; }
+  document.addEventListener('keydown', function (e) {
+    var top = finestraAperta(); if (!top) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (top._chiudi) top._chiudi(); return; }
+    if (e.key !== 'Tab') return;
+    var f = focusabili(top);
+    if (!f.length) { e.preventDefault(); return; }
+    var i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i < 0 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+  }, true);
+  document.addEventListener('focusin', function (e) {
+    var top = finestraAperta();
+    if (top && !top.contains(e.target)) { var f = focusabili(top)[0]; if (f) f.focus(); }
+  });
+
+  // foglio dal basso con le altre sezioni; si chiude toccando fuori, con Esc o trascinandolo giù
   function apriAltro() {
     var d = $('#foglioAltro');
     if (!d) {
-      d = document.createElement('div'); d.id = 'foglioAltro'; d.className = 'foglio'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Altre sezioni');
-      d.innerHTML = '<div class="corpo"><div class="maniglia"></div><div class="voci">' + ALTRO.map(function (a) {
+      d = document.createElement('div'); d.id = 'foglioAltro'; d.className = 'foglio';
+      d.innerHTML = '<div class="corpo"><div class="maniglia" aria-hidden="true"></div><div class="testa-foglio"><h2>Altre sezioni</h2><button class="btn small quiet" type="button" data-chiudi>Chiudi</button></div><div class="voci">' + ALTRO.map(function (a) {
         return '<a href="' + a.href + '">' + icona(a.icona) + '<span>' + a.nome + '<small>' + a.nota + '</small></span></a>';
       }).join('') + '<button type="button" data-tema>' + icona('luna') + '<span>Cambia tema<small>Automatico, chiaro o scuro</small></span></button></div></div>';
       document.body.appendChild(d);
-      d.addEventListener('click', function (e) { if (e.target === d) chiudiFoglio(d); if (e.target.closest('[data-tema]')) ciclaTema(); });
+      finestra(d, function () { chiudiFoglio(d); }, 'Altre sezioni');
+      d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-chiudi]')) chiudiFoglio(d); if (e.target.closest('[data-tema]')) ciclaTema(); });
       trascinaPerChiudere(d);
     }
-    requestAnimationFrame(function () { d.setAttribute('data-aperto', ''); });
+    void d.offsetWidth; // così la comparsa si anima anche la prima volta
+    d.setAttribute('data-aperto', '');
+    apriFinestra(d);
   }
-  function chiudiFoglio(d) { d.removeAttribute('data-aperto'); d.querySelector('.corpo').style.removeProperty('--trascina'); }
+  function chiudiFoglio(d) { d.removeAttribute('data-aperto'); d.querySelector('.corpo').style.removeProperty('--trascina'); chiudiFinestra(d); }
   function trascinaPerChiudere(d) {
     var corpo = d.querySelector('.corpo'), y0 = null, dy = 0;
     corpo.addEventListener('touchstart', function (e) { if (corpo.scrollTop > 0) return; y0 = e.touches[0].clientY; dy = 0; corpo.style.transition = 'none'; }, { passive: true });
@@ -179,18 +243,35 @@
     corpo.addEventListener('touchend', function () { if (y0 === null) return; corpo.style.transition = ''; y0 = null; if (dy > 90) chiudiFoglio(d); else corpo.style.setProperty('--trascina', '0px'); });
   }
 
-  // effetto onda sui pulsanti e comparsa delle sezioni durante lo scorrimento
+  // effetto onda sui pulsanti e comparsa delle sezioni durante lo scorrimento.
+  // L'onda è assoluta (vedi .onda nel CSS) e non cambia mai le dimensioni del pulsante; niente onda con "riduci movimento".
+  var menoMovimento = root.matchMedia ? root.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
   function animazioniDiPagina() {
     document.addEventListener('pointerdown', function (e) {
+      if (menoMovimento.matches) return;
       var b = e.target.closest && e.target.closest('.btn, .chip');
       if (!b || b.disabled) return;
       var r = b.getBoundingClientRect(), o = document.createElement('span'), d = Math.max(r.width, r.height);
-      o.className = 'onda'; o.style.cssText = 'width:' + d + 'px;height:' + d + 'px;left:' + (e.clientX - r.left - d / 2) + 'px;top:' + (e.clientY - r.top - d / 2) + 'px';
-      if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
-      b.style.overflow = 'hidden'; b.appendChild(o); setTimeout(function () { o.remove(); }, 650);
+      o.className = 'onda'; o.setAttribute('aria-hidden', 'true');
+      o.style.cssText = 'width:' + d + 'px;height:' + d + 'px;left:' + (e.clientX - r.left - d / 2) + 'px;top:' + (e.clientY - r.top - d / 2) + 'px';
+      b.appendChild(o); setTimeout(function () { o.remove(); }, 650);
     });
     osservaComparsa(document);
   }
+  // numero sulla voce "Seguite" della barra in basso, aggiornato appena cambia (anche da un'altra scheda del browser)
+  function aggiornaSeguite() {
+    var n = 0;
+    try { n = root.Store ? root.Store.seguite().length : JSON.parse(localStorage.getItem('radaraste.v1.seguite') || '[]').length; } catch (e) {}
+    $$('.tabbar a[href="mie-aste.html"]').forEach(function (a) {
+      var b = a.querySelector('.badge');
+      if (!n) { if (b) b.remove(); a.removeAttribute('aria-label'); return; }
+      if (!b) { b = document.createElement('span'); b.className = 'badge'; b.setAttribute('aria-hidden', 'true'); a.appendChild(b); }
+      b.textContent = n > 99 ? '99+' : n;
+      a.setAttribute('aria-label', 'Seguite: ' + n + (n === 1 ? ' asta' : ' aste'));
+    });
+  }
+  document.addEventListener('radaraste:seguite', aggiornaSeguite);
+  root.addEventListener('storage', function (e) { if (!e.key || e.key === 'radaraste.v1.seguite') aggiornaSeguite(); });
   var osservatore = 'IntersectionObserver' in root ? new IntersectionObserver(function (voci) {
     voci.forEach(function (v) { if (v.isIntersecting) { v.target.classList.add('vista'); osservatore.unobserve(v.target); } });
   }, { rootMargin: '0px 0px -8% 0px' }) : null;
@@ -205,7 +286,6 @@
   document.addEventListener('keydown', function (e) {
     var dig = e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
     if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !dig)) { if (root.Cerca) { e.preventDefault(); root.Cerca.apri(); } }
-    if (e.key === 'Escape') { var d = $('#foglioAltro[data-aperto]'); if (d) chiudiFoglio(d); }
   });
 
   function avvertenza() {
@@ -260,14 +340,18 @@
   }
 
   root.UI = {
-    $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando,
+    $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando, oggi: oggi,
     linkSicuro: linkSicuro, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
-    icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro,
+    icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite,
+    finestra: finestra, apriFinestra: apriFinestra, chiudiFinestra: chiudiFinestra, focusabili: focusabili, menoMovimento: function () { return menoMovimento.matches; },
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,
     csvParse: csvParse, csvStringify: csvStringify, scarica: scarica, leggiFile: leggiFile,
     CATEGORIE: CATEGORIE, STATI: STATI
   };
-  document.addEventListener('DOMContentLoaded', layout);
+  // intestazione, barra in basso e piè di pagina compaiono subito, anche mentre si scaricano i dati delle aste
+  var avviato = false;
+  function avvia() { if (avviato) return; avviato = true; layout(); }
+  if (document.getElementById('site-footer')) avvia(); else document.addEventListener('DOMContentLoaded', avvia);
 
   // App installabile e funzionamento offline (dove il browser lo consente)
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

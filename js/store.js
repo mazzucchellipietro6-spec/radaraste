@@ -15,7 +15,17 @@
   }
   function scrivi(k, v) {
     memoria[k] = v;
-    try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; }
+    var ok = true;
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { ok = false; }
+    // le pagine (e il numero sulla barra in basso) si aggiornano subito
+    if (k === K_SEGUITE) { try { document.dispatchEvent(new CustomEvent('radaraste:seguite')); } catch (e) {} }
+    return ok;
+  }
+  // copia da salvare: senza i campi interni del sito (quelli che iniziano con "_", es. _cerca)
+  function pulita(a) {
+    var o = {};
+    for (var k in a) if (Object.prototype.hasOwnProperty.call(a, k) && k.charAt(0) !== '_') o[k] = a[k];
+    return o;
   }
   function nuovoId() { return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
@@ -54,10 +64,13 @@
 
   // Il file raccolto usa un formato compatto { campi: [...], righe: [[...], ...] }; si accetta anche { aste: [...] }.
   // Le aste raccolte possono essere decine di migliaia: si convertono una volta sola.
-  var cacheRaccolte = null;
+  // Se data/aste.js non è (ancora) caricato non si memorizza nulla: quando arriva (es. caricato dalla ricerca) si converte.
+  var cacheRaccolte = null, cacheDi = null;
   function raccolte() {
-    if (cacheRaccolte) return cacheRaccolte;
     var R = root.ASTE_RACCOLTE;
+    if (cacheRaccolte && cacheDi === R) return cacheRaccolte;
+    if (!R) return [];
+    cacheDi = R; indice = null;
     var lista = R && root.Formato ? root.Formato.decodifica(R) : [];
     // i dati raccolti sono già puliti dalla raccolta: si aggiunge solo l'origine (niente normalizzazione, molto più veloce)
     cacheRaccolte = [];
@@ -73,8 +86,9 @@
   }
   var indice = null;
   function perId(id) {
-    if (!indice) { indice = {}; raccolte().forEach(function (a) { indice[a.id] = a; }); }
-    return indice[id] || manuali().filter(function (a) { return a.id === id; })[0] || null;
+    var lista = raccolte();
+    if (!indice && lista.length) { indice = {}; lista.forEach(function (a) { indice[a.id] = a; }); }
+    return (indice && indice[id]) || manuali().filter(function (a) { return a.id === id; })[0] || null;
   }
   function manuali() { return leggi(K_ASTE, []); }
 
@@ -132,19 +146,26 @@
       var l = Store.seguite(), s = l.filter(function (x) { return x.id === id; })[0];
       if (!s) { s = { id: id, stato: 'da-valutare', note: '', aggiunta: new Date().toISOString() }; l.push(s); }
       // copia dell'asta, così resta visibile anche se sparisce dal file delle aste raccolte
-      var a = Store.asta(id); if (a) s.copia = a;   // (la home passa la copia nei dati, perché non carica tutte le aste)
-      if (dati) for (var k in dati) s[k] = dati[k];
+      var a = Store.asta(id); if (a) s.copia = pulita(a);   // (la home passa la copia nei dati, perché non carica tutte le aste)
+      if (dati) for (var k in dati) s[k] = k === 'copia' && dati[k] ? pulita(dati[k]) : dati[k];
       scrivi(K_SEGUITE, l); return s;
     },
     smetti: function (id) { scrivi(K_SEGUITE, Store.seguite().filter(function (s) { return s.id !== id; })); },
 
     backup: function () { return { app: 'Radar Aste Italia', versione: 1, esportato: new Date().toISOString(), aste: manuali(), seguite: Store.seguite() }; },
+    // restituisce { importate, scartate, seguite }: aste inserite a mano importate/scartate e aste seguite ripristinate
     ripristina: function (dati) {
       if (!dati || !Array.isArray(dati.aste)) throw new Error('File non valido: manca l\'elenco "aste".');
       var esito = Store.importa(dati.aste);
+      esito.seguite = 0;
       if (Array.isArray(dati.seguite)) {
         var l = Store.seguite(), ids = {}; l.forEach(function (s) { ids[s.id] = s; });
-        dati.seguite.forEach(function (s) { if (ids[s.id]) Object.assign(ids[s.id], s); else l.push(s); });
+        dati.seguite.forEach(function (s) {
+          if (!s || !s.id) return;
+          if (s.copia) s.copia = pulita(s.copia);
+          if (ids[s.id]) Object.assign(ids[s.id], s); else l.push(s);
+          esito.seguite++;
+        });
         scrivi(K_SEGUITE, l);
       }
       return esito;

@@ -3,7 +3,8 @@
  *   { versione: 2, campi: [...], dizionari: { campo: [valori] }, prefissi: [...], righe: [[...], ...] }
  *
  * - i campi con pochi valori diversi (fonte, categoria, tribunale, date...) sono salvati come indice nel loro dizionario;
- *   anche gli elenchi corti (es. rischi: ['abusi','quota']) possono stare in un dizionario: si salva l'indice della combinazione;
+ *   anche gli elenchi corti (es. rischi: ['abusi','quota']) possono stare in un dizionario: si salva l'indice della combinazione
+ *   (l'elenco vuoto è un valore: rischi [] = testo controllato, nessun rischio; campo assente = non controllato);
  * - gli altri valori (numeri, testi, array) sono salvati così come sono;
  * - i link sono salvati come "~N" + resto, dove N è l'indice del prefisso comune in "prefissi";
  * - i valori null in fondo alla riga sono omessi.
@@ -12,7 +13,7 @@
   'use strict';
 
   var DIZIONARIO = ['categoria', 'tipo', 'regione', 'provincia', 'comune', 'tribunale', 'fonte', 'dataAsta', 'ora', 'stato', 'pubblicata', 'vista',
-    'termineOfferte', 'dettaglio', 'dataRibasso', 'rischi'];
+    'termineOfferte', 'dettaglio', 'dataRibasso', 'rischi', 'fonteValore', 'affidabilita', 'anomalia', 'numeroLotto', 'annoProcedura'];
   var LINK = ['linkAvviso', 'linkPerizia', 'linkPdf'];
 
   function prefisso(url) {
@@ -28,7 +29,6 @@
         var v = a[c];
         if (v === undefined || v === '' || v === null) return null;
         if (diz[c]) {
-          if (Array.isArray(v) && !v.length) return null; // elenco vuoto = campo assente
           var k = typeof v === 'string' ? v : (Array.isArray(v) ? '\u0001' : '\u0002') + JSON.stringify(v);
           if (!(k in pos[c])) { pos[c][k] = diz[c].length; diz[c].push(v); }
           return pos[c][k];

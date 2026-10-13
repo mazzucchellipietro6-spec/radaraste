@@ -1,0 +1,264 @@
+/* Dati completi di un'asta per la scheda e il confronto.
+ *
+ * Caricamento veloce, nell'ordine:
+ *   1. aste inserite a mano (in questo browser);
+ *   2. scheda a pezzi (data/dettagli/XX.js, poche decine di KB, vedi js/dettagli.js): se contiene il record
+ *      completo basta lei;
+ *   3. solo se serve, l'elenco completo (data/aste.js, qualche MB), unito alla scheda a pezzi;
+ *   4. la copia salvata quando l'asta è stata seguita (se non è più nell'elenco).
+ *
+ * Analisi: valore di mercato, costo totale, offerta massima, punteggio, semafori dei rischi.
+ * Usa solo dati dell'avviso: quello che manca resta mancante e viene detto. */
+(function (root) {
+  'use strict';
+  var U = root.UI, C = root.Calcoli, T = root.TARIFFE, P = root.Punteggio, E = root.Estrai, D = root.Dettagli, S = root.Store;
+  var K_PEZZI = 'radaraste.pezziAssenti';
+
+  /* ---------- caricamento ---------- */
+
+  var attesaElenco = null;
+  function caricaElenco() {
+    if (root.ASTE_RACCOLTE) return Promise.resolve(true);
+    if (attesaElenco) return attesaElenco;
+    attesaElenco = new Promise(function (ok) {
+      var s = document.createElement('script');
+      s.src = 'data/aste.js'; s.async = true;
+      s.onload = function () { ok(!!root.ASTE_RACCOLTE); };
+      s.onerror = function () { attesaElenco = null; if (s.parentNode) s.parentNode.removeChild(s); ok(false); };
+      document.head.appendChild(s);
+    });
+    return attesaElenco;
+  }
+
+  // Se per questa versione dei dati le schede a pezzi non sono state pubblicate, non si chiedono più
+  // (ogni tentativo sarebbe un errore 404 inutile). La versione è la data di aggiornamento del riepilogo.
+  function versioneDati() { return root.RIEPILOGO && root.RIEPILOGO.aggiornato || null; }
+  function pezziAssenti() {
+    var v = versioneDati();
+    if (!v) return false;
+    try { return localStorage.getItem(K_PEZZI) === v; } catch (e) { return false; }
+  }
+  function ricordaPezziAssenti() {
+    var R = root.ASTE_RACCOLTE, v = versioneDati();
+    if (!R || !v || R.aggiornato !== v || (R.arricchimento && R.arricchimento.schede)) return;
+    try { localStorage.setItem(K_PEZZI, v); } catch (e) {}
+  }
+
+  function dalPezzo(id) {
+    if (!D || pezziAssenti()) return Promise.resolve({ scheda: null, mancante: true });
+    return D.carica(id).then(function (s) {
+      var g = root.RADAR_DETTAGLI;
+      return { scheda: s, mancante: !(g && g[D.chiave(id)]) };
+    }, function () { return { scheda: null, mancante: true }; });
+  }
+
+  // le aste inserite a mano senza passare da Store.asta(), che altrimenti memorizzerebbe un elenco vuoto
+  // finché data/aste.js non è caricato
+  function manuale(id) { return (S.backup().aste || []).filter(function (a) { return a.id === id; })[0] || null; }
+
+  function unisci(base, scheda, origine) {
+    var a = {}, k;
+    for (k in base) a[k] = base[k];
+    if (scheda) for (k in scheda) if (scheda[k] !== null && scheda[k] !== undefined && scheda[k] !== '') a[k] = scheda[k];
+    if (!(a.superficieMq > 0) && a.mq > 0) a.superficieMq = a.mq;
+    a._origine = origine;
+    return a;
+  }
+
+  /* Promise di { a, origine } oppure null se l'asta non esiste.
+   * origine: 'manuale' | 'pezzo' (scheda completa) | 'elenco' (data/aste.js + scheda) | 'copia' (copia salvata) */
+  function carica(id) {
+    if (!id) return Promise.resolve(null);
+    var m = manuale(id);
+    if (m) return Promise.resolve(unisci(m, null, 'manuale'));
+    var seg = S.seguita(id), copia = seg && seg.copia;
+    return dalPezzo(id).then(function (p) {
+      var s = p.scheda;
+      if (s && s.titolo && U.linkSicuro(s.linkAvviso)) return unisci(s, null, 'pezzo');
+      return caricaElenco().then(function (ok) {
+        if (ok && p.mancante) ricordaPezziAssenti();
+        var base = ok ? S.asta(id) : null;
+        if (base) return unisci(base, s, 'elenco');
+        if (copia) return unisci(copia, s, 'copia');
+        return null;
+      });
+    });
+  }
+
+  /* Copia corta da salvare tra le aste seguite (niente testi lunghi né foto). */
+  var CORTI = ['valore', 'valoreMin', 'valoreMax', 'fonteValore', 'affidabilita', 'costoTotale', 'sconto', 'offertaMax', 'punteggio', 'punteggioCompleto',
+    'superficieMq', 'stima', 'termineOfferte', 'tentativo', 'deserte', 'primoPrezzo', 'ribasso', 'nFoto', 'prezzoPrecedente', 'dataRibasso', 'origine'];
+  function copiaBreve(a) {
+    var o = { id: a.id };
+    S.campi.concat(CORTI).forEach(function (k) { if (k !== 'descrizione' && a[k] !== undefined && a[k] !== null && a[k] !== '') o[k] = a[k]; });
+    var ch = chiaviRischi(a);
+    if (ch) o.rischi = ch;
+    return o;
+  }
+
+  /* Segue l'asta. Se data/aste.js non è caricato non si passa da Store.segui() (che cercherebbe l'asta
+   * nell'elenco non ancora caricato e lo memorizzerebbe vuoto per il resto della pagina): si aggiunge
+   * la voce con la stessa struttura tramite Store.ripristina(). */
+  function segui(a) {
+    var copia = copiaBreve(a);
+    if (root.ASTE_RACCOLTE || a._origine === 'manuale') return S.segui(a.id, { copia: copia });
+    S.ripristina({ aste: [], seguite: [{ id: a.id, stato: 'da-valutare', note: '', aggiunta: new Date().toISOString(), copia: copia }] });
+    return S.seguita(a.id);
+  }
+
+  /* ---------- rischi ---------- */
+
+  var PER_CATEGORIA = {
+    immobile: ['occupazione', 'abusi', 'quota', 'superficie', 'vincoli', 'degrado', 'condominio'],
+    auto: ['chiavi', 'documenti', 'marcia', 'quota'],
+    moto: ['chiavi', 'documenti', 'marcia', 'quota'],
+    beni: ['quota']
+  };
+  // rischi che il punteggio considera (come la raccolta): per gli immobili anche "agricolo"
+  var AMMESSI = { immobile: PER_CATEGORIA.immobile.concat('agricolo'), auto: PER_CATEGORIA.auto, moto: PER_CATEGORIA.moto, beni: PER_CATEGORIA.beni };
+  var TITOLI = {
+    occupazione: 'Occupazione', abusi: 'Abusi o difformità edilizie', quota: 'Quota o nuda proprietà', superficie: 'Diritto di superficie',
+    vincoli: 'Vincoli, servitù, edilizia convenzionata', degrado: 'Degrado, grezzo o inagibile', condominio: 'Spese condominiali arretrate',
+    agricolo: 'Terreno agricolo o fabbricato rurale', chiavi: 'Chiavi del veicolo', documenti: 'Documenti (libretto, certificato di proprietà)', marcia: 'Marcia e danni'
+  };
+  var TROVATO = {
+    occupazione: 'Il testo parla di occupazione o locazione', abusi: 'Il testo cita abusi, difformità o sanatorie', quota: 'Si vende solo una quota o un diritto parziale',
+    superficie: 'Si vende un diritto di superficie (spesso a tempo)', vincoli: 'Il testo cita vincoli, servitù o edilizia convenzionata',
+    degrado: 'Il testo parla di immobile al grezzo, inagibile o degradato', condominio: 'Il testo cita spese condominiali non pagate',
+    agricolo: 'Terreno agricolo o fabbricato rurale', chiavi: 'Il veicolo risulta senza chiavi', documenti: 'Il veicolo risulta senza documenti',
+    marcia: 'Non marciante, incidentato o da rottamare'
+  };
+
+  function testoAvviso(a) { return String(a.descrizione || '').trim(); }
+
+  function categoria(a) { return PER_CATEGORIA[a.categoria] ? a.categoria : 'beni'; }
+
+  // rischi trovati: { chiave: { prova, importo } } dalla scheda (con la prova), dall'elenco (solo le chiavi) e dal testo
+  function trovati(a, testo) {
+    var out = {}, amm = AMMESSI[categoria(a)];
+    (Array.isArray(a.rischi) ? a.rischi : []).forEach(function (r) {
+      var k = typeof r === 'string' ? r : r && r.chiave;
+      if (!k || amm.indexOf(k) < 0) return;
+      var x = out[k] || (out[k] = {});
+      if (r && r.prova && !x.prova) x.prova = r.prova;
+      if (r && r.importo != null) x.importo = r.importo;
+    });
+    if (testo && E) E.rischi(testo).forEach(function (r) {
+      if (amm.indexOf(r.chiave) < 0) return;
+      var x = out[r.chiave] || (out[r.chiave] = {});
+      if (!x.prova) x.prova = r.prova;
+      if (r.importo != null && x.importo == null) x.importo = r.importo;
+    });
+    return out;
+  }
+
+  function chiaviRischi(a) {
+    if (!Array.isArray(a.rischi)) return null;
+    return a.rischi.map(function (r) { return typeof r === 'string' ? r : r && r.chiave; }).filter(Boolean);
+  }
+
+  /* Semafori: verde = cercato nel testo e non trovato, rosso = trovato (con la frase), giallo = dato incerto,
+   * grigio = non verificabile (testo dell'avviso non disponibile). */
+  function semafori(a, testo) {
+    var tr = trovati(a, testo), lista = PER_CATEGORIA[categoria(a)].slice();
+    Object.keys(tr).forEach(function (k) { if (lista.indexOf(k) < 0) lista.push(k); });
+    return lista.map(function (k) {
+      var x = tr[k], s = { chiave: k, titolo: TITOLI[k] || k, prova: x && x.prova || null };
+      if (k === 'occupazione' && a.categoria === 'immobile') {
+        if (a.stato === 'occupato') { s.colore = 'rosso'; s.testo = 'L\'avviso lo indica come occupato: per liberarlo servono tempo e costi.'; }
+        else if (a.stato === 'libero' && x) { s.colore = 'giallo'; s.testo = 'Indicato come libero, ma il testo parla di occupazione o locazione: chiedi al custode.'; }
+        else if (a.stato === 'libero') { s.colore = 'verde'; s.testo = 'L\'avviso lo indica come libero.'; }
+        else if (x) { s.colore = 'rosso'; s.testo = TROVATO[k] + '.'; }
+        else if (testo) { s.colore = 'giallo'; s.testo = 'Stato non indicato dalla fonte e nessun segnale nel testo: chiedi al custode.'; }
+        else { s.colore = 'grigio'; s.testo = 'Stato non indicato e testo dell\'avviso non ancora disponibile.'; }
+        return s;
+      }
+      if (x) {
+        s.colore = 'rosso';
+        s.testo = TROVATO[k] + (x.importo ? ' (importo indicato: ' + U.eur(x.importo) + ')' : '') + '.';
+        if (!x.prova) s.testo += ' La frase esatta è nell\'avviso.';
+      } else if (testo) { s.colore = 'verde'; s.testo = 'Nessun segnale nel testo dell\'avviso.'; }
+      else { s.colore = 'grigio'; s.testo = 'Non verificabile: il testo dell\'avviso non è ancora disponibile qui.'; }
+      return s;
+    });
+  }
+
+  /* ---------- costi e valore ---------- */
+
+  var IP = (P && P.IPOTESI) || C.IPOTESI_RAPIDE;
+  function inputCosto(a, offerta, valoreMercato) {
+    if (a.categoria === 'immobile') {
+      return { fn: C.costoImmobile, input: { prezzoBase: a.prezzoBase, offerta: offerta, valoreMercato: valoreMercato || 0, regime: IP.regime,
+        speseProcedura: IP.speseProcedura, liberazione: a.stato === 'occupato' ? IP.liberazioneOccupato : 0 } };
+    }
+    return { fn: C.costoVeicolo, input: { tipo: a.categoria === 'auto' || a.categoria === 'moto' ? a.categoria : 'beni', offerta: offerta,
+      valoreMercato: valoreMercato || 0, kw: IP.kw, provincia: a.provincia } };
+  }
+  function costo(a, offerta, valoreMercato) {
+    if (!(offerta > 0)) return null;
+    var ic = inputCosto(a, offerta, valoreMercato);
+    return ic.fn(ic.input, T);
+  }
+  function offertaMassima(a, valoreMin) {
+    if (!(valoreMin > 0)) return null;
+    var ic = inputCosto(a, a.prezzoBase || valoreMin, valoreMin);
+    return C.offertaMassima(ic.fn, ic.input, T, T.giudizio.scontoObiettivo);
+  }
+
+  var FONTI_VALORE = {
+    perizia: 'Stima del perito indicata nell\'avviso',
+    'primo-prezzo': 'Prezzo base della prima asta, che di norma coincide con la stima del perito',
+    'prima-asta': 'È la prima asta: il prezzo base di norma coincide con la stima del perito',
+    manuale: 'Valore inserito da te'
+  };
+
+  function analizza(a) {
+    var r = { a: a, testo: testoAvviso(a) };
+    var base = a.prezzoBase > 0 ? a.prezzoBase : null;
+    r.prezzoBase = base;
+    r.offertaMinima = a.offertaMinima > 0 ? a.offertaMinima : base ? C.offertaMinima(base, T) : null;
+    r.mq = a.superficieMq > 0 ? a.superficieMq : a.mq > 0 ? a.mq : null;
+    r.euroMq = base && r.mq && a.categoria === 'immobile' ? base / r.mq : null;
+    r.semafori = semafori(a, r.testo);
+    var verificabili = r.semafori.filter(function (s) { return s.colore !== 'grigio'; });
+    r.nRischi = verificabili.length ? r.semafori.filter(function (s) { return s.colore === 'rosso'; }).length : null;
+    r.nVerificati = verificabili.length;
+
+    // punteggio: stessi rischi della raccolta; se l'elenco non li ha ma il testo ne mostra, si contano (prudenza)
+    var x = {}, k;
+    for (k in a) x[k] = a[k];
+    var ch = chiaviRischi(a);
+    var dalTesto = r.semafori.filter(function (s) { return s.colore === 'rosso' && s.chiave !== 'occupazione'; }).map(function (s) { return s.chiave; });
+    x.rischi = ch && ch.length ? ch : dalTesto.length ? dalTesto : undefined;
+    r.valuta = P && base ? P.valuta(x, { T: T }) : null;
+    var vv = r.valuta && r.valuta.valore;
+
+    if (vv) {
+      r.valore = { centrale: vv.centrale, min: vv.min, max: vv.max, fonte: vv.fonte, etichetta: vv.etichetta,
+        affidabilita: a.affidabilita || vv.affidabilita, controlli: vv.controlli.slice(), zona: !!(a.affidabilita && a.affidabilita !== vv.affidabilita) };
+    } else if (a.valore > 0) {
+      r.valore = { centrale: a.valore, min: a.valoreMin || a.valore, max: a.valoreMax || a.valore, fonte: a.fonteValore, etichetta: FONTI_VALORE[a.fonteValore] || 'Valore stimato dalla raccolta',
+        affidabilita: a.affidabilita || null, controlli: [] };
+    } else if (a.valoreMercato > 0) {
+      r.valore = { centrale: a.valoreMercato, min: a.valoreMercato, max: a.valoreMercato, fonte: 'manuale', etichetta: FONTI_VALORE.manuale, affidabilita: null, controlli: [] };
+    } else r.valore = null;
+
+    r.costo = base ? costo(a, base, r.valore && r.valore.centrale) : null;
+    if (r.valore && r.costo) {
+      r.sconto = r.valuta && r.valuta.sconto != null && vv ? r.valuta.sconto : r.costo.sconto;
+      r.giudizio = C.giudizio(r.sconto, T);
+      r.offertaMax = r.valuta && r.valuta.offertaMax != null && vv ? r.valuta.offertaMax : offertaMassima(a, r.valore.min);
+    } else { r.sconto = a.sconto != null ? a.sconto : null; r.offertaMax = a.offertaMax > 0 ? a.offertaMax : null; }
+
+    if (r.valuta && r.valuta.punteggio != null) r.punteggio = { valore: r.valuta.punteggio, parti: r.valuta.parti, completo: r.valuta.completo };
+    else if (a.punteggio != null) r.punteggio = { valore: Math.round(a.punteggio), parti: null, completo: !!a.punteggioCompleto };
+    else r.punteggio = null;
+    r.mancanti = r.valuta ? r.valuta.mancanti.slice() : base ? [] : ['prezzo base'];
+    return r;
+  }
+
+  root.Asta = {
+    carica: carica, caricaElenco: caricaElenco, analizza: analizza, costo: costo, segui: segui, copiaBreve: copiaBreve,
+    TITOLI_RISCHI: TITOLI, FONTI_VALORE: FONTI_VALORE
+  };
+})(window);

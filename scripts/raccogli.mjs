@@ -3,7 +3,13 @@
 //
 //   npm run raccogli                      tutte le fonti attive
 //   npm run raccogli -- --solo pvp        una sola fonte
-//   npm run raccogli -- --max-pagine 2    prova veloce (solo PVP: 2 pagine da 100)
+//   npm run raccogli -- --max-pagine 2    prova veloce (solo PVP: 2 pagine da 1000)
+//   npm run raccogli -- --max-dettagli 50 quante schede di dettaglio del PVP leggere (predefinito 600, 0 = nessuna)
+//   npm run raccogli -- --output percorso/aste.js   scrive altrove (le schede in percorso/dettagli/)
+//   npm run raccogli -- --indice percorso/storico-indice.json   indice delle vendite passate (predefinito data/storico-indice.json)
+//
+// Oltre all'elenco leggero (aste.js) e al riepilogo per la home (riepilogo.js) scrive le schede a pezzi
+// (dettagli/XX.js, vedi js/dettagli.js) e aggiorna l'indice storico delle vendite passate (non pubblicato).
 //
 // Regole: si leggono solo fonti che lo consentono (robots.txt e termini d'uso verificati);
 // se una fonte blocca l'accesso o lo vieta, la raccolta di quella fonte si ferma e lo
@@ -15,6 +21,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { FonteBloccata } from './lib/http.mjs';
 import { unisci } from './lib/doppioni.mjs';
+import { arricchisci } from './lib/arricchimento.mjs';
 
 const RADICE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
@@ -34,13 +41,22 @@ function argomenti() {
     if (a[i] === '--solo') o.solo = a[++i];
     else if (a[i] === '--max-pagine') o.maxPagine = parseInt(a[++i], 10);
     else if (a[i] === '--output') o.output = a[++i];
+    else if (a[i] === '--max-dettagli') o.maxDettagli = parseInt(a[++i], 10);
+    else if (a[i] === '--indice') o.indice = a[++i];
   }
   return o;
 }
 
 // Formato compatto: elenco dei campi + una riga (array) per asta, per tenere leggero il file.
+// I campi in fondo sono quelli dell'arricchimento (in ordine di frequenza, così le righe senza restano corte):
+//   tentativo (1 = prima asta trovata), rischi (chiavi di js/estrai.js), superficieMq, deserte, primoPrezzo, ribasso
+//   (1 − prezzo / prezzo del tentativo precedente), annoProcedura, dettaglio (data di lettura della scheda),
+//   termineOfferte ('AAAA-MM-GGTHH:MM'), stima (valore di stima, se indicato), nFoto, prezzoPrecedente e dataRibasso
+//   (ribasso del prezzo base della stessa asta rispetto alla raccolta precedente). I dati lunghi sono in dettagli/XX.js.
 const CAMPI = ['id', 'titolo', 'categoria', 'tipo', 'regione', 'provincia', 'comune', 'indirizzo', 'tribunale', 'rge', 'fonte',
-  'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'stato', 'linkAvviso', 'linkPerizia', 'linkPdf', 'lat', 'lng', 'descrizione', 'altriLink', 'pubblicata', 'vista'];
+  'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'stato', 'linkAvviso', 'linkPerizia', 'linkPdf', 'lat', 'lng', 'descrizione', 'altriLink', 'pubblicata', 'vista',
+  'tentativo', 'rischi', 'superficieMq', 'deserte', 'primoPrezzo', 'ribasso', 'annoProcedura', 'dettaglio', 'termineOfferte', 'stima', 'nFoto',
+  'prezzoPrecedente', 'dataRibasso'];
 
 async function precedente(file) {
   try {
@@ -56,6 +72,8 @@ async function main() {
   const oggi = new Date().toISOString().slice(0, 10);
   const prima = await precedente(file);
   const perFonte = [], statoFonti = [];
+  const avvio = Date.now();
+  let richiesteTotali = 0;
 
   for (const f of REGISTRO) {
     const base = { nome: f.nome, url: f.url, controllo: oggi };
@@ -72,7 +90,8 @@ async function main() {
     console.log(`→ ${f.nome}`);
     const inizio = Date.now();
     try {
-      const { aste, nota } = await m.raccogli({ oggi, maxPagine: opz.maxPagine });
+      const { aste, nota, richieste } = await m.raccogli({ oggi, maxPagine: opz.maxPagine });
+      if (richieste) richiesteTotali += richieste;
       risultato.push(...aste);
       statoFonti.push({ ...base, stato: 'attiva', metodo: f.metodo, motivo: `${f.motivo} Ultima raccolta: ${nota}`, aste: aste.length, ultimaRaccolta: new Date().toISOString(), durataSec: Math.round((Date.now() - inizio) / 1000) });
     } catch (e) {
@@ -98,14 +117,36 @@ async function main() {
   for (const a of uniche) a.vista = giaViste.get(a.id) || oggi;
   if (doppioni) console.log(`  ${doppioni} aste già presenti su una fonte con priorità più alta: tenuto solo il link`);
   uniche.sort((a, b) => (a.dataAsta || '').localeCompare(b.dataAsta || ''));
-  const dati = { aggiornato: new Date().toISOString(), fonti: statoFonti, ...Formato.codifica(uniche, CAMPI) };
+
+  // arricchimento delle aste del PVP: descrizione, storico dei tentativi, dettagli, ribassi; schede a pezzi in dettagli/
+  let arricchimento = null;
+  try {
+    console.log('→ Arricchimento delle aste del PVP');
+    const s = await arricchisci({
+      aste: uniche, prima: prima.aste, oggi, fileAste: file,
+      fileIndice: path.resolve(RADICE, opz.indice || 'data/storico-indice.json'),
+      maxDettagli: Number.isFinite(opz.maxDettagli) ? opz.maxDettagli : 600
+    });
+    richiesteTotali += s.richiesteStorico + s.richiesteDettagli;
+    arricchimento = {
+      schede: s.schede, conDettaglio: uniche.filter((a) => a.dettaglio).length, dettagliLettiOggi: s.dettagliNuovi,
+      conStorico: uniche.filter((a) => a.tentativo).length, catene: s.catene
+    };
+    console.log(`  ✓ ${s.schede} schede (${Math.round(s.byteSchede / 1024)} KB), ${s.dettagliNuovi} dettagli letti ora, ${s.catene} aste con tentativi precedenti, ${s.ambigue} catene ambigue non collegate (${s.durataSec} s)` + (s.dettagliFermo ? ` – dettagli interrotti: ${s.dettagliFermo}` : ''));
+  } catch (e) {
+    console.error(`  ✗ arricchimento non riuscito: ${e.stack || e.message}`);
+  } finally {
+    for (const a of uniche) delete a._pvp;
+  }
+
+  const dati = { aggiornato: new Date().toISOString(), fonti: statoFonti, arricchimento, ...Formato.codifica(uniche, CAMPI) };
   const intestazione = '/* ASTE RACCOLTE DALLE FONTI UFFICIALI – file generato da scripts/raccogli.mjs il ' + dati.aggiornato + '.\n * Non modificarlo a mano: viene riscritto a ogni raccolta. Ogni asta ha il link all\'avviso originale (linkAvviso). */\n';
   await writeFile(file, intestazione + 'window.ASTE_RACCOLTE = ' + JSON.stringify(dati) + ';\n');
   // riepilogo leggero per la home (stessa cartella del file delle aste)
   const riepilogo = { aggiornato: dati.aggiornato, fonti: statoFonti.map((f) => ({ nome: f.nome, stato: f.stato })), ...Riepilogo.calcola(uniche, oggi) };
   await writeFile(path.join(path.dirname(file), path.basename(file).replace(/aste\.js$/, 'riepilogo.js').replace(/^(?!riepilogo)(.*)\.js$/, '$1-riepilogo.js')),
     '/* Riepilogo per la home, generato da scripts/raccogli.mjs il ' + dati.aggiornato + '. */\nwindow.RIEPILOGO = ' + JSON.stringify(riepilogo) + ';\n');
-  console.log(`✓ ${uniche.length} aste scritte in ${path.relative(RADICE, file)} (${statoFonti.filter((s) => s.stato === 'attiva').length} fonti attive)`);
+  console.log(`✓ ${uniche.length} aste scritte in ${path.relative(RADICE, file)} (${statoFonti.filter((s) => s.stato === 'attiva').length} fonti attive; ${richiesteTotali} richieste al PVP; ${Math.round((Date.now() - avvio) / 1000)} s)`);
   if (!statoFonti.some((s) => s.stato === 'attiva')) process.exitCode = 1;
 }
 
