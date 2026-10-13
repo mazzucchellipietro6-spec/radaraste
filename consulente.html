@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consulente d'asta – Radar Aste Italia</title>
+<meta name="description" content="Chiedi in italiano: il consulente cerca le aste, le spiega e fa i conti con i dati del sito, con fonte e affidabilità di ogni numero.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <p class="note"><a href="assistenti.html">Assistenti</a> / Consulente d'asta</p>
+  <div class="cs-app">
+    <section class="cs-chat" aria-labelledby="h-cons">
+      <header class="cs-testa">
+        <span class="cs-avatar" aria-hidden="true"><svg class="icona"><use href="#i-chat"/></svg></span>
+        <div><h1 id="h-cons">Consulente d'asta</h1><p id="csStato" aria-live="polite">Carico le aste in corso…</p></div>
+        <span class="spacer"></span>
+        <button class="btn small quiet" type="button" id="csNuova">Nuova conversazione</button>
+      </header>
+      <div class="cs-messaggi" id="csMessaggi" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversazione"></div>
+      <div class="cs-scrivi">
+        <div class="cs-esempi" id="csEsempi" role="group" aria-label="Domande di esempio"></div>
+        <form class="cs-form" id="csForm">
+          <label for="csDomanda" class="sr-only">La tua domanda</label>
+          <textarea id="csDomanda" rows="1" placeholder="Scrivi una domanda: es. appartamenti liberi a Bari sotto 120 mila" autocomplete="off"></textarea>
+          <button class="btn" type="submit" id="csInvia"><svg class="icona" aria-hidden="true"><use href="#i-invia"/></svg><span>Invia</span></button>
+        </form>
+      </div>
+    </section>
+
+    <aside class="cs-lato" aria-label="Come funziona il consulente">
+      <div class="panel">
+        <h2>Cosa sa fare</h2>
+        <ul>
+          <li>Cercare aste con le tue parole: luogo, tipo, prezzo, libere, buoni affari, date.</li>
+          <li>Spiegare un'asta: valore, costi, rischi e offerta massima.</li>
+          <li>Fare i conti: costo totale con le imposte, rata del mutuo, rendimento dell'affitto.</li>
+          <li>Rispondere sulle regole: offerta, cauzione, gara, saldo, decreto.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Da dove vengono le risposte</h2>
+        <p class="note">Ogni numero viene dai dati delle aste e dai calcoli del sito, con la fonte e il livello di affidabilità sotto la risposta. Se un dato manca, il consulente lo dice invece di stimarlo.</p>
+      </div>
+      <div class="panel cs-modo">
+        <h2>Modalità</h2>
+        <label class="check"><input type="radio" name="csModo" value="regole" checked> Regole del sito (gratuita, attiva)</label>
+        <label class="check"><input type="radio" name="csModo" value="ai" id="csModoAi" disabled> Intelligenza artificiale</label>
+        <p class="note" id="csNotaAi">La modalità AI non è attiva: richiede un servizio a pagamento e una chiave che non è stata configurata. Il collegamento è pronto; costi e scelta del servizio sono descritti nel documento del progetto (CONSULENTE.md).</p>
+      </div>
+      <p class="note">È uno strumento informativo, non una consulenza finanziaria o legale: prima di offrire leggi avviso e perizia.</p>
+    </aside>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="config/consulente.js"></script>
+<script src="data/riepilogo.js"></script>
+<script src="data/affari.js"></script>
+<script src="js/mutuo.js"></script>
+<script src="js/punteggio.js"></script>
+<script src="js/consulente.js"></script>
+<script src="js/pages/consulente.js"></script>
+</body>
+</html>

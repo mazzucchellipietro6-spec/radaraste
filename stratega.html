@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stratega d'asta – Radar Aste Italia</title>
+<meta name="description" content="Su quali aste puntare con il tuo capitale, quanto offrire e quando: piano con vincolo di cassa e simulazione Monte Carlo sugli esiti reali delle vendite passate.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <p class="note"><a href="assistenti.html">Assistenti</a> / Stratega d'asta</p>
+  <div class="as-testa">
+    <p class="eyebrow"><svg class="icona" aria-hidden="true"><use href="#i-percorso"/></svg>Stratega d'asta</p>
+    <h1>Un piano <em>per il tuo capitale</em></h1>
+    <p class="sub">Dimmi quanto puoi investire: lo stratega sceglie tra le aste in corso con un valore affidabile quelle su cui puntare, quanto offrire e quando, senza mai proporre un piano che non puoi pagare. Poi simula migliaia di scenari con gli esiti reali delle vendite passate.</p>
+  </div>
+
+  <div class="st-app">
+    <form class="panel stack st-form" id="stForm" style="gap:14px" novalidate>
+      <h2>Il tuo profilo</h2>
+      <div class="fields">
+        <label>Capitale disponibile (€)<input type="number" inputmode="decimal" min="0" step="1000" name="capitale" placeholder="es. 60000" required></label>
+        <label>Mutuo già concordato con la banca (€)<input type="number" inputmode="decimal" min="0" step="1000" name="mutuo" value="0"></label>
+        <label>Orizzonte<select name="orizzonteMesi"><option value="3">3 mesi</option><option value="6" selected>6 mesi</option><option value="9">9 mesi</option><option value="12">12 mesi</option></select></label>
+        <label>Strategia<select name="strategia"><option value="vivere">Ci vado a vivere</option><option value="affittare">Lo affitto</option><option value="rivendere" selected>Lo rivendo</option></select></label>
+        <label>Prudenza<select name="prudenza"><option value="prudente" selected>Prudente: posso pagare anche se vinco tutte</option><option value="equilibrata">Equilibrata: rischio massimo 10%</option><option value="audace">Audace: rischio massimo 25%</option></select></label>
+        <label>Regione<select name="regione" id="stRegione"><option value="">Tutta Italia</option></select></label>
+      </div>
+      <div class="cursore">
+        <div class="testa"><label for="stConc">Probabilità di vincere se ci sono altri offerenti (ipotesi tua)</label><output id="stConcOut" for="stConc">30%</output></div>
+        <input type="range" id="stConc" name="concorrenza" min="5" max="80" step="5" value="30">
+        <div class="estremi"><span>5%</span><span>80%</span></div>
+      </div>
+      <p class="note">Nessuno sa quanto offriranno gli altri: è l'unico numero del piano che non viene dai dati, e per questo lo scegli tu.</p>
+      <div class="row-actions"><button class="btn" type="submit">Costruisci il piano</button></div>
+    </form>
+
+    <div class="stack st-esito" id="stEsito" aria-live="polite">
+      <div class="panel st-vuoto"><p class="muted">Inserisci il capitale e premi "Costruisci il piano".</p></div>
+    </div>
+  </div>
+
+  <section class="callout warn" aria-labelledby="h-avviso">
+    <h2 id="h-avviso" style="font-size:18px;margin-bottom:4px">È una simulazione, non una consulenza finanziaria</h2>
+    <p id="stDisclaimer">Le probabilità vengono dagli esiti passati delle vendite e da ipotesi tue; verifica sempre avviso e perizia, e senti un professionista prima di impegnare il capitale.</p>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="data/riepilogo.js"></script>
+<script src="data/statistiche.js"></script>
+<script src="js/mutuo.js"></script>
+<script src="js/punteggio.js"></script>
+<script src="js/stratega.js"></script>
+<script src="js/pages/stratega.js"></script>
+</body>
+</html>

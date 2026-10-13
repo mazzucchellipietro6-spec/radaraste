@@ -168,3 +168,14 @@ test('valore poco affidabile: il punteggio si ferma alla fascia "Da valutare" (m
   assert.equal(r.limitato, true);
   assert.equal(P.fascia(r.punteggio).chiave, 'medio');
 });
+
+test('OMI oltre 3 volte il prezzo base senza perizia né prima asta: affidabilità bassa (caso reale Agrigento)', () => {
+  const a = { ...base, prezzoBase: 50090, superficieMq: 400, omiMin: 260000, omiMax: 327000, omiMetodo: 'indirizzo' };
+  const r = P.valuta(a, { T });
+  assert.equal(r.valore.fonte, 'omi');
+  assert.equal(r.valore.affidabilita, 'bassa');
+  assert.match(r.valore.controlli.join(), /più di 3 volte il prezzo base/);
+  // con la prima asta che conferma il valore resta affidabile
+  const b = P.valuta({ ...a, tentativo: 5, primoPrezzo: 280000 }, { T });
+  assert.notEqual(b.valore.affidabilita, 'bassa');
+});

@@ -14,6 +14,7 @@ import { createRequire } from 'node:module';
 import { valutaTutte, leggiSchede, scriviSchede, record, DAL_PUNTEGGIO, LUNGHI } from './lib/arricchimento.mjs';
 import { fileCollegati } from './lib/correzioni.mjs';
 import { statoAgenti, scriviCombinazioni } from './lib/derivati.mjs';
+import { scriviStatistiche } from './lib/statistiche.mjs';
 import { CAMPI } from './raccogli.mjs';
 
 const require = createRequire(import.meta.url);
@@ -70,6 +71,8 @@ async function main() {
   await scriviAtomico(collegati.riepilogo, '/* Riepilogo per la home, generato da scripts/ricalcola.mjs il ' + new Date().toISOString() + '. */\nwindow.RIEPILOGO = ' + JSON.stringify(riepilogo) + ';\n');
   const c = await scriviCombinazioni(path.join(path.dirname(file), 'combinazioni.js'), aste, T, oggi);
   console.log(`  combinazioni d'oro: ${c.trovate} su ${c.gruppiAnalizzati} procedure con più lotti`);
+  const st = await scriviStatistiche(path.resolve(RADICE, 'data/storico-indice.json'), path.join(path.dirname(file), 'statistiche.js'), oggi);
+  if (st) console.log(`  statistiche degli esiti: ${st.totale.n} vendite passate`);
   console.log(`✓ ricalcolate ${dati.punteggio.conPunteggio} aste con punteggio (${dati.punteggio.completi} complete) in ${Date.now() - avvio} ms`);
 }
 

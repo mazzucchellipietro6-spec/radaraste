@@ -27,6 +27,7 @@ import { unisci } from './lib/doppioni.mjs';
 import { arricchisci, valutaTutte, scriviSchede, record } from './lib/arricchimento.mjs';
 import { adessoRoma, giaIniziata, anomalia, fileCollegati } from './lib/correzioni.mjs';
 import { statoAgenti, scriviCombinazioni } from './lib/derivati.mjs';
+import { scriviStatistiche } from './lib/statistiche.mjs';
 
 const RADICE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
@@ -216,6 +217,11 @@ async function main() {
     const c = await scriviCombinazioni(path.join(path.dirname(file), 'combinazioni.js'), uniche, T, oggi);
     console.log(`  combinazioni d'oro: ${c.trovate} su ${c.gruppiAnalizzati} procedure con più lotti`);
   } catch (e) { console.error(`  ✗ combinazioni non calcolate: ${e.message}`); }
+  // esiti delle vendite passate per lo Stratega (solo conteggi: l'indice resta fuori dal sito)
+  try {
+    const st = await scriviStatistiche(path.resolve(RADICE, opz.indice || 'data/storico-indice.json'), path.join(path.dirname(file), 'statistiche.js'), oggi);
+    if (st) console.log(`  statistiche degli esiti: ${st.totale.n} vendite passate`);
+  } catch (e) { console.error(`  ✗ statistiche non calcolate: ${e.message}`); }
   const perHost = [...richiestePerHost].map(([h, n]) => `${h} ${n}`).join(', ');
   console.log(`✓ ${uniche.length} aste scritte in ${path.relative(RADICE, file) || file} (${statoFonti.filter((s) => s.stato === 'attiva').length} fonti attive; ` +
     `${richiesteTotali} richieste al PVP tra ricerca, storico e dettagli; richieste per sito: ${perHost || 'nessuna'}; ${Math.round((Date.now() - avvio) / 1000)} s)`);

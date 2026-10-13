@@ -92,6 +92,11 @@
       }
     }
     var fonte = scelto.fonte, centrale = scelto.v, min = scelto.min != null ? scelto.min : null, max = scelto.max != null ? scelto.max : null;
+    // OMI molto sopra il prezzo base senza nessun riferimento del perito che lo confermi: dato da verificare
+    if (!perito && fonte.indexOf('omi') === 0 && base > 0 && centrale > base * 3) {
+      aff = 'bassa';
+      controlli.push('Il valore OMI (' + eu(centrale) + ') è più di 3 volte il prezzo base e non c\'è una stima del perito o il prezzo della prima asta che lo confermi: può riguardare una superficie diversa o un immobile in cattivo stato.');
+    }
     if (!fonte) return null;
     var f = FORCHETTA[fonte] || 0;
     if (base > 0 && centrale < base * 0.95) { aff = 'bassa'; controlli.push('Il prezzo base è più alto del valore: dato incoerente, da verificare sull\'avviso.'); }
