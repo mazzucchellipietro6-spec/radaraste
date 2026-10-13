@@ -296,3 +296,4 @@ body.pg-confronta.con-confronto { padding-bottom: 0; }
 .cf-mini small { margin-top: 2px; }
 .cf-testa h2 + .cf-dove { margin-top: -4px; }
 @media (prefers-reduced-motion: reduce) { .sc-barra i { animation: none; } .sc-freccia, .sc-doc { transition: none; } }
+.sc-azioni-2 { margin-top: -4px; }

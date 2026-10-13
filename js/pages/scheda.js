@@ -153,6 +153,10 @@
       '<button class="btn ghost" type="button" data-azione="segui" aria-pressed="false">' + U.icona('stella') + '<span>Segui</span></button>' +
       '<button class="btn ghost" type="button" data-azione="confronta" aria-pressed="false">' + U.icona('confronta') + '<span>Confronta</span></button>' +
       '<button class="btn ghost" type="button" data-azione="condividi">' + U.icona('freccia') + '<span>Condividi</span></button>' +
+      (a.dataAsta && window.Calendario ? '<button class="btn ghost" type="button" data-azione="calendario">' + U.icona('calendario') + '<span>Promemoria</span></button>' : '') +
+      '</div><div class="sc-azioni sc-azioni-2">' +
+      '<a class="btn quiet small" href="consulente.html?q=' + encodeURIComponent('spiegami l\'asta ' + a.id) + '">' + U.icona('chat') + 'Chiedi al consulente</a>' +
+      (a.categoria === 'immobile' ? '<a class="btn quiet small" href="mutuo.html?id=' + encodeURIComponent(a.id) + '" data-passa="id:' + esc(a.id) + '">' + U.icona('mutuo') + 'Posso permettermela?</a>' : '') +
       '</div>';
   }
   function aggiornaAzioni() {
@@ -268,7 +272,8 @@
     }
     var manca = r.mancanti.filter(function (m) { return !(p && /^valore di mercato/.test(m)); });
     if (manca.length) h += '<div class="sc-manca"><h3>Cosa manca</h3><ul>' + manca.map(function (m) { return '<li>' + esc(testoMancante(m, a)) + '</li>'; }).join('') + '</ul></div>';
-    if (p && !p.completo) h += '<p class="note">Punteggio <b>parziale</b>: alcuni dati sono incerti o mancanti, quindi va preso con prudenza.</p>';
+    if (a.limitato) h += '<p class="note">Punteggio <b>fermato a ' + (window.Punteggio && window.Punteggio.TETTO_INCERTO || 54) + '</b>: il valore di mercato ha affidabilità bassa, quindi non possiamo dire che sia un buon affare.</p>';
+    else if (p && !p.completo) h += '<p class="note">Punteggio <b>parziale</b>: alcuni dati sono incerti o mancanti, quindi va preso con prudenza.</p>';
     return '<section class="panel sc-sez" id="sez-punteggio" aria-labelledby="h-punteggio"><div class="sc-sez-testa"><h2 id="h-punteggio">Punteggio affare</h2>' +
       '<span class="pill ' + (p ? (p.valore >= 55 ? 'p-good' : p.valore >= 35 ? 'p-warn' : 'p-bad') : 'p-neutral') + '">' + esc(fascia) + '</span></div>' + h +
       '<p class="note">Somma di cinque voci: sconto (fino a 40 punti), tentativi andati a vuoto (12), occupazione (13), rischi nel testo (20) e affitto della zona rispetto al costo (15).</p></section>';
@@ -277,9 +282,9 @@
   /* ---------- valore di mercato ---------- */
 
   var AFFIDABILITA = {
-    alta: ['p-good', 'Alta', 'due fonti indipendenti concordano (stima del perito, quotazioni OMI o perizie della zona)'],
-    media: ['p-info', 'Media', 'una fonte attendibile (stima del perito o quotazione OMI della zona), senza una seconda conferma'],
-    bassa: ['p-warn', 'Bassa', 'valore ricavato in modo indiretto o con dati incoerenti: verificalo']
+    alta: ['p-good', 'Alta', 'due fonti indipendenti concordano entro il 35%: quotazione OMI della zona e stima del perito (o prezzo della prima asta)'],
+    media: ['p-info', 'Media', 'una sola fonte diretta: quotazione OMI della zona oppure stima del perito'],
+    bassa: ['p-warn', 'Bassa', 'stima indiretta o fonti molto diverse: il punteggio resta al massimo "Da valutare"']
   };
 
   function forchetta(v, r) {
@@ -654,6 +659,7 @@
           else U.toast('Aggiunta al confronto');
           aggiornaAzioni();
         } else if (az === 'condividi') condividi();
+        else if (az === 'calendario') U.offriFile('asta-' + a.id + '.ics', window.Calendario.ics(a), 'text/calendar;charset=utf-8');
         return;
       }
       var o = e.target.closest('[data-offerta]');

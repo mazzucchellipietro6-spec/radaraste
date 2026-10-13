@@ -51,3 +51,10 @@ test('.ics: eventi solo per le date presenti, ora di Roma, promemoria, testo pro
   assert.match(senzaOra, /DTSTART;VALUE=DATE:20261202/);
   assert.equal((senzaOra.match(/BEGIN:VEVENT/g) || []).length, 1);
 });
+
+test('termine delle offerte con l\'ora (AAAA-MM-GGTHH:MM): data e ora separate nel calendario', () => {
+  const Cal = require('../js/calendario.js');
+  const s = Cal.scadenze({ id: 'pvp-1', titolo: 'Appartamento', dataAsta: '2026-12-04', ora: '10:00', termineOfferte: '2026-12-03T12:00' });
+  assert.deepEqual(s.map((x) => [x.chiave, x.data, x.ora]), [['offerte', '2026-12-03', '12:00'], ['asta', '2026-12-04', '10:00']]);
+  assert.ok(Cal.ics({ id: 'pvp-1', titolo: 'A', dataAsta: '2026-12-04', termineOfferte: '2026-12-03T12:00' }).includes('DTSTART;TZID=Europe/Rome:20261203T120000'));
+});

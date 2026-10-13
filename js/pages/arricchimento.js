@@ -26,7 +26,7 @@
     $('#arNumeri').innerHTML =
       tile('Aste raccolte', tot, null, 'in corso, dalle fonti ufficiali') +
       tile('Con la scheda di dettaglio', a.conDettaglio, tot, 'delle aste: le altre arrivano nei prossimi giorni') +
-      tile('Con lo storico dei tentativi', a.conStorico, tot, 'collegate ai tentativi precedenti') +
+      tile('Con tentativi precedenti', a.catene, tot, 'collegate ai tentativi precedenti dello stesso lotto') +
       tile('Con foto', a.conFoto, tot, 'con almeno una foto sul Portale') +
       tile('Con la stima del perito', a.conStima, tot, 'con la stima indicata nella scheda') +
       tile('Immobili con i metri quadri', a.conSuperficie, a.immobili, 'degli immobili') +

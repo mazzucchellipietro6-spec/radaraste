@@ -7,7 +7,7 @@
   var U = root.UI, C = root.Calcoli, T = root.TARIFFE;
   var ICONE_CAT = { immobile: 'casa', auto: 'auto', moto: 'moto', beni: 'beni' };
   var AFFIDABILITA = { alta: ['p-good', 'Affidabilità alta'], media: ['p-info', 'Affidabilità media'], bassa: ['p-warn', 'Affidabilità bassa'] };
-  var FONTE_VALORE = { perizia: 'stima del perito', 'primo-prezzo': 'prezzo della prima asta', 'prima-asta': 'prezzo base della prima asta' };
+  var FONTE_VALORE = { omi: 'quotazioni OMI della zona', 'omi-comune': 'quotazioni OMI del comune', perizia: 'stima del perito', 'primo-prezzo': 'prezzo della prima asta', 'prima-asta': 'prezzo base della prima asta' };
 
   function luogoBreve(a) {
     var p = a.provincia && root.GEO && root.GEO.province[a.provincia];

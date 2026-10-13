@@ -92,6 +92,12 @@
       var id = e.target.closest('[data-id]').dataset.id;
       U.conferma(e.target, 'Conferma: cancella note e valutazione', function () { S.smetti(id); render(); U.toast('Non segui più questa asta'); });
     });
+    // un solo file .ics con le scadenze di tutte le aste seguite (solo date lette dagli avvisi)
+    $('#promemoria').addEventListener('click', function () {
+      var aste = S.seguite().map(function (s) { return S.asta(s.id) || s.copia; }).filter(function (a) { return a && a.dataAsta && a.dataAsta >= U.oggi(); });
+      if (!aste.length) { U.toast('Nessuna asta futura tra quelle che segui'); return; }
+      U.offriFile('radar-aste-promemoria.ics', window.Calendario.ics(aste), 'text/calendar;charset=utf-8');
+    });
     $('#backup').addEventListener('click', function () { U.offriFile('radar-aste-backup.json', JSON.stringify(S.backup(), null, 2), 'application/json'); });
     $('#ripristina').addEventListener('change', function () {
       var f = this.files[0]; if (!f) return;

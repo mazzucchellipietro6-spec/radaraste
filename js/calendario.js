@@ -13,7 +13,8 @@
   /* Scadenze di un'asta: [{ chiave, titolo, data, ora?, nota }] */
   function scadenze(a) {
     var out = [];
-    if (a.termineOfferte) out.push({ chiave: 'offerte', titolo: 'Termine per le offerte', data: a.termineOfferte, ora: a.oraTermine, nota: 'Termine indicato nell\'avviso di vendita.' });
+    // termineOfferte arriva come 'AAAA-MM-GG' o 'AAAA-MM-GGTHH:MM' (dal dettaglio del Portale)
+    if (a.termineOfferte) { var t = String(a.termineOfferte).split('T'); out.push({ chiave: 'offerte', titolo: 'Termine per le offerte', data: t[0], ora: t[1] ? t[1].slice(0, 5) : a.oraTermine, nota: 'Termine indicato nell\'avviso di vendita.' }); }
     if (a.dataAsta) out.push({ chiave: 'asta', titolo: 'Asta', data: a.dataAsta, ora: a.ora, nota: 'Data e ora dell\'esperimento di vendita indicate nell\'avviso.' });
     if (a.termineSaldo) out.push({ chiave: 'saldo', titolo: 'Termine per il saldo', data: a.termineSaldo, nota: 'Termine per il versamento del saldo indicato nell\'avviso.' });
     return out;

@@ -38,7 +38,7 @@
     'arricchimento.html': function () {
       var a = root.RIEPILOGO && root.RIEPILOGO.agenti && root.RIEPILOGO.agenti.arricchimento;
       if (!a) return null;
-      return [n(a.conDettaglio), 'schede con i dettagli dell\'avviso, ' + n(a.conStorico) + ' con lo storico dei tentativi'];
+      return [n(a.conDettaglio), 'schede con i dettagli dell\'avviso; ' + n(a.catene) + ' aste collegate ai tentativi precedenti'];
     }
   };
 
