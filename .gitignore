@@ -3,3 +3,28 @@ node_modules/
 data/aste.js
 _artifact/
 data/riepilogo.js
+
+# Indice storico delle vendite passate (cache della raccolta, non si pubblica)
+data/storico-indice.json
+data/storico-indice.json.tmp
+# Schede a pezzi generate dalla raccolta (pubblicate dal workflow, non nel repository)
+data/dettagli/
+data/*-dettagli/
+data/*-riepilogo.js
+*.js.tmp
+
+# Quotazioni OMI originali e indice completo: NON si pubblicano (condizioni d'uso dell'Agenzia delle Entrate).
+# Nel sito vanno solo i valori calcolati per ogni asta. Vedi README, sezione "Quotazioni OMI".
+data/omi/grezzi/
+data/omi/indice.json
+*.zip
+
+# Proposte di stile (solo per gli screenshot di scelta, non pubblicate)
+_proposte/
+
+# Prodotti ogni mattina dagli assistenti (pubblicati dal workflow, non nel repository)
+data/affari.js
+data/affari-telegram.txt
+data/cacciatore-storico.json
+data/combinazioni.js
+data/statistiche.js

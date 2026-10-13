@@ -1,59 +1,144 @@
-/* Scheda di un'asta in elenco (home, elenco, mappa, confronto). */
+/* Scheda di un'asta in elenco (home, elenco, mappa, confronto).
+ * Componenti del design system: .copertina (sfumatura per categoria con icona), .corpo, .anello (punteggio),
+ * .preferito (stella "Segui"). I campi arricchiti (punteggio, sconto, affidabilità, valore…) possono mancare:
+ * in quel caso la scheda lo dice ("Senza punteggio", "non indicato nell'avviso") e non inventa nulla. */
 (function (root) {
   'use strict';
   var U = root.UI, C = root.Calcoli, T = root.TARIFFE;
+  var ICONE_CAT = { immobile: 'casa', auto: 'auto', moto: 'moto', beni: 'beni' };
+  var AFFIDABILITA = { alta: ['p-good', 'Affidabilità alta'], media: ['p-info', 'Affidabilità media'], bassa: ['p-warn', 'Affidabilità bassa'] };
+  var FONTE_VALORE = { omi: 'quotazioni OMI della zona', 'omi-comune': 'quotazioni OMI del comune', perizia: 'stima del perito', 'primo-prezzo': 'prezzo della prima asta', 'prima-asta': 'prezzo base della prima asta' };
 
-  function luogo(a) {
+  function luogoBreve(a) {
     var p = a.provincia && root.GEO && root.GEO.province[a.provincia];
-    return [a.comune ? a.comune + (a.provincia ? ' (' + a.provincia + ')' : '') : (p ? p.nome : a.provincia || ''),
-      a.tribunale ? 'Trib. ' + a.tribunale : '', a.rge ? 'Proc. n. ' + a.rge : ''].filter(Boolean).join(' · ');
+    if (a.comune) return a.comune + (a.provincia ? ' (' + a.provincia + ')' : '');
+    if (p) return 'Provincia di ' + p.nome;
+    return a.regione || a.provincia || '';
+  }
+  function luogo(a) {
+    return [luogoBreve(a), a.tribunale ? 'Trib. ' + a.tribunale : '', a.rge ? 'Proc. n. ' + a.rge : ''].filter(Boolean).join(' · ');
   }
 
   function statoPill(a) {
-    var c = a.stato === 'libero' ? 'p-good' : a.stato === 'occupato' ? 'p-warn' : 'p-neutral';
-    return '<span class="pill ' + c + '">' + U.esc(U.STATI[a.stato] || 'Non indicato') + '</span>';
+    if (a.stato === 'libero') return '<span class="pill p-good">Libero</span>';
+    if (a.stato === 'occupato') return '<span class="pill p-warn">Occupato</span>';
+    // per auto, moto e beni l'occupazione non ha senso: non si mostra nulla
+    return a.categoria === 'immobile' ? '<span class="pill p-neutral" title="L\'avviso non dice se l\'immobile è libero o occupato: verificalo nella perizia">Occupazione non indicata</span>' : '';
   }
 
-  function punteggioPill(a) {
-    if (a.punteggio == null) return '';
-    var tono = a.punteggio >= 70 ? 'good' : a.punteggio >= 45 ? 'warn' : 'bad';
-    return '<span class="punteggio p-' + tono + '" title="Punteggio affare su 100">' + Math.round(a.punteggio) + '</span>';
+  function colorePunteggio(p) {
+    if (p >= 75) return 'var(--s-100)';
+    if (p >= 55) return 'color-mix(in srgb, var(--s-100) 60%, var(--s-50))';
+    if (p >= 35) return 'var(--s-50)';
+    return 'var(--s-0)';
+  }
+  function fascia(p) {
+    if (root.Punteggio && root.Punteggio.fascia) return root.Punteggio.fascia(p).etichetta;
+    return p >= 75 ? 'Ottimo affare' : p >= 55 ? 'Buon affare' : p >= 35 ? 'Da valutare' : 'Poco interessante';
+  }
+
+  /* Anello del punteggio affare (0-100) o stato vuoto "Senza punteggio" con la spiegazione nel title. */
+  function anello(a, d) {
+    var dim = d ? ' style="--d:' + d + 'px"' : '';
+    if (a.punteggio == null || !isFinite(a.punteggio)) {
+      var perche = 'Senza punteggio: per calcolarlo serve il valore di mercato (stima del perito o prezzo della prima asta), non ancora disponibile per questa asta. Non lo inventiamo.';
+      return '<div class="anello-box" title="' + U.esc(perche) + '"><div class="anello vuoto"' + dim + ' role="img" aria-label="Senza punteggio: manca il valore di mercato"><b aria-hidden="true">n.d.</b></div>' +
+        '<span class="fascia" aria-hidden="true">Senza punteggio</span></div>';
+    }
+    var p = Math.max(0, Math.min(100, Math.round(a.punteggio)));
+    var parziale = a.punteggioCompleto === false;
+    var spiega = 'Punteggio affare ' + p + ' su 100: ' + fascia(p).toLowerCase() + (parziale ? '. Punteggio parziale: alcuni dati mancano, verifica l\'avviso.' : '.');
+    return '<div class="anello-box" title="' + U.esc(spiega) + '"><div class="anello" style="--v:' + p + ';--c:' + colorePunteggio(p) + (d ? ';--d:' + d + 'px' : '') + '" role="img" aria-label="' + U.esc(spiega) + '"><b aria-hidden="true">' + p + '</b></div>' +
+      '<span class="fascia" aria-hidden="true">' + U.esc(fascia(p)) + (parziale ? '<small>parziale</small>' : '') + '</span></div>';
+  }
+  function punteggioPill(a) { return anello(a); }
+
+  // sconto sul valore (dato della raccolta) o, per le aste inserite a mano con il valore di mercato, la stima rapida
+  function metriche(a, opz) {
+    var h = '';
+    if (a.sconto != null && isFinite(a.sconto)) {
+      var g = C.giudizio(a.sconto, T);
+      var val = a.valore ? 'Valore stimato ' + U.eur(a.valore) + (FONTE_VALORE[a.fonteValore] ? ' (' + FONTE_VALORE[a.fonteValore] + ')' : '') + '. ' : '';
+      h += '<span class="pill p-' + g.tono + '" title="' + U.esc(val + 'Sconto del costo totale al prezzo base rispetto al valore di mercato.') + '">Sconto ' + U.pct(a.sconto, 0) + '</span>';
+    } else {
+      var st = C.stimaRapida(a, T);
+      if (st) h += '<span class="pill p-' + st.giudizio.tono + '" title="Stima rapida al prezzo base con il valore di mercato che hai inserito: costo totale ' + U.eur(st.totale) + '">Sconto stimato ' + U.pct(st.sconto, 0) + '</span>';
+    }
+    if (AFFIDABILITA[a.affidabilita]) h += '<span class="pill ' + AFFIDABILITA[a.affidabilita][0] + '" title="Quanto è affidabile il valore di mercato usato per lo sconto">' + AFFIDABILITA[a.affidabilita][1] + '</span>';
+    if (!h && !opz.compatta) h = '<span class="nd">Valore di mercato: non ancora disponibile</span>';
+    return h ? '<div class="metriche">' + h + '</div>' : '';
+  }
+
+  function quando(a) {
+    var q = U.quando(a.dataAsta), g = U.giorniA(a.dataAsta);
+    var et = a.fonte === 'Agenzia del Demanio' ? 'Termine offerte' : 'Asta';
+    if (!a.dataAsta) return '<div class="quando">' + U.icona('calendario') + '<span>' + et + ': data non indicata nell\'avviso</span></div>';
+    var presto = g !== null && g >= 0 && g <= 7;
+    return '<div class="quando">' + U.icona('calendario') + '<span><span class="sr-only">' + et + ': </span>' + U.dataIt(a.dataAsta) + (a.ora ? ', ' + U.esc(a.ora) : '') + '</span>' +
+      (q ? '<b class="tra' + (presto ? ' presto' : '') + (g !== null && g < 0 ? ' finita' : '') + '">' + q + '</b>' : '') + '</div>' +
+      (a.termineOfferte && a.termineOfferte !== a.dataAsta ? '<div class="quando sub">' + U.icona('orologio') + '<span>Offerte entro il ' + U.dataIt(a.termineOfferte) + '</span></div>' : '');
+  }
+
+  function linkEsterni(a, opz) {
+    var avviso = U.linkSicuro(a.linkAvviso), perizia = U.linkSicuro(a.linkPerizia), pdf = U.linkSicuro(a.linkPdf);
+    var nuova = ' target="_blank" rel="noopener"';
+    var h = avviso ? '<a class="esterno" href="' + U.esc(avviso) + '"' + nuova + ' aria-label="Avviso originale (si apre in una nuova scheda)">Avviso originale ↗</a>' : '<span class="nd">Avviso mancante</span>';
+    if (!opz.compatta) {
+      if (pdf) h += '<a class="esterno" href="' + U.esc(pdf) + '"' + nuova + '>Avviso PDF ↗</a>';
+      if (perizia) h += '<a class="esterno" href="' + U.esc(perizia) + '"' + nuova + '>Perizia ↗</a>';
+      if (Array.isArray(a.altriLink)) a.altriLink.forEach(function (x) { var u = U.linkSicuro(x && x[1]); if (u) h += '<a class="esterno" href="' + U.esc(u) + '"' + nuova + '>' + U.esc(x[0]) + ' ↗</a>'; });
+    }
+    return '<div class="links">' + h + '</div>';
+  }
+
+  function stella(id, seguita) {
+    return '<button class="preferito" type="button" data-segui="' + U.esc(id) + '" aria-pressed="' + !!seguita + '" aria-label="' + (seguita ? 'Seguita: smetti di seguire' : 'Segui questa asta') + '" title="' + (seguita ? 'Seguita' : 'Segui') + '">' + U.icona('stella') + '</button>';
+  }
+  // aggiorna la stella dopo un clic senza ridisegnare la scheda
+  function aggiornaSegui(btn, seguita) {
+    btn.setAttribute('aria-pressed', String(!!seguita));
+    btn.setAttribute('aria-label', seguita ? 'Seguita: smetti di seguire' : 'Segui questa asta');
+    btn.title = seguita ? 'Seguita' : 'Segui';
   }
 
   /* opz: { seguita, nuova, compatta, confronto (bool: mostra casella Confronta), selezionata } */
   function card(a, opz) {
     opz = opz || {};
+    var id = U.esc(a.id), passa = ' data-passa="id:' + id + '"';
     var min = a.offertaMinima || (a.prezzoBase ? C.offertaMinima(a.prezzoBase, T) : null);
-    var avviso = U.linkSicuro(a.linkAvviso), perizia = U.linkSicuro(a.linkPerizia), pdf = U.linkSicuro(a.linkPdf);
-    var q = U.quando(a.dataAsta), l = luogo(a);
-    var st = !opz.compatta && C.stimaRapida(a, T);
-    var testa = '<div class="top">' + (opz.nuova ? '<span class="pill p-good">Nuova</span>' : '') +
-      '<span class="pill p-info">' + U.esc(U.CATEGORIE[a.categoria] || a.categoria) + '</span>' + statoPill(a) +
+    var cat = ICONE_CAT[a.categoria] ? a.categoria : 'beni';
+    var dove = luogoBreve(a);
+    var manuale = a.origine === 'manuale';
+
+    var copertina = '<div class="copertina">' + U.icona(ICONE_CAT[cat], 'icona-cat') + anello(a) +
+      '<div class="luogo">' + U.icona('luogo') + '<span>' + (dove ? U.esc(dove) : 'Luogo non indicato') + '</span></div></div>';
+
+    var top = '<div class="top">' + (opz.nuova ? '<span class="pill p-signal">Nuova</span>' : '') +
+      '<span class="pill p-info">' + U.esc(U.CATEGORIE[a.categoria] || a.categoria || 'Altro') + '</span>' + statoPill(a) +
       (a.tipo && !opz.compatta ? '<span class="tag">' + U.esc(a.tipo) + '</span>' : '') +
-      (opz.compatta ? '' : a.origine === 'manuale' ? '<span class="tag" title="Copiata da te da un avviso">inserita da te' + (a.fonte ? ' · ' + U.esc(a.fonte) : '') + '</span>' : '<span class="tag" title="Raccolta automatica dalla fonte ufficiale">' + U.esc(a.fonte || 'fonte') + '</span>') +
-      '<span class="spacer"></span>' + punteggioPill(a) + '</div>';
-    var dati = '<dl class="kv">' +
-      '<div><dt>' + (a.fonte === 'Agenzia del Demanio' ? 'Termine offerte' : 'Data asta') + '</dt><dd>' + U.dataIt(a.dataAsta) + (a.ora ? ' ' + U.esc(a.ora) : '') + (q ? ' <span class="muted" style="font-size:12px">(' + q + ')</span>' : '') + '</dd></div>' +
-      '<div><dt>Prezzo base</dt><dd>' + (a.prezzoBase ? U.eur(a.prezzoBase) : '<span class="muted">nell\'avviso</span>') + '</dd></div>' +
-      '<div><dt>Offerta minima</dt><dd>' + (min ? U.eur(min) : '—') + '</dd></div>' +
-      (a.sconto != null ? '<div><dt>Sconto sul valore</dt><dd>' + U.pct(a.sconto, 0) + '</dd></div>'
-        : st ? '<div><dt>Sconto stimato*</dt><dd><span class="pill p-' + st.giudizio.tono + '" title="Costo totale stimato al prezzo base: ' + U.eur(st.totale) + '">' + U.pct(st.sconto, 0) + ' · ' + st.giudizio.etichetta + '</span></dd></div>'
-        : '<div><dt>Valore di mercato</dt><dd class="muted">non stimato</dd></div>') +
-      '</dl>';
-    var link = '<div class="links">' + (avviso ? '<a href="' + U.esc(avviso) + '" target="_blank" rel="noopener">Avviso originale ↗</a>' : '<span class="muted">Avviso mancante</span>') +
-      (pdf ? '<a href="' + U.esc(pdf) + '" target="_blank" rel="noopener">Avviso PDF ↗</a>' : '') +
-      (perizia ? '<a href="' + U.esc(perizia) + '" target="_blank" rel="noopener">Perizia ↗</a>' : '') + '</div>' +
-      (Array.isArray(a.altriLink) && a.altriLink.length ? '<div class="links" style="font-size:13px"><span class="muted">Anche su:</span>' + a.altriLink.filter(function (x) { return U.linkSicuro(x[1]); }).map(function (x) { return '<a href="' + U.esc(x[1]) + '" target="_blank" rel="noopener">' + U.esc(x[0]) + ' ↗</a>'; }).join('') + '</div>' : '');
-    var azioni = '<div class="actions">' +
-      '<a class="btn small" href="scheda.html?id=' + encodeURIComponent(a.id) + '" data-passa="id:' + U.esc(a.id) + '">Scheda</a>' +
-      '<a class="btn small ghost" href="calcolatore.html?id=' + encodeURIComponent(a.id) + '" data-passa="id:' + U.esc(a.id) + '">Conviene?</a>' +
-      '<button class="btn small ghost" type="button" data-segui="' + U.esc(a.id) + '" aria-pressed="' + !!opz.seguita + '">' + (opz.seguita ? 'Seguita ✓' : 'Segui') + '</button>' +
-      (opz.confronto ? '<label class="check confronta"><input type="checkbox" data-confronta="' + U.esc(a.id) + '"' + (opz.selezionata ? ' checked' : '') + '> Confronta</label>' : '') +
-      (a.origine === 'manuale' && !opz.compatta ? '<button class="btn small ghost" type="button" data-modifica="' + U.esc(a.id) + '">Modifica</button><button class="btn small danger" type="button" data-elimina="' + U.esc(a.id) + '">Elimina</button>' : '') +
-      '</div>';
-    return '<article class="card' + (opz.nuova ? ' nuova' : '') + '">' + testa + '<h4>' + U.esc(a.titolo) + '</h4>' + (l ? '<div class="where">' + U.esc(l) + '</div>' : '') +
-      dati + (opz.compatta ? '' : link) + azioni + '</article>';
+      (manuale ? '<span class="tag" title="Copiata da te da un avviso">inserita da te</span>' : '') + '</div>';
+
+    var sotto = [a.tribunale ? 'Trib. ' + a.tribunale : '', a.rge ? 'Proc. n. ' + a.rge : '', opz.compatta ? '' : a.fonte || ''].filter(Boolean).join(' · ');
+
+    var prezzi = '<div class="prezzi"><div class="prezzo"><span class="et">Prezzo base</span>' +
+      (a.prezzoBase ? '<b class="valore">' + U.eur(a.prezzoBase) + '</b>' : '<b class="valore nd">non indicato</b><span class="nd">vedi l\'avviso</span>') + '</div>' +
+      '<div class="minima"><span class="et">Offerta minima</span>' + (min ? '<b>' + U.eur(min) + '</b>' : '<b class="nd">non indicata</b>') + '</div></div>';
+
+    var azioni = '<div class="actions">' + stella(a.id, opz.seguita) +
+      (opz.confronto ? '<label class="check confronta"><input type="checkbox" data-confronta="' + id + '"' + (opz.selezionata ? ' checked' : '') + '> Confronta</label>' : '') +
+      '<span class="spacer"></span>' +
+      (manuale && !opz.compatta ? '<button class="btn small ghost" type="button" data-modifica="' + id + '">Modifica</button><button class="btn small danger" type="button" data-elimina="' + id + '">Elimina</button>' : '') +
+      '<a class="btn small ghost" href="calcolatore.html?id=' + encodeURIComponent(a.id) + '"' + passa + '>Conviene?</a></div>';
+
+    return '<article class="card cat-' + cat + (opz.nuova ? ' nuova' : '') + (opz.compatta ? ' compatta' : '') + '">' + copertina +
+      '<div class="corpo">' + top +
+      '<h4><a href="scheda.html?id=' + encodeURIComponent(a.id) + '"' + passa + '>' + U.esc(a.titolo || 'Asta senza titolo') + '</a></h4>' +
+      (sotto ? '<div class="where">' + U.esc(sotto) + '</div>' : '') +
+      prezzi + quando(a) + metriche(a, opz) + linkEsterni(a, opz) + azioni + '</div></article>';
   }
 
-  root.Schede = { card: card, luogo: luogo, statoPill: statoPill, punteggioPill: punteggioPill };
+  // segnaposto durante il caricamento dei dati
+  function scheletri(n) { var h = ''; for (var i = 0; i < (n || 6); i++) h += '<div class="scheletro" aria-hidden="true"></div>'; return h; }
+
+  root.Schede = { card: card, luogo: luogo, luogoBreve: luogoBreve, statoPill: statoPill, punteggioPill: punteggioPill, anello: anello, aggiornaSegui: aggiornaSegui, scheletri: scheletri };
 })(window);

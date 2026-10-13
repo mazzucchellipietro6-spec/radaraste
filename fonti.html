@@ -5,20 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fonti – Radar Aste Italia</title>
 <meta name="description" content="Da dove arrivano le aste di Radar Aste Italia: stato di ogni fonte ufficiale, API, robots.txt e termini d'uso.">
-<link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/hanken-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<meta name="theme-color" content="#0d6b4f" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
 <script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
 <body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
 <header id="site-header"></header>
 
-<main class="wrap stack">
+<main class="wrap stack" id="contenuto" tabindex="-1">
   <div class="page-head">
     <h1>Da dove arrivano <span>le aste</span></h1>
     <p class="sub">Radar Aste Italia mostra solo aste reali, ognuna con il link all'avviso originale. Qui c'è lo stato di ogni fonte, verificato su robots.txt e termini d'uso: se una fonte vieta la raccolta o blocca l'accesso, le sue aste non compaiono.</p>
@@ -28,7 +29,7 @@
 
   <section class="stack">
     <h2>Stato delle fonti</h2>
-    <div class="sources" id="fonti"></div>
+    <div class="sources" id="fonti" aria-busy="true"><div class="scheletro" aria-hidden="true" style="min-height:220px"></div><div class="scheletro" aria-hidden="true" style="min-height:220px"></div><div class="scheletro" aria-hidden="true" style="min-height:220px"></div></div>
   </section>
 
   <section class="panel stack">
@@ -58,14 +59,14 @@
 
 <script src="config/tariffe.js"></script>
 <script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
 <script src="config/fonti.js"></script>
 <script src="data/aste.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/calcoli.js"></script>
 <script src="js/formato.js"></script>
-<script src="js/store.js"></script>
-<script src="js/icone.js"></script>
-<script src="js/ui.js"></script>
 <script src="js/cerca.js"></script>
 <script src="js/pages/fonti.js"></script>
 </body>

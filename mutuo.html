@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulatore mutuo – Radar Aste Italia</title>
+<meta name="description" content="Quanto puoi spendere a un'asta con il tuo stipendio e i tuoi risparmi: rata, mutuo massimo, anticipo e imposte, con tasso e durata scelti da te.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <p class="note"><a href="strumenti.html">Strumenti</a> / Simulatore mutuo</p>
+  <div class="as-testa">
+    <p class="eyebrow"><svg class="icona" aria-hidden="true"><use href="#i-mutuo"/></svg>Simulatore mutuo</p>
+    <h1>Quanto puoi <em>permetterti</em></h1>
+    <p class="sub">Tasso e durata li scegli tu, con l'offerta della tua banca: il sito non inventa tassi. Imposte e spese d'acquisto vengono dalle aliquote ufficiali della pagina <a href="tariffe.html">Tariffe e tasse</a>.</p>
+  </div>
+
+  <div class="callout" id="muAsta" hidden></div>
+
+  <div class="mu-griglia">
+    <form class="panel stack" id="muForm" style="gap:14px" novalidate>
+      <h2>I tuoi dati</h2>
+      <div class="fields">
+        <label>Stipendio netto mensile (€)<input type="number" inputmode="decimal" min="0" step="50" name="stipendio" placeholder="es. 2200"></label>
+        <label>Altre rate mensili in corso (€)<input type="number" inputmode="decimal" min="0" step="10" name="altreRate" value="0"></label>
+        <label>Risparmi per l'acquisto (€)<input type="number" inputmode="decimal" min="0" step="1000" name="risparmi" placeholder="es. 40000"></label>
+        <label>Tasso annuo del mutuo (%)<input type="number" inputmode="decimal" min="0" max="20" step="0.05" name="tasso" placeholder="dalla tua banca"></label>
+        <label>Durata (anni)<select name="anni"><option>10</option><option>15</option><option selected>20</option><option>25</option><option>30</option></select></label>
+        <label>Regime fiscale<select name="regime" id="muRegime"></select></label>
+      </div>
+      <p class="note">Regola prudente delle banche: la rata non supera circa un terzo del reddito netto, tolte le altre rate; il mutuo copre di solito al massimo l'80% del prezzo. Imposte e spese d'acquisto si pagano con i risparmi.</p>
+    </form>
+
+    <div class="stack" style="gap:16px">
+      <section class="panel stack" style="gap:10px" aria-labelledby="h-budget" aria-live="polite">
+        <h2 id="h-budget">Prezzo massimo</h2>
+        <div id="muBudget"><p class="muted">Inserisci stipendio, risparmi e tasso.</p></div>
+      </section>
+      <section class="panel stack" style="gap:10px" aria-labelledby="h-rata">
+        <h2 id="h-rata">Rata per un importo</h2>
+        <div class="fields"><label>Importo del mutuo (€)<input type="number" inputmode="decimal" min="0" step="1000" id="muCapitale" placeholder="es. 120000"></label></div>
+        <div id="muRata" aria-live="polite"><p class="muted">Usa tasso e durata indicati a sinistra.</p></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="callout warn" aria-labelledby="h-asta">
+    <h2 id="h-asta" style="font-size:18px;margin-bottom:4px">Mutuo e aste</h2>
+    <p>All'asta il saldo del prezzo va pagato entro il termine dell'avviso (spesso 120 giorni): il mutuo deve essere già deliberato prima dell'offerta. Molte banche finanziano gli acquisti all'asta (art. 585 del Codice di procedura civile): chiedi la delibera per tempo.</p>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="js/mutuo.js"></script>
+<script src="js/dettagli.js"></script>
+<script src="js/pages/mutuo.js"></script>
+</body>
+</html>

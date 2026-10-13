@@ -1,12 +1,22 @@
 /* Service worker di Radar Aste Italia: il sito si apre subito e funziona anche offline.
  * - struttura (pagine, stili, script): dalla cache, aggiornata in background;
- * - dati delle aste (data/aste.js): prima la rete (dati del giorno), la cache solo se manca la connessione. */
+ * - dati del giorno (data/aste.js, riepilogo, affari, combinazioni, statistiche, data/dettagli/): prima la rete (dati del giorno), la cache solo se manca la connessione. */
 var VERSIONE = 'radaraste-__VERSIONE__';
 var STRUTTURA = [
-  './', 'index.html', 'aste.html', 'mappa.html', 'calcolatore.html', 'mie-aste.html', 'tariffe.html', 'fonti.html',
-  'assets/css/style.css', 'assets/icon.svg', 'assets/fonts/archivo.woff2', 'assets/fonts/hanken-grotesk.woff2', 'assets/fonts/martian-mono.woff2', 'js/icone.js', 'js/schede.js', 'js/confronto.js', 'js/ricerche.js', 'js/riepilogo.js', 'assets/icon-192.png', 'assets/vendor/leaflet/leaflet.js', 'assets/vendor/leaflet/leaflet.css',
-  'config/tariffe.js', 'config/fonti.js', 'data/geo.js', 'data/italia.js',
-  'js/ui.js', 'js/store.js', 'js/formato.js', 'js/calcoli.js', 'js/parser.js', 'js/estrai.js'
+  './', 'index.html', 'aste.html', 'scheda.html', 'mappa.html',
+  'assistenti.html', 'affari.html', 'consulente.html', 'stratega.html', 'combinazioni.html', 'arricchimento.html',
+  'strumenti.html', 'calcolatore.html', 'mutuo.html', 'confronta.html', 'guida.html', 'tariffe.html', 'fonti.html', 'mie-aste.html',
+  'manifest.webmanifest', 'assets/css/style.css', 'assets/css/pagine.css', 'assets/css/mappa.css', 'assets/css/assistenti.css', 'assets/css/affari.css',
+  'assets/icon.svg', 'assets/icon-180.png', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-maskable-512.png',
+  'assets/fonts/source-serif-4.woff2', 'assets/fonts/source-serif-4-italic.woff2', 'assets/fonts/inter.woff2',
+  'assets/vendor/leaflet/leaflet.js', 'assets/vendor/leaflet/leaflet.css', 'assets/vendor/supercluster/supercluster.min.js',
+  'config/tariffe.js', 'config/fonti.js', 'config/consulente.js', 'data/geo.js', 'data/italia.js',
+  'js/ui.js', 'js/store.js', 'js/formato.js', 'js/calcoli.js', 'js/parser.js', 'js/estrai.js', 'js/punteggio.js', 'js/dettagli.js',
+  'js/icone.js', 'js/schede.js', 'js/confronto.js', 'js/asta.js', 'js/ricerche.js', 'js/riepilogo.js', 'js/cerca.js',
+  'js/agenti.js', 'js/cacciatore.js', 'js/affari.js', 'js/combinazioni.js', 'js/consulente.js', 'js/stratega.js', 'js/mutuo.js', 'js/calendario.js',
+  'js/pages/home.js', 'js/pages/aste.js', 'js/pages/scheda.js', 'js/pages/mappa.js',
+  'js/pages/assistenti.js', 'js/pages/affari.js', 'js/pages/consulente.js', 'js/pages/stratega.js', 'js/pages/combinazioni.js', 'js/pages/arricchimento.js',
+  'js/pages/strumenti.js', 'js/pages/calcolatore.js', 'js/pages/mutuo.js', 'js/pages/confronta.js', 'js/pages/guida.js', 'js/pages/tariffe.js', 'js/pages/fonti.js', 'js/pages/mie-aste.js'
 ];
 
 self.addEventListener('install', function (e) {
@@ -25,7 +35,8 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  var dati = /\/data\/(aste|riepilogo)\.js$/.test(new URL(req.url).pathname);
+  // anche le schede a pezzi (data/dettagli/XX.js): cambiano a ogni raccolta
+  var dati = /\/data\/(aste|riepilogo|affari|combinazioni|statistiche|dettagli\/[0-9a-f]{2})\.js$/.test(new URL(req.url).pathname);
   if (dati) {
     e.respondWith(fetch(req).then(function (r) {
       var copia = r.clone(); caches.open(VERSIONE).then(function (c) { c.put(req, copia); }); return r;

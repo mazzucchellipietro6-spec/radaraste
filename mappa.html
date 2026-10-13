@@ -4,65 +4,150 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mappa delle aste – Radar Aste Italia</title>
-<meta name="description" content="Mappa delle aste in Italia: immobili, auto, moto e beni mobili per provincia.">
-<link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/hanken-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="Mappa interattiva delle aste in Italia: ogni asta è un puntino colorato per punteggio affare, raggruppate quando sono vicine, con anteprima, filtri e dati per regione.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/css/mappa.css">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<meta name="theme-color" content="#0d6b4f" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
 <script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
-<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
 </head>
-<body>
+<body class="pagina-mappa">
+<a class="salta" href="#contenuto">Salta al contenuto</a>
 <header id="site-header"></header>
 
-<main class="wrap stack">
-  <div class="page-head">
-    <h1>Mappa delle <span>aste</span></h1>
-    <p class="sub">Tutte le aste raccolte dalle fonti ufficiali (e quelle inserite da te) sulla mappa d'Italia: i numeri indicano quante aste ci sono per regione e, avvicinandoti, per provincia; da vicino compaiono i punti precisi.</p>
-  </div>
+<main class="m-app" id="contenuto" tabindex="-1">
+  <!-- Colonna laterale su computer; su telefono le sue sezioni diventano fogli dal basso -->
+  <aside class="m-lato" aria-label="Filtri e aste della zona">
+    <div class="m-lato-scorri">
+      <div class="m-testa">
+        <h1>Mappa delle <span>aste</span></h1>
+        <p class="m-sintesi" id="mSintesi" aria-live="polite">Carico le aste…</p>
+        <p class="m-senza" id="mSenza" hidden></p>
+      </div>
 
-  <div class="panel stack" style="gap:12px">
-    <div class="chips" id="mCat" role="group" aria-label="Categoria">
-      <button class="chip" type="button" aria-pressed="true" data-cat="">Tutte</button>
-      <button class="chip" type="button" aria-pressed="false" data-cat="immobile">Immobili</button>
-      <button class="chip" type="button" aria-pressed="false" data-cat="auto">Auto</button>
-      <button class="chip" type="button" aria-pressed="false" data-cat="moto">Moto</button>
-      <button class="chip" type="button" aria-pressed="false" data-cat="beni">Beni mobili</button>
-    </div>
-    <div class="row-actions">
-      <label class="check"><input type="checkbox" id="mSeguite"> Solo le aste che seguo</label>
-      <label class="check"><input type="checkbox" id="mPassate"> Mostra aste concluse</label>
-      <span class="spacer"></span>
-      <button class="btn small ghost" type="button" id="geocodifica" hidden>Posiziona con precisione</button>
-    </div>
-    <div class="legend" id="legenda"></div>
-  </div>
+      <section class="m-foglio m-filtri" id="mFiltri" aria-labelledby="hFiltri">
+        <div class="m-foglio-testa">
+          <span class="maniglia" aria-hidden="true"></span>
+          <h2 id="hFiltri">Filtri</h2>
+          <button class="m-x" type="button" data-chiudi aria-label="Chiudi i filtri"><svg class="icona" aria-hidden="true"><use href="#i-chiudi"/></svg></button>
+        </div>
+        <div class="m-foglio-corpo">
+          <div class="chips" id="mCat" role="group" aria-label="Categoria">
+            <button class="chip" type="button" aria-pressed="true" data-cat="">Tutte</button>
+            <button class="chip" type="button" aria-pressed="false" data-cat="immobile">Immobili</button>
+            <button class="chip" type="button" aria-pressed="false" data-cat="auto">Auto</button>
+            <button class="chip" type="button" aria-pressed="false" data-cat="moto">Moto</button>
+            <button class="chip" type="button" aria-pressed="false" data-cat="beni">Beni mobili</button>
+          </div>
+          <div class="m-campi">
+            <label>Prezzo base fino a
+              <select id="mMax">
+                <option value="">Qualsiasi</option>
+                <option value="10000">10.000 €</option>
+                <option value="25000">25.000 €</option>
+                <option value="50000">50.000 €</option>
+                <option value="75000">75.000 €</option>
+                <option value="100000">100.000 €</option>
+                <option value="150000">150.000 €</option>
+                <option value="200000">200.000 €</option>
+                <option value="300000">300.000 €</option>
+                <option value="500000">500.000 €</option>
+                <option value="1000000">1.000.000 €</option>
+              </select>
+            </label>
+            <label>Punteggio minimo
+              <select id="mPunt"><option value="0">Qualsiasi</option></select>
+            </label>
+          </div>
+          <div class="m-spunte">
+            <label class="check"><input type="checkbox" id="mLibere"> Solo libere</label>
+            <label class="check"><input type="checkbox" id="mConPunt"> Solo con punteggio</label>
+            <label class="check"><input type="checkbox" id="mSeguite"> Solo le aste che seguo</label>
+          </div>
+          <fieldset class="m-strati">
+            <legend>Sulla mappa</legend>
+            <label class="check"><input type="checkbox" id="mPuntini" checked> Puntini delle aste</label>
+            <label class="check"><input type="checkbox" id="mCalore" aria-describedby="mCaloreMetodo"> Mappa di calore degli sconti</label>
+            <div class="m-calore-metodo" id="mCaloreMetodo">
+              <p>Divide la mappa in quadrati di circa 40 pixel (più grandi in chilometri quando allontani) e colora ognuno con lo <b>sconto medio</b> delle aste filtrate che ci cadono dentro: quanto il costo totale al prezzo base (prezzo, imposte e spese) resta sotto il valore di mercato stimato.</p>
+              <p>Contano solo le aste con sconto e valore di affidabilità media o alta: le altre restano nell'elenco ma non nella media. Con meno di 3 aste nel campione il quadrato resta senza colore.</p>
+              <p class="m-fonte">Fonte: prezzi base dagli avvisi delle <a href="fonti.html">fonti ufficiali</a>; valore di mercato dalla stima del perito nell'avviso o dalle quotazioni OMI dell'Agenzia delle Entrate<span id="mCaloreData"></span>.</p>
+            </div>
+          </fieldset>
+          <div class="m-daelenco" id="mDaElenco" hidden></div>
+          <div class="m-azioni">
+            <a class="btn ghost" id="mApriElenco" href="aste.html">Apri queste aste nell'elenco</a>
+            <button class="btn quiet" type="button" id="mAzzera" hidden>Azzera i filtri</button>
+          </div>
+          <button class="btn ghost" type="button" id="geocodifica" hidden>Posiziona con precisione le tue aste</button>
+          <div class="m-legenda-lista" id="mLegendaLista"></div>
+          <p class="m-avvertenza solo-telefono"><strong>Calcoli indicativi.</strong> Verifica sempre avviso di vendita e perizia prima di fare un'offerta.</p>
+        </div>
+      </section>
 
-  <div id="mappaVuota"></div>
-  <div id="map" role="region" aria-label="Mappa delle aste"></div>
-  <p class="note" id="statoMappa"></p>
-  <div id="senzaPosizione"></div>
+      <section class="m-foglio m-zona" id="mZona" aria-labelledby="hZona">
+        <div class="m-foglio-testa">
+          <span class="maniglia" aria-hidden="true"></span>
+          <h2 id="hZona">In questa zona</h2>
+          <button class="m-x" type="button" data-chiudi aria-label="Chiudi l'elenco della zona"><svg class="icona" aria-hidden="true"><use href="#i-chiudi"/></svg></button>
+        </div>
+        <div class="m-foglio-corpo">
+          <p class="m-zona-n" id="mZonaN" aria-live="polite"></p>
+          <p class="m-zona-titolo" id="mZonaTitolo"></p>
+          <ol class="m-voci" id="mMigliori"></ol>
+          <a class="btn" id="mCercaZona" href="aste.html"><svg class="icona" aria-hidden="true"><use href="#i-cerca"/></svg>Cerca in questa zona</a>
+        </div>
+      </section>
+
+      <footer id="site-footer"></footer>
+    </div>
+
+    <!-- Anteprima dell'asta: sopra la colonna su computer, foglio dal basso su telefono -->
+    <section class="m-foglio m-anteprima" id="mScheda" aria-labelledby="hScheda" tabindex="-1"></section>
+  </aside>
+
+  <div class="m-mappa" id="mMappa">
+    <div id="map" role="region" aria-label="Mappa delle aste: trascina per spostarti, usa i pulsanti più e meno per lo zoom"></div>
+    <div class="m-barra" id="mBarra">
+      <button class="m-barra-filtri" type="button" id="mApriFiltri" aria-controls="mFiltri" aria-haspopup="dialog">
+        <svg class="icona" aria-hidden="true"><use href="#i-filtro"/></svg><span>Filtri</span><b id="mNFiltri" hidden></b>
+      </button>
+      <p class="m-barra-sintesi" id="mBarraSintesi" aria-hidden="true"></p>
+    </div>
+    <div class="m-avviso" id="mAvviso" role="status" hidden></div>
+    <div class="m-carico" id="mCarico" role="status"><span class="m-giro" aria-hidden="true"></span>Carico le aste…</div>
+    <section class="m-foglio m-regione" id="mRegione" aria-live="polite" aria-labelledby="hRegione"></section>
+    <div class="m-legenda" id="mLegenda"></div>
+    <button class="m-calore-mini" type="button" id="mCaloreMini" aria-controls="mFiltri" hidden></button>
+    <div class="m-cella" id="mCella" hidden></div>
+    <button class="m-pill" type="button" id="mApriZona" aria-controls="mZona"><span id="mPillTesto">In questa zona</span><svg class="icona" aria-hidden="true"><use href="#i-lista"/></svg></button>
+    <div class="m-velo" id="mVelo" hidden></div>
+  </div>
 </main>
-
-<footer id="site-footer"></footer>
 
 <script src="config/tariffe.js"></script>
 <script src="data/geo.js"></script>
-<script src="config/fonti.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/supercluster/supercluster.min.js"></script>
+<script src="data/italia.js"></script>
+<script src="js/calore.js"></script>
+<!-- la mappa parte subito (sfondo e confini) mentre si scaricano le aste; i puntini arrivano a DOMContentLoaded -->
+<script src="js/pages/mappa.js"></script>
 <script src="data/aste.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/calcoli.js"></script>
 <script src="js/formato.js"></script>
-<script src="js/store.js"></script>
-<script src="js/icone.js"></script>
-<script src="js/ui.js"></script>
+<script src="js/punteggio.js"></script>
+<script src="js/dettagli.js"></script>
 <script src="js/cerca.js"></script>
-<script src="assets/vendor/leaflet/leaflet.js"></script>
-<script src="data/italia.js"></script>
-<script src="js/pages/mappa.js"></script>
 </body>
 </html>

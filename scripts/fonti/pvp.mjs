@@ -4,18 +4,22 @@
 // data decrescente e la lettura si ferma alla prima asta già passata.
 import { richiesta } from '../lib/http.mjs';
 import { provincia, titolo as maiuscole } from '../lib/luoghi.mjs';
+import { pulisci, spazi } from '../lib/dettaglio-pvp.mjs';
+import { controllaCoordinate, soloBiciclette, prezzo, togliPrefisso, frase } from '../lib/correzioni.mjs';
 
 export const NOME = 'Portale Vendite Pubbliche';
 const RICERCA = 'https://pvp.giustizia.it/ric-496b258c-986a1b71/ric-ms/ricerca/vendite';
 const AVVISO = 'https://pvp.giustizia.it/pvp/it/detail_annuncio.page?idAnnuncio=';
-const DIMENSIONE_PAGINA = 100;
+const DIMENSIONE_PAGINA = 1000;  // il servizio accetta fino a 1000 vendite per pagina
 const INTERVALLO_MS = 2500;      // una richiesta ogni 2,5 secondi
 const ANNI_MAX_FUTURO = 3;       // date oltre questo orizzonte sono errori di inserimento
 
-function categoria(x) {
+export function categoria(x) {
   if (x.tipoLotto === 'IMMOBILI') return 'immobile';
   if (x.categoriaLotto === 'AUTOVEICOLI_E_CICLI') {
-    return (x.categoriaBene || []).some((b) => /MOTOVEICOLO|CICLOMOTORE/.test(b)) ? 'moto' : 'auto';
+    if ((x.categoriaBene || []).some((b) => /MOTOVEICOLO|CICLOMOTORE/.test(b))) return 'moto';
+    // lotti di sole biciclette (anche elettriche): sono beni, non auto
+    return soloBiciclette(x) ? 'beni' : 'auto';
   }
   return 'beni';
 }
@@ -27,26 +31,44 @@ function stato(disp) {
   return 'nd';
 }
 
-const tipo = (s) => s ? (s.charAt(0) + s.slice(1).toLowerCase()).replace(/_/g, ' ') : '';
+// "ALTRA_CATEGORIA_M" → "Altra categoria m": le etichette abbreviate dalla fonte restano come sono (nessun completamento)
+export const tipo = (s) => s ? (s.charAt(0) + s.slice(1).toLowerCase()).replace(/_/g, ' ') : '';
 
-function titolo(x, comune) {
-  let t = String(x.descLotto || '').replace(/\s+/g, ' ').trim()
-    .replace(/^(bene|lotto)\s*(n\.?|nr\.?|numero)?\s*[\w./-]*\s*[-–:.]?\s*/i, '');
-  if (t.length > 110) t = t.slice(0, 110).replace(/\s+\S*$/, '') + '…';
-  if (t.length < 8) t = tipo(x.categoriaLotto) + (comune ? ' – ' + comune : '');
+// "(Lotto n.1) - APPARTAMENTO SITO IN ..." → "Appartamento sito in ...", al massimo 110 caratteri
+// (la descrizione completa è nella scheda a pezzi)
+export function titolo(x, comune, sigla) {
+  let t = spazi(frase(togliPrefisso(pulisci(x.descLotto)), { comune, provincia: sigla })).trim();
+  if (t.length > 110) t = t.slice(0, 110).replace(/\s+\S*$/, '').replace(/[\s,;:–-]+$/, '') + '…';
+  if (t.replace(/[^A-Za-zÀ-ÿ]/g, '').length < 6) t = tipo(x.categoriaLotto) + (comune ? ' – ' + comune : '');
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-function converti(x) {
+// "LOTTO 001" → "1", "Lotto unico" → "Unico", "3 bis" → "3 bis"
+export function numeroLotto(s) {
+  let t = String(s ?? '').replace(/\s+/g, ' ').trim().replace(/^lott[oi]\s*(?:n(?:r|um(?:ero)?)?\s*[.°º]?\s*)?/i, '');
+  if (/^\d+$/.test(t)) t = String(parseInt(t, 10));
+  if (/^unico$/i.test(t)) t = 'Unico';
+  return t ? t.slice(0, 20) : null;
+}
+
+export function converti(x, stat = null) {
   const ind = x.indirizzo || {};
   const trib = String(x.tribunale || '').replace(/^tribunale\s+(ordinario\s+)?d[ie]\s+/i, '');
   const p = provincia(ind.provincia) || provincia(trib);
   const comune = ind.citta ? maiuscole(ind.citta) : '';
-  const c = ind.coordinate;
+  const c = ind.coordinate || {};
+  const coord = controllaCoordinate(c.latitudine, c.longitudine, p && p.sigla);
+  const cat = categoria(x);
+  if (stat) {
+    if (coord.scarto) stat.coordinateScartate[coord.scarto] = (stat.coordinateScartate[coord.scarto] || 0) + 1;
+    if (cat === 'beni' && x.categoriaLotto === 'AUTOVEICOLI_E_CICLI') stat.biciclette++;
+    if (x.prezzoBaseAsta === 0) stat.prezzoZero++;
+    if (x.offertaMinima === 0) stat.offertaZero++;
+  }
   return {
     id: 'pvp-' + x.id,
-    titolo: titolo(x, comune),
-    categoria: categoria(x),
+    titolo: titolo(x, comune, p && p.sigla),
+    categoria: cat,
     tipo: tipo(x.categoriaLotto),
     regione: p ? p.regione : '',
     provincia: p ? p.sigla : '',
@@ -55,15 +77,23 @@ function converti(x) {
     tribunale: trib ? maiuscole(trib) : '',
     rge: x.procedura ? String(x.procedura) : '',
     fonte: NOME,
-    prezzoBase: x.prezzoBaseAsta ?? null,
-    offertaMinima: x.offertaMinima ?? null,
+    prezzoBase: prezzo(x.prezzoBaseAsta),
+    offertaMinima: prezzo(x.offertaMinima),
     dataAsta: x.dataVendita || '',
     pubblicata: x.dataPubblicazione || '',
     ora: x.orarioVendita || '',
     stato: stato(x.disponibilita),
     linkAvviso: AVVISO + x.id,
-    lat: c && isFinite(c.latitudine) ? Math.round(c.latitudine * 1e5) / 1e5 : null,
-    lng: c && isFinite(c.longitudine) ? Math.round(c.longitudine * 1e5) / 1e5 : null
+    lat: coord.lat,
+    lng: coord.lng,
+    numeroLotto: numeroLotto(x.numeroLotto),
+    rialzo: prezzo(x.rialzoMinimo),
+    // dati grezzi per l'arricchimento (storico dei tentativi, descrizione completa): non vanno nel file pubblicato
+    _pvp: {
+      id: x.id, codiceTribunale: x.codiceTribunale, procedura: x.procedura, numeroLotto: x.numeroLotto, dataVendita: x.dataVendita,
+      prezzoBaseAsta: x.prezzoBaseAsta, esito: x.esito || null, indirizzo: { citta: ind.citta, via: ind.via },
+      tipoLotto: x.tipoLotto, categoriaLotto: x.categoriaLotto, descLotto: x.descLotto, rialzoMinimo: x.rialzoMinimo
+    }
   };
 }
 
@@ -71,10 +101,12 @@ export async function raccogli({ oggi, maxPagine = Infinity, log = console.log }
   const limite = new Date(oggi); limite.setFullYear(limite.getFullYear() + ANNI_MAX_FUTURO);
   const fine = limite.toISOString().slice(0, 10);
   const aste = []; const visti = new Set();
-  let scartateData = 0, totale = null;
+  let scartateData = 0, totale = null, richieste = 0, futureViste = 0;
+  const correzioni = { coordinateScartate: {}, biciclette: 0, prezzoZero: 0, offertaZero: 0 };
 
   for (let pagina = 0; pagina < maxPagine; pagina++) {
-    const url = `${RICERCA}?language=it&page=${pagina}&size=${DIMENSIONE_PAGINA}&sort=dataVendita,desc&sort=orarioVendita,desc`;
+    // l'ordinamento finale per id rende stabili le pagine (molte vendite hanno stessa data e ora)
+    const url = `${RICERCA}?language=it&page=${pagina}&size=${DIMENSIONE_PAGINA}&sort=dataVendita,desc&sort=orarioVendita,desc&sort=id,desc`;
     const r = await richiesta(url, { metodo: 'POST', corpo: '{}', intestazioni: { 'Content-Type': 'application/json', Accept: 'application/json' }, json: true, intervalloMs: INTERVALLO_MS });
     const b = r && r.body;
     if (!b || !Array.isArray(b.content)) throw new Error('risposta inattesa dal PVP: ' + JSON.stringify(r).slice(0, 200));
@@ -83,14 +115,20 @@ export async function raccogli({ oggi, maxPagine = Infinity, log = console.log }
     for (const x of b.content) {
       if (!x.dataVendita) continue;
       if (x.dataVendita < oggi) { passate = true; break; }
+      futureViste++;
       if (x.dataVendita > fine) { scartateData++; continue; }
       if (visti.has(x.id)) continue;
       visti.add(x.id);
-      aste.push(converti(x));
+      aste.push(converti(x, correzioni));
     }
-    if (pagina % 20 === 0) log(`  PVP pagina ${pagina + 1}: ${aste.length} aste future finora`);
+    if (pagina % 5 === 0) log(`  PVP pagina ${pagina + 1}: ${aste.length} aste future finora`);
+    richieste++;
     if (passate || b.last) break;
   }
-  log(`  PVP: ${aste.length} aste future (scartate ${scartateData} con data oltre il ${fine})`);
-  return { aste, nota: `${aste.length} aste con data dal ${oggi}; ${scartateData} scartate per data palesemente errata.` };
+  log(`  PVP: ${aste.length} aste future (scartate ${scartateData} con data oltre il ${fine}; ${richieste} richieste)`);
+  const sc = correzioni.coordinateScartate;
+  log(`  PVP correzioni: ${(sc['fuori-italia'] || 0) + (sc.lontana || 0)} coordinate scartate (${sc['fuori-italia'] || 0} fuori dall'Italia, ${sc.lontana || 0} a oltre 150 km dalla provincia), ` +
+    `${correzioni.biciclette} lotti di biciclette spostati tra i beni, ${correzioni.prezzoZero} prezzi base a zero e ${correzioni.offertaZero} offerte minime a zero trattati come mancanti`);
+  // futureViste: vendite con data da oggi in poi nella ricerca (anche quelle scartate): serve all'indice storico per partire dalla pagina giusta
+  return { aste, richieste, futureViste, correzioni, nota: `${aste.length} aste con data dal ${oggi}; ${scartateData} scartate per data palesemente errata.` };
 }

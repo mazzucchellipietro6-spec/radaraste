@@ -5,64 +5,80 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Elenco aste – Radar Aste Italia</title>
 <meta name="description" content="Raccogli le aste di immobili, auto, moto e beni mobili in Italia, filtra e capisci se conviene partecipare.">
-<link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/hanken-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<meta name="theme-color" content="#0d6b4f" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
 <script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
 <body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
 <header id="site-header"></header>
 
-<main class="wrap stack">
+<main class="wrap stack elenco-pagina" id="contenuto" tabindex="-1">
   <div class="page-head">
     <h1>Tutte le <span>aste</span></h1>
     <p class="sub">Le aste di immobili, auto, moto e beni mobili raccolte ogni giorno dalle fonti ufficiali, con il link all'avviso originale. Filtrale e valuta in un clic se conviene partecipare.</p>
   </div>
 
-  <!-- FILTRI -->
-  <section class="panel" aria-labelledby="h-filtri">
-    <h2 id="h-filtri" class="sr-only">Filtri</h2>
-    <div class="chips" id="fCat" role="group" aria-label="Categoria" style="margin-bottom:12px">
+  <!-- FILTRI: su computer un pannello; su telefono ricerca + categoria in alto e il resto in un foglio dal basso ("Filtri") -->
+  <form id="filtri" autocomplete="off" class="filtri" role="search" aria-label="Cerca e filtra le aste">
+    <div class="filtri-barra">
+      <label class="campo-cerca"><span class="sr-only">Cerca</span>
+        <input type="search" id="fTesto" placeholder="Parole, comune, n. procedura" enterkeyhint="search">
+      </label>
+      <button class="btn ghost filtri-btn" type="button" id="apriFiltri" aria-controls="pannelloFiltri" aria-haspopup="dialog">
+        <svg class="icona" aria-hidden="true"><use href="#i-filtro"/></svg><span>Filtri</span><span class="pill p-info" id="nFiltri" hidden></span>
+      </button>
+    </div>
+    <div class="chips scorre" id="fCat" role="group" aria-label="Categoria">
       <button class="chip" type="button" aria-pressed="true" data-cat="">Tutte</button>
       <button class="chip" type="button" aria-pressed="false" data-cat="immobile">Immobili</button>
       <button class="chip" type="button" aria-pressed="false" data-cat="auto">Auto</button>
       <button class="chip" type="button" aria-pressed="false" data-cat="moto">Moto</button>
       <button class="chip" type="button" aria-pressed="false" data-cat="beni">Beni mobili</button>
     </div>
-    <form id="filtri" autocomplete="off" class="stack" style="gap:12px">
-      <label>Cerca<input type="search" id="fTesto" placeholder="Parole, comune, n. procedura"></label>
-      <div class="row-actions" style="gap:6px">
-        <span class="muted" style="font-size:13px;font-weight:600">Le tue ricerche</span>
-        <div class="chips" id="ricercheSalvate" aria-live="polite"></div>
-        <button class="btn small ghost" type="button" id="salvaRicerca">+ Salva questa ricerca</button>
+    <div class="chips" id="filtriAttivi" aria-live="polite"></div>
+
+    <section class="panel filtri-pannello" id="pannelloFiltri" aria-labelledby="h-filtri">
+      <div class="testa-foglio">
+        <h2 id="h-filtri">Filtri</h2>
+        <button class="btn small quiet solo-foglio" type="button" id="chiudiFiltri">Chiudi</button>
       </div>
-      <div class="row-actions" id="formRicerca" hidden>
-        <label style="flex:1;min-width:180px" for="nomeRicerca">Nome della ricerca<input id="nomeRicerca" maxlength="60" placeholder="es. Bilocali liberi a Genova" enterkeyhint="done"></label>
-        <button class="btn small" type="button" id="confermaRicerca" style="align-self:end">Salva</button>
+      <div class="corpo-foglio stack" style="gap:14px">
+        <div class="row-actions ricerche-riga">
+          <span class="muted etichetta">Le tue ricerche</span>
+          <div class="chips" id="ricercheSalvate" aria-live="polite"></div>
+          <button class="btn small ghost" type="button" id="salvaRicerca">+ Salva questa ricerca</button>
+        </div>
+        <div class="row-actions" id="formRicerca" hidden>
+          <label style="flex:1;min-width:180px" for="nomeRicerca">Nome della ricerca<input id="nomeRicerca" maxlength="60" placeholder="es. Bilocali a Genova" enterkeyhint="done"></label>
+          <button class="btn small" type="button" id="confermaRicerca" style="align-self:end">Salva</button>
+        </div>
+        <div class="fields">
+          <label>Regione<select id="fRegione"></select></label>
+          <label>Provincia<select id="fProvincia"></select></label>
+          <label>Tribunale<input id="fTribunale" list="listaTribunali" placeholder="Tutti"></label>
+          <label>Prezzo base da (€)<input type="number" id="fPrezzoMin" min="0" step="1000" inputmode="numeric"></label>
+          <label>Prezzo base a (€)<input type="number" id="fPrezzoMax" min="0" step="1000" inputmode="numeric"></label>
+          <label>Data asta dal<input type="date" id="fDal"></label>
+          <label>Data asta al<input type="date" id="fAl"></label>
+          <label>Stato<select id="fStato"><option value="">Tutti</option><option value="libero">Libero</option><option value="occupato">Occupato</option><option value="nd">Non indicato</option></select></label>
+          <label class="check" style="align-self:end"><input type="checkbox" id="fPassate"> Mostra aste concluse</label>
+          <label class="check" style="align-self:end"><input type="checkbox" id="fNuove"> <span id="fNuoveTesto">Solo nuove dall'ultima visita</span></label>
+        </div>
       </div>
-      <details id="altriFiltri" open>
-      <summary class="btn small ghost" style="width:max-content;list-style:none">Altri filtri</summary>
-      <div class="fields" style="margin-top:12px">
-      <label>Regione<select id="fRegione"></select></label>
-      <label>Provincia<select id="fProvincia"></select></label>
-      <label>Tribunale<input id="fTribunale" list="listaTribunali" placeholder="Tutti"></label>
-      <label>Prezzo base da (€)<input type="number" id="fPrezzoMin" min="0" step="1000" inputmode="numeric"></label>
-      <label>Prezzo base a (€)<input type="number" id="fPrezzoMax" min="0" step="1000" inputmode="numeric"></label>
-      <label>Data asta dal<input type="date" id="fDal"></label>
-      <label>Data asta al<input type="date" id="fAl"></label>
-      <label>Stato<select id="fStato"><option value="">Tutti</option><option value="libero">Libero</option><option value="occupato">Occupato</option><option value="nd">Non indicato</option></select></label>
-      <label class="check" style="align-self:end"><input type="checkbox" id="fPassate"> Mostra aste concluse</label>
-      <label class="check" style="align-self:end"><input type="checkbox" id="fNuove"> Solo nuove dall'ultima visita</label>
+      <div class="piede-foglio solo-foglio">
+        <button class="btn ghost" type="button" id="azzeraFoglio">Azzera</button>
+        <button class="btn" type="button" id="mostraRisultati">Mostra le aste</button>
       </div>
-      </details>
-    </form>
+    </section>
     <datalist id="listaTribunali"></datalist>
-  </section>
+  </form>
 
   <!-- RISULTATI -->
   <div id="statoRaccolta"></div>
@@ -70,19 +86,23 @@
   <section aria-labelledby="h-elenco">
     <div class="toolbar">
       <h2 id="h-elenco" style="margin:0">Elenco aste</h2>
-      <span class="count" id="conteggio"></span>
+      <span class="count" id="conteggio" aria-live="polite">Carico le aste…</span>
       <span class="spacer"></span>
-      <label style="display:flex;align-items:center;gap:6px">Ordina
-        <select id="ordina" style="width:auto">
+      <label class="ordina">Ordina
+        <select id="ordina">
           <option value="data">Data asta</option>
           <option value="prezzo-asc">Prezzo crescente</option>
           <option value="prezzo-desc">Prezzo decrescente</option>
+          <option value="punteggio">Punteggio affare</option>
           <option value="sconto">Sconto sul mercato</option>
         </select>
       </label>
       <button class="btn small ghost" type="button" id="azzera">Azzera filtri</button>
     </div>
-    <div class="cards" id="elenco" aria-live="polite"></div>
+    <div class="cards" id="elenco" aria-busy="true">
+      <div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div>
+      <div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div>
+    </div>
   </section>
 
   <!-- AGGIUNTA -->
@@ -106,7 +126,7 @@
         <label>Tribunale / ente<input id="aTribunale" list="listaTribunali"></label>
         <label>R.G.E. / n. procedura<input id="aRge" placeholder="412/2024"></label>
         <label>Prezzo base (€) *<input type="number" id="aPrezzoBase" required min="0" step="100" inputmode="decimal"></label>
-        <label>Offerta minima (€)<input type="number" id="aOffertaMinima" min="0" step="100" inputmode="decimal" placeholder="75% del prezzo base"></label>
+        <label>Offerta minima (€)<input type="number" id="aOffertaMinima" min="0" step="100" inputmode="decimal" placeholder="se vuota: 75%"></label>
         <label>Data asta *<input type="date" id="aData" required></label>
         <label>Stato<select id="aStato"><option value="nd">Non indicato</option><option value="libero">Libero</option><option value="occupato">Occupato</option></select></label>
         <label>Valore di mercato stimato (€)<input type="number" id="aMercato" min="0" step="100" inputmode="decimal"></label>
@@ -139,14 +159,15 @@
 
 <script src="config/tariffe.js"></script>
 <script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
 <script src="config/fonti.js"></script>
+<!-- il file delle aste è grande: intestazione e segnaposto sono già visibili mentre si scarica -->
 <script src="data/aste.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/calcoli.js"></script>
 <script src="js/formato.js"></script>
-<script src="js/store.js"></script>
-<script src="js/icone.js"></script>
-<script src="js/ui.js"></script>
 <script src="js/cerca.js"></script>
 <script src="js/ricerche.js"></script>
 <script src="js/riepilogo.js"></script>

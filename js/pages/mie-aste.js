@@ -60,6 +60,16 @@
     } else if (!lista.length) {
       $('#lista').innerHTML = '<div class="panel empty">Nessuna asta con stato "' + U.esc(nomeStato(filtro)) + '".</div>';
     } else $('#lista').innerHTML = lista.map(elemento).join('');
+    $('#lista').removeAttribute('aria-busy');
+  }
+  // messaggio del ripristino: conta sia le aste seguite sia quelle inserite a mano
+  function esitoRipristino(e) {
+    var parti = [];
+    if (e.seguite) parti.push(e.seguite + (e.seguite === 1 ? ' asta seguita' : ' aste seguite'));
+    if (e.importate) parti.push(e.importate + (e.importate === 1 ? ' asta inserita da te' : ' aste inserite da te'));
+    var t = parti.length ? 'Backup ripristinato: ' + parti.join(' e ') + '.' : 'Il backup non conteneva aste da ripristinare.';
+    if (e.scartate) t += ' Scartate ' + e.scartate + ' aste senza link all\'avviso o senza titolo.';
+    return t;
   }
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -82,10 +92,16 @@
       var id = e.target.closest('[data-id]').dataset.id;
       U.conferma(e.target, 'Conferma: cancella note e valutazione', function () { S.smetti(id); render(); U.toast('Non segui più questa asta'); });
     });
+    // un solo file .ics con le scadenze di tutte le aste seguite (solo date lette dagli avvisi)
+    $('#promemoria').addEventListener('click', function () {
+      var aste = S.seguite().map(function (s) { return S.asta(s.id) || s.copia; }).filter(function (a) { return a && a.dataAsta && a.dataAsta >= U.oggi(); });
+      if (!aste.length) { U.toast('Nessuna asta futura tra quelle che segui'); return; }
+      U.offriFile('radar-aste-promemoria.ics', window.Calendario.ics(aste), 'text/calendar;charset=utf-8');
+    });
     $('#backup').addEventListener('click', function () { U.offriFile('radar-aste-backup.json', JSON.stringify(S.backup(), null, 2), 'application/json'); });
     $('#ripristina').addEventListener('change', function () {
       var f = this.files[0]; if (!f) return;
-      U.leggiFile(f).then(function (t) { var e = S.ripristina(JSON.parse(t)); render(); U.toast('Backup ripristinato (' + e.importate + ' aste).', 4000); })
+      U.leggiFile(f).then(function (t) { var e = S.ripristina(JSON.parse(t)); render(); U.toast(esitoRipristino(e), 5000); })
         .catch(function (err) { U.toast('Ripristino non riuscito: ' + err.message, 5000); });
       this.value = '';
     });

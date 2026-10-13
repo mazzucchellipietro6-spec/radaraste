@@ -21,7 +21,8 @@ concurrency:
 jobs:
   aggiorna:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # raccolta (~5 min) + storico (~2 min) + fino a 600 dettagli del PVP, uno ogni 3 s (~35 min) + OMI e assistenti (~1 min)
+    timeout-minutes: 110
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -41,17 +42,97 @@ jobs:
       # Se una fonte non risponde, il programma conserva le aste reali raccolte il giorno prima:
       # per questo scarica il file pubblicato in precedenza (se esiste).
       - name: Recupera i dati pubblicati in precedenza
-        run: curl -fsSL "${{ steps.pages.outputs.base_url }}/data/aste.js" -o data/aste.js || echo "Nessuna pubblicazione precedente"
+        run: |
+          curl -fsSL "${{ steps.pages.outputs.base_url }}/data/aste.js" -o data/aste.js || echo "Nessuna pubblicazione precedente"
+          # storico delle aste segnalate dal Cacciatore (serve a misurare se ci ha preso): si allunga ogni giorno
+          curl -fsSL "${{ steps.pages.outputs.base_url }}/data/cacciatore-storico.json" -o data/cacciatore-storico.json || rm -f data/cacciatore-storico.json
+
+      # Quotazioni OMI (file dell'area riservata dell'Agenzia delle Entrate): le condizioni d'uso non permettono di
+      # pubblicarle, quindi stanno in un repository PRIVATO. Si attivano impostando la variabile OMI_REPO
+      # (es. "utente/radaraste-omi") e il secret OMI_TOKEN (token in sola lettura su quel repository). Vedi README.
+      - name: Scarica le quotazioni OMI (repository privato)
+        if: ${{ vars.OMI_REPO != '' }}
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.OMI_REPO }}
+          token: ${{ secrets.OMI_TOKEN }}
+          path: _omi
+
+      - name: Costruisci l'indice OMI
+        if: ${{ vars.OMI_REPO != '' }}
+        continue-on-error: true
+        run: |
+          mkdir -p data/omi/grezzi
+          find _omi -name '*.zip' -exec cp {} data/omi/grezzi/ \;
+          rm -rf _omi
+          node scripts/omi.mjs
+
+      # Indice storico delle vendite passate (serve per i tentativi, NON si pubblica) e schede a pezzi con i
+      # dettagli già letti: si conservano da un giorno all'altro nella cache delle Actions. La chiave cambia a ogni
+      # esecuzione (run_id), quindi si ripristina sempre la più recente (restore-keys) e se ne salva una nuova.
+      # Se la cache manca la raccolta riparte: ricostruisce l'indice e arricchisce un po' alla volta.
+      - name: Ripristina indice storico e schede a pezzi
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/storico-indice.json
+            data/dettagli/
+          key: aste-arricchimento-${{ github.run_id }}
+          restore-keys: |
+            aste-arricchimento-
+
+      # Senza cache, le schede già pubblicate sul sito valgono come punto di partenza (dettagli già letti).
+      - name: Recupera le schede pubblicate (se la cache manca)
+        if: steps.cache.outputs.cache-matched-key == ''
+        run: |
+          mkdir -p data/dettagli
+          for i in $(seq 0 127); do
+            k=$(printf '%02x' "$i")
+            curl -fsSL "${{ steps.pages.outputs.base_url }}/data/dettagli/$k.js" -o "data/dettagli/$k.js" || rm -f "data/dettagli/$k.js"
+          done
+          echo "Schede recuperate: $(ls data/dettagli | wc -l)"
 
       - id: raccolta
         name: Raccogli le aste dalle fonti ufficiali
         continue-on-error: true
-        run: node scripts/raccogli.mjs
+        run: node scripts/raccogli.mjs --max-dettagli 600 --tempo-max 85
+
+      # Agente Cacciatore: affari di oggi (data/affari.js), storico delle segnalate, testo per Telegram
+      - name: Cacciatore di affari
+        continue-on-error: true
+        run: node scripts/cacciatore.mjs
+
+      # Telegram: parte solo se ci sono i secret TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID (altrimenti lo scrive e basta)
+      - name: Messaggio Telegram del mattino
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node scripts/telegram.mjs
+
+      - name: Salva indice storico e schede a pezzi
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/storico-indice.json
+            data/dettagli/
+          key: aste-arricchimento-${{ github.run_id }}
 
       - name: Prepara il sito
         run: |
-          mkdir _site
-          cp -r *.html manifest.webmanifest sw.js assets config data js _site/
+          mkdir -p _site/data
+          cp -r *.html manifest.webmanifest sw.js assets config js _site/
+          # data/: tutto (aste.js, riepilogo.js, geo.js, italia.js, dettagli/) TRANNE l'indice storico, che è una
+          # cache della raccolta e non si pubblica, e i file temporanei
+          # e la cartella delle quotazioni OMI (file originali e indice completo non si pubblicano: solo i valori per asta)
+          find data -mindepth 1 -maxdepth 1 ! -name 'storico-indice.json*' ! -name '*.tmp' ! -name 'omi' ! -name 'affari-telegram.txt' -exec cp -r {} _site/data/ \;
+          find _site/data -name '*.tmp' -delete
+          test ! -e _site/data/storico-indice.json
+          test ! -e _site/data/omi
+          echo "Schede pubblicate: $(ls _site/data/dettagli 2>/dev/null | wc -l) pezzi"
           sed -i "s/__VERSIONE__/${GITHUB_SHA::8}-$(date -u +%Y%m%d)/" _site/sw.js
 
       - uses: actions/upload-pages-artifact@v3

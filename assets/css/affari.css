@@ -1,0 +1,50 @@
+/* Sezione "Affari di oggi" della home (js/affari.js). Usa i token del design system (style.css). */
+.affari { margin-block: 8px 28px; }
+.aff-intesta { display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.aff-intesta h1, .aff-intesta h2 { margin: 2px 0 0; }
+.aff-intesta .eyebrow .icona { width: 15px; height: 15px; color: var(--accent); }
+.aff-intesta .eyebrow { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+.aff-giro { color: var(--muted); margin: 4px 0 16px; max-width: 72ch; }
+.aff-giro b { color: var(--fg); font-variant-numeric: tabular-nums; }
+.aff-griglia { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+.aff-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); padding: 18px; display: flex; flex-direction: column; gap: 12px;
+  transition: border-color var(--dur-2), box-shadow var(--dur-2); }
+@media (hover: hover) { .aff-card:hover { border-color: var(--line-2); box-shadow: var(--ombra-2); } }
+.aff-testa { display: flex; gap: 14px; align-items: flex-start; }
+.aff-tit { min-width: 0; }
+.aff-tit h3 { margin: 2px 0 2px; font-family: var(--f-body); font-size: 16px; font-weight: 600; line-height: 1.35; text-transform: none; letter-spacing: 0; color: var(--fg); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.aff-tit h3 a { color: inherit; text-decoration: none; }
+.aff-tit h3 a:hover { text-decoration: underline; }
+.aff-motivo { font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.aff-luogo { margin: 0; color: var(--muted); font-size: 14px; }
+.aff-anello { --p: 0; --c: var(--muted); flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--surface-3) 0); position: relative; }
+.aff-anello::before { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--surface); }
+.aff-anello b { position: relative; font-family: var(--f-num); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.aff-anello.vuoto { background: var(--surface-3); color: var(--muted); }
+.aff-anello.f-ottimo { --c: var(--s-100); } .aff-anello.f-buono { --c: color-mix(in oklab, var(--s-100) 60%, var(--s-50)); } .aff-anello.f-medio { --c: var(--s-50); } .aff-anello.f-basso { --c: var(--s-0); }
+.aff-numeri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
+.aff-numeri div { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-1); padding: 8px 10px; }
+.aff-numeri dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.aff-numeri dd { margin: 2px 0 0; font-family: var(--f-num); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.aff-numeri dd.buono { color: var(--good); }
+.aff-blocco h4 { margin: 0 0 4px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.aff-blocco ul, .aff-non ul { margin: 0; padding-left: 18px; }
+.aff-blocco li, .aff-non li { margin: 2px 0; font-size: 14px; color: var(--fg-2); }
+.aff-blocco.rischi li::marker { color: var(--accent); }
+.aff-scadenza { display: flex; gap: 8px; align-items: center; margin: 0; font-weight: 600; font-size: 14px; }
+.aff-non summary { cursor: pointer; color: var(--muted); min-height: 44px; display: flex; align-items: center; }
+.aff-nota { margin: 0; font-size: 13px; color: var(--muted); }
+.aff-azioni { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+.aff-azioni .btn { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+.aff-vuoto { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-2); padding: 16px; color: var(--fg-2); max-width: 78ch; }
+.aff-sottotitolo { margin: 26px 0 10px; font-family: var(--f-display); font-size: 21px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--fg); }
+.aff-sottotitolo small { font-size: 14px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+.aff-pref { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); background: var(--surface); border-radius: var(--r-3); padding: 16px; margin-bottom: 14px; border: 1px solid var(--line); }
+.aff-pref[hidden] { display: none; }
+.aff-pref label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.aff-pref select, .aff-pref input { min-height: 44px; }
+.aff-pref-azioni { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+.aff-pref .nota { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--muted); }
+.aff-avvertenza { font-size: 12px; color: var(--muted); margin-top: 14px; }
+@media (max-width: 420px) { .aff-numeri dd { font-size: 13px; } .aff-card { padding: 14px; } }

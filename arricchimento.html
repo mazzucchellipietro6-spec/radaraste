@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agente di arricchimento – Radar Aste Italia</title>
+<meta name="description" content="Cosa legge ogni giorno l'agente di arricchimento: dettagli, foto, documenti, storico dei tentativi e zona OMI delle aste, con le fonti e l'affidabilità dei valori.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <p class="note"><a href="assistenti.html">Assistenti</a> / Agente di arricchimento</p>
+  <div class="as-testa">
+    <p class="eyebrow"><svg class="icona" aria-hidden="true"><use href="#i-livelli"/></svg>Agente di arricchimento</p>
+    <h1>Dettagli reali, <em>ogni giorno</em></h1>
+    <p class="sub">Ogni mattina l'agente legge le schede di dettaglio del Portale delle Vendite Pubbliche e l'indice delle vendite passate. Aggiunge alle aste descrizione completa, foto, documenti, metri quadri, stato di occupazione, rischi scritti nell'avviso e la storia dei tentativi, poi collega ogni immobile alla sua zona OMI per stimarne valore e affitto.</p>
+    <p class="sintesi" id="arSintesi"></p>
+  </div>
+
+  <section aria-labelledby="h-oggi" class="stack" style="gap:12px">
+    <h2 id="h-oggi">A che punto è</h2>
+    <div class="ar-numeri" id="arNumeri"></div>
+  </section>
+
+  <section aria-labelledby="h-valori" class="stack" style="gap:12px">
+    <h2 id="h-valori">Da dove viene il valore di mercato</h2>
+    <p class="note">Per ogni asta il valore di mercato ha una fonte e un livello di affidabilità (<a href="assistenti.html#h-aff">cosa significano</a>). Quando due fonti non concordano si usa il valore più basso.</p>
+    <div class="grid2">
+      <div class="tablebox"><table class="responsive" id="arFonti"><thead><tr><th>Fonte del valore</th><th class="num">Aste</th><th class="num">Quota</th></tr></thead><tbody></tbody></table></div>
+      <div class="tablebox"><table class="responsive" id="arAff"><thead><tr><th>Affidabilità</th><th class="num">Aste</th><th class="num">Quota</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <p class="fonte" id="arOmi"></p>
+  </section>
+
+  <section aria-labelledby="h-come" class="panel stack" style="gap:12px">
+    <h2 id="h-come">Cosa fa, passo per passo</h2>
+    <ol class="ar-passi">
+      <li><div><h3>Raccoglie le aste</h3><p>Dal Portale delle Vendite Pubbliche (Ministero della Giustizia) e dall'Agenzia del Demanio, con il link all'avviso originale. Scarta coordinate fuori dall'Italia, prezzi a zero e aste già iniziate.</p></div></li>
+      <li><div><h3>Legge le schede di dettaglio</h3><p>Descrizione completa del lotto, fino a otto foto, perizia e avviso in allegato, cauzione, termine delle offerte, stima del perito quando è indicata. Al massimo 600 schede al giorno, una ogni 3 secondi, per non pesare sul Portale: le altre arrivano nei giorni successivi.</p></div></li>
+      <li><div><h3>Ricostruisce i tentativi</h3><p>Collega l'asta ai tentativi precedenti dello stesso lotto (stesso tribunale, procedura e lotto) nell'indice delle vendite degli ultimi tre anni: numero del tentativo, aste deserte, prezzo della prima asta e ribasso.</p></div></li>
+      <li><div><h3>Legge il testo dell'avviso</h3><p>Metri quadri, stato di occupazione, quote di proprietà, abusi, diritti di superficie, spese condominiali arretrate, veicoli senza chiavi o documenti. Le frasi trovate restano nella scheda come prova.</p></div></li>
+      <li><div><h3>Collega la zona OMI</h3><p>Riconosce la zona OMI dall'indirizzo o dalla frazione e applica le quotazioni di vendita e di affitto dell'ultimo semestre alla superficie dell'immobile.</p></div></li>
+      <li><div><h3>Ricalcola valore e punteggio</h3><p>Valore di mercato con forchetta, costo totale con imposte e spese, sconto reale, offerta massima consigliata e punteggio affare.</p></div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="h-limiti" class="callout warn">
+    <h2 id="h-limiti" style="font-size:18px;margin-bottom:4px">Cosa non fa ancora</h2>
+    <p>Non legge il testo dei PDF di perizie e avvisi: i link sono nella scheda di ogni asta. Il prezzo di aggiudicazione delle vendite passate non è pubblicato dal Portale. Le foto sono quelle caricate sul Portale; se mancano lo diciamo.</p>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="data/riepilogo.js"></script>
+<script src="js/pages/arricchimento.js"></script>
+</body>
+</html>

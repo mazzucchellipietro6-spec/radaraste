@@ -5,20 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Conviene? – Radar Aste Italia</title>
 <meta name="description" content="Calcola il costo totale di un'asta (imposte, condominio, lavori, liberazione) e scopri se conviene.">
-<link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/hanken-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
-<meta name="theme-color" content="#0d6b4f" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
 <script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
 <body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
 <header id="site-header"></header>
 
-<main class="wrap stack">
+<main class="wrap stack" id="contenuto" tabindex="-1">
   <div class="page-head">
     <h1>Conviene<span>?</span></h1>
     <p class="sub">Somma tutti i costi reali dell'acquisto all'asta, confrontali con il valore di mercato e scopri fino a quanto ha senso offrire.</p>
@@ -26,14 +27,14 @@
 
   <div class="panel row-actions" id="sceltaAsta">
     <label style="flex:1;min-width:240px">Valuta un'asta che segui
-      <select id="selAsta"><option value="">— Calcolo libero, senza asta collegata —</option></select>
+      <select id="selAsta"><option value="">Calcolo libero (nessuna asta)</option></select>
     </label>
     <div id="infoAsta" class="note" style="flex-basis:100%;margin:0"></div>
   </div>
 
   <nav class="tabs" role="tablist" aria-label="Tipo di bene">
-    <button role="tab" type="button" id="tab-immobile" aria-controls="pan-immobile" aria-selected="true" data-tab="immobile">Immobile</button>
-    <button role="tab" type="button" id="tab-veicolo" aria-controls="pan-veicolo" aria-selected="false" data-tab="veicolo">Auto, moto e beni mobili</button>
+    <button role="tab" type="button" id="tab-immobile" aria-controls="pan-immobile" aria-selected="true" tabindex="0" data-tab="immobile">Immobile</button>
+    <button role="tab" type="button" id="tab-veicolo" aria-controls="pan-veicolo" aria-selected="false" tabindex="-1" data-tab="veicolo">Auto, moto e beni mobili</button>
   </nav>
 
   <!-- IMMOBILE -->
@@ -46,9 +47,9 @@
       <div class="fields">
         <label>Prezzo base (€)<input type="number" id="iBase" min="0" step="1000" inputmode="decimal"></label>
         <label>La tua offerta (€)<input type="number" id="iOfferta" min="0" step="1000" inputmode="decimal"></label>
-        <label>Valore di mercato (€)<input type="number" id="iMercato" min="0" step="1000" inputmode="decimal" placeholder="es. da OMI o annunci simili"></label>
+        <label>Valore di mercato (€)<input type="number" id="iMercato" min="0" step="1000" inputmode="decimal" placeholder="OMI o annunci"></label>
         <label class="wide">Regime fiscale<select id="iRegime"></select></label>
-        <label>Rendita catastale (€)<input type="number" id="iRendita" min="0" step="10" inputmode="decimal" placeholder="per prezzo-valore e IMU"></label>
+        <label>Rendita catastale (€)<input type="number" id="iRendita" min="0" step="10" inputmode="decimal" placeholder="dalla visura"></label>
       </div>
       <h3>Costi oltre all'offerta</h3>
       <div class="fields">
@@ -63,19 +64,20 @@
         </select></label>
         <label>Costi di liberazione (€)<input type="number" id="iLiberazione" min="0" step="100" inputmode="decimal"></label>
         <label>Spese di procedura (€)<input type="number" id="iProcedura" min="0" step="100" inputmode="decimal" value="1500"></label>
-        <label>Altri costi (€)<input type="number" id="iAltri" min="0" step="100" inputmode="decimal" placeholder="mutuo, tecnico, sanatorie"></label>
+        <label>Altri costi (€)<input type="number" id="iAltri" min="0" step="100" inputmode="decimal" placeholder="es. tecnico"></label>
       </div>
       <p class="note">Spese di procedura: quota del compenso del delegato per il trasferimento, trascrizione, voltura e cancellazione delle ipoteche, se a carico dell'aggiudicatario (lo dice l'avviso). Condominio: l'aggiudicatario risponde dell'anno di gestione in corso e del precedente (art. 63 disp. att. c.c.): chiedi il dato all'amministratore.</p>
 
       <details class="box" id="boxStrategie" open>
         <summary>Tre strategie: ci vivo, lo affitto, ristrutturo e rivendo</summary>
         <div class="inner fields">
-          <label>Canone di mercato al mese (€)<input type="number" id="sCanone" min="0" step="10" inputmode="decimal" placeholder="es. da annunci simili"></label>
-          <label>Contratto d'affitto<select id="sContratto"><option value="libero">Canone libero (cedolare 21%)</option><option value="concordato">Canone concordato (cedolare 10%)</option></select></label>
-          <label>Lavori per rivendere (€)<input type="number" id="sLavori" min="0" step="1000" inputmode="decimal" placeholder="vuoto = 600 €/mq × superficie"></label>
+          <label>Canone di mercato al mese (€)<input type="number" id="sCanone" min="0" step="10" inputmode="decimal" placeholder="da annunci"></label>
+          <label>Contratto d'affitto<select id="sContratto"><option value="libero">Libero (cedolare 21%)</option><option value="concordato">Concordato (cedolare 10%)</option></select></label>
+          <label>Lavori per rivendere (€)<input type="number" id="sLavori" min="0" step="1000" inputmode="decimal" placeholder="vuoto: 600 €/mq"></label>
           <label>Superficie (mq)<input type="number" id="sMq" min="0" step="1" inputmode="decimal"></label>
-          <label>Valore dopo i lavori (€)<input type="number" id="sValoreDopo" min="0" step="1000" inputmode="decimal" placeholder="vuoto = valore di mercato"></label>
+          <label>Valore dopo i lavori (€)<input type="number" id="sValoreDopo" min="0" step="1000" inputmode="decimal" placeholder="vuoto: mercato"></label>
           <label>Mesi per ristrutturare e vendere<input type="number" id="sMesi" min="1" step="1" value="12" inputmode="numeric"></label>
+          <p class="note wide" style="margin:0">Lavori per rivendere vuoti: si usano 600 €/mq × superficie. Valore dopo i lavori vuoto: si usa il valore di mercato.</p>
         </div>
       </details>
 
@@ -104,7 +106,7 @@
         <label>Tipo<select id="vTipo"><option value="auto">Auto / autocarro</option><option value="moto">Moto</option><option value="beni">Bene mobile</option></select></label>
         <label>Prezzo base (€)<input type="number" id="vBase" min="0" step="100" inputmode="decimal"></label>
         <label>Prezzo di aggiudicazione (€)<input type="number" id="vOfferta" min="0" step="100" inputmode="decimal"></label>
-        <label>Valore di mercato (€)<input type="number" id="vMercato" min="0" step="100" inputmode="decimal" placeholder="es. quotazione usato"></label>
+        <label>Valore di mercato (€)<input type="number" id="vMercato" min="0" step="100" inputmode="decimal" placeholder="quotazione usato"></label>
         <label>Diritti d'asta (%)<input type="number" id="vDiritti" min="0" max="50" step="0.5" inputmode="decimal"></label>
         <label>IVA sui diritti<select id="vIvaDiritti"><option value="1">Sì, 22%</option><option value="0">No</option></select></label>
         <label>IVA sul prezzo<select id="vIvaPrezzo"><option value="0">No (venditore privato)</option><option value="1">Sì, 22% (venditore impresa)</option></select></label>
@@ -132,18 +134,24 @@
   </section>
 </main>
 
+<!-- su telefono: giudizio, sconto e costo totale sempre visibili mentre si compilano i campi -->
+<div class="riepilogo-fisso" id="riepilogoFisso" hidden>
+  <div class="testo"><span class="giudizio" id="rfGiudizio"></span><span class="numeri" id="rfNumeri"></span></div>
+  <button class="btn small" type="button" id="rfDettagli">Dettagli</button>
+</div>
+
 <footer id="site-footer"></footer>
 
 <script src="config/tariffe.js"></script>
 <script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
 <script src="config/fonti.js"></script>
 <script src="data/aste.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/calcoli.js"></script>
 <script src="js/formato.js"></script>
-<script src="js/store.js"></script>
-<script src="js/icone.js"></script>
-<script src="js/ui.js"></script>
 <script src="js/cerca.js"></script>
 <script src="js/pages/calcolatore.js"></script>
 </body>

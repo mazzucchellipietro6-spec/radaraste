@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scheda dell'asta – Radar Aste Italia</title>
+<meta name="description" content="Tutto su un'asta: foto, prezzi, punteggio affare, costo totale, rischi, scadenze e documenti originali.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/pagine.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body class="pg-scheda">
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <nav class="sc-briciole" aria-label="Percorso">
+    <a href="aste.html" id="indietro"><svg class="icona" aria-hidden="true" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span>Tutte le aste</span></a>
+  </nav>
+  <div id="scheda" aria-live="polite" aria-busy="true">
+    <div class="sc-attesa" role="status">
+      <span class="sr-only">Carico la scheda dell'asta…</span>
+      <div class="scheletro sc-sk-foto" aria-hidden="true"></div>
+      <div class="scheletro sc-sk-testo" aria-hidden="true"></div>
+      <div class="scheletro sc-sk-righe" aria-hidden="true"></div>
+    </div>
+  </div>
+  <noscript><div class="panel empty"><h2>Serve JavaScript</h2><p>La scheda dell'asta si costruisce nel browser. Attiva JavaScript o apri l'<a href="aste.html">elenco delle aste</a>.</p></div></noscript>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<!-- niente data/aste.js (qualche MB): la scheda legge il suo pezzo in data/dettagli/ e l'elenco solo se serve -->
+<script src="data/riepilogo.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/estrai.js"></script>
+<script src="js/punteggio.js"></script>
+<script src="js/dettagli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="js/schede.js"></script>
+<script src="js/confronto.js"></script>
+<script src="js/calendario.js"></script>
+<script src="js/asta.js"></script>
+<script src="js/pages/scheda.js"></script>
+</body>
+</html>
