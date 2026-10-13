@@ -11,8 +11,9 @@ const OUT = path.join(RADICE, '_artifact');
 
 await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
-// l'indice storico (data/storico-indice.json) è una cache della raccolta: non si pubblica
-const daEscludere = (f) => /storico-indice\.json|\.tmp$/.test(f);
+// non si pubblicano: l'indice storico (cache della raccolta), la cartella OMI (file originali e indice completo:
+// condizioni d'uso dell'Agenzia delle Entrate) e il testo del messaggio Telegram
+const daEscludere = (f) => /storico-indice\.json|\.tmp$|[\\/]data[\\/]omi([\\/]|$)|affari-telegram\.txt$/.test(f);
 for (const dir of ['assets', 'config', 'data', 'js']) await cp(path.join(RADICE, dir), path.join(OUT, dir), { recursive: true, filter: (f) => !daEscludere(f) });
 await cp(path.join(RADICE, 'manifest.webmanifest'), path.join(OUT, 'manifest.webmanifest'));
 // versione della cache del service worker: data e ora di generazione (AAAAMMGG-HHMM, UTC), così ogni pubblicazione aggiorna i file

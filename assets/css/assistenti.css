@@ -168,3 +168,14 @@
 .cs-esempi { max-width: 100%; }
 .st-fonte summary { cursor: pointer; font-size: 12.5px; color: var(--muted); min-height: 32px; display: flex; align-items: center; }
 .st-fonte p { margin-top: 4px; }
+/* i suggerimenti dentro la risposta vanno a capo (la riga di esempi sopra il campo invece scorre di lato) */
+.cs-sugg .chip { white-space: normal; text-align: left; max-width: 100%; }
+.cs-corpo > p, .cs-corpo .cs-fonti { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .cs-testa { flex-wrap: wrap; padding: 12px 14px; }
+  .cs-testa h1 { font-size: 18px; }
+  .cs-testa > div { flex: 1; min-width: 0; }
+  .cs-testa .spacer { display: none; }
+  #csNuova { padding-inline: 10px; }
+  .cs-messaggi { padding: 14px; }
+}
