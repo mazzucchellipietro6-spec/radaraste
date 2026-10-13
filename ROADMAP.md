@@ -137,6 +137,18 @@ _(in compilazione: risultati del controllo di pagine e design)_
 5. **Telegram**: crea il bot con @BotFather (gratis) e metti il token nei Secrets del repository. Le istruzioni passo passo arriveranno con la funzione.
 6. **Consulente AI**: quale servizio usare e se attivarlo (vedi `CONSULENTE.md`).
 7. **"Combinazioni d'oro"** dello Stratega: cosa intendi esattamente? Non l'ho trovato definito.
+8. **Frane e alluvioni (ISPRA IdroGEO), verificato il 13/10.**
+   - Cosa c'è: l'API pubblica dà per ogni comune le aree e la popolazione a rischio frana (P1-P4) e alluvione (P1-P3). Esempio: Genova ha il 2,7% della superficie a pericolosità idraulica elevata.
+   - Il blocco: il `robots.txt` di idrogeo.isprambiente.it **vieta ai programmi automatici** sia `/api/` sia `/opendata/`. Per questo non li uso in automatico: mi sono fermato dopo 6 richieste di prova.
+   - Alternativa: scarichi tu una volta il file dei dati per comune dal sito ISPRA (licenza da verificare sulla pagina, di solito CC BY 4.0) e lo inseriamo nel sito con l'attribuzione.
+   - Oppure chiediamo il permesso a ISPRA.
+9. **Domini bloccati da questo ambiente** che serviranno più avanti:
+   - `tiles.openfreemap.org` (sfondo vettoriale del Radar 3D);
+   - `unpkg.com` e `cdn.jsdelivr.net` (librerie: in alternativa le scarico dal registro npm, che è raggiungibile);
+   - `pst.giustizia.it` (manuali ufficiali dell'offerta telematica);
+   - `www.istat.it` (codici dei comuni).
+
+   Overpass (servizi vicini da OpenStreetMap) risponde.
 
 ---
 
