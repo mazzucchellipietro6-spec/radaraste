@@ -13,11 +13,13 @@
   // punti tolti per ogni rischio trovato nel testo dell'avviso (chiavi di js/estrai.js)
   var PENALITA = { quota: 20, superficie: 14, abusi: 10, chiavi: 10, documenti: 10, marcia: 7, degrado: 6, condominio: 6, vincoli: 4, occupazione: 4, agricolo: 2 };
   var IPOTESI = { regime: 'seconda-privato', speseProcedura: 1500, liberazioneOccupato: 3000, kw: 70 };
-  var FORCHETTA = { perizia: 0.10, 'primo-prezzo': 0.15, 'prima-asta': 0.15 };
+  var FORCHETTA = { perizia: 0.10, 'primo-prezzo': 0.15, 'prima-asta': 0.15 };  // per l'OMI la forchetta è quella della quotazione (min–max)
   var ETICHETTE = {
     perizia: 'Stima del perito indicata nell\'avviso (PVP)',
     'primo-prezzo': 'Prezzo base della prima asta, che di norma coincide con la stima del perito',
-    'prima-asta': 'È la prima asta: il prezzo base di norma coincide con la stima del perito'
+    'prima-asta': 'È la prima asta: il prezzo base di norma coincide con la stima del perito',
+    omi: 'Quotazioni OMI della zona (Agenzia delle Entrate – OMI) per la superficie indicata',
+    'omi-comune': 'Quotazioni OMI tipiche del comune (zona OMI non riconosciuta dall\'indirizzo) per la superficie indicata'
   };
   var LIVELLI = ['bassa', 'media', 'alta'];
 
@@ -51,14 +53,28 @@
   }
 
   /* Valore di mercato con forchetta, fonte e affidabilità. null se non stimabile. */
+  function valoreOmi(a) {
+    if (!(num(a.omiMin) > 0 && num(a.omiMax) >= num(a.omiMin))) return null;
+    return { min: num(a.omiMin), max: num(a.omiMax), centrale: (num(a.omiMin) + num(a.omiMax)) / 2, zonaOk: a.omiMetodo === 'indirizzo' || a.omiMetodo === 'unica' };
+  }
+
   function valore(a, zone) {
-    var base = num(a.prezzoBase), fonte = null, centrale = 0;
-    if (num(a.stima) > 0) { fonte = 'perizia'; centrale = num(a.stima); }
+    var base = num(a.prezzoBase), fonte = null, centrale = 0, omi = valoreOmi(a), min = null, max = null;
+    // 1. quotazione OMI della zona riconosciuta; 2. stima del perito; 3. OMI del comune; 4. prezzo della prima asta
+    if (omi && omi.zonaOk) { fonte = 'omi'; centrale = omi.centrale; min = omi.min; max = omi.max; }
+    else if (num(a.stima) > 0) { fonte = 'perizia'; centrale = num(a.stima); }
+    else if (omi) { fonte = 'omi-comune'; centrale = omi.centrale; min = omi.min; max = omi.max; }
     else if (num(a.primoPrezzo) > 0 && num(a.tentativo) >= 2) { fonte = 'primo-prezzo'; centrale = num(a.primoPrezzo); }
     else if (num(a.tentativo) === 1 && base > 0) { fonte = 'prima-asta'; centrale = base; }
     if (!fonte) return null;
-    var f = FORCHETTA[fonte], controlli = [];
-    var aff = fonte === 'perizia' ? 'media' : 'bassa';
+    var f = FORCHETTA[fonte] || 0, controlli = [];
+    var aff = fonte === 'perizia' || fonte === 'omi' ? 'media' : 'bassa';
+    // confronto tra le due fonti indipendenti: perito e OMI
+    if (omi && num(a.stima) > 0) {
+      var rp = num(a.stima) / omi.centrale;
+      if (rp >= 0.65 && rp <= 1.35 && (fonte === 'omi' || fonte === 'perizia') && aff === 'media') aff = 'alta';
+      else if (rp < 0.5 || rp > 1.6) { aff = 'bassa'; controlli.push('La stima del perito (' + Math.round(num(a.stima)).toLocaleString('it-IT') + ' €) e il valore OMI (' + Math.round(omi.centrale).toLocaleString('it-IT') + ' €) sono molto diversi: verifica la perizia.'); }
+    }
     if (base > 0 && centrale < base * 0.95) { aff = 'bassa'; controlli.push('Il prezzo base è più alto del valore: dato incoerente, da verificare sull\'avviso.'); }
     if (base > 0 && centrale > base * 8) { aff = 'bassa'; controlli.push('Il valore è più di 8 volte il prezzo base: forse si riferisce a più lotti.'); }
     var zona = null;
@@ -73,11 +89,11 @@
           if (r < 0.4 || r > 2.5) {
             aff = 'bassa';
             controlli.push('Il valore al metro quadro (' + Math.round(centrale / mq) + ' €/mq) è fuori scala rispetto alle perizie della zona (mediana ' + zona.mediana + ' €/mq su ' + zona.n + ').');
-          } else if (fonte === 'perizia' && aff === 'media' && zona.n >= 10 && Math.abs(r - 1) < 0.35) aff = 'alta';
+          } else if (fonte === 'perizia' && aff === 'media' && !omi && zona.n >= 10 && Math.abs(r - 1) < 0.35) aff = 'alta';
         }
       }
     }
-    return { centrale: Math.round(centrale), min: Math.round(centrale * (1 - f)), max: Math.round(centrale * (1 + f)),
+    return { centrale: Math.round(centrale), min: Math.round(min != null ? min : centrale * (1 - f)), max: Math.round(max != null ? max : centrale * (1 + f)),
       fonte: fonte, etichetta: ETICHETTE[fonte], affidabilita: aff, controlli: controlli, zona: zona };
   }
 
@@ -117,7 +133,11 @@
       a.rischi.forEach(function (k) { if (visti[k]) return; visti[k] = 1; if (k === 'occupazione' && a.stato === 'occupato') return; tolti += PENALITA[k] || 0; });
       parti.rischi = Math.max(0, PESI.rischi - tolti);
     } else { parti.rischi = NEUTRO.rischi; out.mancanti.push('controllo dei rischi nel testo'); }
-    parti.zona = NEUTRO.zona; out.mancanti.push('domanda della zona (servono i dati OMI)');
+    if (num(a.omiAffMin) > 0 && num(a.omiAffMax) >= num(a.omiAffMin) && out.costoTotale > 0) {
+      out.affitto = { min: num(a.omiAffMin), max: num(a.omiAffMax) };
+      out.rendimento = Math.round(((num(a.omiAffMin) + num(a.omiAffMax)) / 2) * 12 / out.costoTotale * 1000) / 1000;
+      parti.zona = out.rendimento >= 0.08 ? 15 : out.rendimento >= 0.06 ? 12 : out.rendimento >= 0.045 ? 9 : out.rendimento >= 0.03 ? 5 : 2;
+    } else { parti.zona = NEUTRO.zona; out.mancanti.push('affitto della zona (quotazione OMI di locazione non disponibile)'); }
     for (var k in parti) parti[k] = Math.round(parti[k] * 10) / 10;
     out.parti = parti;
     out.punteggio = Math.round(parti.sconto + parti.tentativo + parti.occupazione + parti.rischi + parti.zona);
@@ -128,8 +148,10 @@
   // Campi corti da salvare in data/aste.js
   function compatto(r) {
     if (!r || !r.valore) return {};
-    return { valore: r.valore.centrale, valoreMin: r.valore.min, valoreMax: r.valore.max, fonteValore: r.valore.fonte, affidabilita: r.valore.affidabilita,
+    var o = { valore: r.valore.centrale, valoreMin: r.valore.min, valoreMax: r.valore.max, fonteValore: r.valore.fonte, affidabilita: r.valore.affidabilita,
       costoTotale: r.costoTotale, sconto: r.sconto, offertaMax: r.offertaMax, punteggio: r.punteggio, punteggioCompleto: r.completo };
+    if (r.rendimento != null) o.rendimento = r.rendimento;
+    return o;
   }
 
   function fascia(p) {

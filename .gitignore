@@ -12,3 +12,9 @@ data/dettagli/
 data/*-dettagli/
 data/*-riepilogo.js
 *.js.tmp
+
+# Quotazioni OMI originali e indice completo: NON si pubblicano (condizioni d'uso dell'Agenzia delle Entrate).
+# Nel sito vanno solo i valori calcolati per ogni asta. Vedi README, sezione "Quotazioni OMI".
+data/omi/grezzi/
+data/omi/indice.json
+*.zip

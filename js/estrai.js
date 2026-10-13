@@ -40,13 +40,38 @@
     return out.sort(function (a, b) { return a.i - b.i; });
   }
 
+  var NUM = '(\\d{1,3}(?:[.\\s]\\d{3})+(?:,\\d{1,2})?|\\d{1,5}(?:[.,]\\d{1,2})?)';
+  var UNITA = '(?:mq|m\\.q\\.?|m2|m²|metri\\s+quadr\\w*|mt\\.?\\s?q\\.?)';
+  // superficie complessiva o commerciale dichiarata: ha la precedenza sulle singole misure
+  var TOTALE = [
+    new RegExp('(?:complessiv\\w*|in\\s+totale|totale)\\s+(?:di\\s+)?(?:circa\\s+)?' + UNITA + '\\.?\\s*(?:di\\s+)?(?:circa\\s+)?' + NUM, 'i'),
+    new RegExp(NUM + '\\s*' + UNITA + '\\.?\\s*(?:circa\\s*)?\\(?\\s*(?:complessiv\\w*|di\\s+superficie\\s+commerciale|superficie\\s+commerciale|commerciali)', 'i'),
+    new RegExp('superficie\\s+(?:commerciale|lorda|complessiva|convenzionale)[^.;\\d]{0,30}?' + UNITA + '\\.?\\s*(?:di\\s+)?(?:circa\\s+)?' + NUM, 'i')
+  ];
+  var ABITAZIONE = /\b(appartament\w*|abitazion\w*|alloggi\w*|villa|villett\w*|villin\w*|casa\b|attico|mansard\w*|bilocal\w*|trilocal\w*|quadrilocal\w*)/i;
+  var ACCESSORIO_UNITA = /\b(garage|box\b|autorimess\w*|posto auto|posti auto|cantin\w*|magazzin\w*|deposit\w*|soffitt\w*|C\s*\/\s*[2367]\b)/i;
+
+  // la misura appartiene a una pertinenza? (frase vicina o unità catastale descritta come garage, cantina, C/6...)
+  function diPertinenza(t, inizio, fine) {
+    var prima = t.slice(Math.max(0, inizio - 60), inizio).split(/[,;:]|\s(?:e|ed|con|oltre a|oltre|più)\s/i).pop();
+    if (ACCESSORIE.test(prima) || /\b(portico|loggia|veranda|lavanderia|tettoia)\b/i.test(prima) || ACCESSORIA_DOPO.test(t.slice(fine, fine + 40))) return true;
+    var unita = t.slice(0, inizio).split(/[;•]|\s-\s|\bbene\s+n?\.?\s*\d+\b/i).pop();
+    return ACCESSORIO_UNITA.test(unita) && !ABITAZIONE.test(unita) && !/\bA\s*\/\s*\d\b/.test(unita);
+  }
+  // per un'abitazione meno di 30 mq quasi sempre è una pertinenza (box, cantina, balcone) e non l'alloggio
+  function troppoPiccola(t, n) { return n < 30 && ABITAZIONE.test(t) && !/monolocal/i.test(t); }
+
   function superficie(s) {
     var t = testo(s);
     if (!t) return null;
+    for (var j = 0; j < TOTALE.length; j++) {
+      var mt = t.match(TOTALE[j]);
+      if (mt) { var vt = numero(mt[1]); if (vt >= 10 && vt <= 20000 && !troppoPiccola(t, vt)) return { mq: vt, metodo: 'superficie complessiva indicata', prova: prova(t, mt.index, mt.index + mt[0].length) }; }
+    }
     var m = t.match(SUP_ETICHETTA);
     if (m) {
       var v = numero(m[1]);
-      if (v >= 10 && v <= 20000) return { mq: v, metodo: 'superficie indicata', prova: prova(t, m.index, m.index + m[0].length) };
+      if (v >= 10 && v <= 20000 && !diPertinenza(t, m.index, m.index + m[0].length) && !troppoPiccola(t, v)) return { mq: v, metodo: 'superficie indicata', prova: prova(t, m.index, m.index + m[0].length) };
     }
     var accessoria = null;
     // se il lotto stesso è un terreno (o un box, una cantina, un magazzino...), la sua superficie è quella giusta
@@ -54,12 +79,9 @@
     var lista = misure(t);
     for (var k = 0; k < lista.length; k++) {
       var x = lista[k];
-      // solo l'ultimo pezzo prima della misura ("giardino e appartamento di 120 mq": conta "appartamento di")
-      var prima = t.slice(Math.max(0, x.inizio - 30), x.inizio).split(/[,;]|\s(?:e|ed|con|oltre a|oltre|più)\s/i).pop();
-      var dopo = t.slice(x.fine, x.fine + 40);
       var n = numero(x.num);
       if (!(n >= 15 && n <= 200000)) continue;
-      if (ACCESSORIE.test(prima) || ACCESSORIA_DOPO.test(dopo)) { if (!accessoria) accessoria = { mq: n, prova: prova(t, x.inizio, x.fine) }; continue; }
+      if (diPertinenza(t, x.inizio, x.fine) || troppoPiccola(t, n)) { if (!accessoria) accessoria = { mq: n, prova: prova(t, x.inizio, x.fine) }; continue; }
       if (n <= 20000) return { mq: n, metodo: 'prima superficie citata', prova: prova(t, x.inizio, x.fine) };
     }
     if (eTerreno && accessoria) return { mq: accessoria.mq, metodo: 'superficie del lotto', prova: accessoria.prova };

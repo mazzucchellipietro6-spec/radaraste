@@ -106,3 +106,31 @@ test('compatto e fasce', () => {
   assert.equal(P.fascia(89).chiave, 'ottimo');
   assert.equal(P.fascia(null).chiave, 'nd');
 });
+
+test('OMI: zona riconosciuta → valore dalla quotazione, forchetta min–max, affitto e rendimento nella zona', () => {
+  const a = { ...base, prezzoBase: 90000, superficieMq: 100, tentativo: 2, omiMin: 150000, omiMax: 210000, omiAffMin: 600, omiAffMax: 800, omiMetodo: 'indirizzo' };
+  const r = P.valuta(a, { T });
+  assert.equal(r.valore.fonte, 'omi');
+  assert.equal(r.valore.min, 150000);
+  assert.equal(r.valore.max, 210000);
+  assert.equal(r.valore.affidabilita, 'media');
+  assert.ok(r.rendimento > 0.08 && r.rendimento < 0.09, String(r.rendimento)); // 700 € × 12 / 99.700 € di costo = 8,4%
+  assert.equal(r.parti.zona, 15);
+  assert.ok(!r.mancanti.some((m) => /affitto della zona/.test(m)));
+});
+
+test('OMI e perizia concordano → affidabilità alta; molto diversi → bassa con spiegazione', () => {
+  const ok = P.valuta({ ...base, prezzoBase: 90000, superficieMq: 100, tentativo: 2, stima: 175000, omiMin: 150000, omiMax: 210000, omiMetodo: 'unica' }, { T });
+  assert.equal(ok.valore.affidabilita, 'alta');
+  const ko = P.valuta({ ...base, prezzoBase: 90000, superficieMq: 100, tentativo: 2, stima: 400000, omiMin: 150000, omiMax: 210000, omiMetodo: 'indirizzo' }, { T });
+  assert.equal(ko.valore.affidabilita, 'bassa');
+  assert.match(ko.valore.controlli.join(), /molto diversi/);
+});
+
+test('OMI del solo comune: la stima del perito ha la precedenza; senza perizia valore OMI con affidabilità bassa', () => {
+  const p = P.valuta({ ...base, prezzoBase: 90000, superficieMq: 100, tentativo: 2, stima: 170000, omiMin: 150000, omiMax: 210000, omiMetodo: 'comune' }, { T });
+  assert.equal(p.valore.fonte, 'perizia');
+  const c = P.valuta({ ...base, prezzoBase: 90000, superficieMq: 100, tentativo: 2, omiMin: 150000, omiMax: 210000, omiMetodo: 'comune' }, { T });
+  assert.equal(c.valore.fonte, 'omi-comune');
+  assert.equal(c.valore.affidabilita, 'bassa');
+});
