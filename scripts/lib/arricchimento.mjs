@@ -33,7 +33,7 @@ export const DAL_DETTAGLIO = ['descrizione', 'foto', 'fotoTotali', 'allegati', '
 // dati lunghi della scheda (oltre ai campi corti dell'elenco); i campi del punteggio si ricalcolano ogni volta
 export const LUNGHI = ['descrizione', 'foto', 'fotoTotali', 'allegati', 'catasto', 'vani', 'piano', 'cauzione', 'cauzionePerc', 'contoSpese',
   'contoSpesePerc', 'modalita', 'tipoVendita', 'rito', 'esito', 'rge', 'rischi', 'superficieDa', 'superficieProva', 'storico', 'storicoNota'];
-export const DAL_PUNTEGGIO = ['valoreEtichetta', 'parti', 'mancanti', 'controlli', 'zona', 'omi'];
+export const DAL_PUNTEGGIO = ['valoreEtichetta', 'parti', 'mancanti', 'controlli', 'zona', 'omi', 'limitato'];
 // campi corti del punteggio (Punteggio.compatto)
 export const CAMPI_PUNTEGGIO = ['valore', 'valoreMin', 'valoreMax', 'fonteValore', 'affidabilita', 'costoTotale', 'sconto', 'offertaMax', 'punteggio', 'punteggioCompleto', 'rendimento'];
 // campi corti delle quotazioni OMI (js/omi.js): valore e affitto per la superficie indicata, come è stata trovata la zona
@@ -263,6 +263,7 @@ export function valutaTutte(aste, T, opz = {}) {
     if (omi.has(a.id)) d.omi = omi.get(a.id);
     if (r.affitto) d.affitto = r.affitto;
     if (r.parti) d.parti = r.parti;
+    if (r.limitato) d.limitato = true;
     if (r.mancanti && r.mancanti.length) d.mancanti = r.mancanti;
     dettagli.set(a.id, d);
   }

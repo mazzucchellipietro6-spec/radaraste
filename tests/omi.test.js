@@ -62,3 +62,14 @@ test('comune con nome scritto diversamente e comune assente', () => {
   assert.ok(Omi.trovaComune(ind, 'melilli', 'SR'));
   assert.equal(Omi.stima({ categoria: 'immobile', comune: 'Inesistente', provincia: 'XX' }, ind, {}).mancante, 'comune non trovato nelle quotazioni OMI');
 });
+
+test('lotto con più unità e superfici diverse (caso reale Albosaggia): valore OMI con affidabilità bassa', () => {
+  const a = { categoria: 'immobile', tipo: 'Immobile residenziale', comune: 'Melilli', provincia: 'SR', indirizzo: 'frazione Villasmundo', superficieMq: 57.4 };
+  const testo = 'Abitazione della superficie commerciale di 57,40 mq. + Deposito della superficie commerciale di 20,50 mq. + Fabbricato rurale della superficie commerciale di 75,00 mq. + Cantina della superficie commerciale di 21,80 mq.';
+  const s = Omi.stima(a, ind, { testo });
+  assert.equal(s.affidabilita, 'bassa');
+  assert.match(s.note.join(), /più unità con superfici diverse/);
+  // una sola unità, superficie ripetuta: nessun allarme
+  const uno = Omi.stima(a, ind, { testo: 'Appartamento della superficie commerciale di 57,40 mq. Superficie commerciale di 57,40 mq.' });
+  assert.equal(uno.affidabilita, 'media');
+});

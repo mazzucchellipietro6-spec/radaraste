@@ -134,3 +134,37 @@ test('OMI del solo comune: la stima del perito ha la precedenza; senza perizia v
   assert.equal(c.valore.fonte, 'omi-comune');
   assert.equal(c.valore.affidabilita, 'bassa');
 });
+
+test('OMI molto più alto del prezzo della prima asta (caso reale Bonea): si usa il valore più basso, affidabilità bassa', () => {
+  // fabbricato antico di 167 mq: OMI 100.200–133.600 €, prima asta 51.770 €, oggi terzo tentativo a 21.840 €
+  const a = { ...base, prezzoBase: 21840, superficieMq: 167, tentativo: 3, primoPrezzo: 51770, omiMin: 100200, omiMax: 133600, omiMetodo: 'indirizzo' };
+  const r = P.valuta(a, { T });
+  assert.equal(r.valore.fonte, 'primo-prezzo');
+  assert.equal(r.valore.centrale, 51770);
+  assert.equal(r.valore.affidabilita, 'bassa');
+  assert.match(r.valore.controlli.join(), /molto diversi: uso il più basso/);
+});
+
+test('perizia più bassa dell\'OMI ma vicina (entro il 50%): vale la perizia, affidabilità media', () => {
+  const a = { ...base, prezzoBase: 40000, superficieMq: 100, tentativo: 2, stima: 105000, omiMin: 150000, omiMax: 210000, omiMetodo: 'indirizzo' };
+  const r = P.valuta(a, { T });
+  assert.equal(r.valore.fonte, 'perizia');
+  assert.equal(r.valore.affidabilita, 'media');
+  assert.match(r.valore.controlli.join(), /sono diversi: uso il più basso/);
+});
+
+test('OMI e prezzo della prima asta concordano: valore OMI con affidabilità alta', () => {
+  const a = { ...base, prezzoBase: 60000, superficieMq: 100, tentativo: 3, primoPrezzo: 160000, omiMin: 150000, omiMax: 210000, omiMetodo: 'indirizzo' };
+  const r = P.valuta(a, { T });
+  assert.equal(r.valore.fonte, 'omi');
+  assert.equal(r.valore.affidabilita, 'alta');
+});
+
+test('valore poco affidabile: il punteggio si ferma alla fascia "Da valutare" (mai "Ottimo affare" su dati incerti)', () => {
+  const a = { ...base, prezzoBase: 21840, superficieMq: 167, tentativo: 3, primoPrezzo: 51770, omiMin: 100200, omiMax: 133600, omiMetodo: 'indirizzo', stato: 'libero', rischi: [] };
+  const r = P.valuta(a, { T });
+  assert.equal(r.valore.affidabilita, 'bassa');
+  assert.ok(r.punteggio <= P.TETTO_INCERTO);
+  assert.equal(r.limitato, true);
+  assert.equal(P.fascia(r.punteggio).chiave, 'medio');
+});

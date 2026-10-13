@@ -219,6 +219,11 @@
     var tt = norm((a.titolo || '') + ' ' + (opz.testo || ''));
     if (/\b(COMPENDIO|TENUTA|COMPLESSO IMMOBILIARE|PIU UNITA|SEGUENTI UNITA|UNITA IMMOBILIARI|N\.?\s?[2-9]\s+(?:FABBRICATI|UNITA|APPARTAMENTI|IMMOBILI)|BENE\s+N?\.?\s*[2-9])\b/.test(tt)) {
       out.affidabilita = 'bassa'; note.push('Il lotto comprende più unità: il valore OMI riguarda solo la superficie indicata');
+    } else {
+      // "Abitazione di 57 mq + Deposito di 20 mq + Fabbricato rurale di 75 mq…": tre o più superfici commerciali diverse
+      var sup = {}, m, reSup = /SUPERFICIE\s+COMMERCIALE\s+(?:COMPLESSIVA\s+)?(?:DI\s+)?(?:CIRCA\s+)?(?:MQ\.?\s*)?(\d+(?:[.,]\d+)?)/g;
+      while ((m = reSup.exec(tt))) sup[m[1].replace(',', '.')] = 1;
+      if (Object.keys(sup).length >= 3) { out.affidabilita = 'bassa'; note.push('Il lotto comprende più unità con superfici diverse: il valore OMI riguarda solo la superficie indicata'); }
     }
     // box o posti auto molto grandi: probabilmente la tipologia letta dal testo non è quella giusta
     if ((base.tip === TIP.box || base.tip === TIP.postoCoperto || base.tip === TIP.postoScoperto) && mq > 50) {

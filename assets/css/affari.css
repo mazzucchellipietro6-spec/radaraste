@@ -19,18 +19,18 @@
 .aff-anello { --p: 0; --c: var(--muted); flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
   background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--surface-3) 0); position: relative; }
 .aff-anello::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: var(--surface); }
-.aff-anello b { position: relative; font-family: var(--f-mono); font-size: 16px; }
+.aff-anello b { position: relative; font-family: var(--f-num); font-size: 16px; }
 .aff-anello.vuoto { background: var(--surface-3); color: var(--muted); }
 .aff-anello.f-ottimo { --c: var(--s-100); } .aff-anello.f-buono { --c: color-mix(in oklab, var(--s-100) 60%, var(--s-50)); } .aff-anello.f-medio { --c: var(--s-50); } .aff-anello.f-basso { --c: var(--s-0); }
 .aff-numeri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
 .aff-numeri div { background: var(--surface-2); border-radius: 12px; padding: 8px 10px; }
 .aff-numeri dt { font-size: 12px; color: var(--muted); }
-.aff-numeri dd { margin: 2px 0 0; font-family: var(--f-mono); font-size: 15px; font-variant-numeric: tabular-nums; }
+.aff-numeri dd { margin: 2px 0 0; font-family: var(--f-num); font-size: 15px; font-variant-numeric: tabular-nums; }
 .aff-numeri dd.buono { color: var(--good); }
 .aff-blocco h4 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
 .aff-blocco ul, .aff-non ul { margin: 0; padding-left: 18px; }
 .aff-blocco li, .aff-non li { margin: 2px 0; }
-.aff-blocco.rischi li::marker { color: var(--signal); }
+.aff-blocco.rischi li::marker { color: var(--accent); }
 .aff-scadenza { display: flex; gap: 8px; align-items: center; margin: 0; font-weight: 600; }
 .aff-non summary { cursor: pointer; color: var(--muted); min-height: 44px; display: flex; align-items: center; }
 .aff-nota { margin: 0; font-size: 13px; color: var(--muted); }

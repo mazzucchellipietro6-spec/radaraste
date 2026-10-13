@@ -98,7 +98,7 @@
   var ICONA_TEMA = { auto: 'automatico', light: 'sole', dark: 'luna' };
   var NOME_TEMA = { auto: 'automatico', light: 'chiaro', dark: 'scuro' };
   function temaCorrente() { try { return localStorage.getItem('radaraste.tema') || 'auto'; } catch (e) { return 'auto'; } }
-  var COLORE_BARRA = { light: '#f3f5f9', dark: '#060a13' };
+  var COLORE_BARRA = { light: '#f7f5f0', dark: '#111318' };
   // colore della barra del browser: segue il tema scelto (in automatico decidono i media dei meta)
   function coloreBarra(t) {
     $$('meta[name="theme-color"]').forEach(function (m) {
@@ -118,33 +118,63 @@
   function ciclaTema() { var ord = ['auto', 'light', 'dark']; applicaTema(ord[(ord.indexOf(temaCorrente()) + 1) % 3]); toast('Tema ' + NOME_TEMA[temaCorrente()]); }
   function icona(n, cls) { return root.Icone ? root.Icone.svg(n, cls) : ''; }
 
-  /* ---- Struttura da app: intestazione, barra in basso, foglio "Altro", piè di pagina ---- */
-  var NAV = [
-    { href: 'index.html', nome: 'Oggi', icona: 'radar' },
-    { href: 'aste.html', nome: 'Aste', icona: 'lista' },
-    { href: 'mappa.html', nome: 'Mappa', icona: 'mappa' },
-    { href: 'calcolatore.html', nome: 'Conviene?', icona: 'calcolo' },
-    { href: 'mie-aste.html', nome: 'Le mie aste', breve: 'Seguite', icona: 'stella' }
+  /* ---- Struttura del sito: intestazione, barra in basso, foglio "Menu", piè di pagina ----
+   * Sei sezioni, sempre nello stesso ordine: Home, Aste, Mappa, Assistenti, Strumenti, Le mie aste.
+   * Assistenti e Strumenti hanno una pagina indice e, su computer, una tendina con le loro pagine. */
+  var ASSISTENTI = [
+    { href: 'affari.html', nome: 'Cacciatore di affari', nota: 'I migliori affari di oggi, con rischi e offerta massima', icona: 'mirino' },
+    { href: 'consulente.html', nome: 'Consulente d\'asta', nota: 'Chiedi in italiano: cerca, filtra e calcola per te', icona: 'chat' },
+    { href: 'stratega.html', nome: 'Stratega d\'asta', nota: 'Su quali aste puntare con il tuo capitale', icona: 'percorso' },
+    { href: 'combinazioni.html', nome: 'Combinazioni d\'oro', nota: 'Lotti che insieme valgono più che separati', icona: 'combinazioni' },
+    { href: 'arricchimento.html', nome: 'Agente di arricchimento', nota: 'Dettagli e storico letti ogni giorno dagli avvisi', icona: 'livelli' }
   ];
-  var ALTRO = [
-    { href: 'calcolatore.html', nome: 'Conviene?', nota: 'Costi, margine e punteggio con i cursori', icona: 'calcolo' },
-    { href: 'confronta.html', nome: 'Confronta', nota: 'Fino a 3 aste fianco a fianco', icona: 'confronta' },
+  var STRUMENTI = [
+    { href: 'calcolatore.html', nome: 'Calcolatore "Conviene?"', nota: 'Costo totale, sconto e offerta massima', icona: 'calcolo' },
+    { href: 'mutuo.html', nome: 'Simulatore mutuo', nota: 'Rata, budget e quanto puoi permetterti', icona: 'mutuo' },
+    { href: 'confronta.html', nome: 'Confronta aste', nota: 'Fino a 3 aste fianco a fianco', icona: 'confronta' },
+    { href: 'guida.html', nome: 'Guida all\'asta', nota: 'Come si partecipa, passo per passo', icona: 'guida' },
     { href: 'tariffe.html', nome: 'Tariffe e tasse', nota: 'Aliquote con fonte e data', icona: 'tasse' },
-    { href: 'fonti.html', nome: 'Fonti dei dati', nota: 'Da dove arrivano le aste', icona: 'fonti' }
+    { href: 'fonti.html', nome: 'Fonti dei dati', nota: 'Da dove arrivano le aste e quando', icona: 'fonti' }
   ];
-  var MARCHIO = '<svg class="marchio" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><circle cx="16" cy="16" r="10" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.6"/><circle cx="16" cy="16" r="5.5" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.6"/><path d="M16 16 L24.5 10.5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="#fff"/><circle cx="21.5" cy="20.5" r="1.6" fill="var(--signal)"/></svg>';
+  var NAV = [
+    { href: 'index.html', nome: 'Home', icona: 'home' },
+    { href: 'aste.html', nome: 'Aste', icona: 'lista', anche: ['scheda.html'] },
+    { href: 'mappa.html', nome: 'Mappa', icona: 'mappa' },
+    { href: 'assistenti.html', nome: 'Assistenti', icona: 'assistenti', voci: ASSISTENTI },
+    { href: 'strumenti.html', nome: 'Strumenti', icona: 'strumenti', voci: STRUMENTI },
+    { href: 'mie-aste.html', nome: 'Le mie aste', icona: 'stella' }
+  ];
+  // su telefono: le prime quattro sezioni nella barra in basso, il resto nel foglio "Menu"
+  var TAB = ['index.html', 'aste.html', 'mappa.html', 'assistenti.html'];
+  var MARCHIO = '<svg class="marchio" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><circle cx="16" cy="16" r="9.5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".45" stroke-width="1.4"/><circle cx="16" cy="16" r="5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".75" stroke-width="1.4"/><path d="M16 16 L23.5 11" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="1.8" fill="var(--accent-ink)"/></svg>';
 
   function paginaCorrente() { return location.pathname.split('/').pop() || 'index.html'; }
+  // la sezione a cui appartiene la pagina aperta (la scheda di un'asta sta sotto "Aste", il calcolatore sotto "Strumenti"…)
+  function sezioneDi(pagina) {
+    for (var i = 0; i < NAV.length; i++) {
+      var n = NAV[i];
+      if (n.href === pagina || (n.anche || []).indexOf(pagina) >= 0 || (n.voci || []).some(function (v) { return v.href === pagina; })) return n.href;
+    }
+    return null;
+  }
+  function voceElenco(v, qui) {
+    return '<a href="' + v.href + '"' + (v.href === qui ? ' aria-current="page"' : '') + '>' + icona(v.icona) + '<span>' + esc(v.nome) + '<small>' + esc(v.nota) + '</small></span></a>';
+  }
 
   function layout() {
-    var qui = paginaCorrente();
+    var qui = paginaCorrente(), sez = sezioneDi(qui);
     var h = $('#site-header');
     if (h) {
       h.className = 'site-header';
       h.innerHTML = '<div class="wrap">' +
         '<a class="brand" href="index.html" aria-label="Radar Aste Italia, pagina iniziale">' + MARCHIO + '<span>Radar <b>Aste</b></span></a>' +
         '<nav class="nav" aria-label="Sezioni">' + NAV.map(function (p) {
-          return '<a href="' + p.href + '"' + (p.href === qui ? ' aria-current="page"' : '') + '>' + icona(p.icona) + '<span>' + p.nome + '</span></a>';
+          var corrente = p.href === sez ? ' aria-current="' + (p.href === qui ? 'page' : 'true') + '"' : '';
+          var link = '<a href="' + p.href + '"' + corrente + '>' + icona(p.icona) + '<span>' + p.nome + '</span></a>';
+          if (!p.voci) return link;
+          return '<div class="nav-gruppo">' + link + '<div class="tendina"><div class="tendina-corpo">' +
+            p.voci.map(function (v) { return voceElenco(v, qui); }).join('') +
+            '<a class="tutte" href="' + p.href + '">Tutti gli ' + p.nome.toLowerCase() + ' →</a></div></div></div>';
         }).join('') + '</nav>' +
         '<button class="cerca-btn" type="button" data-cerca aria-label="Cerca aste, comuni, tribunali">' + icona('cerca') + '<span class="testo">Cerca comune, tribunale, asta…</span><kbd>/</kbd></button>' +
         '<button class="theme-btn" type="button"></button></div>';
@@ -152,19 +182,24 @@
     // barra in basso (visibile su telefono)
     if (!$('.tabbar')) {
       var tab = document.createElement('nav'); tab.className = 'tabbar'; tab.setAttribute('aria-label', 'Navigazione');
-      tab.innerHTML = NAV.filter(function (p) { return p.href !== 'calcolatore.html'; }).map(function (p) {
-        return '<a href="' + p.href + '"' + (p.href === qui ? ' aria-current="page"' : '') + '>' + icona(p.icona) + '<span>' + (p.breve || p.nome) + '</span></a>';
-      }).join('') + '<button type="button" data-altro aria-haspopup="dialog"' + (ALTRO.some(function (a) { return a.href === qui; }) ? ' aria-current="page"' : '') + '>' + icona('altro') + '<span>Altro</span></button>';
+      var nelMenu = sez && TAB.indexOf(sez) < 0;
+      tab.innerHTML = NAV.filter(function (p) { return TAB.indexOf(p.href) >= 0; }).map(function (p) {
+        return '<a href="' + p.href + '"' + (p.href === sez ? ' aria-current="' + (p.href === qui ? 'page' : 'true') + '"' : '') + '>' + icona(p.icona) + '<span>' + p.nome + '</span></a>';
+      }).join('') + '<button type="button" data-altro aria-haspopup="dialog"' + (nelMenu ? ' aria-current="true"' : '') + '>' + icona('menu') + '<span>Menu</span></button>';
       document.body.appendChild(tab);
       aggiornaSeguite();
     }
     var f = $('#site-footer');
     if (f) {
       var agg = root.TARIFFE ? dataIt(root.TARIFFE.aggiornamento) : '';
+      var col = function (titolo, voci) { return '<div><h3>' + titolo + '</h3><ul>' + voci.map(function (v) { return '<li><a href="' + v.href + '">' + esc(v.nome) + '</a></li>'; }).join('') + '</ul></div>'; };
       f.className = 'site-footer';
-      f.innerHTML = '<div class="wrap">' + avvertenza() +
-        '<div class="row-actions piede-link"><a href="tariffe.html">Tariffe e tasse</a><a href="fonti.html">Fonti dei dati</a><a href="confronta.html">Confronta</a><span class="spacer"></span>' +
-        '<span>Aliquote aggiornate al ' + esc(agg) + ' · dati personali solo in questo browser</span></div></div>';
+      f.innerHTML = '<div class="wrap">' +
+        '<div class="piede-colonne">' +
+          '<div class="piede-marchio"><a class="brand" href="index.html">' + MARCHIO + '<span>Radar <b>Aste</b></span></a><p>Le aste pubbliche italiane raccolte ogni giorno dalle fonti ufficiali, con i conti fatti in chiaro.</p></div>' +
+          col('Sezioni', NAV.filter(function (p) { return !p.voci; })) + col('Assistenti', ASSISTENTI) + col('Strumenti', STRUMENTI) +
+        '</div>' + avvertenza() +
+        '<div class="row-actions piede-link"><span>Aliquote aggiornate al ' + esc(agg) + '</span><span class="spacer"></span><span>Dati personali solo in questo browser · nessun dato inventato</span></div></div>';
     }
     applicaTema(temaCorrente());
     $$('.theme-btn').forEach(function (b) { b.addEventListener('click', ciclaTema); });
@@ -218,18 +253,21 @@
     if (top && !top.contains(e.target)) { var f = focusabili(top)[0]; if (f) f.focus(); }
   });
 
-  // foglio dal basso con le altre sezioni; si chiude toccando fuori, con Esc o trascinandolo giù
+  // foglio dal basso con il menu completo (su telefono); si chiude toccando fuori, con Esc o trascinandolo giù
   function apriAltro() {
-    var d = $('#foglioAltro');
+    var d = $('#foglioAltro'), qui = paginaCorrente();
     if (!d) {
       d = document.createElement('div'); d.id = 'foglioAltro'; d.className = 'foglio';
-      d.innerHTML = '<div class="corpo"><div class="maniglia" aria-hidden="true"></div><div class="testa-foglio"><h2>Altre sezioni</h2><button class="btn small quiet" type="button" data-chiudi>Chiudi</button></div><div class="voci">' + ALTRO.map(function (a) {
-        return '<a href="' + a.href + '">' + icona(a.icona) + '<span>' + a.nome + '<small>' + a.nota + '</small></span></a>';
-      }).join('') + '<button type="button" data-tema>' + icona('luna') + '<span>Cambia tema<small>Automatico, chiaro o scuro</small></span></button></div></div>';
+      d.innerHTML = '<div class="corpo"><div class="maniglia" aria-hidden="true"></div><div class="testa-foglio"><h2>Menu</h2><button class="btn small quiet" type="button" data-chiudi>Chiudi</button></div>' +
+        '<div class="voci">' + voceElenco({ href: 'mie-aste.html', nome: 'Le mie aste', nota: 'Le aste che segui, con note e promemoria', icona: 'stella' }, qui) + '</div>' +
+        '<h3 class="foglio-titolo"><a href="assistenti.html">Assistenti</a></h3><div class="voci">' + ASSISTENTI.map(function (v) { return voceElenco(v, qui); }).join('') + '</div>' +
+        '<h3 class="foglio-titolo"><a href="strumenti.html">Strumenti</a></h3><div class="voci">' + STRUMENTI.map(function (v) { return voceElenco(v, qui); }).join('') + '</div>' +
+        '<div class="voci"><button type="button" data-tema>' + icona('luna') + '<span>Cambia tema<small>Automatico, chiaro o scuro</small></span></button></div></div>';
       document.body.appendChild(d);
-      finestra(d, function () { chiudiFoglio(d); }, 'Altre sezioni');
+      finestra(d, function () { chiudiFoglio(d); }, 'Menu');
       d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-chiudi]')) chiudiFoglio(d); if (e.target.closest('[data-tema]')) ciclaTema(); });
       trascinaPerChiudere(d);
+      aggiornaSeguite();
     }
     void d.offsetWidth; // così la comparsa si anima anche la prima volta
     d.setAttribute('data-aperto', '');
@@ -243,31 +281,20 @@
     corpo.addEventListener('touchend', function () { if (y0 === null) return; corpo.style.transition = ''; y0 = null; if (dy > 90) chiudiFoglio(d); else corpo.style.setProperty('--trascina', '0px'); });
   }
 
-  // effetto onda sui pulsanti e comparsa delle sezioni durante lo scorrimento.
-  // L'onda è assoluta (vedi .onda nel CSS) e non cambia mai le dimensioni del pulsante; niente onda con "riduci movimento".
+  // comparsa discreta delle sezioni durante lo scorrimento (nessuna animazione con "riduci movimento", vedi CSS)
   var menoMovimento = root.matchMedia ? root.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
-  function animazioniDiPagina() {
-    document.addEventListener('pointerdown', function (e) {
-      if (menoMovimento.matches) return;
-      var b = e.target.closest && e.target.closest('.btn, .chip');
-      if (!b || b.disabled) return;
-      var r = b.getBoundingClientRect(), o = document.createElement('span'), d = Math.max(r.width, r.height);
-      o.className = 'onda'; o.setAttribute('aria-hidden', 'true');
-      o.style.cssText = 'width:' + d + 'px;height:' + d + 'px;left:' + (e.clientX - r.left - d / 2) + 'px;top:' + (e.clientY - r.top - d / 2) + 'px';
-      b.appendChild(o); setTimeout(function () { o.remove(); }, 650);
-    });
-    osservaComparsa(document);
-  }
-  // numero sulla voce "Seguite" della barra in basso, aggiornato appena cambia (anche da un'altra scheda del browser)
+  function animazioniDiPagina() { osservaComparsa(document); }
+  // numero delle aste seguite sul pulsante "Menu" della barra in basso e sulla voce "Le mie aste", aggiornato appena cambia
+  // (anche da un'altra scheda del browser)
   function aggiornaSeguite() {
     var n = 0;
     try { n = root.Store ? root.Store.seguite().length : JSON.parse(localStorage.getItem('radaraste.v1.seguite') || '[]').length; } catch (e) {}
-    $$('.tabbar a[href="mie-aste.html"]').forEach(function (a) {
+    $$('.tabbar [data-altro], .foglio a[href="mie-aste.html"], .nav a[href="mie-aste.html"]').forEach(function (a) {
       var b = a.querySelector('.badge');
-      if (!n) { if (b) b.remove(); a.removeAttribute('aria-label'); return; }
+      if (!n) { if (b) b.remove(); if (a.matches('[data-altro]')) a.removeAttribute('aria-label'); return; }
       if (!b) { b = document.createElement('span'); b.className = 'badge'; b.setAttribute('aria-hidden', 'true'); a.appendChild(b); }
       b.textContent = n > 99 ? '99+' : n;
-      a.setAttribute('aria-label', 'Seguite: ' + n + (n === 1 ? ' asta' : ' aste'));
+      if (a.matches('[data-altro]')) a.setAttribute('aria-label', 'Menu (segui ' + n + (n === 1 ? ' asta' : ' aste') + ')');
     });
   }
   document.addEventListener('radaraste:seguite', aggiornaSeguite);
@@ -342,7 +369,7 @@
   root.UI = {
     $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando, oggi: oggi,
     linkSicuro: linkSicuro, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
-    icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite,
+    icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI,
     finestra: finestra, apriFinestra: apriFinestra, chiudiFinestra: chiudiFinestra, focusabili: focusabili, menoMovimento: function () { return menoMovimento.matches; },
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,
     csvParse: csvParse, csvStringify: csvStringify, scarica: scarica, leggiFile: leggiFile,
