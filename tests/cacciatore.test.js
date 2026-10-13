@@ -85,3 +85,14 @@ test('storico: aggiunge le segnalate e legge gli esiti; misure prudenti', () => 
   assert.equal(s.misure.aggiudicate, 1);
   assert.match(s.misure.nota, /almeno 30 esiti/);
 });
+
+test('scadenza con data e ora dal dettaglio (AAAA-MM-GGTHH:MM) e senza termine', () => {
+  const K = require('../js/cacciatore.js');
+  const x = { asta: { id: 'pvp-1', titolo: 't', dataAsta: '2026-12-04', termineOfferte: '2026-12-03T12:00', prezzoBase: 1000 }, valore: null, segnaliAffare: [], pericoli: [], nonSappiamo: [] };
+  const r = K.riassunto(x);
+  assert.equal(r.scadenza.data, '2026-12-03');
+  assert.equal(r.scadenza.ora, '12:00');
+  assert.equal(r.scadenza.testo, 'Offerte entro il 03/12/2026 alle 12:00 (dall\'avviso)');
+  const senza = K.riassunto({ ...x, asta: { ...x.asta, termineOfferte: null } });
+  assert.match(senza.scadenza.testo, /asta il 04\/12\/2026/);
+});

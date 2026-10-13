@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assistenti – Radar Aste Italia</title>
+<meta name="description" content="Cinque assistenti per le aste: Cacciatore di affari, Consulente, Stratega, Combinazioni d'oro e Agente di arricchimento. Ogni numero con fonte e affidabilità.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <div class="as-testa">
+    <p class="eyebrow"><svg class="icona" aria-hidden="true"><use href="#i-assistenti"/></svg>Cinque assistenti, nessun dato inventato</p>
+    <h1>Gli <em>assistenti</em></h1>
+    <p class="sub">Lavorano ogni mattina sulle aste raccolte dalle fonti ufficiali: cercano gli affari, costruiscono un piano sul tuo capitale, trovano i lotti da comprare insieme e rispondono alle tue domande. Ogni numero ha la sua fonte e il suo livello di affidabilità; quando un dato manca lo dicono.</p>
+  </div>
+
+  <section aria-labelledby="h-elenco" class="stack" style="gap:14px">
+    <h2 id="h-elenco" class="sr-only">Elenco degli assistenti</h2>
+    <div class="as-griglia" id="assistenti"></div>
+  </section>
+
+  <section aria-labelledby="h-come" class="panel stack" style="gap:18px">
+    <h2 id="h-come">Come lavorano</h2>
+    <div class="as-principi">
+      <div class="as-principio"><h3>Solo fonti ufficiali</h3><p>Aste dal Portale delle Vendite Pubbliche e dall'Agenzia del Demanio; quotazioni di vendita e affitto dall'Osservatorio del Mercato Immobiliare (OMI) dell'Agenzia delle Entrate; imposte dal file delle aliquote con fonte e data.</p></div>
+      <div class="as-principio"><h3>Regole trasparenti</h3><p>I riassunti e i calcoli seguono regole scritte nel codice, uguali per tutte le aste. Nessun servizio di intelligenza artificiale a pagamento è attivo.</p></div>
+      <div class="as-principio"><h3>Prudenza sui numeri</h3><p>Quando due fonti non concordano si usa il valore più basso; con un valore poco affidabile un'asta non può risultare "buon affare".</p></div>
+      <div class="as-principio"><h3>Non è consulenza</h3><p>Sono stime e simulazioni: prima di offrire leggi sempre avviso di vendita e perizia, e chiedi a un professionista.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-aff" class="stack" style="gap:12px">
+    <h2 id="h-aff">I tre livelli di affidabilità</h2>
+    <p class="note">Accanto a ogni valore di mercato trovi uno di questi livelli. Dice quanto fidarsi del numero, non dell'affare.</p>
+    <div class="as-legenda">
+      <div><span class="pill p-good">Affidabilità alta</span><p>Due fonti indipendenti concordano entro il 35%: la quotazione OMI della zona dell'immobile e la stima del perito (o il prezzo della prima asta, che di norma coincide con la stima).</p></div>
+      <div><span class="pill p-info">Affidabilità media</span><p>Una sola fonte diretta: la quotazione OMI della zona riconosciuta dall'indirizzo, oppure la stima del perito indicata nell'avviso.</p></div>
+      <div><span class="pill p-warn">Affidabilità bassa</span><p>Stima indiretta (valori tipici del comune, prezzo della prima asta) o fonti molto diverse tra loro. Il punteggio resta al massimo "Da valutare" e gli assistenti non la propongono come affare.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="data/riepilogo.js"></script>
+<script src="data/affari.js"></script>
+<script src="data/combinazioni.js"></script>
+<script src="js/agenti.js"></script>
+<script src="js/pages/assistenti.js"></script>
+</body>
+</html>

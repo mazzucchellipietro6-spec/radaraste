@@ -67,23 +67,28 @@
     if (U.osservaComparsa) U.osservaComparsa(box);
   }
 
-  function disegna(sel) {
+  /* opz: { compatto: true (home: solo le prime "massimo" schede e il link alla pagina), massimo, titolo ('h1'|'h2') } */
+  function disegna(sel, opz) {
+    opz = opz || {};
     var el = document.querySelector(sel);
     if (!el) return;
-    var A = root.AFFARI;
-    var testa = '<div class="aff-intesta"><div><p class="eyebrow">' + U.icona('radar') + ' Agente Cacciatore di affari</p><h2>Affari di oggi</h2></div>' +
-      '<button class="btn small ghost" type="button" id="affPrefApri" aria-expanded="false" aria-controls="affPref">' + U.icona('filtro') + ' Le mie preferenze</button></div>';
+    var A = root.AFFARI, tag = opz.titolo || 'h2';
+    var testa = '<div class="aff-intesta"><div><p class="eyebrow">' + U.icona('mirino') + ' Agente Cacciatore di affari</p><' + tag + ' id="h-affari">Affari <em>di oggi</em></' + tag + '></div>' +
+      (opz.compatto ? '<a class="link-sez" href="affari.html">Tutti gli affari di oggi ' + U.icona('freccia') + '</a>'
+        : '<button class="btn small ghost" type="button" id="affPrefApri" aria-expanded="false" aria-controls="affPref">' + U.icona('filtro') + ' Le mie preferenze</button>') + '</div>';
     if (!A) {
       el.innerHTML = testa + '<p class="aff-vuoto">L\'agente gira ogni mattina dopo la raccolta delle aste: i risultati di oggi non sono ancora disponibili.</p>';
       return;
     }
-    var p = preferenze();
-    el.innerHTML = testa + formPreferenze(p) +
+    var p = opz.compatto ? null : preferenze();
+    var lista = (A.migliori || []).slice(0, opz.massimo || 10);
+    el.innerHTML = testa + (opz.compatto ? '' : formPreferenze(p)) +
       '<p class="aff-giro">' + riepilogoGiro(A) + (A.nota ? ' ' + U.esc(A.nota) : '') + '</p>' +
-      ((A.migliori || []).length ? '<div class="aff-griglia">' + A.migliori.map(card).join('') + '</div>'
+      (lista.length ? '<div class="aff-griglia">' + lista.map(card).join('') + '</div>'
         : '<p class="aff-vuoto">Oggi nessuna asta nuova o ribassata supera tutti i criteri (valore stimabile e affidabile, sconto reale almeno del 15%, punteggio almeno 50). Meglio nessun consiglio che un consiglio incerto.</p>') +
-      '<div id="affPersonale"></div>' +
-      '<p class="aff-avvertenza">Riassunti scritti a regole dai dati degli avvisi, senza intelligenza artificiale. Le stime non sostituiscono notaio, avvocato o commercialista.</p>';
+      (opz.compatto ? '' : '<div id="affPersonale"></div>' +
+      '<p class="aff-avvertenza">Riassunti scritti a regole dai dati degli avvisi, senza intelligenza artificiale. Le stime non sostituiscono notaio, avvocato o commercialista.</p>');
+    if (opz.compatto) { if (U.osservaComparsa) U.osservaComparsa(el); return; }
     var form = document.getElementById('affPref'), apri = document.getElementById('affPrefApri');
     apri.addEventListener('click', function () { form.hidden = !form.hidden; apri.setAttribute('aria-expanded', String(!form.hidden)); });
     form.addEventListener('submit', function (e) {

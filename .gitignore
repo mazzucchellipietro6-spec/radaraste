@@ -21,3 +21,10 @@ data/omi/indice.json
 
 # Proposte di stile (solo per gli screenshot di scelta, non pubblicate)
 _proposte/
+
+# Prodotti ogni mattina dagli assistenti (pubblicati dal workflow, non nel repository)
+data/affari.js
+data/affari-telegram.txt
+data/cacciatore-storico.json
+data/combinazioni.js
+data/statistiche.js

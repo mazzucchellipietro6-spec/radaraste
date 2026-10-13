@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Affari di oggi – Radar Aste Italia</title>
+<meta name="description" content="I migliori affari del giorno scelti dall'Agente Cacciatore: perché convengono, rischi, offerta massima consigliata e scadenza, con fonte e affidabilità.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="stylesheet" href="assets/css/affari.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <p class="note"><a href="assistenti.html">Assistenti</a> / Cacciatore di affari</p>
+  <section class="affari" id="affari" aria-labelledby="h-affari"></section>
+
+  <section aria-labelledby="h-come" class="panel stack" style="gap:14px">
+    <h2 id="h-come">Come sceglie</h2>
+    <ol class="ar-passi" id="passi">
+      <li><div><h3>Prende le aste nuove o ribassate</h3><p>Ogni mattina, dopo la raccolta, considera le aste pubblicate dal giorno prima, i nuovi tentativi dello stesso lotto e quelle con il prezzo base sceso.</p></div></li>
+      <li><div><h3>Ricontrolla i numeri</h3><p>Ricalcola valore di mercato, costo totale con imposte e spese, sconto e punteggio. Scarta l'asta se il valore non si può stimare o è poco affidabile (fonti discordanti, metri quadri mancanti, valore fuori scala).</p></div></li>
+      <li><div><h3>Cerca segnali di affare e di pericolo</h3><p>Affare: sconto reale sopra il 25%, terzo tentativo o oltre, immobile libero, nessun abuso indicato, buon affitto nella zona OMI. Pericolo: occupazione, abusi, quote di proprietà, diritti di superficie, spese condominiali alte, veicoli senza chiavi o documenti.</p></div></li>
+      <li><div><h3>Sceglie da 5 a 10 affari</h3><p id="criteri">Solo aste con valore di affidabilità media o alta, sconto reale almeno del 15% e punteggio almeno 50; al massimo un lotto per procedura e due per comune. Se oggi ne passano meno di cinque, non ne aggiunge altre.</p></div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="h-storico" class="stack" style="gap:12px">
+    <h2 id="h-storico">Ci ha preso?</h2>
+    <p class="note">L'agente tiene lo storico delle aste segnalate e, quando il Portale pubblica l'esito, lo confronta con quello che aveva previsto. Il prezzo di aggiudicazione non è pubblicato dal Portale: per ora si misura solo se l'asta è stata aggiudicata o è andata deserta.</p>
+    <div class="ar-numeri" id="misure"></div>
+  </section>
+
+  <section aria-labelledby="h-tg" class="callout">
+    <h2 id="h-tg" style="font-size:18px;margin-bottom:4px">Ogni mattina su Telegram</h2>
+    <p>Il messaggio con i migliori del giorno è pronto e viene generato ogni mattina insieme a questa pagina. L'invio si attiva quando viene collegato il bot del sito (serve una chiave che non va mai scritta nel codice): finché non è collegato, i risultati sono solo qui.</p>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="data/riepilogo.js"></script>
+<script src="data/affari.js"></script>
+<script src="js/punteggio.js"></script>
+<script src="js/cacciatore.js"></script>
+<script src="js/affari.js"></script>
+<script src="js/pages/affari.js"></script>
+</body>
+</html>

@@ -585,3 +585,25 @@ body.con-confronto { padding-bottom: 84px; }
 .piede-marchio p { font-size: 14px; color: var(--muted); max-width: 36ch; margin-top: 10px; }
 @media (max-width: 760px) { .piede-colonne { grid-template-columns: 1fr 1fr; gap: 22px 16px; } .piede-marchio { grid-column: 1 / -1; } }
 @media (max-width: 899px), (pointer: coarse) { .piede-colonne li a { min-height: 44px; } }
+
+/* ---------- home: domanda al consulente, tre passi ---------- */
+.chiedi { display: flex; gap: 6px; align-items: center; max-width: 640px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-3); padding: 6px; box-shadow: var(--ombra-2); transition: border-color var(--dur-1); }
+.chiedi:focus-within { border-color: var(--accent); }
+.chiedi > .icona { margin-left: 10px; width: 20px; height: 20px; color: var(--accent); }
+.chiedi input { border: 0; background: transparent; box-shadow: none; font-size: 16px; padding: 10px 6px; min-width: 0; }
+.chiedi input:focus { box-shadow: none; background: transparent; }
+.chiedi .btn { flex: none; }
+.chiedi-esempi { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 13.5px; color: var(--muted); }
+.chiedi-esempi a { color: var(--fg-2); }
+.passi-home { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.passi-home li { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 14px; align-items: start; }
+.passi-home .n { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--accent); color: var(--accent); display: grid; place-items: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.passi-home h3 { color: var(--fg); font-family: var(--f-display); font-size: 19px; font-weight: 600; text-transform: none; letter-spacing: 0; margin-bottom: 2px; }
+.passi-home p { font-size: 14.5px; color: var(--fg-2); }
+.home .hero h1 { font-size: clamp(32px, 4.6vw, 52px); }
+@media (max-width: 640px) { .chiedi .btn { padding-inline: 14px; } .chiedi > .icona { display: none; } }
+/* nastri della home: su computer 4 schede in griglia (le altre nell'elenco), su telefono si scorrono di lato */
+@media (min-width: 1000px) {
+  .home .nastro { grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-columns: auto; overflow: visible; margin-inline: 0; padding: 0; }
+  .home .nastro > :nth-child(n+5) { display: none; }
+}

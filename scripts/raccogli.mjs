@@ -26,6 +26,7 @@ import { FonteBloccata, richiestePerHost } from './lib/http.mjs';
 import { unisci } from './lib/doppioni.mjs';
 import { arricchisci, valutaTutte, scriviSchede, record } from './lib/arricchimento.mjs';
 import { adessoRoma, giaIniziata, anomalia, fileCollegati } from './lib/correzioni.mjs';
+import { statoAgenti, scriviCombinazioni } from './lib/derivati.mjs';
 
 const RADICE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
@@ -208,8 +209,13 @@ async function main() {
   const intestazione = '/* ASTE RACCOLTE DALLE FONTI UFFICIALI – file generato da scripts/raccogli.mjs il ' + dati.aggiornato + '.\n * Non modificarlo a mano: viene riscritto a ogni raccolta. Ogni asta ha il link all\'avviso originale (linkAvviso). */\n';
   await scriviAtomico(file, intestazione + 'window.ASTE_RACCOLTE = ' + JSON.stringify(dati) + ';\n');
   // riepilogo leggero per la home e la mappa (stessa cartella del file delle aste)
-  const riepilogo = { aggiornato: dati.aggiornato, fonti: statoFonti.map((f) => ({ nome: f.nome, stato: f.stato })), ...Riepilogo.calcola(uniche, oggi) };
+  const riepilogo = { aggiornato: dati.aggiornato, fonti: statoFonti.map((f) => ({ nome: f.nome, stato: f.stato })), ...Riepilogo.calcola(uniche, oggi), agenti: statoAgenti(uniche, dati) };
   await scriviAtomico(collegati.riepilogo, '/* Riepilogo per la home, generato da scripts/raccogli.mjs il ' + dati.aggiornato + '. */\nwindow.RIEPILOGO = ' + JSON.stringify(riepilogo) + ';\n');
+  // Combinazioni d'oro (lotti della stessa procedura che insieme valgono di più)
+  try {
+    const c = await scriviCombinazioni(path.join(path.dirname(file), 'combinazioni.js'), uniche, T, oggi);
+    console.log(`  combinazioni d'oro: ${c.trovate} su ${c.gruppiAnalizzati} procedure con più lotti`);
+  } catch (e) { console.error(`  ✗ combinazioni non calcolate: ${e.message}`); }
   const perHost = [...richiestePerHost].map(([h, n]) => `${h} ${n}`).join(', ');
   console.log(`✓ ${uniche.length} aste scritte in ${path.relative(RADICE, file) || file} (${statoFonti.filter((s) => s.stato === 'attiva').length} fonti attive; ` +
     `${richiesteTotali} richieste al PVP tra ricerca, storico e dettagli; richieste per sito: ${perHost || 'nessuna'}; ${Math.round((Date.now() - avvio) / 1000)} s)`);

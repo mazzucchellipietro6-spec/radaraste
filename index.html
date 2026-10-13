@@ -4,10 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Radar Aste Italia</title>
-<meta name="description" content="I migliori affari di oggi tra le aste di immobili, auto, moto e beni mobili in Italia, dalle fonti ufficiali.">
+<meta name="description" content="Le aste pubbliche italiane con i conti già fatti: affari di oggi, assistenti, mappa e calcolatore, dalle fonti ufficiali.">
 <link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="stylesheet" href="assets/css/affari.css">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
@@ -20,29 +22,51 @@
 <header id="site-header"></header>
 
 <main class="wrap stack home" id="contenuto" tabindex="-1">
-  <section class="hero" aria-labelledby="h-oggi">
+  <section class="hero" aria-labelledby="h-home">
     <div class="hero-testo">
       <p class="eyebrow"><span class="live" aria-hidden="true"></span><span id="dataOggi"></span></p>
-      <h1 id="h-oggi">Migliori affari <span>di oggi</span></h1>
-      <p class="sub" id="aggiornamento">Aste di immobili, auto, moto e beni mobili raccolte ogni giorno dalle fonti ufficiali.</p>
-      <div class="row-actions"><a class="btn" href="aste.html">Vedi tutte le aste</a><button class="btn ghost" type="button" data-cerca>Cerca un comune o un tribunale</button></div>
+      <h1 id="h-home">Le aste pubbliche italiane, <em>con i conti già fatti</em></h1>
+      <p class="sub" id="aggiornamento">Immobili, auto, moto e beni mobili raccolti ogni giorno dalle fonti ufficiali, con valore di mercato, costi e rischi spiegati.</p>
+      <form class="chiedi" action="consulente.html" method="get" role="search" aria-label="Chiedi al consulente d'asta">
+        <svg class="icona" aria-hidden="true"><use href="#i-chat"/></svg>
+        <label for="chiedi" class="sr-only">Chiedi al consulente d'asta</label>
+        <input id="chiedi" name="q" type="search" autocomplete="off" placeholder="Chiedi: appartamenti liberi a Bari sotto 120 mila">
+        <button class="btn" type="submit">Chiedi</button>
+      </form>
+      <p class="chiedi-esempi"><span>Prova:</span><a href="consulente.html?q=buoni%20affari%20in%20Lombardia">buoni affari in Lombardia</a><a href="consulente.html?q=quanto%20costa%20in%20totale%20un%27asta%20da%20100.000%20euro%20prima%20casa">costi di un'asta da 100.000 €</a><a href="consulente.html?q=come%20funziona%20la%20cauzione">come funziona la cauzione</a></p>
     </div>
     <div class="kpi" id="kpi"><div class="tile scheletro" aria-hidden="true"></div><div class="tile scheletro" aria-hidden="true"></div><div class="tile scheletro" aria-hidden="true"></div><div class="tile scheletro" aria-hidden="true"></div></div>
   </section>
 
-  <section aria-labelledby="h-migliori" class="stack" style="gap:10px">
-    <div class="sez-testa"><div><h2 id="h-migliori">I 10 migliori affari</h2><p id="notaMigliori"></p></div><a href="aste.html" id="linkMigliori" class="link-sez">Tutte le aste →</a></div>
+  <section class="affari" id="affari" aria-labelledby="h-affari"></section>
+
+  <section aria-labelledby="h-assistenti" class="stack" style="gap:12px">
+    <div class="sez-testa"><div><h2 id="h-assistenti">I tuoi assistenti</h2><p>Lavorano ogni mattina sulle aste raccolte, con regole trasparenti e nessun dato inventato.</p></div><a href="assistenti.html" class="link-sez">Tutti gli assistenti <svg class="icona" aria-hidden="true"><use href="#i-freccia"/></svg></a></div>
+    <div class="as-griglia compatta" id="assistenti"></div>
+  </section>
+
+  <section aria-labelledby="h-migliori" class="stack" style="gap:12px">
+    <div class="sez-testa"><div><h2 id="h-migliori">I migliori affari in corso</h2><p id="notaMigliori"></p></div><a href="aste.html" id="linkMigliori" class="link-sez">Tutte le aste <svg class="icona" aria-hidden="true"><use href="#i-freccia"/></svg></a></div>
     <div id="migliori"></div>
   </section>
 
-  <section aria-labelledby="h-nuove" class="stack" style="gap:10px">
+  <section aria-labelledby="h-nuove" class="stack" style="gap:12px">
     <div class="sez-testa"><h2 id="h-nuove">Nuove nelle ultime 24 ore</h2><a href="aste.html" data-passa="filtro:nuove" id="linkNuove" class="link-sez"></a></div>
-    <div class="cards" id="nuove"><div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div></div>
+    <div class="nastro" id="nuove"><div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div></div>
   </section>
 
-  <section aria-labelledby="h-scadenza" class="stack" style="gap:10px">
+  <section aria-labelledby="h-scadenza" class="stack" style="gap:12px">
     <div class="sez-testa"><h2 id="h-scadenza">In scadenza questa settimana</h2><a href="aste.html" data-passa="filtro:settimana" id="linkScadenza" class="link-sez"></a></div>
-    <div class="cards" id="scadenza"><div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div></div>
+    <div class="nastro" id="scadenza"><div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div><div class="scheletro" aria-hidden="true"></div></div>
+  </section>
+
+  <section aria-labelledby="h-passi" class="panel stack" style="gap:16px">
+    <h2 id="h-passi">Nuovo alle aste? Tre passi</h2>
+    <ol class="passi-home">
+      <li><span class="n">1</span><div><h3>Trova</h3><p>Cerca per comune o tribunale, filtra per prezzo e categoria, guarda la <a href="mappa.html">mappa</a> o chiedi al <a href="consulente.html">consulente</a>.</p></div></li>
+      <li><span class="n">2</span><div><h3>Valuta</h3><p>Nella scheda dell'asta trovi valore di mercato con fonte e affidabilità, costo totale, rischi e offerta massima. Per rifare i conti c'è il <a href="calcolatore.html">calcolatore</a>.</p></div></li>
+      <li><span class="n">3</span><div><h3>Partecipa</h3><p>Segui l'asta in <a href="mie-aste.html">Le mie aste</a>, metti il promemoria in calendario e leggi la <a href="guida.html">guida all'asta</a>: offerta, cauzione, gara e saldo.</p></div></li>
+    </ol>
   </section>
 </main>
 
@@ -53,14 +77,20 @@
 <script src="js/icone.js"></script>
 <script src="js/store.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
 <script src="config/fonti.js"></script>
 <script src="data/riepilogo.js"></script>
+<script src="data/affari.js"></script>
+<script src="data/combinazioni.js"></script>
 <script src="js/parser.js"></script>
-<script src="js/calcoli.js"></script>
-<script src="js/formato.js"></script>
-<script src="js/cerca.js"></script>
+<script src="js/punteggio.js"></script>
+<script src="js/cacciatore.js"></script>
+<script src="js/affari.js"></script>
 <script src="js/schede.js"></script>
 <script src="js/confronto.js"></script>
+<script src="js/agenti.js"></script>
 <script src="js/pages/home.js"></script>
 </body>
 </html>

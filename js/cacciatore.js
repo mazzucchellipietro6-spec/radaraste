@@ -88,7 +88,12 @@
     if (a.categoria === 'immobile' && a.stato === 'libero') out.segnaliAffare.push('Immobile libero');
     var rischi = Array.isArray(a.rischi) ? a.rischi : null;
     if (rischi && rischi.indexOf('abusi') < 0 && a.categoria === 'immobile') out.segnaliAffare.push('Nell\'avviso non risultano abusi (la perizia va letta comunque)');
-    if (a.categoria === 'immobile') out.nonSappiamo.push('domanda di affitti della zona (servono i valori OMI)');
+    var rend = v.rendimento != null ? v.rendimento : a.rendimento;
+    if (a.categoria === 'immobile' && rend != null && num(a.omiAffMin) > 0) {
+      var aff = 'affitto della zona ' + eur(a.omiAffMin) + '–' + eur(a.omiAffMax) + ' al mese (quotazioni OMI), rendimento lordo ' + pct(rend) + ' sul costo totale';
+      if (rend >= 0.06) out.segnaliAffare.push('Buona domanda di affitti: ' + aff);
+      else out.nonSappiamo.push('se si affitta bene: ' + aff + ', sotto il 6%');
+    } else if (a.categoria === 'immobile') out.nonSappiamo.push('affitto della zona (quotazione OMI di locazione non disponibile per questo immobile)');
 
     // segnali di pericolo
     if (a.categoria === 'immobile' && a.stato === 'occupato') out.pericoli.push(PERICOLI.occupazione);
@@ -121,9 +126,13 @@
     return scelte;
   }
 
+  // termineOfferte arriva come 'AAAA-MM-GG' o 'AAAA-MM-GGTHH:MM' (dal dettaglio del PVP)
   function scadenza(a) {
-    if (a.termineOfferte) return { data: a.termineOfferte, ora: a.oraTermine || null, testo: 'Offerte entro il ' + dataIt(a.termineOfferte) + (a.oraTermine ? ' alle ' + a.oraTermine : '') + ' (dall\'avviso)' };
-    return { data: null, ora: null, testo: 'Termine per le offerte non letto dall\'avviso: di solito è il giorno prima dell\'asta (' + dataIt(a.dataAsta) + '), verificalo nell\'avviso' };
+    if (a.termineOfferte) {
+      var p = String(a.termineOfferte).split('T'), ora = p[1] ? p[1].slice(0, 5) : a.oraTermine || null;
+      return { data: p[0], ora: ora, testo: 'Offerte entro il ' + dataIt(p[0]) + (ora ? ' alle ' + ora : '') + ' (dall\'avviso)' };
+    }
+    return { data: null, ora: null, testo: 'Termine per le offerte non letto dall\'avviso: di solito scade il giorno prima dell\'asta (asta il ' + dataIt(a.dataAsta) + '), verificalo nell\'avviso' };
   }
 
   /* Riassunto scritto a regole, solo con dati dell'avviso e calcoli. */

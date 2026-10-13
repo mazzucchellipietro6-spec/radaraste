@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { valutaTutte, leggiSchede, scriviSchede, record, DAL_PUNTEGGIO, LUNGHI } from './lib/arricchimento.mjs';
 import { fileCollegati } from './lib/correzioni.mjs';
+import { statoAgenti, scriviCombinazioni } from './lib/derivati.mjs';
 import { CAMPI } from './raccogli.mjs';
 
 const require = createRequire(import.meta.url);
@@ -65,8 +66,10 @@ async function main() {
   const intestazione = t.slice(0, t.indexOf('window.ASTE_RACCOLTE'));
   await scriviAtomico(file, intestazione + 'window.ASTE_RACCOLTE = ' + JSON.stringify(nuovi) + ';\n');
   const oggi = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
-  const riepilogo = { aggiornato: dati.aggiornato, fonti: (dati.fonti || []).map((f) => ({ nome: f.nome, stato: f.stato })), ...Riepilogo.calcola(aste, oggi) };
+  const riepilogo = { aggiornato: dati.aggiornato, fonti: (dati.fonti || []).map((f) => ({ nome: f.nome, stato: f.stato })), ...Riepilogo.calcola(aste, oggi), agenti: statoAgenti(aste, nuovi) };
   await scriviAtomico(collegati.riepilogo, '/* Riepilogo per la home, generato da scripts/ricalcola.mjs il ' + new Date().toISOString() + '. */\nwindow.RIEPILOGO = ' + JSON.stringify(riepilogo) + ';\n');
+  const c = await scriviCombinazioni(path.join(path.dirname(file), 'combinazioni.js'), aste, T, oggi);
+  console.log(`  combinazioni d'oro: ${c.trovate} su ${c.gruppiAnalizzati} procedure con più lotti`);
   console.log(`✓ ricalcolate ${dati.punteggio.conPunteggio} aste con punteggio (${dati.punteggio.completi} complete) in ${Date.now() - avvio} ms`);
 }
 

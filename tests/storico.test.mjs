@@ -136,3 +136,18 @@ test('workflow: indice e schede in cache tra un giorno e l\'altro, indice non pu
   assert.match(sito, /! -name 'storico-indice\.json\*'/);
   assert.match(sito, /test ! -e _site\/data\/storico-indice\.json/);
 });
+
+test('workflow: OMI dal repository privato (mai pubblicate), Cacciatore e Telegram dopo la raccolta, token solo dai secret', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const y = await readFile(new URL('../.github/workflows/aggiorna-aste.yml', import.meta.url), 'utf8');
+  const raccolta = y.indexOf('scripts/raccogli.mjs'), omi = y.indexOf('scripts/omi.mjs'), cacc = y.indexOf('scripts/cacciatore.mjs'), tg = y.indexOf('scripts/telegram.mjs');
+  assert.ok(omi > 0 && omi < raccolta, 'indice OMI prima della raccolta');
+  assert.ok(cacc > raccolta && tg > cacc, 'Cacciatore e Telegram dopo la raccolta');
+  assert.match(y, /repository: \$\{\{ vars\.OMI_REPO \}\}/);
+  assert.match(y, /token: \$\{\{ secrets\.OMI_TOKEN \}\}/);
+  assert.match(y, /TELEGRAM_BOT_TOKEN: \$\{\{ secrets\.TELEGRAM_BOT_TOKEN \}\}/);
+  const sito = y.slice(y.indexOf('Prepara il sito'));
+  assert.match(sito, /! -name 'omi'/);
+  assert.match(sito, /test ! -e _site\/data\/omi/);
+  assert.match(y, /data\/cacciatore-storico\.json/);
+});

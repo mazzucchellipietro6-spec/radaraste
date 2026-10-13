@@ -61,6 +61,9 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     var R = window.RIEPILOGO;
+    // affari di oggi (Cacciatore) e stato degli assistenti: file piccoli, si disegnano subito
+    if (window.Affari) window.Affari.disegna('#affari', { compatto: true, massimo: 3 });
+    if (window.Agenti) $('#assistenti').innerHTML = window.Agenti.schede();
     $('#dataOggi').textContent = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     if (!R) {
       $('#kpi').innerHTML = '';
@@ -70,16 +73,16 @@
       return;
     }
     var attive = R.fonti.filter(function (f) { return f.stato === 'attiva'; }).map(function (f) { return f.nome; });
-    $('#aggiornamento').innerHTML = 'Aste di immobili, auto, moto e beni mobili dalle fonti ufficiali. Aggiornato ' + U.dataIt(R.aggiornato.slice(0, 10)) + ' alle ' + new Date(R.aggiornato).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) +
+    $('#aggiornamento').innerHTML = 'Immobili, auto, moto e beni mobili dalle fonti ufficiali, con valore di mercato, costi e rischi spiegati. Aggiornato ' + U.dataIt(R.aggiornato.slice(0, 10)) + ' alle ' + new Date(R.aggiornato).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) +
       ' da ' + U.esc(attive.join(', ') || 'nessuna fonte') + ' · <a href="fonti.html">fonti</a>';
     kpi(R);
 
     // classifica solo con aste che hanno davvero un punteggio (calcolato dalla raccolta con js/punteggio.js)
-    var migliori = (R.migliori && R.migliori.lista || []).filter(function (a) { return a.punteggio != null && isFinite(a.punteggio); });
+    var migliori = (R.migliori && R.migliori.lista || []).filter(function (a) { return a.punteggio != null && isFinite(a.punteggio); }).slice(0, 6);
     if (migliori.length) {
       $('#migliori').className = 'cards';
       schede(migliori, '#migliori', '');
-      $('#notaMigliori').textContent = 'Ordinati per punteggio affare (0–100) tra ' + R.migliori.totale.toLocaleString('it-IT') + ' aste con il punteggio completo.';
+      $('#notaMigliori').textContent = 'Per punteggio affare (0–100) tra ' + R.migliori.totale.toLocaleString('it-IT') + ' aste con il punteggio completo e un valore di mercato affidabile.';
       var f = JSON.stringify({ ordina: 'punteggio' });
       $('#linkMigliori').href = 'aste.html?filtri=' + encodeURIComponent(f);
       $('#linkMigliori').setAttribute('data-passa', 'filtri:' + f);
@@ -88,9 +91,9 @@
       $('#migliori').innerHTML = '<div class="panel empty"><p style="margin:0">La classifica usa il <b>punteggio affare</b>, che richiede la stima del valore di mercato. Finché la stima non è disponibile non mostriamo una classifica: sarebbe inventata.</p><p class="note" style="margin:8px auto 0">Nel frattempo trovi qui sotto le aste nuove e quelle in scadenza.</p></div>';
     }
 
-    schede(R.nuove.lista, '#nuove', 'Nessuna asta nuova nelle ultime 24 ore.');
+    schede(R.nuove.lista.slice(0, 8), '#nuove', 'Nessuna asta nuova nelle ultime 24 ore.');
     $('#linkNuove').textContent = R.nuove.totale > R.nuove.lista.length ? 'Tutte le ' + R.nuove.totale.toLocaleString('it-IT') + ' →' : '';
-    schede(R.inScadenza.lista, '#scadenza', 'Nessuna asta nei prossimi 7 giorni.');
+    schede(R.inScadenza.lista.slice(0, 8), '#scadenza', 'Nessuna asta nei prossimi 7 giorni.');
     $('#linkScadenza').textContent = R.inScadenza.totale > R.inScadenza.lista.length ? 'Tutte le ' + R.inScadenza.totale.toLocaleString('it-IT') + ' →' : '';
 
     document.addEventListener('click', function (e) {

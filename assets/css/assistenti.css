@@ -1,0 +1,89 @@
+/* Pagine degli assistenti e degli strumenti: indice (schede), testata comune, numeri con fonte e affidabilità,
+ * Combinazioni d'oro, agente di arricchimento. Usa i token di style.css. */
+
+/* ---------- testata delle pagine ---------- */
+.as-testa { display: grid; gap: 12px; max-width: 78ch; }
+.as-testa .eyebrow .icona { width: 15px; height: 15px; color: var(--accent); }
+.as-testa h1 { font-size: clamp(30px, 4vw, 44px); }
+.as-principi { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
+.as-principio { border-top: 2px solid var(--accent); padding-top: 12px; display: grid; gap: 4px; }
+.as-principio h3 { color: var(--fg); font-size: 12px; }
+.as-principio p { font-size: 14px; color: var(--fg-2); }
+
+/* ---------- schede degli assistenti e degli strumenti ---------- */
+.as-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 16px; }
+.as-card { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); padding: 20px; display: grid; gap: 8px; align-content: start; transition: border-color var(--dur-2), box-shadow var(--dur-2); }
+@media (hover: hover) { .as-card:hover { border-color: var(--line-2); box-shadow: var(--ombra-2); } }
+.as-card:has(a:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.as-icona { width: 40px; height: 40px; border-radius: var(--r-2); background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; margin-bottom: 4px; }
+.as-icona .icona { width: 21px; height: 21px; }
+.as-nome { font-family: var(--f-display); font-size: 21px; font-weight: 600; line-height: 1.25; text-transform: none; letter-spacing: -.005em; color: var(--fg); }
+.as-nome a { color: inherit; text-decoration: none; }
+.as-nome a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.as-nome a:focus-visible { outline: none; }
+.as-nota { color: var(--fg-2); font-size: 14.5px; }
+.as-stato { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.as-stato b { display: block; font-size: 24px; font-weight: 600; color: var(--fg); letter-spacing: -.015em; line-height: 1.2; }
+.as-griglia.compatta .as-card { padding: 16px; }
+.as-griglia.compatta .as-nome { font-size: 18px; }
+.as-griglia.compatta .as-stato b { font-size: 20px; }
+
+/* ---------- affidabilità e fonti ---------- */
+.as-legenda { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.as-legenda > div { display: grid; gap: 6px; align-content: start; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--surface); }
+.as-legenda p { font-size: 14px; color: var(--fg-2); }
+.fonte { font-size: 12.5px; color: var(--muted); }
+.fonte a { color: var(--muted); }
+.fonte a:hover { color: var(--accent); }
+
+/* ---------- numeri dell'agente di arricchimento ---------- */
+.ar-numeri { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.ar-numeri .tile { gap: 4px; }
+.ar-numeri .t-val { font-size: clamp(22px, 2.4vw, 28px); }
+.ar-barra { height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; margin-top: 6px; }
+.ar-barra i { display: block; height: 100%; background: var(--accent); width: var(--p, 0%); }
+.ar-passi { counter-reset: passo; list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.ar-passi li { counter-increment: passo; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.ar-passi li:last-child { border-bottom: 0; }
+.ar-passi li::before { content: counter(passo); width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-2); display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+.ar-passi h3 { color: var(--fg); font-size: 15px; text-transform: none; letter-spacing: 0; font-weight: 600; margin-bottom: 2px; }
+.ar-passi p { font-size: 14px; color: var(--fg-2); }
+
+/* ---------- Combinazioni d'oro ---------- */
+.cb-filtri { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cb-elenco { display: grid; gap: 16px; }
+.cb-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden; }
+.cb-testa { padding: 16px 20px; display: grid; gap: 6px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.cb-tipo { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
+.cb-testa h2 { font-size: 21px; }
+.cb-dove { font-size: 13.5px; color: var(--muted); }
+.cb-corpo { padding: 16px 20px 20px; display: grid; gap: 16px; }
+.cb-numeri { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px 18px; margin: 0; }
+.cb-numeri div { display: grid; gap: 2px; }
+.cb-numeri dt { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.cb-numeri dd { margin: 0; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.cb-numeri dd small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+.cb-numeri dd.buono { color: var(--good); }
+.cb-lotti td:first-child { min-width: 0; }
+.cb-lotti .cb-ruolo { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.cb-lotti a { font-weight: 550; overflow-wrap: anywhere; }
+.cb-due { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.cb-due h3 { margin-bottom: 6px; }
+.cb-due ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; color: var(--fg-2); }
+.cb-risparmio { padding: 12px 14px; border-radius: var(--r-2); background: var(--good-bg); color: var(--fg); font-size: 14px; display: grid; gap: 4px; }
+.cb-risparmio b { color: var(--good); font-weight: 600; }
+.cb-vuoto { padding: 28px; text-align: center; color: var(--muted); }
+
+/* ---------- strumenti: mutuo ---------- */
+.mu-griglia { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 960px) { .mu-griglia { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; } }
+.mu-esito { display: grid; gap: 4px; }
+.mu-esito .grande { font-size: clamp(30px, 4vw, 40px); font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1.1; }
+
+/* ---------- guida ---------- */
+.gd-indice { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
+.gd-passi { display: grid; gap: 14px; }
+.gd-passo { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); padding: 18px 20px; display: grid; gap: 8px; scroll-margin-top: 84px; }
+.gd-passo h2 { font-size: 21px; display: flex; gap: 12px; align-items: baseline; }
+.gd-passo h2 span { font-family: var(--f-body); font-size: 13px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+.gd-passo p { color: var(--fg-2); max-width: 78ch; }

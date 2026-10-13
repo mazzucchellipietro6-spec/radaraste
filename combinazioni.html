@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Combinazioni d'oro – Radar Aste Italia</title>
+<meta name="description" content="Lotti della stessa procedura che insieme valgono più che separati: casa e box, unità vicine, casa e terreno. Con somme, sconto complessivo e risparmio fiscale.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <p class="note"><a href="assistenti.html">Assistenti</a> / Combinazioni d'oro</p>
+  <div class="as-testa">
+    <p class="eyebrow"><svg class="icona" aria-hidden="true"><use href="#i-combinazioni"/></svg>Cacciatore di combinazioni</p>
+    <h1>Combinazioni <em>d'oro</em></h1>
+    <p class="sub">Lotti della stessa procedura che insieme valgono più che separati: la casa con il suo box, due appartamenti dello stesso edificio, la casa con il terreno accanto. L'unico vantaggio in euro che calcoliamo è quello fiscale; gli altri motivi sono scritti come tali, senza cifre inventate.</p>
+    <p class="sintesi" id="cbSintesi" aria-live="polite"></p>
+  </div>
+
+  <div class="toolbar">
+    <div class="chips cb-filtri" id="cbTipo" role="group" aria-label="Tipo di combinazione"></div>
+    <span class="spacer"></span>
+    <label class="check"><input type="checkbox" id="cbAffidabili"> Solo con valore affidabile</label>
+    <label class="ordina"><span class="sr-only">Regione</span><select id="cbRegione"></select></label>
+  </div>
+
+  <div class="cb-elenco" id="cbElenco"></div>
+
+  <section aria-labelledby="h-metodo" class="panel stack" style="gap:10px">
+    <h2 id="h-metodo">Come le troviamo</h2>
+    <p class="note">Mettiamo insieme solo lotti immobiliari con lo stesso tribunale, lo stesso numero di procedura, lo stesso comune e la stessa data d'asta (i dati del Portale non sempre riportano l'anno della procedura: comune e data evitano di unire procedure diverse). Il ruolo di ogni lotto (abitazione, box o cantina, terreno, locale) viene dal testo dell'avviso. Prezzi, valori e costi sono quelli di ogni lotto; il valore complessivo compare solo se tutti i lotti hanno un valore di affidabilità media o alta. Il risparmio "prima casa" è la differenza tra le imposte sul box o sulla cantina comprati senza agevolazioni e come pertinenza della prima casa, al prezzo base, con le aliquote della pagina <a href="tariffe.html">Tariffe e tasse</a>.</p>
+    <p class="note">Ogni lotto ha la sua asta: si può vincerne uno e perdere l'altro. Prima di offrire leggi avviso e perizia di tutti i lotti.</p>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="data/combinazioni.js"></script>
+<script src="js/combinazioni.js"></script>
+<script src="js/pages/combinazioni.js"></script>
+</body>
+</html>
