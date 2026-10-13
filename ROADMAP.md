@@ -4,13 +4,28 @@ Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce camb
 
 Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ in attesa di una decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 12/10/2026, notte (lavoro in autonomia in corso)
+Ultimo aggiornamento: 13/10/2026, 09:30 UTC
 
 ---
 
-## ☀️ Per domattina
+## ☀️ Per domattina (aggiornato il 13/10 alle 09:30 UTC)
 
-_(si compila alla fine della notte: cosa è stato fatto, cosa resta, cosa devi decidere tu)_
+**Com'è andata la notte.** Gli agenti in parallelo si sono fermati due volte per il limite di sessione dell'account: dalle 22:30 alle 02:40 e dalle 04:55 alle 09:20 UTC. Il lavoro parziale è salvato su GitHub, i test passano (120 su 120) e alle 09:25 è ripartito dal punto in cui si era fermato.
+
+**Fatto e salvato su GitHub (branch di lavoro, nessun merge su `main`):**
+- ✅ Pubblicazione automatica: GitHub Pages funziona. La raccolta di stanotte (programmata alle 04:17 UTC, partita alle 04:39 per il solito ritardo di GitHub) è andata a buon fine.
+- ✅ Controllo completo del sito, con l'elenco preciso dei problemi (sotto, "Problemi trovati").
+- ✅ Punteggio affare 0-100 (`js/punteggio.js`): valore con forchetta, fonte e affidabilità, controlli di coerenza; 12 test.
+- ✅ Agente Cacciatore di affari, la parte logica (`js/cacciatore.js`, `scripts/cacciatore.mjs`) con 8 test. Provato sui dati reali di ieri: senza stime del perito non propone nulla e lo dice ("valore non stimabile"), come deve.
+- ✅ Moduli pronti per mutuo (`js/mutuo.js`), calendario `.ics` (`js/calendario.js`) e invio Telegram (`scripts/telegram.mjs`, spento finché non metti il token).
+- ✅ `CONSULENTE.md`: progetto del consulente AI con 3 servizi a confronto e i costi per 10/100/1000 utenti. Nessun servizio attivato.
+
+**In corso (ripartiti alle 09:25):**
+- 🔄 Dati arricchiti: descrizioni, metri quadri, stime, foto, scadenze, storico dei tentativi e punteggio dentro i dati.
+- 🔄 Correzioni del sito, più le nuove pagine Scheda asta e Confronta (oggi i link portano a pagine inesistenti).
+- ⏳ Poi: mappa interattiva nuova (una parte del lavoro è già fatta), sezione "Affari di oggi" nella home, anteprima su claude.ai.
+
+**Da decidere tu:** vedi la sezione "Da decidere" più sotto (domini da sbloccare, OMI, Astalegale/Fallco, Telegram, consulente AI, "Combinazioni d'oro").
 
 ---
 
