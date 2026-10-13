@@ -32,15 +32,20 @@
 
   // Se per questa versione dei dati le schede a pezzi non sono state pubblicate, non si chiedono più
   // (ogni tentativo sarebbe un errore 404 inutile). La versione è la data di aggiornamento del riepilogo.
+  // Anche i dati scritti prima delle schede a pezzi non le hanno: il loro riepilogo non ha né "dettagli" né
+  // "perRegione" (aggiunto dalla stessa raccolta che scrive i pezzi). Così nessuna richiesta finisce in un 404.
   function versioneDati() { return root.RIEPILOGO && root.RIEPILOGO.aggiornato || null; }
   function pezziAssenti() {
-    var v = versioneDati();
+    var R = root.RIEPILOGO, v = versioneDati();
+    if (R && R.dettagli === false) return true;
+    if (R && !R.dettagli && !R.perRegione) return true;
     if (!v) return false;
     try { return localStorage.getItem(K_PEZZI) === v; } catch (e) { return false; }
   }
+  // la raccolta scrive i pezzi solo se l'arricchimento è riuscito (dati.arricchimento non vuoto)
   function ricordaPezziAssenti() {
     var R = root.ASTE_RACCOLTE, v = versioneDati();
-    if (!R || !v || R.aggiornato !== v || (R.arricchimento && R.arricchimento.schede)) return;
+    if (!R || !v || R.aggiornato !== v || R.arricchimento) return;
     try { localStorage.setItem(K_PEZZI, v); } catch (e) {}
   }
 
