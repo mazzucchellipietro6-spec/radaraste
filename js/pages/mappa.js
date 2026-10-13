@@ -9,6 +9,8 @@
  * - Le aste senza coordinate (o con coordinate fuori dall'Italia o lontane dalla loro provincia) sono contate
  *   nella loro regione e nel totale.
  * - Se le tile sono bloccate (es. dentro claude.ai) restano i confini delle regioni ISTAT con i nomi.
+ * - Mappa di calore degli sconti (interruttore nei filtri, js/calore.js): quadrati di circa 40 px disegnati su una tela
+ *   sotto i puntini, colorati con lo sconto medio delle sole aste con valore di affidabilità media o alta (almeno 3).
  *
  * Il file parte prima di data/aste.js (sfondo e confini compaiono subito); le aste si leggono a DOMContentLoaded. */
 (function () {
@@ -26,7 +28,8 @@
   var ICONA_CAT = { immobile: 'casa', auto: 'auto', moto: 'moto', beni: 'beni' };
   var NOMI_CAT = { immobile: 'Immobile', auto: 'Auto', moto: 'Moto', beni: 'Beni mobili' };
   var AFFIDABILE = { media: 1, alta: 1 };
-  var K_FILTRI = 'radaraste.mappa.filtri', K_VISTA = 'radaraste.mappa.vista', K_AVVISO = 'radaraste.mappa.avvisoChiuso';
+  var K_FILTRI = 'radaraste.mappa.filtri', K_VISTA = 'radaraste.mappa.vista', K_AVVISO = 'radaraste.mappa.avvisoChiuso', K_STRATI = 'radaraste.mappa.strati';
+  var CAL = window.Calore, PAD_CALORE = 0.1, OPACITA_CALORE = 0.82;
   var VUOTI = { cat: '', max: '', pmin: 0, libere: false, conPunteggio: false, seguite: false };
   var MENO = '<svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>';
   var CHIUDI = '<button class="m-x" type="button" data-chiudi aria-label="Chiudi">' + U.icona('chiudi') + '</button>';
@@ -39,6 +42,8 @@
   var filtri = copia(VUOTI), extra = {}, parole = [], OGGI = '';
   var fallback = false, primi = false, datiPronti = false, timerRegione = null, inAttesa = false, ritornoFuoco = null;
   var tileOk = 0, tileKo = 0;
+  var strati = { puntini: true, calore: false }, calore = null, celle = null, versione = 0, cacheXY = null;
+  var cellaSopra = null, cellaFissa = null, COLC = null, timerCella = null;
 
   /* ---------- utilità ---------- */
   function copia(o) { return JSON.parse(JSON.stringify(o)); }
@@ -227,7 +232,7 @@
   function ricalcola() {
     OGGI = oggi();
     parole = senzaAccenti(extra.testo).split(/\s+/).filter(Boolean);
-    correnti = []; sulMappa = []; perId = {}; statReg = {}; senzaPos = 0; senzaReg = 0;
+    correnti = []; sulMappa = []; perId = {}; statReg = {}; senzaPos = 0; senzaReg = 0; versione++;
     for (var i = 0; i < tutte.length; i++) {
       var a = tutte[i];
       if (!passa(a)) continue;
@@ -286,7 +291,7 @@
     return m;
   }
   function disegna() {
-    if (!mappa || !indice) return;
+    if (!mappa || !indice || !strati.puntini) return;
     var b = mappa.getBounds().pad(0.35), z = Math.round(mappa.getZoom());
     var lista = indice.getClusters([Math.max(-180, b.getWest()), Math.max(-85, b.getSouth()), Math.min(180, b.getEast()), Math.min(85, b.getNorth())], Math.min(z, MAX_ZOOM_GRUPPI + 1));
     var visti = {}, nuovi = [], k;
@@ -335,6 +340,7 @@
   function aggiorna() {
     if (!datiPronti) return;
     disegna();
+    if (strati.calore) disegnaCalore();
     aggiornaZona();
     linkElenco($('#mCercaZona'), perElenco(true));
     $('#mMappa').classList.toggle('regioni-attive', mappa.getZoom() <= (TOCCO.matches ? ZOOM_REGIONI_TOCCO : ZOOM_REGIONI_PUNTATORE));
