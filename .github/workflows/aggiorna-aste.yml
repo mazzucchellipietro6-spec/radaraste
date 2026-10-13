@@ -86,10 +86,12 @@ jobs:
 
       - name: Prepara il sito
         run: |
-          mkdir _site
-          cp -r *.html manifest.webmanifest sw.js assets config data js _site/
-          # l'indice storico è una cache della raccolta: non si pubblica
-          rm -f _site/data/storico-indice.json _site/data/storico-indice.json.tmp _site/data/*.tmp _site/data/dettagli/*.tmp
+          mkdir -p _site/data
+          cp -r *.html manifest.webmanifest sw.js assets config js _site/
+          # data/: tutto (aste.js, riepilogo.js, geo.js, italia.js, dettagli/) TRANNE l'indice storico, che è una
+          # cache della raccolta e non si pubblica, e i file temporanei
+          find data -mindepth 1 -maxdepth 1 ! -name 'storico-indice.json*' ! -name '*.tmp' -exec cp -r {} _site/data/ \;
+          find _site/data -name '*.tmp' -delete
           test ! -e _site/data/storico-indice.json
           echo "Schede pubblicate: $(ls _site/data/dettagli 2>/dev/null | wc -l) pezzi"
           sed -i "s/__VERSIONE__/${GITHUB_SHA::8}-$(date -u +%Y%m%d)/" _site/sw.js

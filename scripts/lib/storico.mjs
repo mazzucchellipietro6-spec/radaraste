@@ -8,6 +8,10 @@
 //    tribunale + numero di procedura + numero di lotto + tipo di lotto, separando le procedure omonime di anni
 //    diversi con il comune e la via; se la catena è ambigua (indirizzi diversi, prezzi che salgono) non si collega.
 //
+// Prezzo di aggiudicazione: NON disponibile. Verificato il 12/10/2026 su 4 vendite con esito AGGIU (id 4584496,
+// 4608515, 4610097, 4610327): il dettaglio pubblico /restricted espone solo codEsito, descTipoEsito, descEsito e
+// dataConclusione, e la ricerca solo l'esito. Per questo l'indice non ha una colonna "aggiudicazione".
+//
 // Le funzioni di calcolo sono pure (testate in tests/storico.test.mjs); solo aggiornaIndice() usa la rete.
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises';
 import path from 'node:path';

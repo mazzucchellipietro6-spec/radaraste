@@ -121,3 +121,18 @@ test('indice: costruzione, aggiornamento incrementale, interruzione, partenza da
     assert.equal(r.errore.message, 'rete');
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test('workflow: indice e schede in cache tra un giorno e l\'altro, indice non pubblicato, schede sì', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const y = await readFile(new URL('../.github/workflows/aggiorna-aste.yml', import.meta.url), 'utf8');
+  assert.match(y, /timeout-minutes:\s*110/);
+  const ripristino = y.indexOf('actions/cache/restore@v4'), raccolta = y.indexOf('scripts/raccogli.mjs'), salvataggio = y.indexOf('actions/cache/save@v4');
+  assert.ok(ripristino > 0 && raccolta > ripristino && salvataggio > raccolta, 'restore prima della raccolta, save dopo');
+  assert.match(y, /restore-keys:\s*\|\s*\n\s*aste-arricchimento-/);
+  assert.equal((y.match(/key: aste-arricchimento-\$\{\{ github\.run_id \}\}/g) || []).length, 2);
+  for (const p of ['data/storico-indice.json', 'data/dettagli/']) assert.equal(y.split(p).length - 1 >= 2, true, p + ' in restore e save');
+  const sito = y.slice(y.indexOf('Prepara il sito'));
+  assert.doesNotMatch(sito.split('\n').find((r) => /cp -r \*\.html/.test(r)), /\bdata\b/, 'data/ non copiata per intero');
+  assert.match(sito, /! -name 'storico-indice\.json\*'/);
+  assert.match(sito, /test ! -e _site\/data\/storico-indice\.json/);
+});
