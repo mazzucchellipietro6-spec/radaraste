@@ -17,7 +17,9 @@ Ultimo aggiornamento: 13/10/2026, sera.
 - valori di mercato **più prudenti**: con fonti discordanti si usa il valore più basso e il punteggio si ferma a "Da valutare";
 - **README** e documentazione riscritti; **182 test** automatici.
 
-**Resta da fare:** zona abbonamenti in modalità TEST (preparata dopo la pubblicazione, senza attivare nulla), aste auto dall'estero, report PDF, Radar 3D, idee extra. Elenco completo sotto.
+**Per pubblicare:** premi Merge sulla pull request [#2](https://github.com/mazzucchellipietro6-spec/radaraste/pull/2): la spinta diretta su `main` è stata bloccata dai permessi di questa sessione.
+
+**Resta da fare:** zona abbonamenti in modalità TEST (dopo il merge, senza attivare nulla), aste auto dall'estero, report PDF, Radar 3D, idee extra. Elenco completo sotto.
 
 **Da decidere tu:** sezione "Da decidere" in fondo. Le più urgenti:
 - il repository privato per i file OMI;
@@ -33,7 +35,7 @@ Ultimo aggiornamento: 13/10/2026, sera.
 - Mai dati inventati: se una fonte è bloccata o vietata, fermarsi su quella voce e scriverlo in "Da decidere".
 - Servizi a pagamento o chiavi API: mai attivarli senza il tuo via. Le chiavi solo nelle variabili d'ambiente, mai nel codice.
 - Per le scelte normali decido io e lo scrivo qui; quello che spetta a te va in "Da decidere".
-- Pubblicazione su `main` solo quando lo chiedi tu: il 13/10 hai chiesto di pubblicare a fine lavoro.
+- Pubblicazione su `main` solo quando lo chiedi tu: il 13/10 hai chiesto di pubblicare a fine lavoro, con la pull request #2.
 
 ---
 
@@ -123,8 +125,9 @@ Ultimo aggiornamento: 13/10/2026, sera.
 
 ## In corso 🔄
 
-- 🔄 Anteprima privata su claude.ai e pubblicazione sul sito (fine di questa sessione).
-- 🔄 **Zona abbonamenti in modalità TEST**: la preparo dopo la pubblicazione, sul branch di lavoro, senza collegarla al menu e senza attivare pagamenti né account (vedi "Da decidere", punto 2).
+- ✅ Anteprima privata su claude.ai aggiornata il 13/10 sera (stesso indirizzo di prima).
+- ⏸ **Pubblicazione sul sito**: la spinta diretta su `main` è stata bloccata dai permessi di questa sessione, quindi è pronta la pull request [#2](https://github.com/mazzucchellipietro6-spec/radaraste/pull/2). Per pubblicare: apri la pull request e premi **Merge**. Parte il workflow e in circa 45 minuti il sito è aggiornato.
+- ⬜ **Zona abbonamenti in modalità TEST**: la preparo dopo il merge della #2, così non entra nella pubblicazione senza che tu l'abbia vista (vedi "Da decidere", punto 2).
 
 ---
 
