@@ -17,6 +17,7 @@ const require = createRequire(import.meta.url);
 const Dettagli = require('../../js/dettagli.js');
 const Estrai = require('../../js/estrai.js');
 const Punteggio = require('../../js/punteggio.js');
+const Omi = require('../../js/omi.js');
 
 // rischi che hanno senso per ogni categoria
 const RISCHI_PER = {
@@ -32,9 +33,11 @@ export const DAL_DETTAGLIO = ['descrizione', 'foto', 'fotoTotali', 'allegati', '
 // dati lunghi della scheda (oltre ai campi corti dell'elenco); i campi del punteggio si ricalcolano ogni volta
 export const LUNGHI = ['descrizione', 'foto', 'fotoTotali', 'allegati', 'catasto', 'vani', 'piano', 'cauzione', 'cauzionePerc', 'contoSpese',
   'contoSpesePerc', 'modalita', 'tipoVendita', 'rito', 'esito', 'rge', 'rischi', 'superficieDa', 'superficieProva', 'storico', 'storicoNota'];
-export const DAL_PUNTEGGIO = ['valoreEtichetta', 'parti', 'mancanti', 'controlli', 'zona'];
+export const DAL_PUNTEGGIO = ['valoreEtichetta', 'parti', 'mancanti', 'controlli', 'zona', 'omi'];
 // campi corti del punteggio (Punteggio.compatto)
-export const CAMPI_PUNTEGGIO = ['valore', 'valoreMin', 'valoreMax', 'fonteValore', 'affidabilita', 'costoTotale', 'sconto', 'offertaMax', 'punteggio', 'punteggioCompleto'];
+export const CAMPI_PUNTEGGIO = ['valore', 'valoreMin', 'valoreMax', 'fonteValore', 'affidabilita', 'costoTotale', 'sconto', 'offertaMax', 'punteggio', 'punteggioCompleto', 'rendimento'];
+// campi corti delle quotazioni OMI (js/omi.js): valore e affitto per la superficie indicata, come è stata trovata la zona
+export const CAMPI_OMI = ['omiMin', 'omiMax', 'omiAffMin', 'omiAffMax', 'omiMetodo', 'omiZona'];
 // campi corti calcolati dall'arricchimento (si azzerano e si ricalcolano per le aste raccolte ora)
 const CORTI = ['tentativo', 'rischi', 'superficieMq', 'deserte', 'primoPrezzo', 'ribasso', 'annoProcedura', 'dettaglio', 'termineOfferte', 'stima', 'nFoto',
   'prezzoPrecedente', 'dataRibasso'];
@@ -222,8 +225,30 @@ export async function arricchisci({ aste, prima = [], oggi, cartella, fileIndice
 
 // Punteggio affare su tutte le aste, dopo arricchimento e storico: zone dalle perizie di tutte le aste, poi per ogni
 // asta valore, costo, sconto e punteggio (campi corti, uniti all'asta) e il dettaglio per la scheda (Map id → oggetto).
-export function valutaTutte(aste, T) {
+/* Quotazioni OMI per un immobile (opz.omi = indice di scripts/omi.mjs, testo = descrizione completa):
+ * campi corti sull'asta, dati per la scheda a pezzi. Nessun valore se mancano comune, tipologia o metri quadri. */
+export function applicaOmi(a, indice, testo) {
+  for (const k of CAMPI_OMI) delete a[k];
+  if (!indice || a.categoria !== 'immobile') return null;
+  const s = Omi.stima(a, indice, { testo, conservazione: Estrai.conservazione(testo || '') });
+  if (!s) return null;
+  if (s.valore) {
+    a.omiMin = s.valore.min; a.omiMax = s.valore.max;
+    if (s.affitto) { a.omiAffMin = s.affitto.min; a.omiAffMax = s.affitto.max; }
+    a.omiMetodo = s.zona ? s.zona.metodo : 'comune';
+    if (s.zona) a.omiZona = s.zona.codice;
+    // lotti con più unità o tipologia dubbia: si mostra il valore ma non lo si usa come valore di mercato principale
+    if (s.affidabilita === 'bassa') a.omiMetodo = 'comune';
+  }
+  return { fonte: s.fonte, semestre: s.semestre, comune: s.comune, zona: s.zona, tipologia: s.tipologia, stato: s.stato, euroMq: s.euroMq,
+    affittoMq: s.affittoMq, mq: s.mq, affidabilita: s.affidabilita, note: s.note && s.note.length ? s.note : undefined,
+    mancante: s.mancante, compravendite: s.compravendite };
+}
+
+export function valutaTutte(aste, T, opz = {}) {
   for (const a of aste) for (const k of CAMPI_PUNTEGGIO) delete a[k];
+  const omi = new Map();
+  if (opz.omi) for (const a of aste) { const o = applicaOmi(a, opz.omi, opz.testi ? opz.testi(a) : a.descrizione); if (o) omi.set(a.id, o); }
   const zone = Punteggio.indiceZone(aste);
   const dettagli = new Map();
   for (const a of aste) {
@@ -235,6 +260,8 @@ export function valutaTutte(aste, T) {
       if (r.valore.controlli && r.valore.controlli.length) d.controlli = r.valore.controlli;
       if (r.valore.zona) d.zona = r.valore.zona;
     }
+    if (omi.has(a.id)) d.omi = omi.get(a.id);
+    if (r.affitto) d.affitto = r.affitto;
     if (r.parti) d.parti = r.parti;
     if (r.mancanti && r.mancanti.length) d.mancanti = r.mancanti;
     dettagli.set(a.id, d);

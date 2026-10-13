@@ -68,7 +68,8 @@ export const CAMPI = ['id', 'titolo', 'categoria', 'tipo', 'regione', 'provincia
   'numeroLotto', 'rialzo', 'rischi', 'tentativo', 'superficieMq',
   'valore', 'valoreMin', 'valoreMax', 'fonteValore', 'affidabilita', 'costoTotale', 'sconto', 'offertaMax', 'punteggio', 'punteggioCompleto',
   'deserte', 'primoPrezzo', 'ribasso', 'dettaglio', 'termineOfferte', 'stima', 'nFoto', 'annoProcedura',
-  'prezzoPrecedente', 'dataRibasso', 'anomalia'];
+  'prezzoPrecedente', 'dataRibasso', 'anomalia',
+  'omiMin', 'omiMax', 'omiAffMin', 'omiAffMax', 'omiMetodo', 'omiZona', 'rendimento'];
 
 async function precedente(file) {
   try {
@@ -180,11 +181,18 @@ async function main() {
   }
 
   // punteggio affare su tutte le aste (dopo arricchimento e storico)
-  const { dettagli: punteggi } = valutaTutte(uniche, T);
+  // quotazioni OMI (Agenzia delle Entrate – OMI): indice costruito da scripts/omi.mjs con i file dell'area riservata, non pubblicati
+  let indiceOmi = null;
+  try { indiceOmi = JSON.parse(await readFile(path.resolve(RADICE, opz.omi || 'data/omi/indice.json'), 'utf8')); } catch { indiceOmi = null; }
+  console.log(indiceOmi ? `  quotazioni OMI ${indiceOmi.semestre} caricate` : '  quotazioni OMI non disponibili (manca data/omi/indice.json): valore dalla perizia o dalla prima asta');
+  const { dettagli: punteggi } = valutaTutte(uniche, T, { omi: indiceOmi, testi: (a) => (schede && schede.get(a.id) && schede.get(a.id).descrizione) || a.descrizione || a.titolo });
+  const conOmi = uniche.filter((a) => a.omiMin).length;
+  if (indiceOmi) console.log(`  OMI: ${conOmi} immobili con valore OMI (${uniche.filter((a) => a.omiMetodo === 'indirizzo' || a.omiMetodo === 'unica').length} con la zona riconosciuta)`);
   const punteggio = {
     conValore: uniche.filter((a) => a.valore != null).length,
     perFonte: conta(uniche, (a) => a.fonteValore), perAffidabilita: conta(uniche, (a) => a.affidabilita),
-    conPunteggio: uniche.filter((a) => a.punteggio != null).length, completi: uniche.filter((a) => a.punteggioCompleto).length
+    conPunteggio: uniche.filter((a) => a.punteggio != null).length, completi: uniche.filter((a) => a.punteggioCompleto).length,
+    omi: indiceOmi ? { semestre: indiceOmi.semestre, conValore: conOmi, fonte: indiceOmi.fonte, licenza: indiceOmi.licenza } : null
   };
   console.log(`  punteggio: ${punteggio.conValore} aste con valore, ${punteggio.conPunteggio} con punteggio, ${punteggio.completi} con punteggio completo`);
 
