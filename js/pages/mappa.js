@@ -474,6 +474,237 @@
     fuoco($('#hScheda'));
   }
 
+  /* ---------- mappa di calore degli sconti (js/calore.js) ---------- */
+  // tela sopra sfondo e confini, sotto i puntini; durante lo zoom animato si scala come i renderer di Leaflet
+  function creaStratoCalore() {
+    var Strato = L.Layer.extend({
+      onAdd: function (m) {
+        var pane = m.getPane('calore') || m.createPane('calore');
+        pane.style.zIndex = 420; pane.style.pointerEvents = 'none';
+        this._tela = L.DomUtil.create('canvas', 'm-calore leaflet-zoom-animated', pane);
+        this._tela.setAttribute('aria-hidden', 'true');
+        m.on('zoom', this._suZoom, this);
+        if (m._zoomAnimated) m.on('zoomanim', this._suAnimazione, this);
+        disegnaCalore();
+      },
+      onRemove: function (m) {
+        m.off('zoom', this._suZoom, this);
+        m.off('zoomanim', this._suAnimazione, this);
+        L.DomUtil.remove(this._tela);
+        this._tela = null; this._centro = null;
+      },
+      _suZoom: function () { this._trasforma(this._map.getCenter(), this._map.getZoom()); },
+      _suAnimazione: function (e) { this._trasforma(e.center, e.zoom); },
+      // come L.Renderer._updateTransform: la tela disegnata con (centro, zoom) segue la nuova vista
+      _trasforma: function (centro, zoom) {
+        if (!this._centro || !this._tela) return;
+        var m = this._map, k = m.getZoomScale(zoom, this._zoom), meta = m.getSize().multiplyBy(0.5 + PAD_CALORE);
+        var pos = meta.multiplyBy(-k).add(m.project(this._centro, zoom)).subtract(m._getNewPixelOrigin(centro, zoom));
+        L.DomUtil.setTransform(this._tela, pos, k);
+      }
+    });
+    return new Strato();
+  }
+  // colori della scala dai token del tema (--accent sulla --surface), letti come rgb() dal browser
+  function coloriCalore() {
+    if (COLC) return COLC;
+    var p = document.createElement('i');
+    p.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;visibility:hidden';
+    document.body.appendChild(p);
+    var leggi = function (v) { p.style.color = 'var(' + v + ')'; return getComputedStyle(p).color; };
+    var acc = leggi('--accent'), sup = leggi('--surface'), fg = leggi('--fg');
+    p.remove();
+    COLC = { scala: CAL.scalaColori(acc, sup), accento: acc, bordo: fg, superficie: sup };
+    return COLC;
+  }
+  // posizioni in pixel del livello di zoom, calcolate una volta per zoom e per insieme di aste
+  function posizioni(z) {
+    if (!cacheXY || cacheXY.z !== z || cacheXY.v !== versione) {
+      var xy = new Float64Array(sulMappa.length * 2);
+      for (var i = 0; i < sulMappa.length; i++) { var p = CAL.proietta(sulMappa[i].lat, sulMappa[i].lng, z); xy[2 * i] = p[0]; xy[2 * i + 1] = p[1]; }
+      cacheXY = { z: z, v: versione, xy: xy };
+    }
+    var t = cacheXY.xy;
+    return function (a, i) { return [t[2 * i], t[2 * i + 1]]; };
+  }
+  function disegnaCalore() {
+    var tela = calore && calore._tela;
+    if (!tela || !mappa) return;
+    var size = mappa.getSize(), pad = size.multiplyBy(PAD_CALORE).round(), w = size.x + 2 * pad.x, h = size.y + 2 * pad.y;
+    var alto = mappa.containerPointToLayerPoint([-pad.x, -pad.y]).round(), z = mappa.getZoom(), k = Math.min(2, window.devicePixelRatio || 1);
+    calore._centro = mappa.getCenter(); calore._zoom = z; calore._k = k;
+    L.DomUtil.setPosition(tela, alto);
+    if (tela.width !== Math.round(w * k) || tela.height !== Math.round(h * k)) { tela.width = Math.round(w * k); tela.height = Math.round(h * k); }
+    tela.style.width = w + 'px'; tela.style.height = h + 'px';
+    var o = alto.add(mappa.getPixelOrigin());   // angolo della tela in pixel del livello di zoom
+    celle = datiPronti ? CAL.aggrega(sulMappa, posizioni(z), { limiti: [o.x, o.y, o.x + w, o.y + h] }) : null;
+    if (celle) { celle.zoom = z; celle.ox = o.x; celle.oy = o.y; celle.vista = [o.x + pad.x, o.y + pad.y, o.x + pad.x + size.x, o.y + pad.y + size.y]; }
+    cellaSopra = null;
+    if (cellaFissa) riapriCella(); else nascondiCella();
+    dipingi();
+    areaCalore();
+  }
+  function dipingi() {
+    var tela = calore && calore._tela;
+    if (!tela) return;
+    var ctx = tela.getContext('2d'), k = calore._k || 1;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.clearRect(0, 0, tela.width / k, tela.height / k);
+    if (!celle) return;
+    var col = coloriCalore(), l = celle.lato, ev = celle.indice[cellaFissa ? cellaFissa.chiave : cellaSopra];
+    for (var i = 0; i < celle.celle.length; i++) {
+      var c = celle.celle[i];
+      if (!c.colorata) continue;
+      if (col.scala) { ctx.globalAlpha = OPACITA_CALORE; ctx.fillStyle = col.scala[c.classe]; }
+      else { ctx.globalAlpha = OPACITA_CALORE * CAL.TONI[c.classe]; ctx.fillStyle = col.accento; }
+      ctx.fillRect(c.x0 - celle.ox + 1, c.y0 - celle.oy + 1, l - 2, l - 2);   // 2 px di stacco tra i quadrati
+    }
+    ctx.globalAlpha = 1;
+    if (ev && ev.colorata) {
+      // quadrato sotto il puntatore o fissato: anello del colore della superficie e bordo del colore del testo
+      ctx.lineWidth = 4; ctx.strokeStyle = col.superficie; ctx.strokeRect(ev.x0 - celle.ox + 2, ev.y0 - celle.oy + 2, l - 4, l - 4);
+      ctx.lineWidth = 2; ctx.strokeStyle = col.bordo; ctx.strokeRect(ev.x0 - celle.ox + 2, ev.y0 - celle.oy + 2, l - 4, l - 4);
+    }
+  }
+  // riga della legenda: quante aste contano nei quadrati visibili
+  function areaCalore() {
+    var t = '';
+    if (celle) {
+      var v = celle.vista, n = 0, cam = 0, col = 0;
+      celle.celle.forEach(function (c) {
+        if (c.x1 <= v[0] || c.x0 >= v[2] || c.y1 <= v[1] || c.y0 >= v[3]) return;
+        n += c.aste; cam += c.campione; if (c.colorata) col++;
+      });
+      if (!n) t = 'In quest\'area non ci sono aste con posizione con i filtri scelti.';
+      else if (!cam) t = 'In quest\'area ' + (n === 1 ? 'l\'unica asta con posizione non ha' : 'nessuna delle ' + num(n) + ' aste con posizione ha') + ' sconto e valore affidabili: niente da colorare.';
+      else if (!col) t = 'In quest\'area ' + (cam === 1 ? 'solo 1 asta ha' : 'solo ' + num(cam) + ' aste hanno') + ' sconto e valore affidabili (su ' + num(n) + ' con posizione) e nessun quadrato ne ha almeno ' + celle.minimo + ': allontana la mappa per unirli.';
+      else t = 'In quest\'area: ' + aste(cam) + ' nel campione su ' + num(n) + ' con posizione, ' + col + (col === 1 ? ' quadrato colorato.' : ' quadrati colorati.');
+    }
+    $$('[data-calore-area]').forEach(function (el) { el.textContent = t; });
+  }
+  function cellaIn(cp) {
+    if (!celle || !strati.calore || celle.zoom !== mappa.getZoom()) return null;
+    var p = mappa.containerPointToLayerPoint(cp).add(mappa.getPixelOrigin()), c = CAL.trova(celle, p.x, p.y);
+    return c && c.colorata ? c : null;
+  }
+  function htmlCella(c, fissa) {
+    var forchetta = c.min !== c.max ? 'valori da ' + U.pct(c.min, 0) + ' a ' + U.pct(c.max, 0) : 'tutte con lo stesso sconto';
+    return '<div class="m-cella-testa"><p class="m-legenda-t">Sconto medio nel quadrato</p>' +
+        (fissa ? '<button class="m-x" type="button" data-chiudi-cella aria-label="Chiudi il riquadro del quadrato">' + U.icona('chiudi') + '</button>' : '') + '</div>' +
+      '<p class="m-cella-v"><b>' + U.pct(c.media, 0) + '</b><small>' + esc(forchetta) + '</small></p>' +
+      '<p class="m-cella-n">Campione: ' + aste(c.campione) + ' con sconto e valore di affidabilità media o alta, su ' + aste(c.aste) + ' nel quadrato con i filtri scelti.</p>' +
+      '<a class="btn small" href="aste.html" data-cella-elenco>Apri queste aste' + U.icona('freccia') + '</a>' +
+      (fissa ? '' : '<p class="m-suggerimento">Clic sul quadrato per fissare il riquadro.</p>');
+  }
+  function mostraCella(c, fissa) {
+    clearTimeout(timerCella);
+    var el = $('#mCella'), dentro = el.contains(document.activeElement);
+    el.innerHTML = htmlCella(c, fissa);
+    var f = copia(perElenco(false));
+    f.bbox = CAL.bbox(c, celle.zoom);
+    linkElenco(el.querySelector('[data-cella-elenco]'), f);
+    el.classList.toggle('fissa', !!fissa);
+    el.hidden = false;
+    posizionaCella(c);
+    if (dentro) fuoco(el.querySelector('[data-cella-elenco]'));
+  }
+  // accanto al quadrato, dentro la mappa (su telefono tra la barra dei filtri e il pulsante in basso)
+  function posizionaCella(c) {
+    var el = $('#mCella'), box = $('#mMappa'), po = mappa.getPixelOrigin();
+    var a = mappa.layerPointToContainerPoint([c.x0 - po.x, c.y0 - po.y]), b = mappa.layerPointToContainerPoint([c.x1 - po.x, c.y1 - po.y]);
+    var W = box.clientWidth, H = box.clientHeight, w = el.offsetWidth, h = el.offsetHeight, m = 8;
+    var su = TELEFONO.matches ? 62 : m, giu = TELEFONO.matches ? 70 : m, x = b.x + m, y = a.y;
+    if (x + w > W - m) x = a.x - m - w;
+    if (x < m) {
+      x = Math.max(m, Math.min(W - w - m, (a.x + b.x - w) / 2));
+      y = b.y + m;
+      if (y + h > H - giu) y = a.y - m - h;
+    }
+    el.style.left = Math.round(x) + 'px';
+    el.style.top = Math.round(Math.max(su, Math.min(H - giu - h, y))) + 'px';
+  }
+  function fuoriVista(c) {
+    var v = celle.vista;
+    return c.x1 <= v[0] || c.x0 >= v[2] || c.y1 <= v[1] || c.y0 >= v[3];
+  }
+  function fissaCella(c) {
+    cellaFissa = { chiave: c.i + ':' + c.j, zoom: celle.zoom };
+    cellaSopra = null;
+    mostraCella(c, true);
+    dipingi();
+  }
+  function riapriCella() {
+    var c = celle && celle.zoom === cellaFissa.zoom ? celle.indice[cellaFissa.chiave] : null;
+    if (!c || !c.colorata || fuoriVista(c)) { cellaFissa = null; nascondiCella(); return; }
+    mostraCella(c, true);
+  }
+  function nascondiCella() {
+    clearTimeout(timerCella);
+    var el = $('#mCella');
+    el.hidden = true; el.classList.remove('fissa');
+  }
+  function chiudiCella(rifuoco) {
+    var era = cellaFissa;
+    cellaFissa = null; cellaSopra = null;
+    nascondiCella(); dipingi();
+    if (era && rifuoco) fuoco($('#map'));
+  }
+  function nascondiCellaPresto() {
+    clearTimeout(timerCella);
+    timerCella = setTimeout(function () { if (cellaFissa) return; cellaSopra = null; nascondiCella(); dipingi(); }, 220);
+  }
+  // passando il puntatore (non al tocco: lì si tocca il quadrato)
+  function sopraMappa(e) {
+    if (!strati.calore || cellaFissa || TOCCO.matches) return;
+    var c = cellaIn(e.containerPoint), k = c ? c.i + ':' + c.j : null;
+    if (k === cellaSopra) { if (k) clearTimeout(timerCella); return; }
+    if (!c) { nascondiCellaPresto(); return; }
+    cellaSopra = k; mostraCella(c, false); dipingi();
+  }
+  function legendaCalore(mini) {
+    var tasselli = CAL.TONI.map(function (t) { return '<i style="--t:' + Math.round(t * 100) + '%"></i>'; }).join('');
+    if (mini) return '<span>Sconto medio</span><span class="m-scala" aria-hidden="true">' + tasselli + '</span><span>40%+</span>';
+    var passi = ['0%'].concat(CAL.PASSI.map(function (p, i) { return Math.round(p * 100) + '%' + (i === CAL.PASSI.length - 1 ? '+' : ''); }));
+    return '<div class="m-leg-calore"><p class="m-legenda-t">Sconto medio sul valore</p>' +
+      '<div class="m-scala" role="img" aria-label="Scala di colore a una sola tinta: più intenso è il quadrato, più alto è lo sconto medio, da meno del 10% fino al 40% e oltre">' + tasselli + '</div>' +
+      '<div class="m-scala-n" aria-hidden="true">' + passi.map(function (p) { return '<span>' + p + '</span>'; }).join('') + '</div>' +
+      '<p class="m-legenda-n">Quadrati di circa ' + CAL.LATO + ' px. Contano solo le aste con sconto e valore di affidabilità media o alta; con meno di ' + CAL.MINIMO + ' il quadrato resta vuoto.</p>' +
+      '<p class="m-legenda-n" data-calore-area></p></div>';
+  }
+  function legende() {
+    var h = (strati.calore && CAL ? legendaCalore(false) : '') + (strati.puntini ? legenda() : '');
+    $('#mLegenda').innerHTML = h; $('#mLegenda').hidden = !h;
+    $('#mLegendaLista').innerHTML = h; $('#mLegendaLista').hidden = !h;
+    var mini = $('#mCaloreMini');
+    mini.hidden = !(strati.calore && CAL);
+    if (!mini.hidden) {
+      mini.innerHTML = legendaCalore(true);
+      mini.setAttribute('aria-label', 'Legenda della mappa di calore: sconto medio da 0% a 40% e oltre. Apri i filtri per il metodo e la fonte');
+    }
+    areaCalore();
+  }
+  function leggiStrati() {
+    var s = leggiSessione(K_STRATI);
+    if (s && typeof s === 'object') { strati.puntini = s.puntini !== false; strati.calore = !!s.calore; }
+    if (!CAL) strati.calore = false;
+  }
+  function applicaStrati() {
+    $('#mPuntini').checked = strati.puntini;
+    $('#mCalore').checked = strati.calore;
+    $('#mCalore').disabled = !CAL;
+    $('#mCaloreMetodo').hidden = !strati.calore;
+    if (mappa && strato) {
+      if (strati.puntini && !mappa.hasLayer(strato)) { mappa.addLayer(strato); disegna(); }
+      else if (!strati.puntini && mappa.hasLayer(strato)) mappa.removeLayer(strato);
+    }
+    if (mappa && CAL) {
+      if (strati.calore) { if (!calore) calore = creaStratoCalore(); if (!mappa.hasLayer(calore)) mappa.addLayer(calore); }
+      else if (calore && mappa.hasLayer(calore)) { chiudiCella(); mappa.removeLayer(calore); celle = null; }
+    }
+    legende();
+  }
+  function cambiaStrati() { scriviSessione(K_STRATI, strati); applicaStrati(); }
+
   /* ---------- regioni ---------- */
   function colori() {
     var cs = getComputedStyle(document.documentElement), v = function (n, d) { return cs.getPropertyValue(n).trim() || d; };
@@ -529,6 +760,7 @@
       if (!regioneFissa) { clearTimeout(timerRegione); timerRegione = setTimeout(nascondiRegione, 260); }
     } else if (tipo === 'clic') {
       if (z > (TOCCO.matches ? ZOOM_REGIONI_TOCCO : ZOOM_REGIONI_PUNTATORE)) return;
+      if (cellaIn(e.containerPoint)) return;   // con la mappa di calore il quadrato colorato ha la precedenza (clic sulla mappa)
       L.DomEvent.stopPropagation(e);
       regioneFissa = nome; ristilizza();
       mostraRegione(nome, true);
@@ -627,7 +859,7 @@
   /* ---------- fogli (telefono) e pannelli (computer) ---------- */
   var FOGLI = { filtri: '#mFiltri', zona: '#mZona', scheda: '#mScheda', regione: '#mRegione' };
   function aperto(nome) { var el = $(FOGLI[nome]); return !!el && el.hasAttribute('data-aperto'); }
-  function apriFoglio(nome) {
+  function apriFoglio(nome, primo) {
     var el = $(FOGLI[nome]);
     if (TELEFONO.matches) Object.keys(FOGLI).forEach(function (k) { if (k !== nome) chiudiFoglio(k, true); });
     if (!el.hasAttribute('data-aperto')) { void el.offsetWidth; el.setAttribute('data-aperto', ''); }
@@ -635,7 +867,7 @@
     if (nome === 'filtri' && TELEFONO.matches) {
       $('#mVelo').hidden = false;
       $('#mApriFiltri').setAttribute('aria-expanded', 'true');
-      if (U.finestra && U.apriFinestra) { U.finestra(el, function () { chiudiFoglio('filtri'); }, 'Filtri della mappa'); U.apriFinestra(el, $('#mCat .chip[aria-pressed="true"]')); }
+      if (U.finestra && U.apriFinestra) { U.finestra(el, function () { chiudiFoglio('filtri'); }, 'Filtri della mappa'); U.apriFinestra(el, primo || $('#mCat .chip[aria-pressed="true"]')); }
       else fuoco($('#mCat .chip'));
     }
     if (nome === 'zona') $('#mApriZona').setAttribute('aria-expanded', 'true');
@@ -843,7 +1075,11 @@
     strato = L.featureGroup().addTo(mappa);
     strato.on('click', suMarcatore);
     mappa.on('moveend', programma);
-    mappa.on('click', function () {
+    mappa.on('mousemove', sopraMappa);
+    mappa.on('mouseout', function () { if (!cellaFissa && cellaSopra) nascondiCellaPresto(); });
+    mappa.on('click', function (e) {
+      var c = cellaIn(e.containerPoint);
+      if (c) fissaCella(c); else if (cellaFissa) chiudiCella();
       if (regioneFissa) chiudiFoglio('regione');
       if (TELEFONO.matches) { chiudiFoglio('scheda', true); chiudiFoglio('zona', true); }
     });
@@ -872,6 +1108,17 @@
     $('#mLibere').addEventListener('change', function () { filtri.libere = this.checked; cambiaFiltri(); });
     $('#mConPunt').addEventListener('change', function () { filtri.conPunteggio = this.checked; cambiaFiltri(); });
     $('#mSeguite').addEventListener('change', function () { filtri.seguite = this.checked; cambiaFiltri(); });
+    $('#mPuntini').addEventListener('change', function () { strati.puntini = this.checked; cambiaStrati(); });
+    $('#mCalore').addEventListener('change', function () { strati.calore = this.checked; cambiaStrati(); });
+    $('#mCaloreMini').addEventListener('click', function () {
+      apriFoglio('filtri', $('#mCalore'));
+      var corpo = $('#mFiltri .m-foglio-corpo'), fs = $('#mFiltri .m-strati');
+      if (corpo && fs) corpo.scrollTop = Math.max(0, fs.offsetTop - corpo.offsetTop - 12);
+    });
+    // riquadro del quadrato: resta aperto finché il puntatore ci è sopra (così il link si può cliccare)
+    $('#mCella').addEventListener('mouseenter', function () { clearTimeout(timerCella); });
+    $('#mCella').addEventListener('mouseleave', function () { if (!cellaFissa) nascondiCellaPresto(); });
+    $('#mCella').addEventListener('click', function (e) { if (e.target.closest('[data-chiudi-cella]')) chiudiCella(true); });
     $('#mDaElenco').addEventListener('click', function (e) {
       var b = e.target.closest('[data-togli]'); if (!b) return;
       delete extra[b.getAttribute('data-togli')];
@@ -898,7 +1145,8 @@
     $('#mRegione').addEventListener('mouseleave', function () { if (!regioneFissa) timerRegione = setTimeout(nascondiRegione, 260); });
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
-      if (aperto('scheda')) { chiudiFoglio('scheda'); e.preventDefault(); }
+      if (!$('#mCella').hidden) { chiudiCella($('#mCella').contains(document.activeElement)); e.preventDefault(); }
+      else if (aperto('scheda')) { chiudiFoglio('scheda'); e.preventDefault(); }
       else if (aperto('regione')) { chiudiFoglio('regione'); e.preventDefault(); }
       else if (TELEFONO.matches && aperto('zona')) { chiudiFoglio('zona'); fuoco($('#mApriZona')); e.preventDefault(); }
     });
@@ -906,7 +1154,7 @@
     var suCambio = function (mq, fn) { try { mq.addEventListener('change', fn); } catch (e) { try { mq.addListener(fn); } catch (e2) {} } };
     suCambio(TELEFONO, adattaLayout);
     window.addEventListener('resize', function () { misuraTesta(); });
-    var tema = function () { COL = null; ristilizza(); };
+    var tema = function () { COL = null; COLC = null; ristilizza(); dipingi(); };
     document.addEventListener('radaraste:tema', tema);
     suCambio(media('(prefers-color-scheme: dark)'), tema);
     document.addEventListener('radaraste:seguite', function () {
@@ -931,9 +1179,10 @@
     if (!mappa) return;
     var S = window.Store;
     var daFuori = leggiFiltri();
-    $('#mLegenda').innerHTML = legenda();
-    $('#mLegendaLista').innerHTML = legenda();
-    eventi(); sincronizza(); adattaLayout();
+    leggiStrati();
+    var R = window.ASTE_RACCOLTE, quando = R && typeof R.aggiornato === 'string' ? R.aggiornato.slice(0, 10) : '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(quando)) $('#mCaloreData').textContent = '; dati della raccolta del ' + U.dataIt(quando);
+    eventi(); sincronizza(); applicaStrati(); adattaLayout();
     if (!window.Supercluster) $('#mAvviso').innerHTML = 'Impossibile caricare il raggruppamento dei punti (assets/vendor/supercluster).', $('#mAvviso').hidden = false;
     // lascia disegnare la pagina prima del lavoro pesante (decodifica di decine di migliaia di aste)
     setTimeout(function () {

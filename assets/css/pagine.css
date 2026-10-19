@@ -228,6 +228,43 @@
   .sc-sez .tempi .sc-senza-data { display: none; }
 }
 
+/* date stimate (saldo): pallino tratteggiato */
+.sc-sez .tempi li.sc-stima .punto { border-style: dashed; }
+.sc-sez .tempi li.sc-stima > b { color: var(--muted); font-style: italic; }
+
+/* ---------- la zona (OMI) ---------- */
+.sc-zona { display: grid; gap: 18px; align-items: start; }
+@media (min-width: 980px) { .sc-zona { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; } }
+.sc-zona-sx, .sc-zona-dx { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.sc-fascia { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: start; }
+.sc-fascia-lettera { width: 44px; height: 44px; border-radius: var(--r-2); border: 1px solid var(--accent); color: var(--accent); background: var(--accent-soft); display: grid; place-items: center; font-family: var(--f-display); font-size: 22px; font-weight: 600; line-height: 1; }
+.sc-fascia > div { display: grid; gap: 2px; min-width: 0; font-size: 14.5px; color: var(--fg-2); overflow-wrap: anywhere; }
+.sc-fascia b { font-size: 15.5px; color: var(--fg); }
+.sc-fascia .muted { font-size: 13.5px; }
+.sc-zona-kv { grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); }
+.sc-zona-kv dd { font-family: var(--f-num); }
+.sc-spiega-zona ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; color: var(--fg-2); }
+.sc-fonte { font-size: 12.5px; }
+.sc-fonte .pill { vertical-align: 1px; }
+.sc-fonte a { color: var(--muted); }
+.sc-fonte a:hover { color: var(--accent); }
+
+/* ---------- probabilità di vincere (nella simulazione) ---------- */
+.sc-prob { display: grid; gap: 12px; border-top: 1px solid var(--line); padding-top: 16px; min-width: 0; }
+.sc-prob-simili { font-size: 15px; color: var(--fg); max-width: 70ch; }
+.sc-prob-griglia { display: grid; gap: 14px; align-items: center; }
+@media (min-width: 640px) { .sc-prob-griglia { grid-template-columns: minmax(0, 1.35fr) minmax(180px, 1fr); gap: 20px; } }
+.sc-prob .cursore .testa label { color: var(--muted); font-size: 13.5px; font-weight: 600; }
+.sc-prob .cursore .testa output { font-size: 20px; }
+.sc-prob input[type=range] { height: 44px; }
+.sc-prob-esito { display: grid; gap: 2px; padding: 12px 14px; border-radius: var(--r-2); background: var(--surface-2); border: 1px solid var(--line); min-width: 0; }
+.sc-prob-esito .sc-grande { font-size: clamp(26px, 3.2vw, 32px); }
+.sc-prob-come { font-size: 13.5px; }
+.sc-prob-come > summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 32px; display: inline-flex; align-items: center; }
+@media (max-width: 899px), (pointer: coarse) { .sc-prob-come > summary { min-height: 44px; } }
+.sc-prob-come > div { display: grid; gap: 8px; padding-top: 4px; }
+.sc-prob-come ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+
 /* ---------- descrizione, dati, documenti ---------- */
 .sc-descr p { font-size: 15.5px; line-height: 1.65; max-width: 78ch; color: var(--fg-2); white-space: pre-line; overflow-wrap: anywhere; }
 .sc-descr p.note { font-size: 13.5px; line-height: 1.5; color: var(--muted); margin-top: 8px; white-space: normal; }
@@ -281,6 +318,46 @@ a.sc-doc:hover { border-color: var(--accent); color: var(--accent); transform: t
   .confronto.cf-tabella .riga > * { padding: 10px 12px; }
 }
 @media print { .cf-togli, .cf-aggiungi, .sc-sezioni, .sc-freccia { display: none !important; } }
+
+/* ---------- scheda: versione da stampare (report PDF) ----------
+   Sullo schermo è nascosta; in stampa resta solo lei: niente menu, pulsanti, mappa, foto o barre.
+   Colori: i token del tema chiaro anche se lo schermo è scuro, solo testo e righe (niente fondi pieni). */
+.sc-stampa { display: none; }
+@media print {
+  @page { size: A4; margin: 13mm 13mm 14mm; }
+  :root:not([data-stampa-x]) {
+    --bg: #ffffff; --surface: #ffffff; --surface-2: #f8f6f1; --surface-3: #f1ede5;
+    --fg: #1b1f27; --fg-2: #3a3f49; --muted: #66655f; --faint: #9a978f; --line: #e4dfd5; --line-2: #d4cdc0;
+    --accent: #1f3a5f; --good: #2c6e4f; --warn: #8a5a12; --bad: #9c3328;
+    color-scheme: light;
+  }
+  body.sc-con-stampa { background: var(--surface); color: var(--fg); font-size: 9.5pt; line-height: 1.4; padding: 0 !important; min-height: 0; }
+  body.sc-con-stampa > :not(main), body.sc-con-stampa main > :not(#scheda), body.sc-con-stampa #scheda > :not(.sc-stampa) { display: none !important; }
+  body.sc-con-stampa main.wrap { padding: 0; max-width: none; margin: 0; display: block; }
+  body.sc-con-stampa #scheda { display: block; }
+  .sc-stampa { display: block; color: var(--fg); }
+  .sc-stampa a { color: var(--fg); text-decoration: none; }
+  .sc-stampa h1 { font-size: 16pt; line-height: 1.2; margin: 2pt 0 4pt; overflow-wrap: anywhere; }
+  .sc-stampa h2 { font-family: var(--f-body); font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 3pt; padding-bottom: 2pt; border-bottom: 1px solid var(--line-2); }
+  .st-testa { border-bottom: 2px solid var(--fg); padding-bottom: 6pt; margin-bottom: 8pt; }
+  .st-testa p { color: var(--fg-2); font-size: 9pt; overflow-wrap: anywhere; }
+  .st-testa .st-marchio { font-size: 7.5pt; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
+  .st-griglia { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14pt; }
+  .st-griglia > section, .st-blocco { break-inside: avoid; margin-bottom: 8pt; min-width: 0; }
+  .sc-stampa .line { padding: 2pt 0; font-size: 9pt; gap: 8pt; break-inside: avoid; }
+  .sc-stampa .line.sub { padding-left: 8pt; font-size: 8.5pt; }
+  .sc-stampa .line b { font-weight: 600; }
+  .st-nota { font-size: 8.5pt; color: var(--fg-2); margin-top: 3pt; overflow-wrap: anywhere; }
+  .st-nota b { color: var(--fg); }
+  .st-tabella { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  .st-tabella td { padding: 2.5pt 4pt 2.5pt 0; border-bottom: 1px dashed var(--line); vertical-align: top; }
+  .st-tabella .st-data { white-space: nowrap; width: 1%; padding-right: 10pt; font-variant-numeric: tabular-nums; }
+  .st-tabella .st-qui td { border-bottom: 1px solid var(--fg); }
+  .st-rischi { margin: 0; padding-left: 12pt; font-size: 8.5pt; display: grid; gap: 1pt; }
+  .st-link { font-size: 8.5pt; margin-top: 2pt; }
+  .st-url { word-break: break-all; color: var(--fg); }
+  .st-piede { border-top: 1px solid var(--fg); padding-top: 5pt; margin-top: 6pt; font-size: 8pt; color: var(--fg-2); display: grid; gap: 3pt; break-inside: avoid; }
+}
 
 /* pagina Confronta: attesa, barra in alto, barra in basso nascosta (qui sarebbe un link a sé stessa) */
 .cf-attesa { display: grid; gap: 16px; }
