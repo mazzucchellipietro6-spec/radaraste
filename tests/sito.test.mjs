@@ -28,9 +28,9 @@ function menu() {
   return U;
 }
 
-test('ogni voce del menu (sezioni, assistenti, strumenti) è una pagina che esiste, senza doppioni', async () => {
+test('ogni voce del menu (sezioni, assistenti, strumenti, piè di pagina) è una pagina che esiste, senza doppioni', async () => {
   const U = menu();
-  const voci = [...U.NAV, ...U.ASSISTENTI, ...U.STRUMENTI].map((v) => v.href);
+  const voci = [...U.NAV, ...U.ASSISTENTI, ...U.STRUMENTI, ...U.SERVIZIO].map((v) => v.href);
   assert.deepEqual(U.NAV.map((v) => v.nome), ['Home', 'Aste', 'Mappa', 'Assistenti', 'Strumenti', 'Le mie aste']);
   assert.equal(U.ASSISTENTI.length, 5);
   assert.equal(new Set(voci).size, voci.length, 'nessuna pagina in due posti del menu');

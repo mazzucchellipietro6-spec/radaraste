@@ -144,12 +144,8 @@
     { href: 'strumenti.html', nome: 'Strumenti', icona: 'strumenti', voci: STRUMENTI },
     { href: 'mie-aste.html', nome: 'Le mie aste', icona: 'stella', anche: ['account.html', 'accedi.html'] }
   ];
-  // pagine di servizio nel piè di pagina: abbonamenti (in modalità test finché non vengono attivati) e bozze legali
-  var SERVIZIO = [
-    { href: 'prezzi.html', nome: 'Prezzi e abbonamenti' }, { href: 'account.html', nome: 'Il mio account' },
-    { href: 'termini.html', nome: 'Termini d\'uso' }, { href: 'privacy.html', nome: 'Privacy' }, { href: 'cookie.html', nome: 'Cookie' },
-    { href: 'recesso.html', nome: 'Recesso' }, { href: 'avvertenze.html', nome: 'Non è consulenza finanziaria' }
-  ];
+  // pagine di servizio nel piè di pagina (abbonamenti in modalità test e bozze legali): una voce solo quando la pagina esiste
+  var SERVIZIO = [];
   // su telefono: le prime quattro sezioni nella barra in basso, il resto nel foglio "Menu"
   var TAB = ['index.html', 'aste.html', 'mappa.html', 'assistenti.html'];
   var MARCHIO = '<svg class="marchio" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><circle cx="16" cy="16" r="9.5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".45" stroke-width="1.4"/><circle cx="16" cy="16" r="5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".75" stroke-width="1.4"/><path d="M16 16 L23.5 11" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="1.8" fill="var(--accent-ink)"/></svg>';
@@ -205,7 +201,7 @@
           '<div class="piede-marchio"><a class="brand" href="index.html">' + MARCHIO + '<span>Radar <b>Aste</b></span></a><p>Le aste pubbliche italiane raccolte ogni giorno dalle fonti ufficiali, con i conti fatti in chiaro.</p></div>' +
           col('Sezioni', NAV.filter(function (p) { return !p.voci; })) + col('Assistenti', ASSISTENTI) + col('Strumenti', STRUMENTI) +
         '</div>' + avvertenza() +
-        '<nav class="row-actions piede-servizio" aria-label="Informazioni legali e abbonamenti">' + SERVIZIO.map(function (v) { return '<a href="' + v.href + '">' + esc(v.nome) + '</a>'; }).join('') + '</nav>' +
+        (SERVIZIO.length ? '<nav class="row-actions piede-servizio" aria-label="Informazioni legali e abbonamenti">' + SERVIZIO.map(function (v) { return '<a href="' + v.href + '">' + esc(v.nome) + '</a>'; }).join('') + '</nav>' : '') +
         '<div class="row-actions piede-link"><span>Aliquote aggiornate al ' + esc(agg) + '</span><span class="spacer"></span><span>Nessun dato inventato</span></div></div>';
     }
     applicaTema(temaCorrente());
