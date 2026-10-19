@@ -534,10 +534,10 @@
     return '<div class="sc-prob" id="sc-prob"><h3>Probabilità di vincere</h3>' + h + '</div>';
   }
 
-  function aggiornaProbabilita() {
+  function aggiornaProbabilita(salva) {
     var inp = $('#ipotesi'); if (!inp || !stato.a) return;
     stato.q = Math.max(0, Math.min(1, +inp.value / 100));
-    try { localStorage.setItem(K_IPOTESI, String(stato.q)); } catch (e) {}
+    if (salva === true) { try { localStorage.setItem(K_IPOTESI, String(stato.q)); } catch (e) {} }
     var p = probabilita(stato.a);
     inp.style.setProperty('--p', inp.value + '%');
     inp.setAttribute('aria-valuetext', inp.value + '%');
@@ -692,6 +692,97 @@
       'Leggi per intero avviso di vendita e perizia, visita il bene con il custode e verifica costi, vincoli e scadenze prima di versare la cauzione.</div></div>';
   }
 
+  /* ---------- versione da stampare (report PDF, una o due pagine A4) ---------- */
+
+  function st(et, val) { return '<div class="line"><span>' + et + '</span><b>' + val + '</b></div>'; }
+  function urlPieno(u) { u = U.linkSicuro(u); return u ? '<a class="st-url" href="' + esc(u) + '">' + esc(u) + '</a>' : ''; }
+  function adessoEsteso() {
+    var d = new Date();
+    return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) + ' alle ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function rapportoStampa(a, r) {
+    var dem = a.fonte === DEMANIO, v = r.valore, c = r.costo, lt = lineaTempo(a), h = '';
+    var dove = window.Schede ? Schede.luogoBreve(a) : a.comune;
+    var ind = a.indirizzo && a.comune && a.indirizzo.indexOf(a.comune) >= 0 ? a.indirizzo : [a.indirizzo, dove].filter(Boolean).join(', ');
+    var ente = dem ? 'Agenzia del Demanio' : a.tribunale ? 'Tribunale di ' + a.tribunale : (a.fonte || '');
+    var proc = [ente, a.rge ? 'procedura n. ' + a.rge : '', a.numeroLotto ? 'lotto ' + a.numeroLotto : ''].filter(Boolean).join(' · ');
+    h += '<header class="st-testa"><p class="st-marchio">Radar Aste Italia · scheda dell\'asta</p><h1>' + esc(a.titolo || 'Asta senza titolo') + '</h1>' +
+      '<p>' + esc(ind || dove || 'Luogo non indicato') + (a.regione ? ' · ' + esc(a.regione) : '') + '</p>' +
+      '<p>' + esc([proc, U.CATEGORIE[a.categoria] || 'Altro', a.tipo].filter(Boolean).join(' · ')) + ' · codice ' + esc(a.id) + '</p></header>';
+
+    // prezzi e valore
+    var cauz = a.cauzionePerc > 0 ? U.pct(a.cauzionePerc / 100, 1) + ' dell\'offerta' : a.cauzione ? esc(a.cauzione) : 'di norma il ' + U.pct(T.asta.cauzione.quota, 0) + ' (vedi avviso)';
+    h += '<div class="st-griglia"><section><h2>Prezzi</h2>' +
+      st('Prezzo base', r.prezzoBase ? U.eur(r.prezzoBase) : dem ? 'nel PDF dell\'avviso' : 'non indicato') +
+      st('Offerta minima', r.offertaMinima ? U.eur(r.offertaMinima) : 'non indicata') +
+      st('Rialzo minimo', a.rialzo > 0 ? U.eur(a.rialzo) : 'non indicato') + st('Cauzione', cauz) +
+      (stato.offerta && r.prezzoBase ? st('Offerta simulata da te', U.eur(stato.offerta)) : '') + '</section>';
+    h += '<section><h2>Valore di mercato</h2>';
+    if (v) {
+      var aff = AFFIDABILITA[v.affidabilita];
+      h += st('Valore stimato', U.eur(v.centrale)) + (v.min !== v.max ? st('Forchetta', U.eur(v.min) + ' – ' + U.eur(v.max)) : '') +
+        '<p class="st-nota"><b>Fonte:</b> ' + esc(v.etichetta || 'valore stimato') + '.</p>' +
+        '<p class="st-nota"><b>Affidabilità:</b> ' + (aff ? esc(aff[1].toLowerCase()) + ' – ' + esc(aff[2]) : v.fonte === 'manuale' ? 'non valutata: l\'hai inserito tu' : 'non indicata') + '.</p>' +
+        ((v.controlli || []).length ? '<p class="st-nota"><b>Da verificare:</b> ' + esc(v.controlli.join(' ')) + '</p>' : '');
+    } else h += '<p class="st-nota">Non disponibile: serve la stima del perito o il prezzo della prima asta. Non lo inventiamo.</p>';
+    h += '</section></div>';
+
+    // costi, sconto, offerta massima
+    h += '<div class="st-griglia"><section><h2>Costo totale ' + (a.categoria === 'immobile' ? '(offerta al prezzo base)' : '(aggiudicazione al prezzo base)') + '</h2>';
+    if (c) {
+      h += '<div class="result">' + vociCosto(a, c) + '</div><p class="st-nota">' + esc(ipotesi(a)) + '</p>';
+      if (stato.offerta && Math.abs(stato.offerta - r.prezzoBase) > 0.5) {
+        var cs = A.costo(a, stato.offerta, v && v.centrale);
+        if (cs) h += '<p class="st-nota"><b>Con la tua offerta di ' + U.eur(stato.offerta) + ':</b> costo totale ' + U.eur(cs.totale) + (v ? ', sconto sul valore ' + U.pct(cs.sconto, 0) : '') + '.</p>';
+      }
+    } else h += '<p class="st-nota">Non calcolabile: manca il prezzo base' + (dem ? ' (è nel PDF dell\'avviso)' : '') + '.</p>';
+    h += '</section><section><h2>Sconto e offerta massima</h2>';
+    if (r.sconto != null && r.giudizio) h += st('Sconto sul valore (costi compresi)', U.pct(r.sconto, 0)) + st('Giudizio al prezzo base', esc(r.giudizio.etichetta));
+    else h += '<p class="st-nota">Sconto non calcolabile: servono prezzo base e valore di mercato.</p>';
+    if (r.offertaMax > 0) h += st('Offerta massima consigliata', U.eur(r.offertaMax)) + '<p class="st-nota">Per restare circa il ' + U.pct(T.giudizio.scontoObiettivo, 0) + ' sotto il valore minimo stimato (' + U.eur(v.min) + '), costi compresi.' +
+      (r.offertaMinima && r.offertaMax < r.offertaMinima ? ' È sotto l\'offerta minima ammessa: a queste condizioni l\'asta non conviene.' : '') + '</p>';
+    else if (v && c) h += '<p class="st-nota">Con questi costi nessuna offerta resta il ' + U.pct(T.giudizio.scontoObiettivo, 0) + ' sotto il valore minimo stimato.</p>';
+    if (r.punteggio) h += st('Punteggio affare', r.punteggio.valore + ' su 100' + (window.Punteggio ? ' (' + esc(Punteggio.fascia(r.punteggio.valore).etichetta.toLowerCase()) + ')' : ''));
+    h += '</section></div>';
+
+    // scadenze
+    h += '<section class="st-blocco"><h2>Date e scadenze</h2><table class="st-tabella"><tbody>' + lt.eventi.map(function (e) {
+      return '<tr' + (e.qui ? ' class="st-qui"' : '') + '><td class="st-data">' + esc(e.data ? quandoEvento(e) : '—') + '</td><td><b>' + esc(e.titolo) + '</b>' + (e.nota ? ' · ' + esc(e.nota) : '') + '</td></tr>';
+    }).join('') + '</tbody></table>' + lt.note.map(function (t) { return '<p class="st-nota">' + esc(t) + '</p>'; }).join('') + '</section>';
+
+    // zona e probabilità (in breve)
+    var righe = [];
+    var z = SD && a.categoria === 'immobile' ? SD.zona(a) : null;
+    if (z) righe.push('<b>La zona:</b> ' + esc(z.sintesi ? z.sintesi + (z.omi.compravendite ? ' ' + z.omi.compravendite.testo : '') + ' Fonte: ' + z.omi.fonte + '.' : z.mancanti[0] || 'dati della zona non disponibili.'));
+    var pr = probabilita(a);
+    righe.push('<b>Probabilità:</b> ' + esc(pr.disponibile ? pr.testoSimili + ' ' + pr.testoIpotesi + ' ' + pr.testoVincere + ' Fonte: ' + pr.fonte + '; ' + pr.testoCampione + ' È una stima dai dati passati, non una previsione.' : pr.motivo || 'non disponibile.'));
+    h += '<section class="st-blocco"><h2>Zona e probabilità</h2>' + righe.map(function (t) { return '<p class="st-nota">' + t + '</p>'; }).join('') + '</section>';
+
+    // rischi
+    h += '<section class="st-blocco"><h2>Rischi cercati nel testo dell\'avviso</h2><ul class="st-rischi">' + r.semafori.map(function (s) {
+      return '<li><b>' + esc(s.titolo) + ':</b> ' + esc(ESITO[s.colore].toLowerCase()) + '. ' + esc(s.testo) + (s.prova ? ' «' + esc(s.prova) + '»' : '') + '</li>';
+    }).join('') + '</ul><p class="st-nota">Il controllo legge solo il testo breve dell\'avviso: un rischio può esserci anche se qui non compare. Leggi la perizia.</p></section>';
+
+    // documenti, scritti per esteso
+    var al = a.allegati || {}, docs = [['Avviso originale', a.linkAvviso], ['Perizia di stima', al.perizia || a.linkPerizia], ['Avviso di vendita (PDF)', al.avviso || a.linkPdf], ['Ordinanza di vendita', al.ordinanza]];
+    h += '<section class="st-blocco"><h2>Documenti</h2>' + docs.filter(function (d) { return U.linkSicuro(d[1]); }).map(function (d) {
+      return '<p class="st-link"><b>' + d[0] + ':</b> ' + urlPieno(d[1]) + '</p>';
+    }).join('') + '<p class="st-link"><b>Questa scheda:</b> ' + urlPieno(location.origin + location.pathname + '?id=' + encodeURIComponent(a.id)) + '</p></section>';
+
+    var agg = a.vista || (window.RIEPILOGO && RIEPILOGO.aggiornato ? String(RIEPILOGO.aggiornato).slice(0, 10) : '');
+    h += '<footer class="st-piede"><p><b>Stampata il <span data-stampata>' + esc(adessoEsteso()) + '</span></b>' + (agg ? ' · dati dell\'asta aggiornati al ' + esc(U.dataIt(agg)) : '') + ' · Radar Aste Italia</p>' +
+      '<p><b>Avvertenza.</b> I numeri di questa scheda sono stime indicative ricavate dall\'avviso e da fonti pubbliche (Portale delle Vendite Pubbliche, Agenzia delle Entrate – OMI) e non sostituiscono il parere di un notaio, di un avvocato o di un commercialista. ' +
+      'Leggi per intero avviso di vendita e perizia, visita il bene con il custode e verifica costi, vincoli e scadenze prima di versare la cauzione.</p></footer>';
+    return h;
+  }
+
+  // il report si rifà subito prima della stampa: data e ora, offerta e ipotesi scelte in pagina
+  function preparaStampa() {
+    var el = $('#sc-stampa');
+    if (el && stato.a) el.innerHTML = rapportoStampa(stato.a, stato.r);
+  }
+
   /* ---------- pagina ---------- */
 
   function vuota(titolo, testo) {
@@ -706,16 +797,21 @@
     stato.a = a; stato.r = r;
     document.title = (a.titolo || 'Asta') + ' – Radar Aste Italia';
     var el = $('#scheda');
-    el.innerHTML = testa(a, r) + indiceSezioni(r) + numeri(a, r) +
-      '<div class="sc-griglia">' + sezPunteggio(a, r) + sezValore(a, r) + '</div>' +
+    el.innerHTML = testa(a, r) + indiceSezioni(a) + numeri(a, r) +
+      '<div class="sc-griglia">' + sezPunteggio(a, r) + sezValore(a, r) + '</div>' + sezZona(a) +
       '<div class="sc-griglia sc-griglia-calc">' + sezSimula(a, r) + sezCosti(a, r) + '</div>' +
-      '<div class="sc-griglia">' + sezRischi(a, r) + sezTempi(a, r) + '</div>' +
-      sezDettagli(a, r) + sezDocumenti(a) + avvertenza();
+      '<div class="sc-griglia">' + sezRischi(a, r) + sezTempi(a, lineaTempo(a)) + '</div>' +
+      sezDettagli(a, r) + sezDocumenti(a) + avvertenza() +
+      '<section class="sc-stampa" id="sc-stampa" aria-label="Versione da stampare"></section>';
     el.setAttribute('aria-busy', 'false');
+    document.body.classList.add('sc-con-stampa');
     attivaGalleria(a);
     aggiornaAzioni();
     var inp = $('#offerta');
     if (inp) { inp.addEventListener('input', function () { simula(); }); simula(r.offertaMinima); }
+    var ip = $('#ipotesi');
+    if (ip) { ip.addEventListener('input', function () { aggiornaProbabilita(true); }); aggiornaProbabilita(); }
+    preparaStampa();
     aggiornaConti();
     setInterval(aggiornaConti, 1000);
   }
@@ -773,11 +869,14 @@
           aggiornaAzioni();
         } else if (az === 'condividi') condividi();
         else if (az === 'calendario') U.offriFile('asta-' + a.id + '.ics', window.Calendario.ics(a), 'text/calendar;charset=utf-8');
+        else if (az === 'stampa') { preparaStampa(); window.print(); }
         return;
       }
       var o = e.target.closest('[data-offerta]');
       if (o) { var inp = $('#offerta'); inp.value = o.dataset.offerta; simula(+o.dataset.offerta); }
     });
     document.addEventListener('radaraste:seguite', aggiornaAzioni);
+    // anche con la stampa del browser (Ctrl+P): report aggiornato
+    window.addEventListener('beforeprint', preparaStampa);
   });
 })();

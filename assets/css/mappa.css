@@ -41,6 +41,15 @@
 .m-zona-titolo:empty { display: none; }
 #mCercaZona { justify-self: start; }
 
+/* strati della mappa: puntini e mappa di calore degli sconti */
+.m-strati { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 2px; }
+.m-strati legend { padding: 0; margin-bottom: 4px; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.m-calore-metodo { display: grid; gap: 6px; margin-top: 4px; padding: 10px 12px; border-radius: var(--r-2); background: var(--surface-2); border: 1px solid var(--line); font-size: 13px; line-height: 1.5; color: var(--fg-2); }
+.m-calore-metodo b { font-weight: 600; }
+.m-fonte { font-size: 12.5px; color: var(--muted); }
+.m-fonte a { color: var(--muted); }
+.m-fonte a:hover { color: var(--accent); }
+
 /* elenchi di aste (zona, stesso punto) */
 .m-voci { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .m-voce { width: 100%; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: center; text-align: left; font: inherit; color: var(--fg); background: none; border: 0; border-radius: var(--r-2); padding: 9px 10px; cursor: pointer; transition: background var(--dur-1); }
@@ -56,6 +65,14 @@
 .m-legenda li span, .m-legenda-lista li span { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
 .m-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; background: var(--c); box-shadow: 0 0 0 2px var(--surface); }
 .m-legenda-n { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.m-legenda-n:empty { display: none; }
+/* scala della mappa di calore: cinque passi della stessa tinta, con l'opacità dei quadrati sulla mappa */
+.m-scala { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-top: 8px; }
+.m-scala i { display: block; height: 12px; background: color-mix(in srgb, var(--accent) var(--t), var(--surface)); opacity: .82; }
+.m-scala i:first-child { border-radius: 3px 0 0 3px; }
+.m-scala i:last-child { border-radius: 0 3px 3px 0; }
+.m-scala-n { display: grid; grid-template-columns: repeat(5, 1fr); margin-top: 3px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.m-leg-calore + .m-legenda-t { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 .m-avvertenza { font-size: 13px; color: var(--muted); }
 
 /* ---------- anteprima dell'asta ---------- */
@@ -100,6 +117,20 @@
 @keyframes m-giro { to { transform: rotate(360deg); } }
 .m-legenda { position: absolute; z-index: 5; left: 14px; bottom: 26px; width: 210px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-2); box-shadow: var(--ombra-2); }
 .m-legenda-lista { display: none; }
+.m-legenda:empty { display: none; }
+.m-calore-mini { display: none; }
+
+/* riquadro del quadrato della mappa di calore (puntatore sopra o quadrato toccato) */
+.m-cella { position: absolute; z-index: 6; left: 0; top: 0; width: 248px; display: grid; gap: 6px; padding: 10px 12px 12px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-2); box-shadow: var(--ombra-2); font-size: 13px; color: var(--fg-2); }
+.m-cella-testa { display: flex; align-items: center; gap: 8px; min-height: 22px; }
+.m-cella-testa .m-legenda-t { margin-right: auto; }
+.m-cella .m-x { width: 32px; height: 32px; margin: -4px -4px -4px 0; }
+.m-cella-v { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+.m-cella-v b { font-size: 24px; font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; letter-spacing: -.01em; line-height: 1.1; }
+.m-cella-v small { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.m-cella-n { font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.m-cella .btn { justify-self: start; }
+.m-calore { pointer-events: none; }
 
 /* ---------- marcatori ---------- */
 .m-gruppo { display: grid; place-items: center; border-radius: 50%; background: var(--c); color: #fff; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 30%, transparent), 0 2px 6px rgba(0, 0, 0, .25); border: 2px solid rgba(255, 255, 255, .9); cursor: pointer; transition: transform var(--dur-1) var(--ease); }
@@ -163,6 +194,11 @@
   .m-velo[hidden] { display: none; }
   .m-legenda { display: none; }
   .m-legenda-lista { display: block; padding-top: 6px; border-top: 1px solid var(--line); }
+  .m-calore-mini { display: inline-flex; position: absolute; z-index: 6; left: 10px; bottom: 70px; align-items: center; gap: 8px; min-height: 36px; padding: 0 10px; font: inherit; font-size: 12px; font-weight: 550; color: var(--fg-2); background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-ctrl); box-shadow: var(--ombra-2); cursor: pointer; font-variant-numeric: tabular-nums; }
+  .m-calore-mini[hidden] { display: none; }
+  .m-calore-mini .m-scala { width: 80px; margin: 0; }
+  .m-calore-mini .m-scala i { height: 10px; }
+  .m-cella { width: min(260px, calc(100% - 20px)); }
   .m-barra { display: flex; position: absolute; z-index: 6; left: 10px; right: 64px; top: 10px; align-items: center; gap: 10px; }
   .m-barra-filtri { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; font: inherit; font-size: 14px; font-weight: 600; color: var(--fg); background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-ctrl); box-shadow: var(--ombra-2); cursor: pointer; }
   .m-barra-filtri b { min-width: 20px; height: 20px; border-radius: 10px; padding: 0 6px; background: var(--accent); color: var(--accent-ink); font-size: 11.5px; display: inline-grid; place-items: center; }
