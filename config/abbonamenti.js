@@ -33,7 +33,8 @@
     ivaInclusa: true,
     prova: PROVA,
 
-    // "(in arrivo)" segna ciò che il sito non fa ancora: va tolto solo quando la funzione esiste davvero
+    // "(in arrivo)" segna ciò che il sito non fa ancora: va tolto solo quando la funzione esiste davvero.
+    // Il report PDF esiste già ("Stampa o salva in PDF" nella scheda dell'asta): è una funzione del piano Base.
     piani: [
       {
         id: 'gratis',
@@ -61,7 +62,7 @@
           'La selezione personale degli affari per zona, budget, categoria e strategia',
           'Tutte le combinazioni d\'oro, con il risparmio fiscale "prima casa" calcolato',
           'Aste seguite senza limite',
-          'Report PDF di un\'asta da salvare o stampare (in arrivo)',
+          'Report PDF di ogni asta da salvare o stampare, con valore, costi, rischi e fonti',
           'Avvisi sulle nuove aste che ti interessano (in arrivo)'
         ]
       },
@@ -76,7 +77,7 @@
           'Stratega d\'asta: su quali aste puntare con il tuo capitale, quanto offrire e quando, con migliaia di scenari simulati sugli esiti reali delle vendite passate',
           'Consulente d\'asta con intelligenza artificiale (in arrivo)',
           'Statistiche avanzate sulle aste (in arrivo)',
-          PROVA.giorni + ' giorni di prova gratuita'
+          PROVA.giorni + ' giorni di prova gratuita al primo abbonamento'
         ]
       }
     ],
