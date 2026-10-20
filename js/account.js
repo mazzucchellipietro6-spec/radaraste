@@ -121,7 +121,12 @@
   }
   // risposte di PostgREST (tabelle)
   function erroreDati(r) {
+    var d = r.dati || {};
     if (r.stato === 401 || r.stato === 403) return errore('Accesso scaduto: entra di nuovo nel tuo account.', 'non-autenticato', r.stato);
+    // vincolo dati_utente_dimensione (circa 2 MB) dello schema, o corpo rifiutato perché troppo grande
+    if (d.code === '23514' || r.stato === 413) {
+      return errore('Troppi dati da salvare nell\'account (oltre 2 MB): restano salvati in questo browser ma non si sincronizzano. Smetti di seguire le aste che non ti servono più e riprova.', 'troppi-dati', r.stato);
+    }
     if (r.stato >= 500) return errore('Il servizio degli account non risponde: riprova tra qualche minuto.', 'servizio', r.stato);
     return errore('Non riesco a leggere o salvare i dati dell\'account (errore ' + r.stato + '): riprova.', 'servizio', r.stato);
   }
@@ -677,6 +682,13 @@
       var riga = Array.isArray(r.dati) && r.dati[0] ? r.dati[0] : null;
       var remoto = riga && riga.dati && riga.dati.chiavi && typeof riga.dati.chiavi === 'object' ? riga.dati.chiavi : {};
       var reg = registro(), locale = {}, usati = {};
+      // prima sincronizzazione di un altro account in questo browser: ciò che risultava già salvato e le aste tolte
+      // valevano per l'account di prima (meglio tenere un'asta in più che toglierla dall'account sbagliato)
+      if (reg.utente && reg.utente !== id) {
+        reg.sincronizzate = {};
+        delete reg.ultima;
+        CHIAVI.forEach(function (k) { if (LISTE[k] && reg.chiavi[k]) reg.chiavi[k].rimosse = {}; });
+      }
       CHIAVI.forEach(function (k) {
         var v = leggiDato(k), m = reg.chiavi[k];
         if (v === undefined) return;                 // illeggibile: non si tocca
@@ -771,10 +783,12 @@
   function riepilogoDati() {
     function lunghezza(k) { var v = leggiDato(k); return Array.isArray(v) ? v.length : 0; }
     function c(k) { var v = leggiDato(k); return v != null && !(typeof v === 'object' && !Object.keys(v).length); }
+    var reg = configurato() ? registro() : null, u = utente();
     return {
       seguite: lunghezza(K_SEGUITE), aste: lunghezza(K_ASTE), ricerche: lunghezza('radaraste.ricerche'),
       preferenze: c('radaraste.preferenze'), stratega: c('radaraste.stratega'),
-      ultima: configurato() ? registro().ultima || null : null, pendenti: pendenti()
+      // ultima sincronizzazione dell'account collegato (non di un altro account usato prima in questo browser)
+      ultima: reg && u && reg.utente === u.id ? reg.ultima || null : null, pendenti: pendenti()
     };
   }
 

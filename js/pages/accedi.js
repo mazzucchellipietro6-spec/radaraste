@@ -29,9 +29,12 @@
     spegni();
     A.attendi(4000).then(function () { location.href = dopo; });
   }
+  // con l'accesso già fatto i moduli non servono: tornano dopo l'uscita
+  function moduli(visibili) { $('#accModuli').hidden = !visibili; $('#accGoogleBox').hidden = !visibili; }
   function mostraDentro(u) {
     var d = $('#accDentro');
     d.hidden = false;
+    moduli(false);
     d.innerHTML = '<p>Hai già effettuato l\'accesso come <b>' + U.esc(u.email || 'utente') + '</b>.</p>' +
       '<div class="row-actions"><a class="btn small" href="account.html">Vai al tuo account</a>' +
       (dopo !== 'account.html' ? '<a class="btn small ghost" href="' + U.esc(dopo) + '">Torna alla pagina di prima</a>' : '') +
@@ -39,7 +42,7 @@
     $('#accEsci').addEventListener('click', function () {
       var b = this;
       occupato(b, true, 'Uscita…');
-      A.esci().then(function () { d.hidden = true; U.toast('Sei uscito dall\'account'); }, function (e) { occupato(b, false); messaggio(e.message, 'errore'); });
+      A.esci().then(function () { d.hidden = true; moduli(true); U.toast('Sei uscito dall\'account'); }, function (e) { occupato(b, false); messaggio(e.message, 'errore'); });
     });
   }
   function valori(form) { return { email: form.elements.email.value.trim(), password: form.elements.password ? form.elements.password.value : '' }; }
@@ -135,7 +138,7 @@
     });
     document.addEventListener('radaraste:account', function (e) {
       if (e.detail && e.detail.motivo === 'rinnovo') return;
-      if (!A.utente()) $('#accDentro').hidden = true;
+      if (!A.utente() && !$('#accDentro').hidden) { $('#accDentro').hidden = true; moduli(true); }
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvia); else avvia();

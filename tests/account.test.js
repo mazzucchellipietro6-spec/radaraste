@@ -479,6 +479,46 @@ test('salvataggio automatico: niente senza accesso', async (t) => {
   assert.equal(A.pendenti(), true, 'la modifica resta annotata per quando si accede');
 });
 
+test('un altro account nello stesso browser: si riparte senza le aste tolte e senza la data di sincronizzazione dell\'altro', async (t) => {
+  const K = 'radaraste.v1.seguite';
+  const ALTRO = '99999999-8888-4777-8666-555555555555';
+  let remota = [];
+  const { A, local, chiamate } = ambiente(t, { rotte: [['GET', SUPABASE + '/rest/v1/dati_utente?', () => ({ json: remota })]] });
+  conSessione(local);
+  local.setItem(K, JSON.stringify([{ id: 'a', note: '' }, { id: 'b', note: '' }]));
+  A.osserva(T(1));
+  local.setItem(K, JSON.stringify([{ id: 'a', note: '' }]));          // l'utente di prima toglie l'asta b
+  A.osserva(T(2));
+  await A.salvaDati();
+  assert.ok(A.riepilogoDati().ultima);
+  assert.equal(A.pendenti(), false);
+
+  // entra un altro account che segue anche l'asta b (aggiunta prima che l'altro la togliesse)
+  conSessione(local, { utente: { id: ALTRO, email: 'altro@example.com' } });
+  assert.equal(A.riepilogoDati().ultima, null, 'la data era dell\'altro account');
+  remota = [{ utente: ALTRO, aggiornato: T(1), dati: { versione: 1, chiavi: { [K]: { valore: [{ id: 'b', note: 'mia', aggiunta: T(1) }], aggiornato: T(1), orari: {}, rimosse: {} } } } }];
+  const r = await A.caricaDati();
+  assert.equal(r.salvato, true, 'i dati di questo browser vanno anche nel nuovo account');
+  assert.deepEqual(leggi(local, K).map((s) => s.id), ['a', 'b'], 'l\'asta tolta dall\'altro account resta in questo');
+  const post = verso(chiamate, SUPABASE + '/rest/v1/dati_utente?on_conflict=utente', 'POST');
+  const ultimo = post[post.length - 1].corpo;
+  assert.equal(ultimo.utente, ALTRO);
+  assert.deepEqual(ultimo.dati.chiavi[K].rimosse, {});
+  assert.equal(leggi(local, 'radaraste.account.sync').utente, ALTRO);
+});
+
+test('dati troppo grandi per l\'account (vincolo dello schema): errore chiaro, i dati restano nel browser', async (t) => {
+  const K = 'radaraste.v1.seguite';
+  const { A, local } = ambiente(t, {
+    rotte: [['POST', SUPABASE + '/rest/v1/dati_utente?on_conflict=utente', { status: 400, json: { code: '23514', message: 'new row for relation "dati_utente" violates check constraint "dati_utente_dimensione"' } }]]
+  });
+  conSessione(local);
+  local.setItem(K, JSON.stringify([{ id: 'a', note: 'tanta roba' }]));
+  await assert.rejects(A.salvaDati(), { codice: 'troppi-dati', message: /Troppi dati/ });
+  assert.deepEqual(leggi(local, K), [{ id: 'a', note: 'tanta roba' }]);
+  assert.equal(A.pendenti(), true, 'si riprova alla prossima modifica');
+});
+
 /* ---- Dati personali, pagamenti, uscita ---- */
 
 test('esportaDati: account, profilo, abbonamento, dati sincronizzati e del browser, senza token', async (t) => {

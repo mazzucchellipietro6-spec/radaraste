@@ -83,14 +83,15 @@ test('bozze legali: fascia BOZZA in cima, data di ultima modifica, indice e segn
 
 test('bozze legali: nessun dato del titolare inventato (partita IVA, indirizzi, email, telefoni)', async () => {
   for (const f of BOZZE) {
-    const t = testo(await leggi(f));
+    const grezzo = await leggi(f), t = testo(grezzo);
     assert.doesNotMatch(t, /\d(?:[ .]?\d){10}/, f + ': sequenza di 11 cifre (partita IVA?)');
+    assert.doesNotMatch(grezzo, /\d{11}/, f + ': sequenza di 11 cifre nel codice della pagina');
     assert.doesNotMatch(t, /\b(?:P\.?\s?IVA|partita IVA)\s*:?\s*(?:IT)?\s*\d/i, f + ': partita IVA scritta');
     assert.doesNotMatch(t, /\b(?:[Vv]ia|[Vv]iale|[Pp]iazza|[Pp]iazzale|[Cc]orso|[Ll]argo|[Vv]icolo)\s+[A-ZÀ-Ý][^\s,]*(?:\s+[A-ZÀ-Ý][^\s,]*)*,?\s+\d+/, f + ': indirizzo');
     assert.doesNotMatch(t, /\b\d{5}\s+[A-ZÀ-Ý][a-zà-ÿ]+/, f + ': CAP e città');
     assert.doesNotMatch(t, /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, f + ': indirizzo email');
     assert.doesNotMatch(t, /\+39|\b0\d{1,3}[ .-]?\d{6,8}\b/, f + ': numero di telefono');
-    assert.doesNotMatch(await leggi(f), /mailto:|tel:/, f + ': link di contatto inventati');
+    assert.doesNotMatch(grezzo, /mailto:|tel:/, f + ': link di contatto inventati');
   }
 });
 
@@ -225,6 +226,9 @@ test('pulsanti con utente collegato: checkout dal piano Gratis, portale clienti 
   assert.match(h, /<span class="pz-bollino attuale">Il tuo piano<\/span>/);
   assert.ok(h.includes('data-azione="portale" data-piano="base"'));
   assert.doesNotMatch(scheda('pro', base), /checkout/);
+  // chi è già abbonato cambia piano dal portale: niente promessa di una nuova prova gratuita
+  assert.doesNotMatch(scheda('pro', base), /prova gratuita|Prova Pro/);
+  assert.match(scheda('pro', gratis), /giorni di prova gratuita/);
 });
 
 test('schede dei piani: prezzi dalla configurazione, mensile e annuale con il risparmio, IVA inclusa', () => {

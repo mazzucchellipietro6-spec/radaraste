@@ -115,7 +115,11 @@
     (function prova() {
       A.abbonamento().then(function (ab) {
         mostraAbbonamento(ab);
-        if (ab.piano !== 'gratis') { box.textContent = 'Abbonamento attivo: piano ' + nomePiano(ab.piano) + '. Buone aste!'; return; }
+        // attivo davvero solo quando Stripe conferma (in prova o pagato), non con un pagamento ancora in sospeso
+        if (ab.piano !== 'gratis' && (ab.stato === 'active' || ab.stato === 'trialing')) {
+          box.textContent = 'Abbonamento attivo: piano ' + nomePiano(ab.piano) + (ab.stato === 'trialing' ? ', in prova gratuita' : '') + '. Buone aste!';
+          return;
+        }
         if (++tentativi < 10) setTimeout(prova, 3000);
         else box.textContent = 'Pagamento ricevuto: l\'abbonamento non risulta ancora attivo. Ricarica la pagina tra qualche minuto; se non cambia scrivici indicando l\'email dell\'account.';
       }, function () { if (++tentativi < 10) setTimeout(prova, 3000); });
@@ -175,16 +179,22 @@
     });
 
     // conferma in due tempi: il primo clic arma il pulsante, il secondo (entro 4 secondi) cancella
+    var etichettaCancella = $('#acCancella').textContent;
     $('#acCancella').addEventListener('click', function () {
       var b = this;
       if (b.disabled) return;
       U.conferma(b, 'Conferma: cancella per sempre', function () {
         occupato(b, true, 'Cancellazione in corso…');
         A.cancellaAccount().then(function (d) {
+          b.dataset.testo = etichettaCancella; occupato(b, false);
           $('#acDentro').hidden = true;
           fuori('fuori');
           messaggio((d && d.messaggio) || 'Account cancellato.', 'ok');
-        }, function (e) { occupato(b, false); messaggio(e.message, 'errore'); });
+        }, function (e) {
+          // di nuovo "Cancella il mio account": un altro tentativo chiede ancora la conferma
+          b.dataset.testo = etichettaCancella; occupato(b, false);
+          messaggio(e.message, 'errore');
+        });
       });
     });
 
@@ -205,10 +215,11 @@
 
   function avvia() {
     collega();
-    if (!disegna()) {
-      if (A && A.configurato()) A.pronto().then(function () { if (disegna()) leggiAbbonamento(); });
-    } else if (U.parametro('pagamento') === 'ok') dopoPagamento();
-    else leggiAbbonamento();
+    var pagamento = U.parametro('pagamento') === 'ok';
+    function abbonamentoDaLeggere() { if (pagamento) { pagamento = false; dopoPagamento(); } else leggiAbbonamento(); }
+    if (disegna()) abbonamentoDaLeggere();
+    // la sessione può arrivare un attimo dopo (ritorno da un'altra pagina, rinnovo del token)
+    else if (A && A.configurato()) A.pronto().then(function () { if (disegna()) abbonamentoDaLeggere(); });
     if (!A || !A.configurato()) return;
     // sessione, abbonamento o dati cambiati (anche da un'altra scheda)
     document.addEventListener('radaraste:account', function (e) {

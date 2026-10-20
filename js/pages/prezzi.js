@@ -115,12 +115,15 @@
   }
 
   function htmlPiano(piano, ctx) {
-    var c = ctx.cfg, id = esc(piano.id), paga = aPagamento(piano), giorni = provaDi(piano, c), az = azione(piano, ctx);
+    var c = ctx.cfg, id = esc(piano.id), paga = aPagamento(piano), az = azione(piano, ctx);
+    // chi ha già un piano a pagamento cambia dal portale clienti, senza una nuova prova: non la promettiamo
+    var giorni = az.tipo === 'portale' ? 0 : provaDi(piano, c);
     var periodo = ctx.periodo === 'annuale' && importo(piano, 'annuale') ? 'annuale' : (importo(piano, 'mensile') ? 'mensile' : 'annuale');
     var attuale = az.tipo === 'attuale' || az.attuale;
     var bollino = attuale ? '<span class="pz-bollino attuale">Il tuo piano</span>' : (piano.consigliato ? '<span class="pz-bollino">Consigliato</span>' : '');
-    // la prova è già in evidenza sopra il pulsante: non la ripeto tra i vantaggi
-    var vantaggi = (piano.vantaggi || []).filter(function (v) { return !(giorni && /giorni di prova gratuita/i.test(v)); });
+    // la prova è in evidenza sopra il pulsante (o non vale per chi è già abbonato): non la ripeto tra i vantaggi
+    var conProva = provaDi(piano, c) > 0;
+    var vantaggi = (piano.vantaggi || []).filter(function (v) { return !(conProva && /giorni di prova gratuita/i.test(v)); });
     return '<article class="pz-piano' + (piano.consigliato ? ' consigliato' : '') + (attuale ? ' attuale' : '') + '" id="' + id + '" aria-labelledby="pz-nome-' + id + '">' + bollino +
       '<header><h2 class="pz-nome" id="pz-nome-' + id + '">' + esc(piano.nome) + '</h2>' + (piano.sottotitolo ? '<p class="pz-sotto">' + esc(piano.sottotitolo) + '</p>' : '') + '</header>' +
       '<p class="pz-prezzo"><span class="pz-cifra">' + euro(paga ? importo(piano, periodo) : 0) + '</span><span class="pz-per">' + (!paga ? 'senza costi' : periodo === 'annuale' ? 'all\'anno' : 'al mese') + '</span></p>' +

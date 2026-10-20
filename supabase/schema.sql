@@ -14,6 +14,14 @@
 -- Sicurezza: Row Level Security attiva su tutte le tabelle. La service role delle funzioni (functions/, servizi/)
 -- scavalca la RLS e non va MAI usata nel browser; il browser usa la chiave anonima e il token dell'utente.
 -- Alla cancellazione di un utente da auth.users le sue righe spariscono con lui (on delete cascade).
+--
+-- Dopo lo schema, nel pannello di Supabase (Authentication):
+--   URL Configuration  Site URL = indirizzo del sito (lo stesso di SITO_URL su Cloudflare); in Redirect URLs
+--                      l'indirizzo della pagina di accesso con i parametri, per esempio https://<sito>/accedi.html**
+--                      (email di conferma, link di accesso e Google tornano lì con ?dopo=<pagina>)
+--   Providers          Email con "Confirm email" attivo; Google solo se serve (ID e segreto client di Google Cloud)
+--   Email Templates    testi delle email in italiano
+-- Nel sito vanno solo l'indirizzo del progetto e la chiave anonima (config/abbonamenti.js), MAI la service role.
 
 -- ---------- tabelle -------------------------------------------------------------------------------------------------
 
