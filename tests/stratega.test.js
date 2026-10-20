@@ -320,3 +320,192 @@ test('spiega: ipotesi con le fonti, cosa non si sa e avvertenza finale', () => {
   assert.match(S.spiega({}).righe.join('\n'), /non disponibili/);
   assert.equal(S.spiega({}).disclaimer, S.DISCLAIMER);
 });
+
+/* ---------- strategia su più anni: proiezione del patrimonio ---------- */
+
+// piano con un'asta sola che si vince sempre (senza statistiche e con concorrenza 1 la probabilità è 1)
+function sempreVinta(strategia, x, input) {
+  return S.esegui([asta(x || {})], { capitale: 150000, concorrenza: 1, strategia, ...input }, { T, oggi: OGGI, n: 300, seme: 4 });
+}
+
+test('proiezione: opzioni con valori predefiniti prudenti e limiti', () => {
+  const o = S.opzioniProiezione({});
+  assert.deepEqual(o, { anni: 3, rivalutazione: 0, costiAffitto: 0.25, mesiRivendita: 12, costiVendita: 0.04, reinvesti: false, tassoMutuo: null });
+  assert.equal(S.PROIEZIONE_BASE.rivalutazione, 0);
+  const l = S.opzioniProiezione({ anni: 9, rivalutazione: 0.5, costiAffitto: 2, mesiRivendita: 0, costiVendita: -1, reinvesti: 'si', tassoMutuo: '0.035' });
+  assert.deepEqual(l, { anni: 5, rivalutazione: 0.1, costiAffitto: 0.9, mesiRivendita: 1, costiVendita: 0, reinvesti: true, tassoMutuo: 0.035 });
+  assert.equal(S.opzioniProiezione({ anni: 0 }).anni, 1);
+  assert.equal(S.opzioniProiezione({ reinvesti: 'no' }).reinvesti, false);
+  assert.equal(S.opzioniProiezione({ tassoMutuo: '' }).tassoMutuo, null);
+});
+
+test('proiezione: riproducibile, anno per anno, con le stesse aste vinte della simulazione del piano', () => {
+  const { prof, cand } = casoRischio('audace');
+  const pi = S.piano(cand, prof);
+  const ris = { profilo: prof, candidati: cand, piano: pi, simulazione: S.simula(pi, prof, { n: 2000, seme: 21 }), T };
+  const a = S.proiezione(ris, { anni: 4 });
+  assert.deepEqual(a, S.proiezione(ris, { anni: 4 }));
+  assert.notDeepEqual(S.proiezione(ris, { anni: 4, seme: 22 }).serie, a.serie);
+  assert.equal(a.n, 2000);
+  assert.equal(a.seme, 21);
+  assert.equal(a.serie.length, 5);
+  assert.deepEqual(a.serie.map((s) => s.anno), [0, 1, 2, 3, 4]);
+  assert.deepEqual(a.serie.map((s) => s.data), ['2026-10-13', '2027-10-13', '2028-10-13', '2029-10-13', '2030-10-13']);
+  // oggi: solo il capitale in cassa
+  assert.deepEqual(a.serie[0].patrimonio, { p10: 100000, p50: 100000, p90: 100000, media: 100000 });
+  // a fine anno 1 (prima di qualsiasi vendita) gli immobili posseduti sono le aste vinte della simulazione, giro per giro
+  assert.equal(a.serie[1].posseduti, ris.simulazione.vinte.media);
+  assert.equal(S.proiezione(ris, { anni: 9 }).serie.length, 6);   // al massimo 5 anni
+});
+
+test('proiezione: nessuna rivalutazione se non la chiedi', () => {
+  const ris = sempreVinta('vivere');
+  const c = ris.piano.scelte[0];
+  const p = S.proiezione(ris, { anni: 3 });
+  for (const y of [1, 2, 3]) {
+    assert.equal(p.serie[y].immobili.p50, 180000);   // il valore minimo della forchetta, fermo
+    assert.equal(p.serie[y].patrimonio.p50, 150000 - c.cassaNecessaria + 180000);
+  }
+  assert.match(p.ipotesi.join('\n'), /senza rivalutazione/);
+  // con l'ipotesi esplicita dell'utente il valore cresce dell'x% l'anno
+  const r = S.proiezione(ris, { anni: 3, rivalutazione: 0.02 });
+  assert.equal(r.serie[3].immobili.p50, Math.round(180000 * Math.pow(1.02, 3)));
+  assert.match(r.ipotesi.join('\n'), /rivalutazione del 2% l'anno.*ipotesi tua/);
+});
+
+test('proiezione: affitti dalle quotazioni OMI di locazione, al netto di costi e sfitto', () => {
+  // asta il 01/12/2026, saldo entro il 31/03/2027: affitto dal primo mese intero dopo il saldo, 6 mesi nel primo anno
+  const ris = sempreVinta('affittare', { omiAffMin: 500, omiAffMax: 700 });
+  const p = S.proiezione(ris, { anni: 3 });
+  const f1 = p.serie[1].affitti, f3 = p.serie[3].affitti;
+  assert.ok(f1.p10 >= 6 * 500 * 0.75 && f1.p90 <= 6 * 700 * 0.75, JSON.stringify(f1));
+  assert.ok(f3.p10 >= 30 * 500 * 0.75 && f3.p90 <= 30 * 700 * 0.75, JSON.stringify(f3));
+  assert.ok(f3.p10 < f3.p50 && f3.p50 < f3.p90);   // un canone diverso per ogni simulazione, tra minimo e massimo OMI
+  assert.ok(Math.abs(f3.media - 30 * 600 * 0.75) < 300, String(f3.media));
+  assert.equal(p.serie[3].cassa.p50, 150000 - ris.piano.scelte[0].cassaNecessaria + p.serie[3].affitti.p50);
+  // senza costi e sfitto i canoni sono quelli lordi
+  const lordo = S.proiezione(ris, { anni: 3, costiAffitto: 0 });
+  assert.ok(Math.abs(lordo.serie[3].affitti.media - 30 * 600) < 400);
+  const testo = p.ipotesi.join('\n');
+  assert.match(testo, /quotazioni OMI di locazione/);
+  assert.match(testo, /25% del canone.*ipotesi tua/);
+  assert.match(testo, /21%/);
+  assert.ok(p.fonti.some((x) => /OMI/.test(x.nome) && /agenziaentrate\.gov\.it/.test(x.url)));
+  // senza quotazione OMI di locazione nessun affitto, e lo si dice
+  const senza = S.proiezione(sempreVinta('affittare'), { anni: 2 });
+  assert.equal(senza.serie[2].affitti.p90, 0);
+  assert.match(senza.avvertenze.join('\n'), /manca la quotazione OMI di locazione/);
+  // chi rivende o ci va a vivere non incassa affitti
+  assert.equal(S.proiezione(sempreVinta('rivendere', { omiAffMin: 500, omiAffMax: 700 }), { anni: 3 }).serie[3].affitti.p90, 0);
+});
+
+test('proiezione: plusvalenza tassata solo se rivendi entro 5 anni', () => {
+  const v = S.vendita({ prezzo: 180000, costo: 99700, costiVendita: 0.04, mesiPossesso: 12 }, T);
+  assert.equal(v.costi, 7200);
+  assert.equal(v.plusvalenza, 73100);
+  assert.equal(v.imposta, Math.round(73100 * 0.26));
+  assert.equal(v.netto, 180000 - 7200 - Math.round(73100 * 0.26));
+  assert.equal(v.entroCinqueAnni, true);
+  assert.equal(S.vendita({ prezzo: 180000, costo: 99700, costiVendita: 0.04, mesiPossesso: 59 }, T).imposta, 19006);
+  const dopo = S.vendita({ prezzo: 180000, costo: 99700, costiVendita: 0.04, mesiPossesso: 61 }, T);
+  assert.equal(dopo.imposta, 0);
+  assert.equal(dopo.entroCinqueAnni, false);
+  assert.equal(dopo.netto, 180000 - 7200);
+  assert.equal(S.vendita({ prezzo: 180000, costo: 99700, costiVendita: 0.04, mesiPossesso: 12, abitazionePrincipale: true }, T).imposta, 0);
+  assert.equal(S.vendita({ prezzo: 90000, costo: 99700, costiVendita: 0.04, mesiPossesso: 12 }, T).imposta, 0);   // in perdita
+  assert.equal(S.vendita({ prezzo: 18000, costo: 9000, costiVendita: 0.04, mesiPossesso: 12, immobile: false }, T).imposta, 0);
+  // nella proiezione: vendita 12 mesi dopo il saldo (nel secondo anno), con l'imposta sostitutiva
+  const ris = sempreVinta('rivendere');
+  const c = ris.piano.scelte[0];
+  const p = S.proiezione(ris, { anni: 3 });
+  const atteso = S.vendita({ prezzo: 180000, costo: c.costoTotale, costiVendita: 0.04, mesiPossesso: 12 }, T);
+  assert.equal(p.serie[1].imposte.p50, 0);
+  assert.equal(p.serie[1].immobili.p50, 180000);
+  assert.equal(p.serie[2].imposte.p50, atteso.imposta);
+  assert.equal(p.serie[2].immobili.p50, 0);
+  assert.equal(p.serie[2].cassa.p50, Math.round(150000 - c.cassaNecessaria + atteso.netto));
+  assert.deepEqual(p.vendite, { media: 1, quotaGiri: 1, quotaConImposta: 1, impostaMedia: atteso.imposta });
+  const testo = p.ipotesi.join('\n');
+  assert.match(testo, /entro 5 anni/);
+  assert.match(testo, /imposta sostitutiva del 26%, che è facoltativa/);
+  assert.match(testo, /Art\. 67/);
+  // con una rivendita oltre la fine del periodo nessuna vendita e nessuna imposta
+  const tardi = S.proiezione(ris, { anni: 2, mesiRivendita: 24 });
+  assert.equal(tardi.vendite.media, 0);
+  assert.equal(tardi.serie[2].imposte.p90, 0);
+  assert.match(tardi.avvertenze.join('\n'), /nessun immobile è ancora venduto/);
+  // chi ci va a vivere non vende e non paga plusvalenze
+  assert.equal(S.proiezione(sempreVinta('vivere'), { anni: 5 }).vendite.impostaMedia, 0);
+});
+
+test('proiezione: la cassa non scende mai sotto zero', () => {
+  // capitale tutto impegnato, mutuo con interessi alti e reinvestimento: la cassa resta >= 0 in ogni simulazione e in ogni mese
+  const casi = [
+    sempreVinta('affittare', { omiAffMin: 100, omiAffMax: 120 }, { capitale: 27700, mutuo: 72000 }),
+    sempreVinta('rivendere', {}, { capitale: 99700 }),
+    S.esegui([asta({ comune: 'A', dataAsta: '2026-11-03' }), asta({ comune: 'B', dataAsta: '2026-11-20' }), asta({ comune: 'C', dataAsta: '2027-01-15', omiAffMin: 400, omiAffMax: 600 })],
+      { capitale: 120000, mutuo: 60000, prudenza: 'audace', strategia: 'affittare' }, { T, stat: STAT, oggi: OGGI, n: 1500, seme: 8 })
+  ];
+  for (const ris of casi) {
+    for (const opz of [{ anni: 5 }, { anni: 5, reinvesti: true, tassoMutuo: 0.2 }, { anni: 5, reinvesti: true, mesiRivendita: 6, costiVendita: 0.3 }]) {
+      const p = S.proiezione(ris, opz);
+      assert.ok(p.cassaMinima >= 0, JSON.stringify(opz) + ' ' + p.cassaMinima);
+      p.serie.forEach((s) => assert.ok(s.cassa.p10 >= 0));
+    }
+  }
+  // mutuo senza tasso: il debito resta per intero e si avverte che gli interessi mancano
+  const m = S.proiezione(casi[0], { anni: 2 });
+  assert.equal(m.mutuo, true);
+  assert.equal(m.serie[2].debito.p50, 72000);
+  assert.match(m.avvertenze.join('\n'), /tasso del mutuo/);
+  // con il tasso gli interessi pesano sulla cassa o sul debito
+  const t = S.proiezione(casi[0], { anni: 2, tassoMutuo: 0.04 });
+  assert.ok(t.serie[2].patrimonio.p50 < m.serie[2].patrimonio.p50);
+});
+
+test('proiezione: forchetta p10 <= p50 <= p90 in ogni anno', () => {
+  const ris = S.esegui([asta({ comune: 'A', dataAsta: '2026-11-03', omiAffMin: 500, omiAffMax: 800 }), asta({ comune: 'B', dataAsta: '2026-12-20', omiAffMin: 450, omiAffMax: 600 })],
+    { capitale: 200000, strategia: 'affittare', prudenza: 'equilibrata' }, { T, stat: STAT, oggi: OGGI, n: 1500, seme: 13 });
+  for (const opz of [{ anni: 5 }, { anni: 5, reinvesti: true, rivalutazione: 0.01 }, { anni: 3, rivalutazione: -0.02 }]) {
+    const p = S.proiezione(ris, opz);
+    p.serie.forEach((s) => {
+      for (const k of ['patrimonio', 'cassa', 'immobili', 'debito', 'affitti', 'imposte']) assert.ok(s[k].p10 <= s[k].p50 && s[k].p50 <= s[k].p90, k + ' anno ' + s.anno);
+    });
+    assert.ok(p.finale.patrimonio.p10 < p.finale.patrimonio.p90);   // c'è incertezza: la fascia non è un punto
+  }
+});
+
+test('proiezione: reinvestimento con le medie del piano, detto come ipotesi', () => {
+  const ris = S.esegui([asta({ comune: 'A', dataAsta: '2026-11-03' }), asta({ comune: 'B', dataAsta: '2026-11-20', valoreMin: 250000 })],
+    { capitale: 220000, concorrenza: 1, strategia: 'rivendere' }, { T, oggi: OGGI, n: 300, seme: 2 });
+  const s = ris.piano.scelte;
+  assert.equal(s.length, 2);
+  const senza = S.proiezione(ris, { anni: 5 }), con = S.proiezione(ris, { anni: 5, reinvesti: true });
+  assert.equal(senza.reinvestimento, null);
+  assert.equal(con.reinvestimento.simile.costo, Math.round((s[0].costoTotale + s[1].costoTotale) / 2));
+  assert.equal(con.reinvestimento.simile.valore, 215000);
+  assert.equal(con.reinvestimento.simile.probabilita, 1);
+  assert.equal(con.reinvestimento.simile.passo, 3);   // 2 aste in 6 mesi
+  // le due vendite lasciano circa 158.000 € di guadagni: basta per un'altra asta simile da 99.700 €
+  assert.ok(con.reinvestimento.media >= 1);
+  assert.ok(con.finale.patrimonio.p50 > senza.finale.patrimonio.p50);
+  assert.match(con.ipotesi.join('\n'), /medie delle aste del piano.*Non è detto che aste simili ci siano davvero/);
+  assert.match(senza.ipotesi.join('\n'), /Nessun reinvestimento/);
+  // chi ci va a vivere cerca una sola casa: niente reinvestimento
+  const v = S.proiezione(sempreVinta('vivere'), { anni: 5, reinvesti: true });
+  assert.equal(v.reinvestimento, null);
+  assert.match(v.ipotesi.join('\n'), /una sola casa/);
+});
+
+test('proiezione: senza piano il patrimonio resta il capitale; ipotesi, fonti e avviso sempre presenti', () => {
+  const vuoto = S.esegui([], { capitale: 50000 }, { T, oggi: OGGI, n: 100 });
+  const p = S.proiezione(vuoto, { anni: 2 });
+  p.serie.forEach((s) => assert.deepEqual(s.patrimonio, { p10: 50000, p50: 50000, p90: 50000, media: 50000 }));
+  assert.match(p.avvertenze.join('\n'), /Nessuna asta nel piano/);
+  assert.equal(p.disclaimer, S.DISCLAIMER);
+  const q = S.proiezione(sempreVinta('rivendere'), {});
+  assert.equal(q.anni, 3);
+  assert.match(q.ipotesi.join('\n'), /Forchetta: 300 simulazioni \(seme 4\)/);
+  assert.ok(q.fonti.some((x) => /Art\. 67/.test(x.nome) && x.url));
+  assert.throws(() => S.proiezione({ piano: { scelte: [] } }, {}), /tariffe/);
+});

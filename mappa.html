@@ -76,7 +76,8 @@
             <label class="check"><input type="checkbox" id="mCalore" aria-describedby="mCaloreMetodo"> Mappa di calore degli sconti</label>
             <div class="m-calore-metodo" id="mCaloreMetodo">
               <p>Divide la mappa in quadrati di circa 40 pixel (più grandi in chilometri quando allontani) e colora ognuno con lo <b>sconto medio</b> delle aste filtrate che ci cadono dentro: quanto il costo totale al prezzo base (prezzo, imposte e spese) resta sotto il valore di mercato stimato.</p>
-              <p>Contano solo le aste con sconto e valore di affidabilità media o alta: le altre restano nell'elenco ma non nella media. Con meno di 3 aste nel campione il quadrato resta senza colore.</p>
+              <p>Contano solo le aste con sconto e valore di affidabilità media o alta: le altre restano nell'elenco ma non nella media. Con meno di 3 aste nel campione il quadrato resta senza colore. Uno sconto medio negativo (costo oltre il valore) ha il primo colore della scala, come quelli sotto il 10%.</p>
+              <p>Passa il puntatore su un quadrato per vedere sconto medio e campione; con un clic o un tocco il riquadro resta aperto, con il link alle aste del quadrato nell'elenco.</p>
               <p class="m-fonte">Fonte: prezzi base dagli avvisi delle <a href="fonti.html">fonti ufficiali</a>; valore di mercato dalla stima del perito nell'avviso o dalle quotazioni OMI dell'Agenzia delle Entrate<span id="mCaloreData"></span>.</p>
             </div>
           </fieldset>

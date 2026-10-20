@@ -5,6 +5,8 @@
  *   Pubbliche (data/statistiche.js, generato da scripts/lib/statistiche.mjs), sempre con campione e periodo.
  * - La probabilità di vincere quando ci sono altri offerenti è un'ipotesi dell'utente (profilo.concorrenza), detta come tale.
  * - Valore, costi e offerta massima sono quelli del sito (js/punteggio.js, js/calcoli.js, config/tariffe.js), con le stesse ipotesi.
+ * - Su più anni (proiezione): affitti dalle quotazioni OMI di locazione della scheda, plusvalenza con le regole di
+ *   config/tariffe.js; rivalutazione, costi e sfitto, costi e tempi di vendita, reinvestimento sono ipotesi dell'utente.
  * Funzioni pure; il generatore casuale ha un seme, così la simulazione si ripete identica (test riproducibili).
  * Usabile nel browser (window.Stratega) e in Node per i test. */
 (function (root) {
@@ -386,6 +388,32 @@
 
   /* ---------- simulazione ---------- */
 
+  /* Un giro del piano: offerte ed esiti in ordine di data con la regola di cassa (vedi simula).
+   * u: un numero casuale per asta; pv: probabilità di vincere; una: si cerca una sola casa.
+   * → { stato [per asta: aperta, vinta, persa, saltata, non-serve], tenuta [{cassa, mutuo}], vinte, usato, guad, picco, sforato, saltate } */
+  function giroPiano(scelte, prof, ev, pv, u, una) {
+    var libera = prof.capitale, mutuo = prof.mutuo, stato = [], tenuta = [], vinte = 0, usato = 0, guad = 0, impegnato = 0, cauzioni = 0, aperte = 0, picco = 0, sforato = false, saltate = 0;
+    for (var j = 0; j < ev.length; j++) {
+      var e = ev[j], c = scelte[e.i];
+      if (e.tipo === 0) {
+        if (una && (vinte > 0 || aperte > 0)) { stato[e.i] = 'non-serve'; continue; }
+        var m = quotaMutuo(c, mutuo), serve = c.costoTotale - m;
+        if (serve > libera + 0.5) { stato[e.i] = 'saltata'; saltate++; continue; }
+        libera -= serve; mutuo -= m; tenuta[e.i] = { cassa: serve, mutuo: m }; stato[e.i] = 'aperta'; aperte++; cauzioni += c.cauzione.importo;
+      } else {
+        if (stato[e.i] !== 'aperta') continue;
+        aperte--; cauzioni -= c.cauzione.importo;
+        if (u[e.i] < pv[e.i]) {
+          stato[e.i] = 'vinta'; vinte++;
+          usato += tenuta[e.i].cassa; impegnato += tenuta[e.i].cassa; guad += c.margine;
+        } else { stato[e.i] = 'persa'; libera += tenuta[e.i].cassa; mutuo += tenuta[e.i].mutuo; }
+      }
+      if (impegnato + cauzioni > picco) picco = impegnato + cauzioni;
+      if (impegnato + cauzioni > prof.capitale + 0.5) sforato = true;
+    }
+    return { stato: stato, tenuta: tenuta, vinte: vinte, usato: usato, guad: guad, picco: picco, sforato: sforato, saltate: saltate };
+  }
+
   /* Monte Carlo sequenziale in ordine di data. A ogni termine per le offerte si offre solo se la cassa libera
    * (capitale − cassa delle aste già vinte − cassa tenuta da parte per le offerte ancora aperte) copre l'intera cassa
    * necessaria in caso di vittoria: così non si sfora mai (lo sforamento si conta comunque, come controllo).
@@ -406,31 +434,18 @@
     for (var g = 0; g < n; g++) {
       var u = [];
       for (i = 0; i < k; i++) u.push(rnd());
-      var libera = prof.capitale, mutuo = prof.mutuo, stato = [], tenuta = [], vinte = 0, usato = 0, guad = 0, impegnato = 0, cauzioni = 0, aperte = 0, picco = 0, sforato = false, saltateGiro = 0;
-      for (var j = 0; j < ev.length; j++) {
-        var e = ev[j], c = scelte[e.i];
-        if (e.tipo === 0) {
-          if (una && (vinte > 0 || aperte > 0)) { stato[e.i] = 'non-serve'; nonServePer[e.i]++; continue; }
-          var m = quotaMutuo(c, mutuo), serve = c.costoTotale - m;
-          if (serve > libera + 0.5) { stato[e.i] = 'saltata'; saltatePer[e.i]++; saltateGiro++; continue; }
-          libera -= serve; mutuo -= m; tenuta[e.i] = { cassa: serve, mutuo: m }; stato[e.i] = 'aperta'; aperte++; cauzioni += c.cauzione.importo;
-        } else {
-          if (stato[e.i] !== 'aperta') continue;
-          aperte--; cauzioni -= c.cauzione.importo;
-          if (u[e.i] < pv[e.i]) {
-            stato[e.i] = 'vinta'; vinte++; vintePer[e.i]++;
-            usato += tenuta[e.i].cassa; impegnato += tenuta[e.i].cassa; guad += c.margine;
-          } else { stato[e.i] = 'persa'; libera += tenuta[e.i].cassa; mutuo += tenuta[e.i].mutuo; }
-        }
-        if (impegnato + cauzioni > picco) picco = impegnato + cauzioni;
-        if (impegnato + cauzioni > prof.capitale + 0.5) sforato = true;
+      var r = giroPiano(scelte, prof, ev, pv, u, una);
+      for (i = 0; i < k; i++) {
+        if (r.stato[i] === 'vinta') vintePer[i]++;
+        else if (r.stato[i] === 'saltata') saltatePer[i]++;
+        else if (r.stato[i] === 'non-serve') nonServePer[i]++;
       }
-      istogramma[vinte]++;
-      if (vinte > 0) almenoUna++;
-      capitali.push(usato); guadagni.push(guad); picchi.push(picco);
-      if (sforato) sforamenti++;
-      if (saltateGiro) conSaltate++;
-      saltateTot += saltateGiro;
+      istogramma[r.vinte]++;
+      if (r.vinte > 0) almenoUna++;
+      capitali.push(r.usato); guadagni.push(r.guad); picchi.push(r.picco);
+      if (r.sforato) sforamenti++;
+      if (r.saltate) conSaltate++;
+      saltateTot += r.saltate;
     }
     var out = {
       n: n, seme: seme, probabilita: quale,
@@ -452,6 +467,244 @@
         nota: 'Stessa simulazione con le probabilità più basse e più alte della forchetta dei dati (le vendite senza esito contate come non aggiudicate o come aggiudicate).' };
     }
     return out;
+  }
+
+  /* ---------- patrimonio su più anni ---------- */
+
+  // valori predefiniti prudenti (frazioni: 0.25 = 25%): sono ipotesi, non dati, e l'utente le cambia
+  var PROIEZIONE_BASE = { anni: 3, rivalutazione: 0, costiAffitto: 0.25, mesiRivendita: 12, costiVendita: 0.04, reinvesti: false, tassoMutuo: null };
+  var LIMITI_PROIEZIONE = { anni: [1, 5], rivalutazione: [-0.1, 0.1], costiAffitto: [0, 0.9], mesiRivendita: [1, 60], costiVendita: [0, 0.3], tassoMutuo: [0, 0.2] };
+  var MESI_SALDO_SIMILI = 4;   // aste del reinvestimento: saldo dopo circa 120 giorni, come PARAMETRI.giorniSaldo
+  var GIORNI_MESE = 30.4375;
+  var URL_OMI = 'https://www.agenziaentrate.gov.it/portale/web/guest/schede/fabbricatiterreni/omi/banche-dati/quotazioni-immobiliari';
+
+  function numeroIn(v, base, lim) {
+    if (v == null || v === '' || !isFinite(Number(v))) return base;
+    return Math.max(lim[0], Math.min(lim[1], Number(v)));
+  }
+  function siNo(v) { return v === true || v === 1 || v === '1' || v === 'si' || v === 'sì' || v === 'on' || v === 'true'; }
+  function mesiTra(da, a) { return (Date.parse(a + 'T12:00:00Z') - Date.parse(da + 'T12:00:00Z')) / 86400000 / GIORNI_MESE; }
+
+  /* input: { anni (1–5), rivalutazione, costiAffitto, costiVendita (frazioni), mesiRivendita, reinvesti, tassoMutuo (TAN, frazione, facoltativo) } */
+  function opzioniProiezione(input) {
+    input = input || {};
+    var L = LIMITI_PROIEZIONE, B = PROIEZIONE_BASE;
+    var tasso = input.tassoMutuo;
+    return {
+      anni: Math.round(numeroIn(input.anni, B.anni, L.anni)),
+      rivalutazione: numeroIn(input.rivalutazione, B.rivalutazione, L.rivalutazione),
+      costiAffitto: numeroIn(input.costiAffitto, B.costiAffitto, L.costiAffitto),
+      mesiRivendita: Math.round(numeroIn(input.mesiRivendita, B.mesiRivendita, L.mesiRivendita)),
+      costiVendita: numeroIn(input.costiVendita, B.costiVendita, L.costiVendita),
+      reinvesti: siNo(input.reinvesti),
+      tassoMutuo: tasso == null || tasso === '' || !isFinite(Number(tasso)) ? null : numeroIn(tasso, null, L.tassoMutuo)
+    };
+  }
+
+  /* Vendita: costi di vendita, plusvalenza e imposta (art. 67 TUIR, aliquota e anni da config/tariffe.js).
+   * x: { prezzo, costo (acquisto con imposte e spese), costiVendita (frazione), mesiPossesso, immobile, abitazionePrincipale } */
+  function vendita(x, T) {
+    var prezzo = num(x.prezzo), costi = prezzo * num(x.costiVendita), mesi = num(x.mesiPossesso);
+    var out = { prezzo: prezzo, costi: costi, plusvalenza: prezzo - costi - num(x.costo), imposta: 0, entroCinqueAnni: mesi < T.plusvalenza.anni * 12 };
+    // la tassa sulla plusvalenza dell'art. 67 riguarda gli immobili; per veicoli e beni usati di un privato non si applica
+    if (x.immobile !== false) {
+      var p = C.plusvalenza({ prezzoVendita: prezzo, costoAcquisto: num(x.costo), costiInerenti: costi, anniPossesso: mesi / 12, abitazionePrincipale: !!x.abitazionePrincipale }, T);
+      out.imposta = p.imposta;
+    }
+    out.netto = prezzo - costi - out.imposta;
+    return out;
+  }
+
+  // canone netto al mese: un valore tra il minimo e il massimo OMI di locazione (annui), meno costi e sfitto
+  function canoneNetto(rendita, u, o) { return (rendita.min + u * (rendita.max - rendita.min)) / 12 * (1 - o.costiAffitto); }
+
+  // asta simile per il reinvestimento: le medie delle aste del piano (ipotesi esplicita)
+  function astaSimile(scelte, pv, prof) {
+    var k = scelte.length, costo = 0, valore = 0, p = 0, rMin = 0, rMax = 0, nr = 0, immobili = 0;
+    scelte.forEach(function (c, i) {
+      costo += c.costoTotale; valore += c.valore.min; p += pv[i];
+      if (c.categoria === 'immobile') immobili++;
+      if (c.renditaAnnua) { rMin += c.renditaAnnua.min; rMax += c.renditaAnnua.max; nr++; }
+    });
+    return { costo: Math.round(costo / k), valore: Math.round(valore / k), probabilita: tre(p / k), immobile: immobili * 2 >= k,
+      passo: Math.max(1, Math.round(prof.orizzonteMesi / k)), inizio: prof.orizzonteMesi,
+      affitto: prof.strategia === 'affittare' && nr ? { min: Math.round(rMin / nr), max: Math.round(rMax / nr), su: nr } : null };
+  }
+
+  /* Patrimonio nel tempo, a fine di ogni anno per 1–5 anni: cassa, valore degli immobili comprati, mutuo da restituire,
+   * affitti incassati e imposte sulle plusvalenze, con la forchetta p10–p50–p90 su n simulazioni.
+   * Le aste del piano si giocano come in simula (stesso seme e stessa sequenza casuale: stessi esiti giro per giro);
+   * canoni e aste del reinvestimento usano un secondo generatore con seme derivato, quindi tutto si ripete identico.
+   * La cassa non scende mai sotto zero: si offre solo con la cassa che basta, gli interessi si pagano con la cassa
+   * libera (il resto si somma al debito) e alla vendita si estingue prima il mutuo.
+   * risultato: quello di esegui. opz: opzioniProiezione + { T, n, seme, oggi } */
+  function proiezione(risultato, opz) {
+    risultato = risultato || {};
+    opz = opz || {};
+    var o = opzioniProiezione(opz);
+    var T = opz.T || risultato.T;
+    if (!T) throw new Error('Servono le tariffe (config/tariffe.js)');
+    var prof = normale(risultato.profilo || {}), sim = risultato.simulazione || {};
+    var scelte = (risultato.piano && risultato.piano.scelte) || [], k = scelte.length;
+    var n = Math.max(1, Math.round(opz.n || sim.n || PARAMETRI.simulazioni));
+    var seme = opz.seme != null ? opz.seme : sim.seme != null ? sim.seme : PARAMETRI.seme;
+    var oggi = opz.oggi || (risultato.candidati && risultato.candidati.oggi) || oggiIso();
+    var A = o.anni, M = A * 12, r = o.rivalutazione, strategia = prof.strategia, una = strategia === 'vivere';
+    var pv = scelte.map(function (c) { return probUsata(c, 'centrale'); }), ev = eventi(scelte);
+    var tempi = scelte.map(function (c) {
+      return { asta: Math.max(0, mesiTra(oggi, c.dataAsta)), saldo: Math.max(0, mesiTra(oggi, c.dataSaldo.data)),
+        affitto: strategia === 'affittare' && c.categoria === 'immobile' && c.renditaAnnua ? c.renditaAnnua : null };
+    });
+    var simile = o.reinvesti && !una && k ? astaSimile(scelte, pv, prof) : null;
+    var rnd = mulberry32(seme), rnd2 = mulberry32((seme ^ 0x5bd1e995) >>> 0);
+    var anni = [], y, i;
+    for (y = 0; y <= A; y++) anni.push({ patrimonio: [], cassa: [], immobili: [], debito: [], affitti: [], imposte: [], posseduti: 0 });
+    var cassaMinima = Infinity, venditeTot = 0, conVendite = 0, conImposta = 0, impostaTot = 0, reinvTot = 0, reinvGiri = 0;
+
+    for (var g = 0; g < n; g++) {
+      var u = [];
+      for (i = 0; i < k; i++) u.push(rnd());
+      var gp = giroPiano(scelte, prof, ev, pv, u, una), beni = [];
+      for (i = 0; i < k; i++) {
+        if (gp.stato[i] !== 'vinta') continue;
+        var c = scelte[i], t = tempi[i];
+        beni.push({ valore: c.valore.min, costo: c.costoTotale, cassa: gp.tenuta[i].cassa, mutuo: gp.tenuta[i].mutuo, piano: true, comprato: false, venduto: false,
+          immobile: c.categoria === 'immobile', compra: t.asta, saldo: t.saldo, vende: strategia === 'rivendere' ? t.saldo + o.mesiRivendita : Infinity,
+          canone: t.affitto ? canoneNetto(t.affitto, rnd2(), o) : 0 });
+      }
+      var cassa = prof.capitale, debito = 0, investito = 0, riservata = gp.usato, affitti = 0, imposte = 0, vendute = 0, conTassa = false, reinv = 0;
+      anni[0].patrimonio.push(cassa); anni[0].cassa.push(cassa); anni[0].immobili.push(0); anni[0].debito.push(0); anni[0].affitti.push(0); anni[0].imposte.push(0);
+      for (var m = 1; m <= M; m++) {
+        var b, j;
+        // aste del piano vinte: la cassa esce il giorno dell'asta, il mutuo diventa debito
+        for (j = 0; j < beni.length; j++) {
+          b = beni[j];
+          if (!b.comprato && b.compra <= m) { b.comprato = true; cassa -= b.cassa; riservata -= b.cassa; investito += b.cassa; debito += b.mutuo; }
+        }
+        // interessi del mutuo (solo con il tasso indicato): con la cassa libera, il resto si somma al debito
+        if (o.tassoMutuo && debito > 0) {
+          var interessi = debito * o.tassoMutuo / 12, pagati = Math.min(interessi, Math.max(0, cassa - riservata));
+          cassa -= pagati; debito += interessi - pagati;
+        }
+        // affitti: ogni mese intero dopo il saldo
+        for (j = 0; j < beni.length; j++) {
+          b = beni[j];
+          if (b.comprato && !b.venduto && b.canone > 0 && b.saldo <= m - 1) { cassa += b.canone; affitti += b.canone; }
+        }
+        // vendite: prezzo rivalutato (se l'ipotesi c'è), costi di vendita, plusvalenza; con il ricavato si estingue prima il mutuo
+        for (j = 0; j < beni.length; j++) {
+          b = beni[j];
+          if (!b.comprato || b.venduto || b.vende > m) continue;
+          var v = vendita({ prezzo: b.valore * Math.pow(1 + r, b.vende / 12), costo: b.costo, costiVendita: o.costiVendita, mesiPossesso: b.vende - b.saldo, immobile: b.immobile }, T);
+          var rimborso = Math.min(debito, Math.max(0, v.netto));
+          cassa += v.netto - rimborso; debito -= rimborso; b.venduto = true; vendute++;
+          if (b.piano) investito -= b.cassa;
+          if (v.imposta > 0) { imposte += v.imposta; conTassa = true; }
+        }
+        // reinvestimento: dopo la fine del piano, al ritmo del piano, solo con i guadagni già incassati
+        if (simile && m > simile.inizio && (m - simile.inizio) % simile.passo === 0) {
+          var fattore = Math.pow(1 + r, m / 12), costoSimile = simile.costo * fattore;
+          // guadagni incassati = cassa − capitale + cassa ancora dentro gli immobili del piano; spenderli non tocca la cassa tenuta per il piano
+          var guadagni = cassa - prof.capitale + investito;
+          if (guadagni >= costoSimile && rnd2() < simile.probabilita) {
+            cassa -= costoSimile; reinv++;
+            beni.push({ valore: simile.valore, costo: costoSimile, cassa: costoSimile, mutuo: 0, piano: false, comprato: true, venduto: false, immobile: simile.immobile,
+              compra: m, saldo: m + MESI_SALDO_SIMILI, vende: strategia === 'rivendere' ? m + MESI_SALDO_SIMILI + o.mesiRivendita : Infinity,
+              canone: simile.affitto ? canoneNetto(simile.affitto, rnd2(), o) : 0 });
+          }
+        }
+        if (cassa < cassaMinima) cassaMinima = cassa;
+        if (m % 12 === 0) {
+          y = m / 12;
+          var valore = 0, posseduti = 0;
+          for (j = 0; j < beni.length; j++) {
+            b = beni[j];
+            if (b.comprato && !b.venduto) { valore += b.valore * Math.pow(1 + r, m / 12); posseduti++; }
+          }
+          anni[y].patrimonio.push(cassa + valore - debito); anni[y].cassa.push(cassa); anni[y].immobili.push(valore); anni[y].debito.push(debito);
+          anni[y].affitti.push(affitti); anni[y].imposte.push(imposte); anni[y].posseduti += posseduti;
+        }
+      }
+      venditeTot += vendute; impostaTot += imposte; reinvTot += reinv;
+      if (vendute) conVendite++;
+      if (conTassa) conImposta++;
+      if (reinv) reinvGiri++;
+    }
+
+    var serie = anni.map(function (x, a) {
+      return { anno: a, data: piuMesi(oggi, a * 12), patrimonio: percentili(x.patrimonio), cassa: percentili(x.cassa), immobili: percentili(x.immobili),
+        debito: percentili(x.debito), affitti: percentili(x.affitti), imposte: percentili(x.imposte), posseduti: tre(x.posseduti / n) };
+    });
+    var out = {
+      opzioni: o, anni: A, n: n, seme: seme, oggi: oggi, strategia: strategia, capitale: prof.capitale, aste: k,
+      serie: serie, finale: serie[A],
+      vendite: { media: tre(venditeTot / n), quotaGiri: tre(conVendite / n), quotaConImposta: tre(conImposta / n), impostaMedia: Math.round(impostaTot / n) },
+      reinvestimento: simile ? { simile: simile, media: tre(reinvTot / n), quotaGiri: tre(reinvGiri / n) } : null,
+      affitto: strategia === 'affittare' ? { conQuotazione: tempi.filter(function (t) { return t.affitto; }).length, senzaQuotazione: tempi.filter(function (t) { return !t.affitto; }).length } : null,
+      mutuo: scelte.some(function (c) { return c.mutuoUsato > 0; }),
+      cassaMinima: k ? Math.round(cassaMinima) : prof.capitale
+    };
+    var sp = spiegaProiezione(out, { prof: prof, scelte: scelte, T: T, stat: risultato.statistiche || null });
+    out.ipotesi = sp.ipotesi; out.nonSappiamo = sp.nonSappiamo; out.avvertenze = sp.avvertenze; out.fonti = sp.fonti; out.disclaimer = DISCLAIMER;
+    return out;
+  }
+
+  // ipotesi, fonti e avvertenze della proiezione, in italiano per il sito
+  function spiegaProiezione(p, x) {
+    var o = p.opzioni, T = x.T, prof = x.prof, s = x.scelte, ipotesi = [], nonSappiamo = [], avvertenze = [], fonti = [];
+    var PV = T.plusvalenza, AF = T.affitto, RV = T.rivendita;
+    ipotesi.push('Patrimonio = cassa + valore degli immobili comprati − mutuo ancora da restituire, alla fine di ogni anno da oggi (' + dataIt(p.oggi) + ').');
+    ipotesi.push(o.rivalutazione
+      ? 'Valore degli immobili: il minimo della forchetta stimata per ogni asta, con una rivalutazione del ' + pct(o.rivalutazione) + ' l\'anno. La rivalutazione è un\'ipotesi tua, non una previsione.'
+      : 'Valore degli immobili: il minimo della forchetta stimata per ogni asta (perizia, prima asta o quotazioni OMI), senza rivalutazione: i prezzi restano quelli di oggi.');
+    ipotesi.push('Le aste del piano si giocano come nella simulazione del piano (stesse probabilità, stessa regola di cassa, stesso seme): la cassa esce il giorno dell\'asta e l\'immobile è tuo dal saldo (' + NOTA_SALDO + ').');
+    if (p.strategia === 'affittare') {
+      ipotesi.push('Affitto: canone dalle quotazioni OMI di locazione della zona (Agenzia delle Entrate – OMI). In ogni simulazione un canone tra il minimo e il massimo della quotazione, tutti ugualmente probabili, incassato dal primo mese intero dopo il saldo e senza aumenti negli anni.');
+      ipotesi.push('Costi e sfitto: ' + pct(o.costiAffitto) + ' del canone tra tasse, spese e mesi senza inquilino. È un\'ipotesi tua: la sola cedolare secca vale il ' + pct(AF.cedolareLibero.aliquota) +
+        ' del canone con il canone libero e il ' + pct(AF.cedolareConcordato.aliquota) + ' con il canone concordato (' + AF.cedolareLibero.fonte + '); IMU, condominio non ripetibile e manutenzione si aggiungono.');
+      fonti.push({ nome: 'Agenzia delle Entrate – Quotazioni OMI (canoni di locazione)', url: URL_OMI });
+      fonti.push({ nome: AF.cedolareLibero.fonte, url: AF.cedolareLibero.url });
+    }
+    if (p.strategia === 'rivendere') {
+      ipotesi.push('Rivendita ' + o.mesiRivendita + ' mesi dopo il saldo, al valore minimo' + (o.rivalutazione ? ' rivalutato' : '') + '. Costi di vendita: ' + pct(o.costiVendita) +
+        ' del prezzo tra provvigione dell\'agenzia e spese a carico di chi vende. È un\'ipotesi: per confronto, una provvigione del ' + pct(RV.provvigioneAgenzia) + ' più IVA (prassi diffusa, non una tariffa) vale il ' +
+        pct(RV.provvigioneAgenzia * (1 + RV.ivaProvvigione)) + ' del prezzo.');
+      ipotesi.push('Plusvalenza: se rivendi entro ' + PV.anni + ' anni dall\'acquisto, la differenza tra prezzo di vendita, costo d\'acquisto con imposte e spese e costi di vendita è tassata. Ipotizzo che tu chieda al notaio l\'imposta sostitutiva del ' +
+        pct(PV.aliquotaSostitutiva) + ', che è facoltativa: in alternativa la plusvalenza va nell\'IRPEF con la tua aliquota. Non si paga se l\'immobile è stato la tua abitazione principale per la maggior parte del periodo (' + PV.fonte + ').');
+      fonti.push({ nome: PV.fonte, url: PV.url });
+    }
+    if (p.strategia === 'vivere') ipotesi.push('Ci vai a vivere: la casa resta tua per tutto il periodo. Non conto l\'affitto che non paghi più né le spese della casa.');
+    if (p.mutuo) {
+      ipotesi.push(o.tassoMutuo != null
+        ? 'Mutuo: interessi al TAN del ' + pct(o.tassoMutuo) + ' indicato da te, pagati con la cassa libera (se non basta si sommano al debito); il capitale da restituire è tolto dal patrimonio e alla vendita si estingue per primo.'
+        : 'Mutuo: il debito è tolto dal patrimonio per intero; gli interessi non sono contati perché non hai indicato il tasso.');
+      if (o.tassoMutuo == null) avvertenze.push('Indica il tasso del mutuo per contare gli interessi: senza, il patrimonio risulta più alto del vero.');
+    }
+    ipotesi.push('Cassa: la liquidità non rende interessi, nessun rendimento ipotizzato.');
+    var R = p.reinvestimento;
+    if (R) {
+      ipotesi.push('Reinvesti: dopo la fine del piano, ogni ' + R.simile.passo + (R.simile.passo === 1 ? ' mese' : ' mesi') + ' (il ritmo del piano: ' + p.aste + (p.aste === 1 ? ' asta' : ' aste') + ' in ' + prof.orizzonteMesi +
+        ' mesi) offri a una nuova asta simile se i guadagni già incassati bastano a pagarla, senza mutuo. Ipotesi: costa ' + eur(R.simile.costo) + ', vale ' + eur(R.simile.valore) +
+        ' e la vinci con probabilità ' + pct(R.simile.probabilita) + ', cioè le medie delle aste del piano' + (o.rivalutazione ? ', con costo e valore rivalutati' : '') +
+        (R.simile.affitto ? '; canone OMI medio delle ' + R.simile.affitto.su + ' aste del piano che lo hanno' : '') + '. Non è detto che aste simili ci siano davvero.');
+      if (!R.quotaGiri) avvertenze.push('In ' + p.anni + (p.anni === 1 ? ' anno' : ' anni') + ' i guadagni incassati non bastano mai per un\'altra asta simile: il reinvestimento non scatta.');
+    } else if (o.reinvesti && p.strategia === 'vivere') ipotesi.push('Reinvestimento non applicato: chi ci va a vivere cerca una sola casa.');
+    else ipotesi.push('Nessun reinvestimento: i guadagni restano in cassa.');
+    ipotesi.push('Forchetta: ' + p.n + ' simulazioni (seme ' + p.seme + '). La fascia va dal 10° al 90° percentile del patrimonio, la linea è la mediana: metà delle simulazioni sta sopra, metà sotto.');
+    if (x.stat && x.stat.fonte) fonti.unshift({ nome: 'Probabilità di vincere: ' + x.stat.fonte, url: null });
+
+    nonSappiamo.push('Come cambieranno prezzi e canoni: lo decidi tu con la rivalutazione, qui non c\'è nessuna previsione.');
+    nonSappiamo.push('I tempi veri di decreto di trasferimento, liberazione, affitto e vendita: dipendono dal tribunale e dal mercato.');
+    nonSappiamo.push('IMU, condominio, manutenzione e lavori durante il possesso' + (p.strategia === 'affittare' ? ', oltre a quelli compresi nella percentuale di costi e sfitto' : '') + ': non sono contati.');
+
+    if (!p.aste) avvertenze.push('Nessuna asta nel piano: il patrimonio resta il capitale in cassa.');
+    if (p.affitto && p.affitto.senzaQuotazione) {
+      avvertenze.push(p.affitto.senzaQuotazione === 1 ? 'Per 1 asta del piano manca la quotazione OMI di locazione: per quella non conto nessun affitto.'
+        : 'Per ' + p.affitto.senzaQuotazione + ' aste del piano manca la quotazione OMI di locazione: per quelle non conto nessun affitto.');
+    }
+    if (p.strategia === 'rivendere' && p.aste && !p.vendite.quotaGiri) avvertenze.push('Con ' + o.mesiRivendita + ' mesi alla rivendita nessun immobile è ancora venduto alla fine del periodo: conta il valore stimato, non un incasso.');
+    if (s.some(function (c) { return c.categoria !== 'immobile'; })) avvertenze.push('Veicoli e beni perdono valore con il tempo: qui il loro valore resta quello di oggi.');
+    return { ipotesi: ipotesi, nonSappiamo: nonSappiamo, avvertenze: avvertenze, fonti: fonti };
   }
 
   /* ---------- spiegazione ---------- */
@@ -513,8 +766,10 @@
 
   var Stratega = {
     PROFILO_BASE: PROFILO_BASE, PARAMETRI: PARAMETRI, RISCHIO_MASSIMO: RISCHIO_MASSIMO, DISCLAIMER: DISCLAIMER, STRATEGIE: STRATEGIE, PRUDENZE: PRUDENZE,
+    PROIEZIONE_BASE: PROIEZIONE_BASE, LIMITI_PROIEZIONE: LIMITI_PROIEZIONE,
     profilo: profilo, gruppoDi: gruppoDi, fascia: fascia, probabilita: probabilita, candidati: candidati, piano: piano, simula: simula, spiega: spiega,
-    esegui: esegui, rischio: rischio, cassaSeVinciTutte: cassaSeVinciTutte, dataCauzione: dataCauzione, mulberry32: mulberry32
+    esegui: esegui, rischio: rischio, cassaSeVinciTutte: cassaSeVinciTutte, dataCauzione: dataCauzione, mulberry32: mulberry32,
+    opzioniProiezione: opzioniProiezione, proiezione: proiezione, vendita: vendita
   };
   if (NODE) module.exports = Stratega;
   else root.Stratega = Stratega;

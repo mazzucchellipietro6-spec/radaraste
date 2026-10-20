@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accedi – Radar Aste Italia</title>
+<meta name="description" content="Entra nel tuo account o creane uno: aste seguite, note e preferenze su ogni dispositivo e gestione dell'abbonamento. Senza account il sito funziona come sempre.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="stylesheet" href="assets/css/abbonamenti.css">
+<link rel="stylesheet" href="assets/css/account.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <p class="note"><a href="mie-aste.html">Le mie aste</a> / Accedi</p>
+  <div id="accAnteprima"></div>
+  <div class="as-testa">
+    <p class="eyebrow"><svg class="icona" aria-hidden="true"><use href="#i-persona"/></svg>Account</p>
+    <h1>Entra nel tuo <em>account</em></h1>
+    <p class="sub">Con un account ritrovi le aste che segui, le note e le preferenze su ogni dispositivo e gestisci l'abbonamento. Non serve per usare il sito: senza account tutto funziona come sempre e i dati restano in questo browser.</p>
+  </div>
+
+  <div class="callout warn acc-spento" id="accSpento" hidden>
+    <p><strong>Account non ancora attivo (modalità test).</strong> Il proprietario del sito non ha ancora collegato il servizio degli account: per ora non si può accedere né creare un account. Tutte le funzioni del sito restano disponibili e i tuoi dati restano salvati in questo browser.</p>
+  </div>
+
+  <div class="callout acc-dentro" id="accDentro" hidden></div>
+  <div class="callout acc-msg" id="accMsg" role="status" aria-live="polite" tabindex="-1" hidden></div>
+
+  <section class="panel acc-google" aria-labelledby="h-google">
+    <div class="acc-google-testo">
+      <h2 id="h-google">Il modo più rapido</h2>
+      <p class="note">Se non hai ancora un account ne creiamo uno con la tua email di Google: continuando accetti i <a href="termini.html">Termini del servizio</a> e confermi di aver letto l'<a href="privacy.html">Informativa sulla privacy</a>.</p>
+    </div>
+    <button class="btn ghost" type="button" id="accGoogle">Continua con Google</button>
+  </section>
+
+  <div class="acc-griglia" id="accModuli">
+    <section class="panel stack acc-blocco" aria-labelledby="h-accedi">
+      <h2 id="h-accedi">Accedi</h2>
+      <form id="fAccedi" class="stack acc-form" novalidate>
+        <label>Email<input type="email" name="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" required></label>
+        <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+        <label class="check"><input type="checkbox" data-mostra="fAccedi"> Mostra la password</label>
+        <div class="row-actions"><button class="btn" type="submit">Accedi</button></div>
+      </form>
+      <div class="acc-oppure" aria-hidden="true"><span>oppure</span></div>
+      <div class="stack acc-alternativa">
+        <button class="btn ghost" type="button" id="accLink">Ricevi un link di accesso via email</button>
+        <p class="note">Scrivi la tua email qui sopra: ti mandiamo un link che ti fa entrare senza password. Serve anche se hai dimenticato la password (poi puoi cambiarla dalla pagina del tuo account).</p>
+      </div>
+    </section>
+
+    <section class="panel stack acc-blocco" aria-labelledby="h-registra">
+      <h2 id="h-registra">Crea un account</h2>
+      <form id="fRegistra" class="stack acc-form" novalidate>
+        <label>Email<input type="email" name="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required></label>
+        <label>Password (almeno 8 caratteri)<input type="password" name="password" autocomplete="new-password" minlength="8" required aria-describedby="accNotaPw"></label>
+        <label class="check"><input type="checkbox" data-mostra="fRegistra"> Mostra la password</label>
+        <p class="note" id="accNotaPw">Scegli una password che non usi su altri siti.</p>
+        <label class="check acc-consenso"><input type="checkbox" name="consenso" required> <span>Ho letto e accetto i <a href="termini.html">Termini del servizio</a> e ho letto l'<a href="privacy.html">Informativa sulla privacy</a>.</span></label>
+        <div class="row-actions">
+          <button class="btn" type="submit">Crea account</button>
+          <button class="btn ghost" type="button" id="accRegLink">Crea con un link via email</button>
+        </div>
+        <p class="note">Riceverai un'email per confermare l'indirizzo. Creare l'account non costa nulla e non attiva nessun abbonamento.</p>
+      </form>
+    </section>
+  </div>
+
+  <section class="callout acc-info" aria-labelledby="h-info">
+    <h2 id="h-info">Cosa salviamo con l'account</h2>
+    <ul>
+      <li>La tua email e, se scegli un abbonamento, il suo stato (piano, scadenza). I pagamenti passano da Stripe: il sito non vede i dati della carta.</li>
+      <li>Le aste che segui con le note, le aste inserite a mano, le ricerche salvate, le preferenze degli affari e il profilo dello Stratega, per ritrovarli sugli altri dispositivi.</li>
+      <li>Puoi scaricare tutti i tuoi dati o cancellare l'account quando vuoi dalla pagina <a href="account.html">Il mio account</a>.</li>
+    </ul>
+    <p class="note">Tutti i dettagli nell'<a href="privacy.html">Informativa sulla privacy</a> e nei <a href="termini.html">Termini del servizio</a>.</p>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="config/abbonamenti.js"></script>
+<script src="js/account.js"></script>
+<script src="js/piani.js"></script>
+<script src="js/pages/accedi.js"></script>
+</body>
+</html>

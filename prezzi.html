@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prezzi e piani – Radar Aste Italia</title>
+<meta name="description" content="Piani Gratis, Base e Pro di Radar Aste Italia: che cosa comprendono, prezzi mensili e annuali, prova gratuita e domande frequenti.">
+<meta name="robots" content="noindex">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="stylesheet" href="assets/css/abbonamenti.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <div class="pz-avvisi" id="pzAnteprima"></div>
+  <div class="as-testa pz-testa">
+    <p class="eyebrow"><svg class="icona" aria-hidden="true"><use href="#i-euro"/></svg>Piani e prezzi</p>
+    <h1>Le aste restano libere, <em>gli assistenti lavorano per te</em></h1>
+    <p class="sub">Elenco, mappa, schede e calcoli sono gratuiti. Con Base e Pro sblocchi tutti gli affari del giorno, le combinazioni e lo Stratega d'asta. Disdici quando vuoi.</p>
+  </div>
+
+  <div class="pz-avvisi">
+    <p class="pz-test" id="pzTest" role="note"><svg class="icona" aria-hidden="true"><use href="#i-allerta"/></svg><span><strong>Modalità test: nessun pagamento reale.</strong> Stripe è collegato solo in modalità di prova: nessuna carta viene addebitata. <span id="pzTestCarta" hidden>Per provare il pagamento usa la carta di prova di Stripe 4242 4242 4242 4242, una scadenza futura e un codice di sicurezza qualsiasi.</span></span></p>
+    <div class="callout warn pz-spenti" id="pzSpenti" role="note">
+      <p><strong>Abbonamenti non ancora attivi.</strong> Oggi tutte le funzioni del sito sono libere per tutti, senza account e senza pagare.</p>
+      <p id="pzSpentiPulsanti">I prezzi qui sotto sono una proposta: i pulsanti per abbonarsi restano disattivati finché gli abbonamenti non partono.</p>
+    </div>
+  </div>
+
+  <div class="pz-periodo" role="group" aria-label="Periodo di pagamento">
+    <button class="pz-scelta" type="button" data-periodo="mensile" aria-pressed="true">Mensile</button>
+    <button class="pz-scelta" type="button" data-periodo="annuale" aria-pressed="false">Annuale <span class="pill p-good" id="pzRisparmio" hidden></span></button>
+  </div>
+
+  <div class="pz-piani" id="pzPiani"><p class="muted">Carico i piani…</p></div>
+  <div class="pz-esito" id="pzEsito" role="status"></div>
+
+  <section class="pz-sez" aria-labelledby="h-confronto">
+    <div class="pz-sez-testa">
+      <h2 id="h-confronto">Confronta i piani</h2>
+      <p>Che cosa comprende ciascun piano. Le funzioni segnate "in arrivo" non sono ancora disponibili.</p>
+    </div>
+    <div class="pz-tabella" id="pzConfronto"></div>
+  </section>
+
+  <section class="pz-sez" aria-labelledby="h-domande">
+    <div class="pz-sez-testa">
+      <h2 id="h-domande">Domande frequenti</h2>
+    </div>
+    <div class="pz-domande">
+      <details class="box">
+        <summary>Posso disdire quando voglio?</summary>
+        <div class="inner">
+          <p>Sì. Dalla pagina <a href="account.html">Account</a> apri il portale clienti di Stripe e disdici in qualsiasi momento. L'abbonamento resta attivo fino alla fine del periodo già pagato e poi non si rinnova più.</p>
+        </div>
+      </details>
+      <details class="box" id="pzFaqProva">
+        <summary>Come funziona la prova gratuita?</summary>
+        <div class="inner">
+          <p>Il piano <span data-cfg="prova-piano">Pro</span> si prova gratis per <span data-cfg="prova-giorni">alcuni</span> giorni. Se lo disdici durante la prova non paghi nulla; altrimenti alla fine della prova l'abbonamento parte con il periodo che hai scelto e si rinnova automaticamente.</p>
+        </div>
+      </details>
+      <details class="box">
+        <summary>Che cos'è il diritto di recesso?</summary>
+        <div class="inner">
+          <p>Se sei un consumatore puoi recedere entro 14 giorni dalla sottoscrizione, senza dare spiegazioni (artt. 52-59 del Codice del Consumo). Se hai chiesto di iniziare subito a usare il servizio, paghi solo la parte già fruita. Tutti i dettagli e il modulo sono nella pagina <a href="recesso.html">Diritto di recesso</a>.</p>
+        </div>
+      </details>
+      <details class="box">
+        <summary>Chi gestisce i pagamenti?</summary>
+        <div class="inner">
+          <p>Stripe, uno dei principali servizi di pagamento online. I dati della carta li inserisci sulla pagina sicura di Stripe: Radar Aste Italia non li vede e non li conserva, riceve solo l'esito del pagamento e le date dell'abbonamento.</p>
+        </div>
+      </details>
+      <details class="box">
+        <summary>L'IVA è inclusa?</summary>
+        <div class="inner">
+          <p data-cfg="iva">Sì: i prezzi indicati sono quelli finali, IVA inclusa.</p>
+        </div>
+      </details>
+      <details class="box">
+        <summary>Il sito mi dice su quali aste investire?</summary>
+        <div class="inner">
+          <p>No. Radar Aste Italia offre informazioni e calcoli indicativi, non consulenza finanziaria né consulenza legale, fiscale o immobiliare. Prima di fare un'offerta verifica sempre avviso di vendita e perizia: leggi le <a href="avvertenze.html">avvertenze</a>.</p>
+        </div>
+      </details>
+      <details class="box">
+        <summary>Che cosa resta gratis?</summary>
+        <div class="inner">
+          <p>Le aste raccolte ogni giorno dalle fonti ufficiali con filtri, mappa e scheda, il calcolatore "Conviene?", il simulatore del mutuo, il confronto, la guida, le tariffe e il consulente con le regole del sito. Senza account le aste che segui restano salvate nel tuo browser.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="legale-altri" aria-label="Condizioni e informative">
+    <a href="termini.html">Condizioni d'uso e di abbonamento</a>
+    <a href="recesso.html">Diritto di recesso</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="cookie.html">Cookie</a>
+    <a href="avvertenze.html">Avvertenze</a>
+  </nav>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="config/abbonamenti.js"></script>
+<script src="js/piani.js"></script>
+<script src="js/account.js"></script>
+<script src="js/pages/prezzi.js"></script>
+</body>
+</html>

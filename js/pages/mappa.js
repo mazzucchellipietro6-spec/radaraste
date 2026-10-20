@@ -587,33 +587,39 @@
     var p = mappa.containerPointToLayerPoint(cp).add(mappa.getPixelOrigin()), c = CAL.trova(celle, p.x, p.y);
     return c && c.colorata ? c : null;
   }
+  // al passaggio del puntatore è un'anteprima che non si tocca (così si passa da un quadrato al vicino);
+  // con un clic o un tocco si fissa e porta il link alle aste del quadrato
   function htmlCella(c, fissa) {
     var forchetta = c.min !== c.max ? 'valori da ' + U.pct(c.min, 0) + ' a ' + U.pct(c.max, 0) : 'tutte con lo stesso sconto';
     return '<div class="m-cella-testa"><p class="m-legenda-t">Sconto medio nel quadrato</p>' +
         (fissa ? '<button class="m-x" type="button" data-chiudi-cella aria-label="Chiudi il riquadro del quadrato">' + U.icona('chiudi') + '</button>' : '') + '</div>' +
       '<p class="m-cella-v"><b>' + U.pct(c.media, 0) + '</b><small>' + esc(forchetta) + '</small></p>' +
       '<p class="m-cella-n">Campione: ' + aste(c.campione) + ' con sconto e valore di affidabilità media o alta, su ' + aste(c.aste) + ' nel quadrato con i filtri scelti.</p>' +
-      '<a class="btn small" href="aste.html" data-cella-elenco>Apri queste aste' + U.icona('freccia') + '</a>' +
-      (fissa ? '' : '<p class="m-suggerimento">Clic sul quadrato per fissare il riquadro.</p>');
+      (fissa ? '<a class="btn small" href="aste.html" data-cella-elenco>Apri queste aste' + U.icona('freccia') + '</a>'
+        : '<p class="m-suggerimento">Clic sul quadrato per fissare il riquadro e aprire queste aste.</p>');
   }
   function mostraCella(c, fissa) {
     clearTimeout(timerCella);
     var el = $('#mCella'), dentro = el.contains(document.activeElement);
     el.innerHTML = htmlCella(c, fissa);
-    var f = copia(perElenco(false));
-    f.bbox = CAL.bbox(c, celle.zoom);
-    linkElenco(el.querySelector('[data-cella-elenco]'), f);
+    if (fissa) {
+      var f = copia(perElenco(false));
+      f.bbox = CAL.bbox(c, celle.zoom);
+      linkElenco(el.querySelector('[data-cella-elenco]'), f);
+    }
     el.classList.toggle('fissa', !!fissa);
     el.hidden = false;
+    // il riquadro della regione (al passaggio) lascia il posto a quello del quadrato
+    if (!regioneFissa) { clearTimeout(timerRegione); $('#mRegione').removeAttribute('data-aperto'); }
     posizionaCella(c);
     if (dentro) fuoco(el.querySelector('[data-cella-elenco]'));
   }
-  // accanto al quadrato, dentro la mappa (su telefono tra la barra dei filtri e il pulsante in basso)
+  // accanto al quadrato, dentro la mappa (su telefono tra la barra dei filtri e la legenda in basso)
   function posizionaCella(c) {
     var el = $('#mCella'), box = $('#mMappa'), po = mappa.getPixelOrigin();
     var a = mappa.layerPointToContainerPoint([c.x0 - po.x, c.y0 - po.y]), b = mappa.layerPointToContainerPoint([c.x1 - po.x, c.y1 - po.y]);
     var W = box.clientWidth, H = box.clientHeight, w = el.offsetWidth, h = el.offsetHeight, m = 8;
-    var su = TELEFONO.matches ? 62 : m, giu = TELEFONO.matches ? 70 : m, x = b.x + m, y = a.y;
+    var su = TELEFONO.matches ? 62 : m, giu = TELEFONO.matches ? 114 : m, x = b.x + m, y = a.y;
     if (x + w > W - m) x = a.x - m - w;
     if (x < m) {
       x = Math.max(m, Math.min(W - w - m, (a.x + b.x - w) / 2));
@@ -651,7 +657,12 @@
   }
   function nascondiCellaPresto() {
     clearTimeout(timerCella);
-    timerCella = setTimeout(function () { if (cellaFissa) return; cellaSopra = null; nascondiCella(); dipingi(); }, 220);
+    timerCella = setTimeout(function () {
+      if (cellaFissa) return;
+      cellaSopra = null; nascondiCella(); dipingi();
+      // il puntatore è ancora sulla regione (mappa lontana): torna il suo riquadro
+      if (regioneSopra && !regioneFissa && !TOCCO.matches && mappa.getZoom() <= ZOOM_REGIONI_PUNTATORE) mostraRegione(regioneSopra, false);
+    }, 220);
   }
   // passando il puntatore (non al tocco: lì si tocca il quadrato)
   function sopraMappa(e) {
@@ -663,7 +674,7 @@
   }
   function legendaCalore(mini) {
     var tasselli = CAL.TONI.map(function (t) { return '<i style="--t:' + Math.round(t * 100) + '%"></i>'; }).join('');
-    if (mini) return '<span>Sconto medio</span><span class="m-scala" aria-hidden="true">' + tasselli + '</span><span>40%+</span>';
+    if (mini) return '<span>Sconto medio</span><span>0%</span><span class="m-scala" aria-hidden="true">' + tasselli + '</span><span>40%+</span>';
     var passi = ['0%'].concat(CAL.PASSI.map(function (p, i) { return Math.round(p * 100) + '%' + (i === CAL.PASSI.length - 1 ? '+' : ''); }));
     return '<div class="m-leg-calore"><p class="m-legenda-t">Sconto medio sul valore</p>' +
       '<div class="m-scala" role="img" aria-label="Scala di colore a una sola tinta: più intenso è il quadrato, più alto è lo sconto medio, da meno del 10% fino al 40% e oltre">' + tasselli + '</div>' +
@@ -754,7 +765,7 @@
     if (tipo === 'sopra') {
       if (TOCCO.matches || z > ZOOM_REGIONI_PUNTATORE) return;
       regioneSopra = nome; layer.setStyle(stileRegione(layer.feature)); layer.bringToFront && fallback && layer.bringToFront();
-      if (!regioneFissa) mostraRegione(nome, false);
+      if (!regioneFissa && $('#mCella').hidden) mostraRegione(nome, false);   // con il riquadro di un quadrato aperto, la regione aspetta
     } else if (tipo === 'fuori') {
       if (regioneSopra === nome) { regioneSopra = null; layer.setStyle(stileRegione(layer.feature)); }
       if (!regioneFissa) { clearTimeout(timerRegione); timerRegione = setTimeout(nascondiRegione, 260); }
@@ -1115,9 +1126,6 @@
       var corpo = $('#mFiltri .m-foglio-corpo'), fs = $('#mFiltri .m-strati');
       if (corpo && fs) corpo.scrollTop = Math.max(0, fs.offsetTop - corpo.offsetTop - 12);
     });
-    // riquadro del quadrato: resta aperto finché il puntatore ci è sopra (così il link si può cliccare)
-    $('#mCella').addEventListener('mouseenter', function () { clearTimeout(timerCella); });
-    $('#mCella').addEventListener('mouseleave', function () { if (!cellaFissa) nascondiCellaPresto(); });
     $('#mCella').addEventListener('click', function (e) { if (e.target.closest('[data-chiudi-cella]')) chiudiCella(true); });
     $('#mDaElenco').addEventListener('click', function (e) {
       var b = e.target.closest('[data-togli]'); if (!b) return;

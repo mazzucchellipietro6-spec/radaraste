@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cookie e memoria del browser – Radar Aste Italia</title>
+<meta name="description" content="Cookie e memoria del browser di Radar Aste Italia: solo strumenti tecnici, l'elenco delle chiavi salvate e a che cosa servono.">
+<meta name="robots" content="noindex">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="stylesheet" href="assets/css/abbonamenti.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <p class="note"><a href="index.html">Home</a> / Informazioni legali / Cookie</p>
+  <div class="legale-bozza" role="note"><svg class="icona" aria-hidden="true"><use href="#i-allerta"/></svg><p><strong>BOZZA da far verificare a un professionista prima della pubblicazione.</strong> È una base di lavoro, non un parere legale: le parti evidenziate tra parentesi quadre vanno completate dal titolare del sito.</p></div>
+  <div class="as-testa">
+    <p class="eyebrow"><svg class="icona" aria-hidden="true"><use href="#i-documento"/></svg>Informazioni legali</p>
+    <h1>Cookie e memoria <em>del browser</em></h1>
+    <p class="sub">Radar Aste Italia usa solo strumenti tecnici, necessari a farti usare il sito e a ricordare le tue scelte. Nessun cookie di profilazione, nessuna statistica o pubblicità di terze parti.</p>
+    <p class="legale-meta">Ultima modifica: <time datetime="2026-10-19">19 ottobre 2026</time> · versione in bozza</p>
+  </div>
+
+  <div class="legale-griglia">
+    <nav class="legale-indice" aria-labelledby="indice-titolo">
+      <h2 id="indice-titolo">Indice</h2>
+      <ol>
+        <li><a href="#in-breve">In breve</a></li>
+        <li><a href="#memoria">Che cosa salva il sito nel browser</a></li>
+        <li><a href="#sessione">Sessione dell'account</a></li>
+        <li><a href="#offline">Copia per l'uso offline</a></li>
+        <li><a href="#terze-parti">Servizi di terze parti</a></li>
+        <li><a href="#cancellare">Come cancellare questi dati</a></li>
+        <li><a href="#norme">Riferimenti</a></li>
+        <li><a href="#titolare">Titolare e contatti</a></li>
+      </ol>
+    </nav>
+
+    <article class="legale-testo">
+      <section id="in-breve" aria-labelledby="h-in-breve">
+        <h2 id="h-in-breve">1. In breve</h2>
+        <div class="legale-sintesi">
+          <ul>
+            <li>Il sito non usa cookie di profilazione, né strumenti di statistica, pubblicità o pulsanti social di terze parti.</li>
+            <li>Usa la memoria del browser (localStorage e sessionStorage) per ricordare tema, filtri, aste seguite e preferenze: questi dati restano sul tuo dispositivo.</li>
+            <li>Sono strumenti tecnici: per usarli non serve il tuo consenso, per questo non vedi un banner dei cookie.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="memoria" aria-labelledby="h-memoria">
+        <h2 id="h-memoria">2. Che cosa salva il sito nel browser</h2>
+        <p>Il sito non imposta cookie propri. Usa invece la memoria del browser, che funziona in modo simile: i dati restano sul tuo dispositivo e non vengono inviati a noi, salvo quanto spiegato per chi ha un account. Tutte le chiavi iniziano con <code>radaraste.</code>.</p>
+        <h3>Memoria permanente (localStorage): resta finché non la cancelli</h3>
+        <div class="tablebox">
+          <table class="responsive">
+            <thead><tr><th scope="col">Chiave</th><th scope="col">A che cosa serve</th></tr></thead>
+            <tbody>
+              <tr><td><code>radaraste.tema</code></td><td data-label="Serve a"><span class="v">Tema scelto: chiaro, scuro o automatico.</span></td></tr>
+              <tr><td><code>radaraste.v1.seguite</code></td><td data-label="Serve a"><span class="v">Aste che segui, con note e promemoria.</span></td></tr>
+              <tr><td><code>radaraste.v1.aste</code></td><td data-label="Serve a"><span class="v">Aste che hai inserito a mano.</span></td></tr>
+              <tr><td><code>radaraste.filtri</code></td><td data-label="Serve a"><span class="v">Ultimi filtri usati nell'elenco delle aste.</span></td></tr>
+              <tr><td><code>radaraste.ricerche</code></td><td data-label="Serve a"><span class="v">Ricerche che hai salvato.</span></td></tr>
+              <tr><td><code>radaraste.visita</code></td><td data-label="Serve a"><span class="v">Data dell'ultima visita, per segnalarti le aste nuove.</span></td></tr>
+              <tr><td><code>radaraste.preferenze</code></td><td data-label="Serve a"><span class="v">Preferenze per la selezione personale degli affari (zona, budget, categoria, strategia).</span></td></tr>
+              <tr><td><code>radaraste.stratega</code></td><td data-label="Serve a"><span class="v">Dati inseriti nello Stratega d'asta (capitale, mutuo, orizzonte, prudenza).</span></td></tr>
+              <tr><td><code>radaraste.mutuo</code></td><td data-label="Serve a"><span class="v">Dati inseriti nel simulatore del mutuo.</span></td></tr>
+              <tr><td><code>radaraste.confronto</code></td><td data-label="Serve a"><span class="v">Aste scelte per il confronto (al massimo tre).</span></td></tr>
+              <tr><td><code>radaraste.scheda.ipotesi</code></td><td data-label="Serve a"><span class="v">Ipotesi sugli altri offerenti scelta nella scheda di un'asta.</span></td></tr>
+              <tr><td><code>radaraste.pezziAssenti</code></td><td data-label="Serve a"><span class="v">Nota tecnica: evita di scaricare di nuovo file di dettaglio che non esistono.</span></td></tr>
+              <tr><td><code>radaraste.test</code></td><td data-label="Serve a"><span class="v">Prova che la memoria funzioni: viene scritta e cancellata subito.</span></td></tr>
+              <tr><td><code>radaraste.account</code></td><td data-label="Serve a"><span class="v">Solo se accedi: sessione dell'account (vedi sotto).</span></td></tr>
+              <tr><td><code>radaraste.account.abbonamento</code></td><td data-label="Serve a"><span class="v">Solo se accedi: ultimo stato del tuo abbonamento letto, per mostrare subito le funzioni del tuo piano.</span></td></tr>
+              <tr><td><code>radaraste.account.sync</code></td><td data-label="Serve a"><span class="v">Solo se accedi: registro di che cosa è cambiato e quando, per sincronizzare i dati con il tuo account.</span></td></tr>
+              <tr><td><code>radaraste.account.precedenti</code></td><td data-label="Serve a"><span class="v">Solo se accedi: copia dei dati di questo browser sostituiti dall'ultima sincronizzazione, così non si perdono.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Memoria della sessione (sessionStorage): si cancella quando chiudi la scheda</h3>
+        <div class="tablebox">
+          <table class="responsive">
+            <thead><tr><th scope="col">Chiave</th><th scope="col">A che cosa serve</th></tr></thead>
+            <tbody>
+              <tr><td><code>radaraste.consulente</code></td><td data-label="Serve a"><span class="v">Conversazione con il consulente d'asta.</span></td></tr>
+              <tr><td><code>radaraste.passa</code></td><td data-label="Serve a"><span class="v">Valore passato da una pagina all'altra, per esempio l'asta da aprire.</span></td></tr>
+              <tr><td><code>radaraste.visitaPrecedente</code></td><td data-label="Serve a"><span class="v">Data della visita precedente, valida per tutta la sessione.</span></td></tr>
+              <tr><td><code>radaraste.mappa.filtri</code>, <code>radaraste.mappa.vista</code>, <code>radaraste.mappa.strati</code>, <code>radaraste.mappa.avvisoChiuso</code></td><td data-label="Serve a"><span class="v">Filtri, posizione e strati della mappa, e avviso già chiuso.</span></td></tr>
+              <tr><td><code>radaraste.account.caricati</code></td><td data-label="Serve a"><span class="v">Solo se accedi: ricorda che i dati del tuo account sono già stati caricati in questa sessione.</span></td></tr>
+              <tr><td><code>radaraste.anteprima-abbonamenti</code></td><td data-label="Serve a"><span class="v">Solo per il proprietario del sito: anteprima degli abbonamenti in modalità test.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Se hai un account, le aste seguite e inserite a mano, le preferenze degli affari, le ricerche salvate e i dati dello Stratega vengono copiati anche nel tuo account, come spiegato nell'<a href="privacy.html">informativa sulla privacy</a>.</p>
+      </section>
+
+      <section id="sessione" aria-labelledby="h-sessione">
+        <h2 id="h-sessione">3. Sessione dell'account</h2>
+        <p>Solo se accedi, il browser conserva nella chiave <code>radaraste.account</code> i codici della sessione (un codice di accesso a scadenza breve e uno per rinnovarlo), la loro scadenza e i dati essenziali dell'account, per tenerti collegato tra una pagina e l'altra. Non sono cookie e non servono a seguirti su altri siti. La sessione e l'ultimo stato dell'abbonamento vengono cancellati quando scegli "Esci".</p>
+      </section>
+
+      <section id="offline" aria-labelledby="h-offline">
+        <h2 id="h-offline">4. Copia per l'uso offline</h2>
+        <p>Dove il browser lo consente, il sito conserva una copia delle sue pagine e dei dati pubblici delle aste (cache del service worker), per aprirsi più in fretta e funzionare anche senza rete. La copia non contiene dati personali.</p>
+      </section>
+
+      <section id="terze-parti" aria-labelledby="h-terze-parti">
+        <h2 id="h-terze-parti">5. Servizi di terze parti</h2>
+        <ul>
+          <li><strong>Stripe</strong> imposta cookie tecnici e di sicurezza solo sulle sue pagine di pagamento e sul portale clienti, quando ci vai per abbonarti o gestire l'abbonamento. Il sito non carica script di Stripe nelle sue pagine. Questi cookie sono regolati dall'informativa di Stripe.</li>
+          <li><strong>Google</strong> imposta i propri cookie sulle sue pagine solo se scegli "Accedi con Google".</li>
+          <li><strong>Cloudflare</strong>, che ospita il sito, può impostare cookie tecnici di sicurezza per proteggerlo da attacchi e traffico automatico. <mark class="da-completare">[DA COMPLETARE: verificare quali cookie imposta Cloudflare con la configurazione scelta]</mark></li>
+          <li><strong>OpenStreetMap</strong>: la mappa scarica le immagini dai server di OpenStreetMap, che ricevono l'indirizzo IP del tuo browser; il sito non imposta cookie per la mappa.</li>
+        </ul>
+      </section>
+
+      <section id="cancellare" aria-labelledby="h-cancellare">
+        <h2 id="h-cancellare">6. Come cancellare questi dati</h2>
+        <p>Puoi cancellare in ogni momento la memoria del sito dalle impostazioni del browser (di solito "Cancella dati di navigazione" o "Dati dei siti"). Attenzione: senza account, cancellarla elimina anche le aste che segui e le tue note; prima puoi salvarle con "Scarica backup" nella pagina <a href="mie-aste.html">Le mie aste</a>.</p>
+      </section>
+
+      <section id="norme" aria-labelledby="h-norme">
+        <h2 id="h-norme">7. Riferimenti</h2>
+        <p>Gli strumenti tecnici non richiedono il consenso (art. 122, comma 1, del Codice in materia di protezione dei dati personali, d.lgs. 30 giugno 2003, n. 196). Questa pagina segue le "Linee guida cookie e altri strumenti di tracciamento" del Garante per la protezione dei dati personali del 10 giugno 2021, pubblicate su <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">www.garanteprivacy.it</a>.</p>
+      </section>
+
+      <section id="titolare" aria-labelledby="h-titolare">
+        <h2 id="h-titolare">8. Titolare e contatti</h2>
+        <dl class="legale-dati">
+          <div><dt>Titolare</dt><dd><mark class="da-completare">[DA COMPLETARE: ragione sociale o nome e cognome]</mark></dd></div>
+          <div><dt>Sede</dt><dd><mark class="da-completare">[DA COMPLETARE: sede legale]</mark></dd></div>
+          <div><dt>Partita IVA</dt><dd><mark class="da-completare">[DA COMPLETARE: partita IVA]</mark></dd></div>
+          <div><dt>Contatti</dt><dd><mark class="da-completare">[DA COMPLETARE: email e PEC]</mark></dd></div>
+        </dl>
+      </section>
+    </article>
+  </div>
+
+  <nav class="legale-altri" aria-label="Altri documenti">
+    <a href="termini.html">Condizioni d'uso e di abbonamento</a>
+    <a href="recesso.html">Diritto di recesso</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="cookie.html" aria-current="page">Cookie</a>
+    <a href="avvertenze.html">Avvertenze</a>
+    <a href="prezzi.html">Prezzi</a>
+  </nav>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+</body>
+</html>

@@ -130,6 +130,7 @@
 .m-cella-v small { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .m-cella-n { font-size: 12.5px; line-height: 1.45; color: var(--muted); }
 .m-cella .btn { justify-self: start; }
+.m-cella:not(.fissa) { pointer-events: none; }   /* anteprima al passaggio: il puntatore passa ai quadrati sotto */
 .m-calore { pointer-events: none; }
 
 /* ---------- marcatori ---------- */

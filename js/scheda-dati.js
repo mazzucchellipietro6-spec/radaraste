@@ -16,7 +16,9 @@
   /* ---------- piccoli aiuti ---------- */
 
   function num(x) { var n = Number(x); return isFinite(n) ? n : 0; }
-  function eur(n) { return Math.round(n).toLocaleString('it-IT') + ' €'; }
+  // spazio non divisibile: il simbolo dell'euro non va mai a capo da solo
+  function eur(n) { return Math.round(n).toLocaleString('it-IT') + '\u00a0€'; }
+  function due(n) { return ('0' + n).slice(-2); }
   function pct(f, dec) {
     if (f == null || !isFinite(f)) return '–';
     var p = Math.pow(10, dec == null ? 1 : dec);
@@ -41,7 +43,7 @@
     var s = String(x || ''), m = /^(\d{4}-\d{2}-\d{2})(?:T(\d{1,2}):(\d{2}))?/.exec(s);
     if (!m) return { data: null, ora: '' };
     var o = /^(\d{1,2})[:.](\d{2})/.exec(ora || '');
-    return { data: m[1], ora: o ? o[1].padStart(2, '0') + ':' + o[2] : m[2] ? m[2].padStart(2, '0') + ':' + m[3] : '' };
+    return { data: m[1], ora: o ? due(o[1]) + ':' + o[2] : m[2] ? due(m[2]) + ':' + m[3] : '' };
   }
 
   /* ---------- linea del tempo ---------- */
@@ -60,7 +62,8 @@
     var adesso = String(opz.adesso || ''), dem = a.fonte === DEMANIO, ev = [], note = [];
     var base = num(a.prezzoBase), tentativo = num(a.tentativo);
 
-    if (a.pubblicata) ev.push({ chiave: 'pubblicazione', data: dataOra(a.pubblicata).data, ora: '', titolo: 'Pubblicazione dell\'avviso', nota: a.fonte ? 'Su ' + (a.fonte === PVP ? 'Portale delle Vendite Pubbliche' : a.fonte) : '' });
+    if (a.pubblicata) ev.push({ chiave: 'pubblicazione', data: dataOra(a.pubblicata).data, ora: '', titolo: 'Pubblicazione dell\'avviso',
+      nota: a.fonte === PVP ? 'Sul Portale delle Vendite Pubbliche' : dem ? 'Sul sito dell\'Agenzia del Demanio' : a.fonte ? 'Fonte: ' + a.fonte : '' });
 
     // tentativi precedenti: [[data, prezzo, esito]] dal più vecchio (max 10); le vendite sospese non contano come tentativi
     var storico = (Array.isArray(a.storico) ? a.storico : []).filter(function (s) { return Array.isArray(s) && s[0]; });
@@ -145,7 +148,8 @@
       if (tentativo > 1) note.push('Prima di questa asta ci sono stati ' + (tentativo - 1) + (tentativo - 1 === 1 ? ' tentativo' : ' tentativi') +
         (num(a.deserte) ? ' (' + a.deserte + (a.deserte === 1 ? ' andato deserto' : ' andati deserti') + ')' : '') + ': date non disponibili.');
       else if (tentativo === 1) note.push('È il primo tentativo di vendita trovato nello storico del portale.');
-      else if (!dem && a._origine !== 'manuale') note.push('Storico dei tentativi precedenti: non ancora disponibile.');
+      // con storicoNota la raccolta dice già perché i tentativi precedenti mancano
+      else if (!dem && a._origine !== 'manuale' && !a.storicoNota) note.push('Storico dei tentativi precedenti: non ancora disponibile.');
     } else if (salto > 0) {
       note.push((salto === 1 ? 'Il primo tentativo non è' : 'I primi ' + salto + ' tentativi non sono') + ' nello storico: qui ci sono solo gli ultimi.');
     }
@@ -219,8 +223,8 @@
             (cv.taglia ? ': mercato di taglia ' + cv.taglia + '.' : '.') };
       } else out.mancanti.push('Compravendite del comune (NTN): non disponibili per questa asta' + (x.mq ? '' : ' (arrivano con la superficie)') + '.');
       x.sintesi = (x.zona ? 'Zona OMI ' + x.zona.codice + (x.zona.nomeFascia ? ' (fascia ' + x.zona.fascia + ', ' + x.zona.nomeFascia + ')' : '') + (x.zona.descrizione ? ' – ' + x.zona.descrizione : '') : 'Valori tipici del comune (zona OMI non riconosciuta)') +
-        ': ' + (x.tipologia ? x.tipologia.toLowerCase() + ' ' : '') + cifre(x.euroMq.min) + '–' + cifre(x.euroMq.max) + ' €/m²' +
-        (x.affittoMq ? ', affitto ' + cifre(x.affittoMq.min, 2) + '–' + cifre(x.affittoMq.max, 2) + ' €/m² al mese' : '') + '.';
+        ': ' + (x.tipologia ? x.tipologia.toLowerCase() + ' ' : '') + cifre(x.euroMq.min) + '–' + cifre(x.euroMq.max) + '\u00a0€/m²' +
+        (x.affittoMq ? ', affitto ' + cifre(x.affittoMq.min, 2) + '–' + cifre(x.affittoMq.max, 2) + '\u00a0€/m² al mese' : '') + '.';
       out.omi = x;
     }
 
@@ -230,8 +234,8 @@
       var dove = p.livello === 'comune' ? 'nel comune di ' + p.nome : 'nella provincia di ' + p.nome;
       var questa = num(a.valore) > 0 && num(a.superficieMq) > 0 ? Math.round(a.valore / a.superficieMq) : null;
       out.perizie = { livello: p.livello, nome: p.nome, mediana: num(p.mediana), n: num(p.n), rapporto: p.rapporto != null ? num(p.rapporto) : null, questa: questa,
-        testo: 'Mediana delle stime dei periti per le abitazioni all\'asta ' + dove + ': ' + cifre(p.mediana) + ' €/m² su ' + p.n + ' perizie' +
-          (questa ? '; questa asta: ' + cifre(questa) + ' €/m²' + (p.rapporto != null ? ' (' + cifre(p.rapporto, 2) + ' volte la mediana)' : '') : '') + '.' };
+        testo: 'Mediana delle stime dei periti per le abitazioni all\'asta ' + dove + ': ' + cifre(p.mediana) + '\u00a0€/m² su ' + p.n + ' perizie' +
+          (questa ? '; questa asta: ' + cifre(questa) + '\u00a0€/m²' + (p.rapporto != null ? ' (' + cifre(p.rapporto, 2) + ' volte la mediana)' : '') : '') + '.' };
     } else if (/residenzial/i.test(a.tipo || '')) {
       out.mancanti.push('Confronto con le perizie della zona: non disponibile (servono almeno 5 perizie con stima e superficie nello stesso comune o provincia).');
     }
@@ -281,6 +285,7 @@
     out.url = stat.url || null;
     out.perche = p.livello === 'gruppo' ? (p.fascia ? 'Al ' + nomeFascia(p.fascia) + ' gli esiti noti sono meno di 30: uso tutto il gruppo.' : 'Numero del tentativo non noto: uso tutto il gruppo.')
       : p.livello === 'totale' ? 'Per questo gruppo gli esiti noti sono meno di 30: uso tutte le vendite.' : '';
+    out.testoStima = 'È una stima dai dati passati (' + (c.recenti ? 'ultimi esiti noti del Portale delle Vendite Pubbliche' : 'esiti noti del Portale delle Vendite Pubbliche') + '), non una previsione.';
     out.spiegazione = 'È una stima dai dati passati, non una previsione. Un\'asta «aggiudicata» ha avuto almeno un offerente: usiamo questa quota come probabilità che ci siano altri offerenti oltre a te. ' +
       'Se nessun altro offre, un\'offerta valida vince; quindi P(vincere) = P(nessun altro offerente) + P(altri offerenti) × la tua ipotesi. ' +
       'La forchetta conta le vendite senza esito prima tutte come deserte, poi tutte come aggiudicate.' +
