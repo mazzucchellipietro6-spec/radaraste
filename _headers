@@ -23,7 +23,7 @@
 # lascia "condividi" (scheda dell'asta). Se un giorno servirà la posizione ("vicino a me"), cambia geolocation=(self).
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-AuRrEURHuEvIPVaIwyFxbQnSFt5SRQtPHQyFcTZ7IAE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://tile.openstreetmap.org https://resource-pvp.giustizia.it; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-AuRrEURHuEvIPVaIwyFxbQnSFt5SRQtPHQyFcTZ7IAE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://tile.openstreetmap.org https://resource-pvp.giustizia.it; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin

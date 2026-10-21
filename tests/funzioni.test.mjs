@@ -99,6 +99,10 @@ function mondo() {
         const cliente = u.searchParams.get('customer');
         return risp(200, { object: 'list', data: [...stripe.abbonamenti.values()].filter((s) => s.customer === cliente) });
       }
+      if (metodo === 'GET' && p === '/v1/customers') {
+        const indirizzo = u.searchParams.get('email');
+        return risp(200, { object: 'list', data: [...stripe.clienti.values()].filter((c) => c.email === indirizzo) });
+      }
       let m = /^\/v1\/subscriptions\/([^/]+)$/.exec(p);
       if (m) {
         const s = stripe.abbonamenti.get(decodeURIComponent(m[1]));
@@ -384,6 +388,33 @@ test('prova di 14 giorni solo per Pro e solo per chi non ha mai avuto un abbonam
   assert.equal(m.stripe.sessioni.length, 2);
 });
 
+test('checkout con il webhook ancora in viaggio: niente secondo abbonamento né seconda prova', async () => {
+  const m = mondo();
+  // pagato pochi secondi fa: la tabella dice ancora "gratis", su Stripe l'abbonamento c'è già
+  m.db.abbonamenti.push({ utente: UTENTE, piano: 'gratis', stato: null });
+  m.stripe.clienti.set('cus_test_7', { id: 'cus_test_7', email: 'mario@example.com' });
+  m.stripe.abbonamenti.set('sub_test_7', nuovoAbb({ id: 'sub_test_7', customer: 'cus_test_7', status: 'trialing' }));
+  const doppio = await checkout({ piano: 'pro', periodo: 'mensile' });
+  assert.equal(doppio.stato, 409);
+  assert.equal(m.stripe.sessioni.length, 0, 'nessun secondo addebito');
+  // finito (ma la tabella non lo sa): checkout permesso, senza prova, con lo stesso cliente Stripe
+  m.stripe.abbonamenti.get('sub_test_7').status = 'canceled';
+  const r = await checkout({ piano: 'pro', periodo: 'mensile' });
+  assert.equal(r.stato, 200);
+  assert.equal(r.corpo.prova, 0);
+  assert.equal(m.stripe.sessioni[0].get('customer'), 'cus_test_7');
+  assert.equal(m.stripe.sessioni[0].get('customer_email'), null);
+  assert.equal(m.stripe.sessioni[0].get('subscription_data[trial_period_days]'), null);
+  // abbonamento di un ALTRO utente su un cliente con la stessa email: non blocca e non toglie la prova
+  const m2 = mondo();
+  m2.stripe.clienti.set('cus_test_8', { id: 'cus_test_8', email: 'mario@example.com' });
+  m2.stripe.abbonamenti.set('sub_test_8', nuovoAbb({ id: 'sub_test_8', customer: 'cus_test_8', status: 'active', metadata: { utente: ALTRO, piano: 'pro' } }));
+  const r2 = await checkout({ piano: 'pro', periodo: 'mensile' });
+  assert.equal(r2.stato, 200);
+  assert.equal(r2.corpo.prova, 14);
+  assert.equal(m2.stripe.sessioni[0].get('customer'), null);
+});
+
 test('checkout: errore di Stripe riportato senza il suo messaggio', async () => {
   const m = mondo();
   m.stripe.guasto = 400;
@@ -436,6 +467,11 @@ test('webhook: eventi sconosciuti → 200 ignorato, senza scritture', async () =
   const r = await webhook(evento('customer.created', { id: 'cus_test_9' }));
   assert.equal(r.stato, 200);
   assert.deepEqual(r.corpo, { ricevuto: true, ignorato: true });
+  assert.equal(m.chiamate.length, 0);
+  // nomi ereditati dagli oggetti JavaScript: ignorati come gli altri, non eseguiti
+  for (const tipo of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+    assert.deepEqual((await webhook(evento(tipo, {}))).corpo, { ricevuto: true, ignorato: true }, tipo);
+  }
   assert.equal(m.chiamate.length, 0);
 });
 
@@ -558,7 +594,7 @@ test('webhook: prova in scadenza e pagamento non riuscito mandano l\'email giust
   const fattura = { id: 'in_test_1', object: 'invoice', customer: 'cus_test_1', customer_email: 'cliente@example.com', hosted_invoice_url: 'https://invoice.stripe.com/i/finta', parent: { subscription_details: { subscription: 'sub_test_1' } } };
   assert.equal((await webhook(evento('invoice.payment_failed', fattura), { env: CON_EMAIL })).stato, 200);
   assert.equal(m.email.length, 2);
-  assert.deepEqual(m.email[1].to, ['cliente@example.com']);
+  assert.deepEqual(m.email[1].to, ['mario@example.com'], 'email dell\'account, non quella scritta sulla fattura');
   assert.match(m.email[1].subject, /Pagamento non riuscito/);
   assert.match(m.email[1].text, /https:\/\/invoice\.stripe\.com\/i\/finta/);
   assert.match(m.email[1].text, /abbonamento Pro/);
@@ -662,9 +698,134 @@ test('Supabase: chiavi nuove (sb_secret_) solo in apikey, vecchie (JWT) anche in
   assert.equal(m.chiamate.length, 2, 'un id non valido non arriva a Supabase');
 });
 
+// --- prove "cattive" della revisione -----------------------------------------------------------------------------------
+
+test('nessun utente agisce su un altro: utente, cliente, email o indirizzi nel corpo vengono ignorati', async () => {
+  const m = mondo();
+  m.db.abbonamenti.push({ utente: ALTRO, stripe_customer: 'cus_altro', stripe_subscription: 'sub_altro', piano: 'pro', stato: 'active' });
+  const r = await checkout({ piano: 'base', periodo: 'mensile', utente: ALTRO, customer: 'cus_altro', client_reference_id: ALTRO, email: 'anna@example.com', success_url: 'https://malintenzionato.example/' });
+  assert.equal(r.stato, 200);
+  const p = m.stripe.sessioni[0];
+  assert.equal(p.get('client_reference_id'), UTENTE);
+  assert.equal(p.get('metadata[utente]'), UTENTE);
+  assert.equal(p.get('subscription_data[metadata][utente]'), UTENTE);
+  assert.equal(p.get('customer'), null);
+  assert.equal(p.get('customer_email'), 'mario@example.com');
+  assert.equal(p.get('success_url'), SITO + '/account.html?pagamento=ok');
+  // portale: il cliente Stripe viene solo dalla riga dell'utente del token
+  const pr = await portale(ENV, { corpo: { customer: 'cus_altro', utente: ALTRO } });
+  assert.equal(pr.stato, 404);
+  assert.equal(m.stripe.portali.length, 0);
+  // cancellazione: solo l'utente del token, qualunque cosa dica il corpo
+  const c = await cancella(ENV, { corpo: { utente: ALTRO } });
+  assert.equal(c.stato, 200);
+  assert.equal(m.utenti.has(UTENTE), false);
+  assert.equal(m.utenti.has(ALTRO), true);
+  assert.deepEqual(m.stripe.annullati, [], 'l\'abbonamento dell\'altro resta');
+  assert.deepEqual(m.db.abbonamenti.map((x) => x.utente), [ALTRO]);
+});
+
+test('cancellazione dell\'account: annulla anche l\'abbonamento il cui webhook non è ancora arrivato', async () => {
+  const m = mondo();
+  // riga creata alla registrazione: nella tabella nessuna traccia di Stripe (webhook in ritardo o non configurato)
+  m.db.abbonamenti.push({ utente: UTENTE, piano: 'gratis', stato: null });
+  m.stripe.clienti.set('cus_test_7', { id: 'cus_test_7', email: 'mario@example.com' });
+  m.stripe.abbonamenti.set('sub_test_7', nuovoAbb({ id: 'sub_test_7', customer: 'cus_test_7', status: 'trialing' }));
+  // stesso cliente: abbonamento di un altro utente e uno senza metadati del nostro checkout → non si toccano
+  m.stripe.abbonamenti.set('sub_test_8', nuovoAbb({ id: 'sub_test_8', customer: 'cus_test_7', status: 'active', metadata: { utente: ALTRO, piano: 'base' } }));
+  m.stripe.abbonamenti.set('sub_test_9', nuovoAbb({ id: 'sub_test_9', customer: 'cus_test_7', status: 'active', metadata: {} }));
+  const r = await cancella();
+  assert.equal(r.stato, 200);
+  assert.equal(r.corpo.abbonamentiAnnullati, 1);
+  assert.deepEqual(m.stripe.annullati.map((a) => a.id), ['sub_test_7']);
+  assert.equal(m.stripe.annullati[0].corpo.get('cancellation_details[comment]'), S.COMMENTO_CANCELLAZIONE);
+  assert.equal(m.utenti.has(UTENTE), false);
+  const ricerca = stripeChiamate(m).find((c) => new URL(c.url).pathname === '/v1/customers');
+  assert.equal(new URL(ricerca.url).searchParams.get('email'), 'mario@example.com');
+
+  // Stripe configurato ma giù: l'account resta, si riprova (mai un abbonamento che addebita un account cancellato)
+  const m2 = mondo();
+  m2.stripe.guasto = 500;
+  assert.equal((await cancella()).stato, 502);
+  assert.equal(m2.utenti.has(UTENTE), true);
+  assert.equal(m2.db.dati_utente.length, 1);
+
+  // chiave reale senza PAGAMENTI_REALI e nessuna traccia di Stripe: nessun checkout era possibile, si cancella lo stesso
+  const m3 = mondo();
+  const reale = await cancella({ ...ENV, STRIPE_SECRET_KEY: 'sk_live_finto' });
+  assert.equal(reale.stato, 200);
+  assert.equal(stripeChiamate(m3).length, 0);
+  assert.equal(m3.utenti.has(UTENTE), false);
+});
+
+test('webhook checkout.session.completed: utente solo dai metadati del nostro checkout, benvenuto solo se partito', async () => {
+  const m = mondo();
+  m.stripe.abbonamenti.set('sub_test_1', nuovoAbb({ status: 'active' }));
+  const base = { id: 'cs_test_9', object: 'checkout.session', mode: 'subscription', customer: 'cus_test_1', subscription: 'sub_test_1' };
+  // link di pagamento con client_reference_id scritto a mano nell'indirizzo, metadati assenti o diversi → ignorato
+  for (const s of [{ ...base, client_reference_id: ALTRO }, { ...base, client_reference_id: ALTRO, metadata: { utente: UTENTE } },
+    { ...base, client_reference_id: 'non-uuid', metadata: { utente: UTENTE } }, { ...base, metadata: { utente: 'non-uuid' } }]) {
+    const r = await webhook(evento('checkout.session.completed', s), { env: CON_EMAIL });
+    assert.equal(r.stato, 200);
+  }
+  assert.equal(m.db.abbonamenti.length, 0, 'nessun abbonamento attaccato all\'account di un altro');
+  assert.equal(m.email.length, 0);
+  assert.ok(registro.some((x) => /metadati assenti o diversi/.test(x)));
+  // metadati del nostro checkout (con o senza client_reference_id uguale): valido
+  assert.equal((await webhook(evento('checkout.session.completed', { ...base, metadata: { utente: UTENTE } }))).stato, 200);
+  assert.equal(m.db.abbonamenti[0].utente, UTENTE);
+  // pagamento non andato (incomplete): la riga si scrive, ma niente "il tuo abbonamento è attivo"
+  const m2 = mondo();
+  m2.stripe.abbonamenti.set('sub_test_1', nuovoAbb({ status: 'incomplete', trial_end: null }));
+  await webhook(evento('checkout.session.completed', { ...base, client_reference_id: UTENTE.toUpperCase(), metadata: { utente: UTENTE } }), { env: CON_EMAIL });
+  assert.equal(m2.db.abbonamenti[0].stato, 'incomplete');
+  assert.equal(m2.email.length, 0);
+});
+
+test('webhook: email solo agli account del sito e mai fuorvianti; evento tardivo di un account cancellato segnalato', async () => {
+  const m = mondo();
+  // prova già disdetta: niente "il primo pagamento parte alla fine della prova"
+  m.db.abbonamenti.push({ utente: UTENTE, stripe_customer: 'cus_test_1', stripe_subscription: 'sub_test_1', piano: 'pro', stato: 'trialing', cancella_alla_fine: true });
+  assert.equal((await webhook(evento('customer.subscription.trial_will_end', nuovoAbb({ cancel_at_period_end: true })), { env: CON_EMAIL })).stato, 200);
+  assert.equal(m.email.length, 0);
+  // cliente che non è un nostro utente (altro sito sullo stesso account Stripe, o account già cancellato)
+  const ignoto = '12345678-1234-4234-8234-123456789abc';
+  m.stripe.clienti.set('cus_estraneo', { id: 'cus_estraneo', email: 'sconosciuto@example.com' });
+  const estraneo = nuovoAbb({ id: 'sub_estraneo', customer: 'cus_estraneo', status: 'active', metadata: { utente: ignoto, piano: 'pro' } });
+  assert.equal((await webhook(evento('customer.subscription.trial_will_end', { ...estraneo, status: 'trialing' }), { env: CON_EMAIL })).stato, 200);
+  const fattura = { id: 'in_estranea', object: 'invoice', customer: 'cus_estraneo', customer_email: 'sconosciuto@example.com', hosted_invoice_url: 'https://invoice.stripe.com/i/x', parent: { subscription_details: { subscription: 'sub_estraneo' } } };
+  assert.equal((await webhook(evento('invoice.payment_failed', fattura), { env: CON_EMAIL })).stato, 200);
+  assert.equal(m.email.length, 0, 'nessuna email a chi non ha un account');
+  assert.equal(stripeChiamate(m).length, 0, 'nessuna ricerca dell\'indirizzo presso Stripe');
+  // evento tardivo per un account che non esiste più: 200, nessuna scrittura, avviso con l'abbonamento da controllare
+  m.stripe.abbonamenti.set('sub_estraneo', estraneo);
+  assert.equal((await webhook(evento('customer.subscription.updated', estraneo))).stato, 200);
+  assert.ok(!m.db.abbonamenti.some((x) => x.utente === ignoto));
+  assert.ok(registro.some((x) => /ATTENZIONE: abbonamento sub_estraneo ancora attivo/.test(x)));
+  assert.equal(stripeChiamate(m).filter((c) => c.metodo !== 'GET').length, 0, 'il webhook non annulla nulla da solo');
+});
+
+test('webhook: firma sul corpo grezzo, firma riusata o di un altro endpoint rifiutata, segreto con spazi accettato', async () => {
+  const m = mondo();
+  m.stripe.abbonamenti.set('sub_test_1', nuovoAbb({ status: 'active' }));
+  const ev = evento('customer.subscription.updated', nuovoAbb());
+  assert.equal((await webhook(ev, { corpo: JSON.stringify(ev, null, 2) })).stato, 400, 'stesso JSON riformattato');
+  const intestazione = await S.firma(JSON.stringify(ev), SEGRETO);
+  assert.equal((await webhook(evento('customer.subscription.deleted', nuovoAbb()), { intestazione })).stato, 400, 'firma riusata su un altro evento');
+  assert.equal((await webhook(ev, { intestazione: await S.firma(JSON.stringify(ev), 'whsec_test_altro') })).stato, 400);
+  assert.equal((await webhook(ev, { intestazione: intestazione + ',v1=' + 'f'.repeat(64) })).stato, 200, 'una v1 valida tra più firme basta');
+  assert.equal(m.chiamate.filter((c) => c.metodo !== 'GET').length > 0, true);
+  const n = m.db.eventi_stripe.length;
+  const ev2 = evento('customer.subscription.updated', nuovoAbb());
+  assert.equal((await webhook(ev2, { env: { ...ENV, STRIPE_WEBHOOK_SECRET: '  ' + SEGRETO + '\n' } })).stato, 200, 'segreto incollato con spazi o a capo');
+  assert.equal(m.db.eventi_stripe.length, n + 1);
+});
+
 test('nessuna chiave né token negli output (risposte, intestazioni, registro)', () => {
   assert.ok(uscite.length > 40, 'il controllo ha visto le risposte dei test');
   const tutto = uscite.join('\n') + '\n' + registro.join('\n');
   for (const s of SEGRETI) assert.ok(!tutto.includes(s), 'trovato ' + s.slice(0, 6) + '…');
   assert.ok(registro.length > 5);
+  // indirizzi email solo mascherati nel registro
+  for (const a of ['mario@example.com', 'anna@example.com', 'cliente@example.com', 'sconosciuto@example.com']) assert.ok(!registro.join('\n').includes(a), a);
 });

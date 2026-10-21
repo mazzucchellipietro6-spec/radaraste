@@ -285,19 +285,37 @@ test('prezzi in italiano e risparmio con l\'annuale', () => {
 });
 
 test('giorni di prova rimasti', () => {
-  const inProva = { piano: 'pro', stato: 'trialing', fineProva: '2026-10-27T12:00:00Z' };
+  // giorni di calendario nel fuso di chi guarda: la fine della prova è a mezzogiorno del 27/10 nel fuso del test
+  const inProva = { piano: 'pro', stato: 'trialing', fineProva: new Date(2026, 9, 27, 12).toISOString() };
   assert.equal(P.giorniProva(inProva, '2026-10-13'), 14);
   assert.equal(P.giorniProva(inProva, '2026-10-26'), 1);
   assert.equal(P.giorniProva(inProva, '2026-10-27'), 0);
   assert.equal(P.giorniProva(inProva, '2026-11-02'), 0);
-  assert.equal(P.giorniProva(inProva, '2026-10-26T12:00:00Z'), 1);
-  assert.equal(P.giorniProva(inProva, '2026-10-26T13:00:00Z'), 1, 'giorno iniziato conta');
+  // con un istante: giorni da 24 ore, per eccesso
+  const utc = { piano: 'pro', stato: 'trialing', fineProva: '2026-10-27T12:00:00Z' };
+  assert.equal(P.giorniProva(utc, '2026-10-26T12:00:00Z'), 1);
+  assert.equal(P.giorniProva(utc, '2026-10-26T13:00:00Z'), 1, 'giorno iniziato conta');
+  assert.equal(P.giorniProva(utc, '2026-10-27T12:00:01Z'), 0);
   assert.equal(P.giorniProva({ utente: {}, abbonamento: inProva }, '2026-10-20'), 7, 'anche dallo stato completo');
   assert.equal(P.giorniProva(Object.assign({}, inProva, { stato: 'active' }), '2026-10-13'), 0, 'già pagato: niente prova');
   assert.equal(P.giorniProva(Object.assign({}, inProva, { stato: 'canceled' }), '2026-10-13'), 0);
+  assert.equal(P.giorniProva({ piano: 'pro', fineProva: inProva.fineProva }, '2026-10-13'), 0, 'senza stato non è una prova');
   assert.equal(P.giorniProva({ piano: 'pro', stato: 'trialing', fineProva: null }, '2026-10-13'), 0);
+  assert.equal(P.giorniProva({ utente: {}, abbonamento: null }, '2026-10-13'), 0);
   assert.equal(P.giorniProva(null, '2026-10-13'), 0);
   assert.ok(P.giorniProva({ piano: 'pro', stato: 'trialing', fineProva: new Date(Date.now() + 3 * GIORNO).toISOString() }) >= 2);
+});
+
+test('giorni di prova: il giorno di fine è quello del calendario di chi guarda (fusi orari)', () => {
+  // la prova finisce alle 23:30 UTC del 27/10: a Roma è già il 28, a Los Angeles è ancora il 27
+  const sub = { piano: 'pro', stato: 'trialing', fineProva: '2026-10-27T23:30:00Z' };
+  const prima = process.env.TZ;
+  const conFuso = (tz, fn) => { process.env.TZ = tz; try { return fn(); } finally { if (prima === undefined) delete process.env.TZ; else process.env.TZ = prima; } };
+  conFuso('Europe/Rome', () => assert.equal(P.giorniProva(sub, '2026-10-26'), 2));
+  conFuso('America/Los_Angeles', () => assert.equal(P.giorniProva(sub, '2026-10-26'), 1));
+  conFuso('Pacific/Auckland', () => assert.equal(P.giorniProva(sub, '2026-10-26'), 2));
+  // cambio dell'ora (25/10 in Italia): i giorni restano interi
+  conFuso('Europe/Rome', () => assert.equal(P.giorniProva({ stato: 'trialing', fineProva: '2026-10-27T10:00:00Z' }, '2026-10-24'), 3));
 });
 
 test('blocco: riquadro accessibile con il pulsante verso il piano giusto', () => {
@@ -309,7 +327,7 @@ test('blocco: riquadro accessibile con il pulsante verso il piano giusto', () =>
   assert.match(h, /<a class="btn" href="prezzi\.html#pro">Sblocca con Pro<\/a>/);
   assert.match(h, /stratega d&#39;asta/, 'dice cosa si sblocca');
   assert.match(h, /24 € al mese oppure 240 € all&#39;anno \(risparmi 48 €\), IVA inclusa/);
-  assert.match(h, /provarlo gratis per 14 giorni/);
+  assert.match(h, /Al primo abbonamento puoi provarlo gratis per 14 giorni/);
   assert.match(h, /href="accedi\.html"/);
   assert.match(h, /<\/section>$/);
   // id diversi per due riquadri nella stessa pagina
@@ -319,12 +337,73 @@ test('blocco: riquadro accessibile con il pulsante verso il piano giusto', () =>
   assert.match(b, /href="prezzi\.html#base">Sblocca con Base</);
   assert.match(b, /<h3 class="blocco-piano-titolo"/);
   assert.match(b, /tutti gli affari di oggi/);
-  assert.match(b, /Il piano Pro, che comprende anche questa funzione, si può provare gratis per 14 giorni/);
+  assert.match(b, /Al primo abbonamento puoi provare gratis per 14 giorni il piano Pro, che comprende anche questa funzione/);
   // funzione sconosciuta: il primo piano a pagamento, mai "Sblocca con Gratis"
   const x = P.blocco({ funzione: 'inesistente' });
   assert.match(x, /prezzi\.html#base/);
   assert.doesNotMatch(x, /Sblocca con Gratis/);
   assert.match(P.blocco({ funzione: 'avvisi', titolo: 'Avvisi ogni mattina', testo: 'Ricevi le nuove aste.' }), /Avvisi ogni mattina<\/span><\/h2><p class="blocco-piano-testo">Ricevi le nuove aste\.<\/p>/);
+});
+
+test('blocco: la prova gratuita non è promessa a chi ha già avuto un abbonamento', () => {
+  const PROVA = /prova|provar/i;
+  const conStato = (s, fn) => { globale('Account', { statoCorrente: () => s }); try { return fn(); } finally { togli('Account'); } };
+  const utente = { id: 'utente-finto', email: 'prova@example.com' };
+  // registrato da poco, nessun abbonamento (riga "gratis" con stato null): la prova vale
+  conStato({ utente, abbonamento: { piano: 'gratis', periodo: null, stato: null, fineProva: null, finePeriodo: null } },
+    () => assert.match(P.blocco({ funzione: 'stratega' }), /Al primo abbonamento puoi provarlo gratis per 14 giorni/));
+  // abbonamento non ancora letto: non sappiamo, vale la frase con la condizione
+  conStato({ utente, abbonamento: null }, () => assert.match(P.blocco({ funzione: 'stratega' }), /Al primo abbonamento/));
+  // abbonato Base che guarda lo Stratega: cambia piano dal portale, senza prova
+  conStato({ utente, abbonamento: { piano: 'base', periodo: 'mensile', stato: 'active', fineProva: null, finePeriodo: tra(20) } }, () => {
+    const h = P.blocco({ funzione: 'stratega' });
+    assert.doesNotMatch(h, PROVA);
+    assert.match(h, /href="prezzi\.html#pro">Sblocca con Pro/);
+  });
+  // ex abbonato (disdetto) o con la prova già usata
+  conStato({ utente, abbonamento: { piano: 'gratis', periodo: 'mensile', stato: 'canceled', fineProva: null, finePeriodo: tra(-30) } },
+    () => assert.doesNotMatch(P.blocco({ funzione: 'stratega' }), PROVA));
+  conStato({ utente, abbonamento: { piano: 'gratis', periodo: null, stato: null, fineProva: tra(-40), finePeriodo: null } },
+    () => assert.doesNotMatch(P.blocco({ funzione: 'affari-tutti' }), PROVA));
+  // la stessa regola è disponibile per le pagine (come haGiaAvuto in servizi/stripe.js)
+  assert.equal(P.provaGiaUsata(null), false);
+  assert.equal(P.provaGiaUsata({ utente, abbonamento: null }), false);
+  assert.equal(P.provaGiaUsata({ utente, abbonamento: { piano: 'gratis', stato: null, fineProva: null } }), false);
+  assert.equal(P.provaGiaUsata({ utente, abbonamento: { piano: 'gratis', stato: 'canceled' } }), true);
+  assert.equal(P.provaGiaUsata({ piano: 'gratis', stato: 'incomplete_expired' }), true);
+  assert.equal(P.provaGiaUsata({ piano: 'gratis', stato: null, fineProva: tra(-1) }), true);
+  // prezzo e IVA restano
+  conStato({ utente, abbonamento: { piano: 'pro', stato: 'unpaid', fineProva: null, finePeriodo: tra(-3) } },
+    () => assert.match(P.blocco({ funzione: 'stratega' }), /24 € al mese oppure 240 € all&#39;anno/));
+});
+
+test('blocco: con un pagamento non riuscito indica il proprio account, non un nuovo abbonamento', () => {
+  const conStato = (s, fn) => { globale('Account', { statoCorrente: () => s }); try { return fn(); } finally { togli('Account'); } };
+  const utente = { id: 'utente-finto' };
+  for (const stato of ['past_due', 'unpaid', 'paused', 'incomplete']) {
+    conStato({ utente, abbonamento: { piano: 'pro', periodo: 'mensile', stato, fineProva: null, finePeriodo: tra(-40) } }, () => {
+      const h = P.blocco({ funzione: 'stratega' });
+      assert.match(h, /pagamento del tuo abbonamento non è riuscito: <a href="account\.html">aggiorna il metodo di pagamento<\/a>/, stato);
+      assert.doesNotMatch(h, /accedi\.html/, stato);
+    });
+  }
+  for (const s of [{ utente, abbonamento: { piano: 'gratis', stato: 'canceled' } }, { utente, abbonamento: { piano: 'base', stato: 'active', finePeriodo: tra(20) } }, { utente, abbonamento: null }]) {
+    conStato(s, () => assert.doesNotMatch(P.blocco({ funzione: 'stratega' }), /account\.html|accedi\.html/, JSON.stringify(s)));
+  }
+});
+
+test('nomi come "constructor" o "toString" non sono funzioni né limiti della configurazione', () => {
+  for (const k of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+    assert.equal(P.pianoMinimo(k), 'gratis', k);
+    const h = P.blocco({ funzione: k });
+    assert.doesNotMatch(h, /function|native code|\[object/, k);
+    assert.match(h, /Questa funzione fa parte del piano Base\./, k);
+  }
+  attivi(() => {
+    assert.equal(P.puo('constructor', null, ADESSO), true);
+    assert.equal(P.limite('constructor', null, ADESSO), Infinity);
+    assert.equal(P.limite('__proto__', null, ADESSO), Infinity);
+  });
 });
 
 test('blocco: nessun HTML iniettabile dai parametri', () => {

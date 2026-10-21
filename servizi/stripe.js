@@ -221,3 +221,32 @@ export function rigaDaAbbonamento(env, sub) {
     aggiornato: new Date().toISOString()
   };
 }
+
+// Stripe utilizzabile (chiave di test, o reale con PAGAMENTI_REALI=si)?
+export function stripeUsabile(env) { try { controllaChiave(env); return true; } catch { return false; } }
+
+/* abbonamenti Stripe di un utente del sito ({ id, email }), anche quelli che la tabella non conosce ancora:
+ *  - tutti quelli del cliente Stripe scritto nella tabella abbonamenti (o l'abbonamento, se manca il cliente);
+ *  - quelli creati dal nostro checkout per QUESTO utente (metadati) su clienti Stripe con la sua email: il webhook
+ *    può essere in ritardo di qualche secondo o non ancora configurato. I metadati evitano di prendere abbonamenti
+ *    di altri con la stessa email. Senza Stripe utilizzabile e senza tracce nella tabella: nessuna chiamata. */
+export async function abbonamentiDellUtente(env, utente, riga) {
+  const trovati = new Map();
+  const delCliente = async (cliente, soloQuestoUtente) => {
+    const elenco = await chiamaStripe(env, 'GET', '/subscriptions', { customer: cliente, status: 'all', limit: 100 });
+    for (const s of (elenco && elenco.data) || []) {
+      if (s && s.id && (!soloQuestoUtente || utenteDaMetadati(s) === utente.id)) trovati.set(s.id, s);
+    }
+  };
+  const cliente = riga && riga.stripe_customer;
+  if (cliente) await delCliente(cliente, false);
+  else if (riga && riga.stripe_subscription) {
+    const s = await chiamaStripe(env, 'GET', '/subscriptions/' + encodeURIComponent(riga.stripe_subscription), null, { mancanteNull: true });
+    if (s && s.id) trovati.set(s.id, s);
+  }
+  if (utente.email && stripeUsabile(env)) {
+    const clienti = await chiamaStripe(env, 'GET', '/customers', { email: utente.email, limit: 100 });
+    for (const c of (clienti && clienti.data) || []) if (c && c.id && c.id !== cliente) await delCliente(c.id, true);
+  }
+  return [...trovati.values()];
+}

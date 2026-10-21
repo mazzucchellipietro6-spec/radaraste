@@ -30,6 +30,7 @@ Il menu ha sei sezioni, uguali in tutte le pagine (su telefono: barra in basso c
 | | `guida.html` | Guida all'asta telematica passo per passo, con le fonti (le stesse risposte del consulente). |
 | | `tariffe.html`, `fonti.html` | Aliquote con fonte e data; stato delle fonti dei dati. |
 | **Le mie aste** | `mie-aste.html` | Aste seguite con note, stato, giudizio salvato, promemoria in calendario di tutte, backup. Tutto resta nel browser. |
+| **Abbonamenti** (modalità test, spenti) | `prezzi.html`, `accedi.html`, `account.html`; pagine legali `termini.html`, `privacy.html`, `cookie.html`, `recesso.html`, `avvertenze.html` | Piani e prezzi proposti, accesso e pagina dell'account, bozze legali con i dati del titolare da completare. Finché non configuri gli account nessuna funzione è bloccata; anteprima con `?anteprima=abbonamenti`. Vedi `ABBONAMENTI.md`. |
 
 Ricerca istantanea da ogni pagina (pulsante Cerca, tasto `/` o Ctrl/Cmd+K). Tema chiaro e scuro, pensato per il telefono, usabile da tastiera, installabile come app con funzionamento offline (`sw.js`).
 
@@ -157,6 +158,16 @@ Tecnologie: HTML, CSS e JavaScript senza framework né passaggi di build. Il sit
 3. Nel repository: **Settings → Secrets and variables → Actions** → `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`.
 
 Il token non va mai scritto nel codice. Senza i due secret il workflow non invia nulla e lo scrive nel log.
+
+---
+
+## Abbonamenti (modalità test)
+
+Piani Gratis, Base e Pro con prezzi **proposti** (da approvare), account con Supabase, pagamenti con Stripe e email con Resend, su Cloudflare Pages con le funzioni di `functions/`. È tutto **spento e in modalità test**: con `attivi: false` in `config/abbonamenti.js` il sito funziona come sempre e nessun pagamento reale è possibile (le funzioni rifiutano le chiavi reali di Stripe se su Cloudflare manca `PAGAMENTI_REALI=si`). Le chiavi segrete stanno solo nelle variabili d'ambiente di Cloudflare.
+
+Il workflow pubblica anche su Cloudflare Pages solo se nel repository ci sono la variabile `CF_PAGES_PROGETTO` e i secret `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`; GitHub Pages resta com'è. Intestazioni di sicurezza e cache in `_headers`, progetto in `wrangler.toml`.
+
+Guida completa per il proprietario (prezzi e perché, come funziona, account da creare passo per passo, carte di test, lista di controllo prima dei pagamenti reali): **[ABBONAMENTI.md](ABBONAMENTI.md)**.
 
 ---
 

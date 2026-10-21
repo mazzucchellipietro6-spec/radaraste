@@ -6,7 +6,11 @@
  *   attivi o in anteprima, nessun utente        → accedi.html?dopo=prezzi.html
  *   utente collegato con il piano Gratis        → Account.checkout(piano, periodo), poi la pagina di pagamento di Stripe
  *   utente con un piano a pagamento             → portale clienti di Stripe (Account.portale()) per cambiarlo o disdirlo
- * Il controllo vero (chiavi solo di test, prezzi, chi può pagare) lo fanno le funzioni del server.
+ *   abbonamento con un pagamento non riuscito   → portale clienti per aggiornare il pagamento (il server rifiuta un
+ *                                                 secondo abbonamento finché quello vecchio è in corso)
+ * La prova gratuita si mostra solo a chi non ha mai avuto un abbonamento (come functions/api/stripe/checkout.js).
+ * Il controllo vero (chiavi solo di test, prezzi, chi può pagare) lo fanno le funzioni del server; prima di lasciare la
+ * pagina si controlla comunque che il server non sia in pagamenti reali mentre la pagina dice "modalità test".
  * Le parti che non toccano la pagina sono esportate per i test in Node (tests/abbonamenti-pagine.test.mjs). */
 (function (root) {
   'use strict';
@@ -14,8 +18,13 @@
   var NODE = typeof module !== 'undefined' && module.exports;
   var P = root.Piani || (NODE ? require('../piani.js') : null);
   var ACCEDI = 'accedi.html?dopo=prezzi.html';
-  // funzioni che il sito non ha ancora (nei vantaggi dei piani sono segnate "(in arrivo)"); config.inArrivo, se c'è, vince
-  var IN_ARRIVO = ['report-pdf', 'avvisi', 'consulente-ai', 'statistiche-avanzate'];
+  // funzioni che il sito non ha ancora (nei vantaggi dei piani sono segnate "(in arrivo)"); config.inArrivo, se c'è, vince.
+  // Il report PDF c'è già ("Stampa o salva in PDF" nella scheda dell'asta): non è in arrivo.
+  var IN_ARRIVO = ['avvisi', 'consulente-ai', 'statistiche-avanzate'];
+  // stati di Stripe di un abbonamento ancora in corso ma non pagato: si sistema dal portale clienti
+  var DA_SISTEMARE = ['past_due', 'unpaid', 'paused'];
+  // stati di Stripe: chi ne ha uno ha già avuto un abbonamento, quindi niente nuova prova (come servizi/stripe.js)
+  var STATI_STRIPE = ['incomplete', 'incomplete_expired', 'trialing', 'active', 'past_due', 'canceled', 'unpaid', 'paused'];
   // funzione a pagamento → limite del piano Gratis che la riguarda (config.limitiGratis)
   var LIMITE_DI = { 'affari-tutti': 'affari', 'combinazioni-tutte': 'combinazioni', 'seguite-illimitate': 'seguite' };
   var PRIMA_DEL_LIMITE = { affari: 'I primi ', combinazioni: 'Le prime ', seguite: 'Fino a ' };
@@ -70,11 +79,36 @@
   function inArrivo(funzione, c) { return (c.inArrivo || IN_ARRIVO).indexOf(funzione) >= 0; }
   function attiviDavvero(c) { var s = c.supabase || {}; return c.attivi === true && !!(s.url && s.chiaveAnonima); }
 
+  /* ---- Abbonamento dell'utente (riga della tabella abbonamenti: { piano, stato, fineProva, … }) ---- */
+  function idPiano(ab) { return ab && typeof ab.piano === 'string' ? ab.piano.toLowerCase() : ''; }
+  // ha già avuto un abbonamento o una prova: il server non dà una seconda prova gratuita
+  function provaGiaUsata(ab) {
+    if (P && typeof P.provaGiaUsata === 'function') return P.provaGiaUsata({ abbonamento: ab || null });
+    return !!(ab && (ab.fineProva || STATI_STRIPE.indexOf(ab.stato) >= 0));
+  }
+  // id del piano a pagamento con il pagamento da sistemare, altrimenti null
+  function daSistemare(ab, c) {
+    var id = idPiano(ab);
+    return ab && DA_SISTEMARE.indexOf(ab.stato) >= 0 && livello(id, c) >= 1 ? id : null;
+  }
+
+  /* Risposta di Account.checkout() o Account.portale() → indirizzo dove andare, oppure errore.
+   * Solo https; e se la pagina dice "modalità test: nessun pagamento reale" il server deve essere davvero in test. */
+  function destinazione(r, c) {
+    var url = r && typeof r.url === 'string' ? r.url : '';
+    if (!/^https:\/\/[^\s\/?#]+/i.test(url)) throw new Error('Il server non ha indicato la pagina di pagamento. Riprova tra poco.');
+    if (c && c.modalita === 'test' && r.modalita != null && r.modalita !== 'test') {
+      throw new Error('Pagamento fermato: il server è impostato per pagamenti reali, ma il sito è in modalità test. Avvisa il proprietario del sito.');
+    }
+    return url;
+  }
+
   /* ---- Pulsante di un piano ----
-   * ctx: { cfg, periodo, vendita (abbonamenti attivi o anteprima), configurato (account), utente, piano (id del piano dell'utente) }
+   * ctx: { cfg, periodo, vendita (abbonamenti attivi o anteprima), configurato (account), utente, piano (id del piano dell'utente),
+   *        provaUsata (niente prova gratuita), daSistemare (id del piano con il pagamento non riuscito) }
    * → { tipo: 'link' | 'accedi' | 'disattivato' | 'checkout' | 'portale' | 'attuale', testo, href?, nota?, attuale? } */
   function azione(piano, ctx) {
-    var c = ctx.cfg, nome = piano.nome || piano.id, giorni = provaDi(piano, c);
+    var c = ctx.cfg, nome = piano.nome || piano.id, giorni = ctx.provaUsata ? 0 : provaDi(piano, c);
     var scegli = giorni ? 'Prova ' + nome + ' gratis per ' + giorni + ' giorni' : 'Scegli ' + nome;
     if (!aPagamento(piano)) {
       if (ctx.vendita && ctx.configurato && ctx.utente && ctx.piano === piano.id) return { tipo: 'attuale', testo: 'Il tuo piano' };
@@ -82,6 +116,10 @@
     }
     if (!ctx.vendita) return { tipo: 'disattivato', testo: scegli, nota: 'Abbonamenti non ancora attivi: per ora tutto il sito è libero.' };
     if (!ctx.configurato || !ctx.utente) return { tipo: 'accedi', testo: scegli, href: ACCEDI, nota: 'Prima accedi o crea un account.' };
+    if (ctx.daSistemare) {
+      if (ctx.daSistemare !== piano.id) return { tipo: 'portale', testo: 'Cambia piano dal portale clienti' };
+      return { tipo: 'portale', testo: 'Aggiorna il pagamento', attuale: ctx.piano === piano.id, nota: 'L\'ultimo pagamento non è riuscito: aggiorna il metodo di pagamento dal portale clienti.' };
+    }
     if (ctx.piano === piano.id) return { tipo: 'portale', testo: 'Gestisci l\'abbonamento', attuale: true };
     if (ctx.piano && ctx.piano !== 'gratis') return { tipo: 'portale', testo: 'Cambia piano dal portale clienti' };
     return { tipo: 'checkout', testo: scegli };
@@ -93,7 +131,8 @@
     if (az.tipo === 'attuale') return '<p class="pz-attuale">' + icona('ok') + '<span>' + esc(az.testo) + '</span></p>';
     if (az.tipo === 'link' || az.tipo === 'accedi') return '<a class="' + cls + '" href="' + esc(az.href) + '">' + esc(az.testo) + '</a>' + nota;
     if (az.tipo === 'disattivato') return '<button class="' + cls + '" type="button" disabled aria-describedby="' + idNota + '">' + esc(az.testo) + '</button>' + nota;
-    return '<button class="' + (az.attuale ? 'btn ghost' : cls) + '" type="button" data-azione="' + esc(az.tipo) + '" data-piano="' + id + '">' + esc(az.testo) + '</button>' + nota;
+    return '<button class="' + (az.attuale ? 'btn ghost' : cls) + '" type="button" data-azione="' + esc(az.tipo) + '" data-piano="' + id + '"' +
+      (nota ? ' aria-describedby="' + idNota + '"' : '') + '>' + esc(az.testo) + '</button>' + nota;
   }
 
   // riga sotto il prezzo: l'alternativa (mensile/annuale) e il risparmio
@@ -116,8 +155,9 @@
 
   function htmlPiano(piano, ctx) {
     var c = ctx.cfg, id = esc(piano.id), paga = aPagamento(piano), az = azione(piano, ctx);
-    // chi ha già un piano a pagamento cambia dal portale clienti, senza una nuova prova: non la promettiamo
-    var giorni = az.tipo === 'portale' ? 0 : provaDi(piano, c);
+    // chi ha già un piano a pagamento cambia dal portale clienti, e chi ha già avuto un abbonamento o una prova non ne
+    // ha un'altra (functions/api/stripe/checkout.js): non la promettiamo
+    var giorni = az.tipo === 'portale' || ctx.provaUsata ? 0 : provaDi(piano, c);
     var periodo = ctx.periodo === 'annuale' && importo(piano, 'annuale') ? 'annuale' : (importo(piano, 'mensile') ? 'mensile' : 'annuale');
     var attuale = az.tipo === 'attuale' || az.attuale;
     var bollino = attuale ? '<span class="pz-bollino attuale">Il tuo piano</span>' : (piano.consigliato ? '<span class="pz-bollino">Consigliato</span>' : '');
@@ -177,7 +217,8 @@
 
   var Prezzi = {
     azione: azione, htmlPiano: htmlPiano, htmlConfronto: htmlConfronto, righeConfronto: righeConfronto, dettaglioPrezzo: dettaglioPrezzo,
-    etichettaAnnuale: etichettaAnnuale, mesiGratis: mesiGratis, risparmio: risparmio, attiviDavvero: attiviDavvero, ACCEDI: ACCEDI
+    etichettaAnnuale: etichettaAnnuale, mesiGratis: mesiGratis, risparmio: risparmio, attiviDavvero: attiviDavvero,
+    provaGiaUsata: provaGiaUsata, daSistemare: daSistemare, destinazione: destinazione, ACCEDI: ACCEDI, IN_ARRIVO: IN_ARRIVO
   };
   if (NODE) { module.exports = Prezzi; return; }
 
@@ -193,15 +234,18 @@
     if (!utente && configurato && typeof A.utente === 'function') { try { utente = A.utente() || null; } catch (e) { utente = null; } }
     // abbonamento appena letto dal database (Account.abbonamento): più fresco di quello in cache
     if (utente && letto) s = { utente: utente, abbonamento: letto };
+    var ab = utente && s ? s.abbonamento || null : null;
     return {
       cfg: c, periodo: periodo, attivi: attiviDavvero(c), anteprima: P ? P.anteprima() : false, vendita: P ? P.attivo() : false,
-      configurato: configurato, utente: utente, piano: utente && P ? P.piano(s) : 'gratis'
+      configurato: configurato, utente: utente, piano: utente && P ? P.piano(s) : 'gratis',
+      provaUsata: provaGiaUsata(ab), daSistemare: daSistemare(ab, c)
     };
   }
 
-  function esito(msg) {
+  // messaggio sotto i piani: problema (avviso giallo) o semplice informazione
+  function esito(msg, info) {
     var el = $('#pzEsito');
-    el.innerHTML = msg ? '<p class="callout warn">' + esc(msg) + '</p>' : '';
+    el.innerHTML = msg ? '<p class="callout' + (info ? '' : ' warn') + '">' + esc(msg) + '</p>' : '';
   }
 
   // testi della pagina che dipendono dalla configurazione (prova, IVA)
@@ -235,7 +279,8 @@
     // arrivando da "Sblocca con Pro" (prezzi.html#pro) porta al piano, che prima di adesso non esisteva
     if (primoGiro) {
       primoGiro = false;
-      var dest = root.location.hash ? document.getElementById(decodeURIComponent(root.location.hash.slice(1))) : null;
+      var dest = null;
+      try { dest = root.location.hash ? document.getElementById(decodeURIComponent(root.location.hash.slice(1))) : null; } catch (e) { dest = null; }
       if (dest && dest.classList.contains('pz-piano')) dest.scrollIntoView({ block: 'start' });
     }
   }
@@ -245,13 +290,11 @@
     var A = account();
     if (!b || inCorso) return;
     if (!A) { esito('Gli account non sono disponibili in questa pagina.'); return; }
-    var tipo = b.getAttribute('data-azione'), testo = b.textContent;
+    var tipo = b.getAttribute('data-azione'), testo = b.textContent, c = cfg();
     inCorso = true; b.disabled = true; esito('');
     b.textContent = tipo === 'checkout' ? 'Apro la pagina di pagamento…' : 'Apro il portale clienti…';
     new Promise(function (ok) { ok(tipo === 'checkout' ? A.checkout(b.getAttribute('data-piano'), periodo) : A.portale()); }).then(function (r) {
-      var url = r && typeof r.url === 'string' ? r.url : '';
-      if (!/^https:\/\//i.test(url)) throw new Error('Il server non ha indicato la pagina di pagamento. Riprova tra poco.');
-      root.location.assign(url);
+      root.location.assign(destinazione(r, c));
     }).catch(function (err) {
       inCorso = false; b.disabled = false; b.textContent = testo;
       esito((err && err.message) || 'Non è stato possibile aprire la pagina di pagamento. Riprova tra poco.');
@@ -259,8 +302,8 @@
   }
 
   function avvia() {
-    var q = null;
-    try { q = new URLSearchParams(root.location.search).get('periodo'); } catch (e) { q = null; }
+    var q = null, pagamento = null;
+    try { q = new URLSearchParams(root.location.search); pagamento = q.get('pagamento'); q = q.get('periodo'); } catch (e) { q = null; }
     if (q === 'annuale') periodo = 'annuale';
     U.$$('[data-periodo]').forEach(function (b) {
       b.addEventListener('click', function () { periodo = b.getAttribute('data-periodo') === 'annuale' ? 'annuale' : 'mensile'; rendi(); });
@@ -270,6 +313,8 @@
     // tornando indietro dalla pagina di Stripe il browser può ripresentare la pagina com'era: pulsanti di nuovo attivi
     root.addEventListener('pageshow', function (e) { if (e.persisted) { inCorso = false; rendi(); } });
     rendi();
+    // ritorno dalla pagina di Stripe con "Indietro" (cancel_url di functions/api/stripe/checkout.js)
+    if (pagamento === 'annullato') esito('Pagamento annullato: non ti è stato addebitato nulla. Puoi scegliere di nuovo quando vuoi.', true);
     // piano dell'utente collegato, letto una volta dal database (solo con gli account configurati)
     var ctx = contesto(), A = account();
     if (ctx.configurato && ctx.utente && A && typeof A.abbonamento === 'function') {

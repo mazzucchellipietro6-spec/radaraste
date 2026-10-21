@@ -198,6 +198,13 @@
     var ab = abbonamentoDi(s);
     return !!(ab && (ab.fineProva || STATI_STRIPE.indexOf(ab.stato) >= 0));
   }
+  // abbonamento a pagamento fermo per un pagamento non riuscito: si sistema dal portale (account.html), non con un
+  // nuovo pagamento dalla pagina Prezzi (il server lo rifiuta finché l'abbonamento è in corso)
+  function pagamentoDaSistemare(s) {
+    var ab = abbonamentoDi(s);
+    return !!(ab && livello(typeof ab.piano === 'string' ? ab.piano.toLowerCase() : '') >= 1 &&
+      ['past_due', 'unpaid', 'paused', 'incomplete'].indexOf(ab.stato) >= 0);
+  }
 
   /* Riquadro al posto di una funzione bloccata. opz: { funzione, titolo?, testo?, livello? (titolo h2…h4, predefinito h2) }
    * Tutti i testi sono protetti: niente HTML dai parametri. */
@@ -228,7 +235,9 @@
       (info ? '<p class="blocco-piano-testo note">' + esc(info) + '</p>' : '') +
       '<div class="row-actions"><a class="btn" href="prezzi.html#' + esc(id) + '">Sblocca con ' + esc(nomePiano) + '</a>' +
         '<a class="btn ghost" href="prezzi.html">Confronta i piani</a></div>' +
-      (s && s.utente ? '' : '<p class="blocco-piano-testo note"><a href="accedi.html">Hai già un abbonamento? Accedi</a></p>') +
+      (!(s && s.utente) ? '<p class="blocco-piano-testo note"><a href="accedi.html">Hai già un abbonamento? Accedi</a></p>'
+        : pagamentoDaSistemare(s) ? '<p class="blocco-piano-testo note">L\'ultimo pagamento del tuo abbonamento non è riuscito: ' +
+          '<a href="account.html">aggiorna il metodo di pagamento</a> per riattivarlo.</p>' : '') +
       '</section>';
   }
 
@@ -248,7 +257,7 @@
     attivo: attivo, anteprima: anteprima, stato: stato, piano: piano, puo: puo, limite: limite, pianoMinimo: pianoMinimo,
     prezzo: prezzo, risparmioAnnuale: risparmioAnnuale, giorniProva: giorniProva, blocco: blocco, avvisoAnteprima: avvisoAnteprima,
     // di supporto per le pagine
-    dati: dati, nome: nome, livello: livello, config: cfg, fineRitardo: fineRitardo,
+    dati: dati, nome: nome, livello: livello, config: cfg, fineRitardo: fineRitardo, provaGiaUsata: provaGiaUsata,
     CHIAVE_ANTEPRIMA: CHIAVE_ANTEPRIMA, GIORNI_RITARDO: GIORNI_RITARDO
   };
 
