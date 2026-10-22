@@ -38,7 +38,7 @@ Ogni mattina, dopo la raccolta automatica delle aste, una squadra di assistenti 
 1. **Preparazione** (capo squadra):
    - legge le notifiche;
    - allinea il branch con `main` se nel frattempo hai pubblicato;
-   - aggiorna i dati locali con la stessa raccolta del sito, se sono più vecchi di un giorno;
+   - aggiorna i dati locali con la stessa raccolta del sito, se sono più vecchi di un giorno (`NODE_USE_ENV_PROXY=1 npm run raccogli -- --max-dettagli 300 --tempo-max 40`, poi `npm run cacciatore`: in questo ambiente Node deve passare dal proxy);
    - se il giorno prima qualcosa è rimasto a metà, lo riprende.
 2. **Controlli** (in parallelo): Guardiano della raccolta, Controllore dei dati, Collaudatore del sito.
 3. **Sviluppo**: lo Sviluppatore ripara i problemi gravi trovati, poi una voce della ROADMAP.
