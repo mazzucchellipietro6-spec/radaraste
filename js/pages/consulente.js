@@ -19,9 +19,10 @@
       document.head.appendChild(s);
     }).then(function (l) {
       var R = window.ASTE_RACCOLTE;
-      // una fonte non aggiornata oggi resta con le aste dell'ultima raccolta riuscita: si dice di quando sono
-      var ferme = U.fontiFerme(R).map(function (f) { return ' · ' + f.nome + ': restano le aste del ' + U.dataIt(f.data); }).join('');
-      $('#csStato').textContent = l.length ? 'Pronto · ' + l.length.toLocaleString('it-IT') + ' aste' + (R && R.aggiornato ? ', dati del ' + U.dataIt(R.aggiornato.slice(0, 10)) : '') + ferme + ' · modalità regole'
+      // una fonte che l'ultima raccolta non ha aggiornato resta con le aste dell'ultima raccolta riuscita: si dice di quando sono
+      var giro = R && R.aggiornato ? U.oggi(new Date(R.aggiornato)) : null, quando = giro === U.oggi() ? 'oggi' : giro ? 'il ' + U.dataIt(giro) : 'nell\'ultima raccolta';
+      var ferme = U.fontiFerme(R).map(function (f) { return ' · ' + f.nome + ': ' + quando + ' nessun aggiornamento, aste dell\'ultima raccolta riuscita (' + U.dataIt(f.data) + ')'; }).join('');
+      $('#csStato').textContent = l.length ? 'Pronto · ' + l.length.toLocaleString('it-IT') + ' aste' + (giro ? ', raccolta del ' + U.dataIt(giro) : '') + ferme + ' · modalità regole'
         : 'Nessuna asta disponibile: posso comunque fare i conti e spiegare le regole.';
       return l;
     });

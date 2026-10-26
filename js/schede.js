@@ -71,12 +71,14 @@
 
   function quando(a) {
     var q = U.quando(a.dataAsta), g = U.giorniA(a.dataAsta);
-    var et = a.fonte === 'Agenzia del Demanio' ? 'Termine offerte' : 'Asta';
+    // termineOfferte: 'AAAA-MM-GG' o 'AAAA-MM-GGTHH:MM'; Demanio senza il giorno dell'asta nell'avviso: la data è il termine
+    var to = a.termineOfferte ? String(a.termineOfferte).split('T') : null;
+    var et = a.fonte === 'Agenzia del Demanio' && (!to || to[0] === a.dataAsta) ? 'Termine offerte' : 'Asta';
     if (!a.dataAsta) return '<div class="quando">' + U.icona('calendario') + '<span>' + et + ': data non indicata nell\'avviso</span></div>';
     var presto = g !== null && g >= 0 && g <= 7;
     return '<div class="quando">' + U.icona('calendario') + '<span><span class="sr-only">' + et + ': </span>' + U.dataIt(a.dataAsta) + (a.ora ? ', ' + U.esc(a.ora) : '') + '</span>' +
       (q ? '<b class="tra' + (presto ? ' presto' : '') + (g !== null && g < 0 ? ' finita' : '') + '">' + q + '</b>' : '') + '</div>' +
-      (a.termineOfferte && a.termineOfferte !== a.dataAsta ? '<div class="quando sub">' + U.icona('orologio') + '<span>Offerte entro il ' + U.dataIt(a.termineOfferte) + '</span></div>' : '');
+      (to && to[0] !== a.dataAsta ? '<div class="quando sub">' + U.icona('orologio') + '<span>Offerte entro il ' + U.dataIt(to[0]) + (to[1] ? ', ' + U.esc(to[1].slice(0, 5)) : '') + '</span></div>' : '');
   }
 
   function linkEsterni(a, opz) {

@@ -899,11 +899,19 @@
     var d = ctx.aggiornato || (r && r.aggiornato) || (ctx.affari && ctx.affari.datiDel) || null;
     return d ? String(d).slice(0, 10) : null;
   }
+  // fonte che l'ultima raccolta non ha aggiornato (errore o blocco): data dell'ultima raccolta riuscita, non quella del file
+  function voceFonte(ctx, nome, etichetta, url) {
+    var r = raccoltaDi(ctx), d = dataDati(ctx);
+    var f = ((r && r.fonti) || []).filter(function (x) { return x.nome === nome; })[0];
+    if (!f || (f.stato !== 'errore' && f.stato !== 'bloccata') || !f.ultimaRaccolta || isNaN(new Date(f.ultimaRaccolta))) return { nome: etichetta, url: url, data: d };
+    var quando = d && d === ctx.oggi ? 'oggi' : d ? 'il ' + dataIt(d) : 'nell\'ultima raccolta';
+    return { nome: etichetta + ' – ' + quando + ' nessun aggiornamento, aste dell\'ultima raccolta riuscita', url: url, data: String(f.ultimaRaccolta).slice(0, 10) };
+  }
   function fontiAste(ctx, lista) {
-    var f = [], d = dataDati(ctx), fonti = {};
+    var f = [], fonti = {};
     (lista || []).forEach(function (a) { fonti[a.fonte || 'Portale Vendite Pubbliche'] = 1; });
-    if (!lista || !lista.length || fonti['Portale Vendite Pubbliche']) f.push({ nome: 'Portale delle Vendite Pubbliche (Ministero della Giustizia)', url: URL_PVP, data: d });
-    if (fonti['Agenzia del Demanio']) f.push({ nome: 'Agenzia del Demanio – Gare e aste', url: 'https://www.agenziademanio.it/it/gare-aste/', data: d });
+    if (!lista || !lista.length || fonti['Portale Vendite Pubbliche']) f.push(voceFonte(ctx, 'Portale Vendite Pubbliche', 'Portale delle Vendite Pubbliche (Ministero della Giustizia)', URL_PVP));
+    if (fonti['Agenzia del Demanio']) f.push(voceFonte(ctx, 'Agenzia del Demanio', 'Agenzia del Demanio – Gare e aste', 'https://www.agenziademanio.it/it/gare-aste/'));
     Object.keys(fonti).forEach(function (k) { if (k !== 'Portale Vendite Pubbliche' && k !== 'Agenzia del Demanio') f.push({ nome: k + ' (avviso indicato nella scheda)' }); });
     return f;
   }
@@ -1083,7 +1091,7 @@
     var a = trovaAsta(p.id, ctx.aste), T = ctx.T, P = modulo('Punteggio'), C = modulo('Calcoli');
     if (!a) {
       return { blocchi: chiudi([testo('Non trovo l\'asta ' + p.id + ' tra quelle in archivio: forse è già conclusa, è stata tolta dal portale o il numero è sbagliato. Puoi cercarla sul Portale delle Vendite Pubbliche.')],
-        [{ nome: 'Portale delle Vendite Pubbliche (Ministero della Giustizia)', url: URL_PVP, data: dataDati(ctx) }], ['Quali sono gli affari di oggi?', 'Appartamenti a Bari sotto 150.000 €, solo liberi']),
+        [voceFonte(ctx, 'Portale Vendite Pubbliche', 'Portale delle Vendite Pubbliche (Ministero della Giustizia)', URL_PVP)], ['Quali sono gli affari di oggi?', 'Appartamenti a Bari sotto 150.000 €, solo liberi']),
         memoria: { intento: 'spiega' } };
     }
     var b = [], fonti = fontiAste(ctx, [a]);

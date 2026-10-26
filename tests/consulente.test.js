@@ -110,3 +110,24 @@ test('saluto, aiuto e domande non capite: suggerimenti che funzionano', () => {
   }
   for (const q of K.ESEMPI) assert.notEqual(K.rispondi(q, ctx).intento, 'non-capito', q);
 });
+
+test('fonti: una fonte ferma dice il giorno dell\'ultima raccolta riuscita, non quello del file (raccolta del 22/10, Portale in errore)', () => {
+  // stato delle fonti scritto in data/aste.js dalla raccolta del 22/10/2026: il Portale non rispondeva, restano le aste del 13/10
+  const raccolta = { aggiornato: '2026-10-22T06:20:24.194Z', fonti: [
+    { nome: 'Portale Vendite Pubbliche', stato: 'errore', aste: 20215, ultimaRaccolta: '2026-10-13T14:45:37.203Z', controllo: '2026-10-22' },
+    { nome: 'Agenzia del Demanio', stato: 'attiva', aste: 3, ultimaRaccolta: '2026-10-22T06:20:04.369Z', controllo: '2026-10-22' }] };
+  const dem = { ...base, id: 'dem-x', fonte: 'Agenzia del Demanio', titolo: 'Appartamento del Demanio', comune: 'Bari', provincia: 'BA', regione: 'Puglia', dataAsta: '2026-11-30' };
+  const voce = (r, re) => blocco(r, 'fonti').voci.find((v) => re.test(v.nome));
+  const r = K.rispondi('appartamenti a Bari', { ...ctx, aste: ASTE.concat([dem]), oggi: '2026-10-22', raccolta });
+  const pvp = voce(r, /Portale delle Vendite Pubbliche/);
+  assert.equal(pvp.data, '2026-10-13');
+  assert.match(pvp.nome, /oggi nessun aggiornamento, aste dell'ultima raccolta riuscita/);
+  assert.deepEqual(voce(r, /Demanio/), { nome: 'Agenzia del Demanio – Gare e aste', url: 'https://www.agenziademanio.it/it/gare-aste/', data: '2026-10-22' });
+  // letto giorni dopo: si dice il giorno della raccolta, non "oggi"
+  const dopo = voce(K.rispondi('appartamenti a Bari', { ...ctx, oggi: '2026-10-26', raccolta }), /Portale/);
+  assert.match(dopo.nome, /il 22\/10\/2026 nessun aggiornamento/);
+  // fonte aggiornata: la data della raccolta, come prima
+  const ok = { ...raccolta, fonti: [{ ...raccolta.fonti[0], stato: 'attiva', ultimaRaccolta: '2026-10-22T06:19:00.000Z' }] };
+  assert.deepEqual(voce(K.rispondi('appartamenti a Bari', { ...ctx, oggi: '2026-10-22', raccolta: ok }), /Portale/),
+    { nome: 'Portale delle Vendite Pubbliche (Ministero della Giustizia)', url: 'https://pvp.giustizia.it/pvp/', data: '2026-10-22' });
+});

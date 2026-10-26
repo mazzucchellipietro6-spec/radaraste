@@ -2,6 +2,7 @@
 // Legge le prime pagine dell'elenco (ordinato per data di pubblicazione), tiene solo le
 // vendite con termine non ancora scaduto e apre la scheda di ciascuna per luogo e documenti.
 // Il prezzo base è solo nel PDF dell'avviso: non viene ricavato (resta vuoto); il PDF è in linkPdf.
+// Data dell'asta: il giorno scritto nell'avviso; il termine per le offerte è in termineOfferte.
 import { richiesta } from '../lib/http.mjs';
 import { provincia, titolo as maiuscole } from '../lib/luoghi.mjs';
 
@@ -29,6 +30,15 @@ function dataEn(s) { // "Fri Nov 06 12:00:00 CET 2026"
   return m && MESI_EN[m[1]] ? { data: `${m[4]}-${due(MESI_EN[m[1]])}-${due(m[2])}`, ora: m[3] } : null;
 }
 
+// giorno dell'asta scritto nell'avviso: "Asta pubblica del giorno 11 novembre 2026", "del giorno 09.06.2026 alle ore 10:00"
+export function giornoAsta(t) {
+  const m = String(t || '').match(/\b(?:del|il|nel)\s+giorno\s+(\d{1,2})(?:\s+([a-zà]+)\s+|[./-](\d{1,2})[./-])(\d{4})(?:[^.;:]{0,25}?\bore\s+(\d{1,2})[:.](\d{2}))?/i);
+  if (!m) return null;
+  const mese = m[2] ? MESI[m[2].toLowerCase()] : Number(m[3]), giorno = Number(m[1]);
+  if (!(mese >= 1 && mese <= 12) || !(giorno >= 1 && giorno <= 31)) return null;
+  return { data: `${m[4]}-${due(mese)}-${due(giorno)}`, ora: m[5] ? `${due(m[5])}:${m[6]}` : '' };
+}
+
 const eVendita = (t) => /vendit|alienazion|asta pubblica/i.test(t) && !/locazion|concession|affitt/i.test(t);
 
 function categoriaBene(t, base) {
@@ -38,17 +48,23 @@ function categoriaBene(t, base) {
   return 'beni';
 }
 
-async function scheda(url, cat, titoloElenco, termine, pubblicata) {
-  const h = await richiesta(url, { intervalloMs: INTERVALLO_MS });
+/* Scheda di una gara (HTML già scaricato) → asta. La data dell'asta è il giorno scritto nell'avviso
+ * ("Asta pubblica del giorno ..."); il termine per le offerte va in termineOfferte. Se l'avviso non scrive
+ * il giorno dell'asta, dataAsta resta il termine per le offerte (come le schede del sito lo presentano). */
+export function leggiScheda(h, url, cat, titoloElenco, termine, pubblicata) {
   const t = testo(h);
   const campo = (nome) => { const m = t.match(new RegExp(nome + ':\\s*(.+?)\\s+(?:Regione|Provincia|Comune|Struttura responsabile|Data pubblicazione|Termine per|Nominativo|Documenti|Tipologia|Descrizione)[^:]{0,60}:')); return m ? m[1].trim() : ''; };
   const p = provincia(campo('Provincia'));
-  const scad = dataEn(campo('Termine per la presentazione delle offerte')) || termine;
+  const descr = campo('Descrizione');
+  const voceTermine = campo('Termine per la presentazione delle offerte');
+  const scad = dataEn(voceTermine) || dataIt(voceTermine) || termine;
+  const giorno = giornoAsta(titoloElenco + ' ' + descr);
+  const asta = giorno && (!scad || giorno.data >= scad.data) ? giorno : null; // l'asta non può venire prima del termine
   const pdf = (h.match(/href="(\/export\/sites\/demanio\/download\/[^"]+\.pdf)"/i) || [])[1];
   return {
     id: 'dem-' + url.split('/').pop().slice(0, 80),
     titolo: titoloElenco.slice(0, 140),
-    categoria: categoriaBene(titoloElenco + ' ' + campo('Descrizione'), cat),
+    categoria: categoriaBene(titoloElenco + ' ' + descr, cat),
     tipo: campo('Tipologia'),
     regione: p ? p.regione : '',
     provincia: p ? p.sigla : '',
@@ -56,14 +72,19 @@ async function scheda(url, cat, titoloElenco, termine, pubblicata) {
     tribunale: '',
     fonte: NOME,
     prezzoBase: null,
-    dataAsta: scad ? scad.data : '',
+    dataAsta: asta ? asta.data : scad ? scad.data : '',
+    ora: asta ? asta.ora : scad ? scad.ora : '',
+    termineOfferte: scad ? scad.data + (scad.ora ? 'T' + scad.ora : '') : '',
     pubblicata: pubblicata || '',
-    ora: scad ? scad.ora : '',
     stato: 'nd',
     linkAvviso: url,
     linkPdf: pdf ? BASE + pdf : '',
-    descrizione: campo('Descrizione').slice(0, 200)
+    descrizione: descr.slice(0, 200)
   };
+}
+
+async function scheda(url, cat, titoloElenco, termine, pubblicata) {
+  return leggiScheda(await richiesta(url, { intervalloMs: INTERVALLO_MS }), url, cat, titoloElenco, termine, pubblicata);
 }
 
 export async function raccogli({ oggi, log = console.log }) {
@@ -90,7 +111,7 @@ export async function raccogli({ oggi, log = console.log }) {
     }
     for (const c of candidati) {
       const a = await scheda(c.url, sez.categoria, c.titolo, c.termine, c.pubblicata);
-      if (a.dataAsta >= oggi) aste.push(a);
+      if ((a.termineOfferte || a.dataAsta).slice(0, 10) >= oggi) aste.push(a); // si può ancora offrire
     }
     log(`  Demanio ${sez.percorso.split('/')[3]}: ${candidati.length} vendite in corso`);
   }

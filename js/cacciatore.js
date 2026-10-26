@@ -135,14 +135,18 @@
     return { data: null, ora: null, testo: 'Termine per le offerte non letto dall\'avviso: di solito scade il giorno prima dell\'asta (asta il ' + dataIt(a.dataAsta) + '), verificalo nell\'avviso' };
   }
 
+  var SENZA_TESTO = 'Testo dell\'avviso non disponibile: rischi da verificare nella perizia';
+
   /* Riassunto scritto a regole, solo con dati dell'avviso e calcoli. */
   function riassunto(x) {
     var a = x.asta, v = x.valore;
     var perche = x.segnaliAffare.slice();
     if (v) perche.unshift('Valore stimato ' + eur(v.min) + '–' + eur(v.max) + ' (' + v.fonte + ', affidabilità ' + x.affidabilita + '); costo totale al prezzo base circa ' + eur(x.costoTotale));
+    // senza testo dell'avviso (rischi assente) non si può dire che rischi non ce ne sono
+    var letto = Array.isArray(a.rischi);
     return {
       titolo: a.titolo, perche: perche,
-      rischi: x.pericoli.length ? x.pericoli : ['Nessun rischio trovato nel testo dell\'avviso: leggi comunque la perizia'],
+      rischi: x.pericoli.length ? x.pericoli.concat(letto ? [] : [SENZA_TESTO]) : [letto ? 'Nessun rischio trovato nel testo dell\'avviso: leggi comunque la perizia' : SENZA_TESTO],
       offertaMassima: x.offertaMax ? { importo: x.offertaMax, testo: 'Offerta massima consigliata: ' + eur(x.offertaMax) + ' (così, con imposte e spese, resti almeno il 20% sotto il valore minimo stimato)' } : null,
       scadenza: scadenza(a), nonSappiamo: x.nonSappiamo,
       altriLotti: x.altriLotti ? 'La stessa procedura ha altri ' + x.altriLotti + ' lotti tra le aste di oggi' : null

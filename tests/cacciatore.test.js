@@ -96,3 +96,19 @@ test('scadenza con data e ora dal dettaglio (AAAA-MM-GGTHH:MM) e senza termine',
   const senza = K.riassunto({ ...x, asta: { ...x.asta, termineOfferte: null } });
   assert.match(senza.scadenza.testo, /asta il 04\/12\/2026/);
 });
+
+test('riassunto: senza testo dell\'avviso non dice "nessun rischio" (caso reale pvp-4637293, raccolta del 12/10)', () => {
+  // asta reale del PVP senza testo letto: il campo rischi manca del tutto
+  const reale = { id: 'pvp-4637293', titolo: 'Autoveicoli e cicli', categoria: 'auto', tipo: 'Autoveicoli e cicli', regione: 'Toscana', provincia: 'PT',
+    tribunale: 'Pistoia', rge: '597', fonte: 'Portale Vendite Pubbliche', prezzoBase: 3000, offertaMinima: 3000, dataAsta: '2026-10-22', ora: '10:00',
+    stato: 'nd', linkAvviso: 'https://pvp.giustizia.it/pvp/it/detail_annuncio.page?idAnnuncio=4637293', pubblicata: '2026-09-28', vista: '2026-10-12', numeroLotto: 'Unico' };
+  const x = K.analizza({ asta: reale }, { T });
+  assert.deepEqual(K.riassunto(x).rischi, ['Testo dell\'avviso non disponibile: rischi da verificare nella perizia']);
+  assert.ok(x.nonSappiamo.some((s) => /testo non disponibile/.test(s)));
+  // con altri pericoli la mancanza del testo resta scritta in fondo
+  const occ = K.riassunto(K.analizza({ asta: asta({ stato: 'occupato', rischi: undefined }) }, { T }));
+  assert.match(occ.rischi[0], /Occupato/);
+  assert.equal(occ.rischi[occ.rischi.length - 1], 'Testo dell\'avviso non disponibile: rischi da verificare nella perizia');
+  // testo letto e nessun rischio: la frase di prima
+  assert.deepEqual(K.riassunto(K.analizza({ asta: asta({}) }, { T })).rischi, ['Nessun rischio trovato nel testo dell\'avviso: leggi comunque la perizia']);
+});

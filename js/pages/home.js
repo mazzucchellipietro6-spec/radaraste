@@ -66,6 +66,16 @@
     if (R.sconto) conta(t4.querySelector('.t-val'), R.sconto.medio, percento); else t4.querySelector('.t-val').innerHTML = '<span aria-hidden="true">—</span><span class="sr-only">' + NON_DISPONIBILE + '</span>';
   }
 
+  /* Fonti che l'ultima raccolta non ha aggiornato (errore o blocco): le loro aste sono dell'ultima raccolta riuscita.
+   * Nel riepilogo il giorno dell'ultima raccolta riuscita di ogni fonte è in R.agenti.fonti (scripts/lib/derivati.mjs). */
+  function noteFerme(R) {
+    var ultime = {};
+    ((R.agenti && R.agenti.fonti) || []).forEach(function (f) { ultime[f.nome] = f.ultimaRaccolta; });
+    (R.fonti || []).forEach(function (f) { if (!f.ultimaRaccolta && ultime[f.nome]) f.ultimaRaccolta = ultime[f.nome]; });
+    var giro = U.oggi(new Date(R.aggiornato)), quando = giro === U.oggi() ? 'oggi' : 'il ' + U.dataIt(giro);
+    return U.fontiFerme(R).map(function (f) { return f.nome + ': ' + quando + ' nessun aggiornamento, restano le aste dell\'ultima raccolta riuscita (' + U.dataIt(f.data) + ')'; });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     var R = window.RIEPILOGO;
     // affari di oggi (Cacciatore) e stato degli assistenti: file piccoli, si disegnano subito
@@ -81,9 +91,7 @@
     }
     var attive = R.fonti.filter(function (f) { return f.stato === 'attiva'; }).map(function (f) { return f.nome; });
     $('#aggiornamento').innerHTML = 'Immobili, auto, moto e beni mobili dalle fonti ufficiali, con valore di mercato, costi e rischi spiegati. Aggiornato ' + U.dataIt(R.aggiornato.slice(0, 10)) + ' alle ' + new Date(R.aggiornato).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) +
-      ' da ' + U.esc(attive.join(', ') || 'nessuna fonte') +
-      // fonti non aggiornate oggi (serve ultimaRaccolta nel riepilogo): le loro aste sono di una raccolta precedente
-      U.fontiFerme(R).map(function (f) { return '; da ' + U.esc(f.nome) + ' restano le aste del ' + U.dataIt(f.data); }).join('') + ' · <a href="fonti.html">fonti</a>';
+      ' da ' + U.esc(attive.join(', ') || 'nessuna fonte') + noteFerme(R).map(function (t) { return '. ' + U.esc(t); }).join('') + ' · <a href="fonti.html">fonti</a>';
     kpi(R);
 
     // classifica solo con aste che hanno davvero un punteggio (calcolato dalla raccolta con js/punteggio.js)

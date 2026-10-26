@@ -119,6 +119,29 @@ test('fontiFerme: una fonte non aggiornata oggi si riconosce, con il giorno dell
   for (const p of ['js/pages/aste.js', 'js/pages/consulente.js', 'js/pages/home.js']) assert.match(await readFile(path.join(RADICE, p), 'utf8'), /U\.fontiFerme\(R\)/, p);
 });
 
+test('home: una fonte ferma dice il giorno dell\'ultima raccolta riuscita, letto da R.agenti.fonti del riepilogo', async () => {
+  const U = menu();
+  // la funzione della home, eseguita da sola con la UI vera
+  const home = await readFile(path.join(RADICE, 'js/pages/home.js'), 'utf8');
+  const src = home.match(/\n  function noteFerme\(R\) \{[\s\S]*?\n  \}\n/)[0];
+  const noteFerme = new Function('U', src + 'return noteFerme;')(U);
+  // riepilogo scritto dalla raccolta del 22/10/2026: nei campi "fonti" solo nome e stato, l'ultima raccolta è in agenti.fonti
+  const R = () => ({ aggiornato: '2026-10-22T06:20:24.194Z',
+    fonti: [{ nome: 'Portale Vendite Pubbliche', stato: 'errore' }, { nome: 'Agenzia del Demanio', stato: 'attiva' }, { nome: 'IVG – Istituti Vendite Giudiziarie', stato: 'errore' }],
+    agenti: { fonti: [{ nome: 'Portale Vendite Pubbliche', stato: 'errore', aste: 20215, ultimaRaccolta: '2026-10-13T14:45:37.203Z' },
+      { nome: 'Agenzia del Demanio', stato: 'attiva', aste: 3, ultimaRaccolta: '2026-10-22T06:20:04.369Z' },
+      { nome: 'IVG – Istituti Vendite Giudiziarie', stato: 'errore', aste: null, ultimaRaccolta: null }] } });
+  const tredici = U.dataIt('2026-10-13');
+  const vecchio = R();
+  assert.deepEqual(noteFerme(vecchio), ['Portale Vendite Pubbliche: il ' + U.dataIt('2026-10-22') + ' nessun aggiornamento, restano le aste dell\'ultima raccolta riuscita (' + tredici + ')']);
+  const diOggi = R(); diOggi.aggiornato = new Date().toISOString();
+  assert.deepEqual(noteFerme(diOggi), ['Portale Vendite Pubbliche: oggi nessun aggiornamento, restano le aste dell\'ultima raccolta riuscita (' + tredici + ')']);
+  // tutte aggiornate: nessuna nota
+  const ok = R(); ok.fonti[0].stato = 'attiva'; ok.agenti.fonti[0].stato = 'attiva';
+  assert.deepEqual(noteFerme(ok), []);
+  assert.match(home, /noteFerme\(R\)\.map/, 'la home scrive le note accanto alla data');
+});
+
 test('accessibilità: scheda senza asta con un h1, fuoco visibile sulla domanda della home', async () => {
   const scheda = await readFile(path.join(RADICE, 'js/pages/scheda.js'), 'utf8');
   assert.match(scheda, /function vuota\([\s\S]{0,300}'<h1>' \+ titolo \+ '<\/h1>/, 'il titolo della scheda vuota (asta non trovata, nessuna asta) è un h1');
