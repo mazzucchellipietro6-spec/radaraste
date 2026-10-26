@@ -41,6 +41,13 @@
       : '<div class="panel empty" style="grid-column:1/-1">' + vuoto + '</div>';
   }
 
+  // "Tutte le N →" solo se ci sono altre aste da vedere: un link vuoto resterebbe raggiungibile con Tab, senza nome
+  function linkTutte(sel, totale, mostrate) {
+    var a = $(sel), altre = totale > mostrate;
+    a.textContent = altre ? 'Tutte le ' + totale.toLocaleString('it-IT') + ' →' : '';
+    a.hidden = !altre;
+  }
+
   function kpi(R) {
     var box = $('#kpi'); box.innerHTML = '';
     var cat = R.perCategoria || {};
@@ -69,12 +76,14 @@
       $('#kpi').innerHTML = '';
       $('#migliori').innerHTML = '<div class="panel empty"><h2>Nessuna asta da mostrare</h2><p>La raccolta dalle fonti ufficiali non è ancora stata eseguita su questa copia del sito. Qui non compaiono mai dati di esempio. <a href="fonti.html">Stato delle fonti</a></p></div>';
       ['#nuove', '#scadenza'].forEach(function (d) { $(d).innerHTML = ''; });
-      $('#linkNuove').textContent = ''; $('#linkScadenza').textContent = '';
+      linkTutte('#linkNuove', 0, 0); linkTutte('#linkScadenza', 0, 0);
       return;
     }
     var attive = R.fonti.filter(function (f) { return f.stato === 'attiva'; }).map(function (f) { return f.nome; });
     $('#aggiornamento').innerHTML = 'Immobili, auto, moto e beni mobili dalle fonti ufficiali, con valore di mercato, costi e rischi spiegati. Aggiornato ' + U.dataIt(R.aggiornato.slice(0, 10)) + ' alle ' + new Date(R.aggiornato).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) +
-      ' da ' + U.esc(attive.join(', ') || 'nessuna fonte') + ' · <a href="fonti.html">fonti</a>';
+      ' da ' + U.esc(attive.join(', ') || 'nessuna fonte') +
+      // fonti non aggiornate oggi (serve ultimaRaccolta nel riepilogo): le loro aste sono di una raccolta precedente
+      U.fontiFerme(R).map(function (f) { return '; da ' + U.esc(f.nome) + ' restano le aste del ' + U.dataIt(f.data); }).join('') + ' · <a href="fonti.html">fonti</a>';
     kpi(R);
 
     // classifica solo con aste che hanno davvero un punteggio (calcolato dalla raccolta con js/punteggio.js)
@@ -92,9 +101,9 @@
     }
 
     schede(R.nuove.lista.slice(0, 8), '#nuove', 'Nessuna asta nuova nelle ultime 24 ore.');
-    $('#linkNuove').textContent = R.nuove.totale > R.nuove.lista.length ? 'Tutte le ' + R.nuove.totale.toLocaleString('it-IT') + ' →' : '';
+    linkTutte('#linkNuove', R.nuove.totale, R.nuove.lista.length);
     schede(R.inScadenza.lista.slice(0, 8), '#scadenza', 'Nessuna asta nei prossimi 7 giorni.');
-    $('#linkScadenza').textContent = R.inScadenza.totale > R.inScadenza.lista.length ? 'Tutte le ' + R.inScadenza.totale.toLocaleString('it-IT') + ' →' : '';
+    linkTutte('#linkScadenza', R.inScadenza.totale, R.inScadenza.lista.length);
 
     document.addEventListener('click', function (e) {
       var b = e.target.closest('[data-segui]'); if (!b) return;

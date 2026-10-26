@@ -179,3 +179,19 @@ test('OMI oltre 3 volte il prezzo base senza perizia né prima asta: affidabilit
   const b = P.valuta({ ...a, tentativo: 5, primoPrezzo: 280000 }, { T });
   assert.notEqual(b.valore.affidabilita, 'bassa');
 });
+
+test('OMI molto più alto del prezzo della prima asta (+50%) non "concorda": si usa il valore più basso (caso reale pvp-4623595, box a Lerici)', () => {
+  // box di 22 mq, prima asta 33.000 € andata deserta, oggi 24.750 €; OMI della zona 39.600–59.400 €
+  const a = { ...base, tipo: 'Immobile commerciale', prezzoBase: 24750, superficieMq: 22, tentativo: 2, primoPrezzo: 33000,
+    omiMin: 39600, omiMax: 59400, omiMetodo: 'indirizzo', stato: 'libero', rischi: ['vincoli'] };
+  const r = P.valuta(a, { T });
+  assert.equal(r.valore.fonte, 'primo-prezzo');
+  assert.equal(r.valore.centrale, 33000);
+  assert.notEqual(r.valore.affidabilita, 'alta');
+  assert.match(r.valore.controlli.join(), /sono diversi: uso il più basso/);
+  assert.ok(r.punteggio <= P.TETTO_INCERTO, String(r.punteggio));   // prima: 80, "Ottimo affare"
+  // entro il 35% nei due sensi resta "alta"
+  const vicino = P.valuta({ ...a, primoPrezzo: 40000 }, { T });     // 49.500 / 40.000 = 1,24
+  assert.equal(vicino.valore.fonte, 'omi');
+  assert.equal(vicino.valore.affidabilita, 'alta');
+});

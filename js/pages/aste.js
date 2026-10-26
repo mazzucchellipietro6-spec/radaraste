@@ -222,11 +222,12 @@
     var R = S.infoRaccolta();
     var attive = (R.fonti || []).filter(function (f) { return f.stato === 'attiva'; });
     var problemi = (R.fonti || []).filter(function (f) { return f.stato === 'bloccata' || (f.stato === 'errore' && f.ultimaRaccolta !== undefined); });
-    var box = $('#statoRaccolta');
+    var box = $('#statoRaccolta'), ferme = {};
+    U.fontiFerme(R).forEach(function (f) { ferme[f.nome] = f.data; });
     if (attive.length && R.aggiornato) {
       box.innerHTML = '<p class="note info-raccolta" style="margin:0">Aste raccolte automaticamente da: ' + attive.map(function (f) { return U.esc(f.nome); }).join(', ') +
         ' · ultimo aggiornamento ' + U.dataIt(R.aggiornato.slice(0, 10)) + ' alle ' + new Date(R.aggiornato).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) + ' · <a href="fonti.html">stato delle fonti</a></p>' +
-        (problemi.length ? '<div class="callout warn" style="margin-top:8px">Problemi con: ' + problemi.map(function (f) { return U.esc(f.nome); }).join(', ') + '. <a href="fonti.html">Dettagli</a></div>' : '');
+        (problemi.length ? '<div class="callout warn" style="margin-top:8px">Problemi con: ' + problemi.map(function (f) { return U.esc(f.nome) + (ferme[f.nome] ? ' (restano le aste del ' + U.dataIt(ferme[f.nome]) + ')' : ''); }).join(', ') + '. <a href="fonti.html">Dettagli</a></div>' : '');
     } else {
       box.innerHTML = '<div class="callout warn"><b>Nessuna asta raccolta automaticamente.</b> La raccolta dalle fonti ufficiali non è ancora stata eseguita su questa copia del sito (vedi README: <code>npm run raccogli</code>). <a href="fonti.html">Stato delle fonti</a>.</div>';
     }

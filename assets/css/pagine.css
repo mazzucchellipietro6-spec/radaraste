@@ -25,6 +25,7 @@
 .sc-vuoto-sez > .icona { width: 28px; height: 28px; color: var(--muted); }
 .sc-vuoto-sez p + p { margin-top: 6px; }
 .sc-vuota { padding-block: 48px; }
+.sc-vuota h1 { font-size: clamp(21px, 2.3vw, 26px); line-height: 1.25; letter-spacing: -.005em; }
 .sc-vuota p { max-width: 56ch; }
 .sc-vuota-icona { width: 48px; height: 48px; color: var(--muted); stroke-width: 1.4; }
 

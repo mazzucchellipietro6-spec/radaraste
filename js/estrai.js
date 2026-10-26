@@ -96,8 +96,9 @@
   /* ---------- Stato di conservazione ---------- */
   // dal peggiore al migliore: il primo che corrisponde vince
   var STATI = [
-    ['rudere', /\b(rudere|crollat|inagibil|pericolant|fatiscent)/i],
-    ['grezzo', /\b(al grezzo|allo stato grezzo|non ultimat|incomplet|in corso di costruzione|mancante di (?:impianti|infissi|finiture))/i],
+    // "diruto", "unità collabenti" (catasto F/2), "allo stato grezzo", "al rustico avanzato": casi reali del PVP (22/10/2026)
+    ['rudere', /\b(rude(?:re|ri)\b|crollat|inagibil|non agibil|pericolant|fatiscent|dirut|collabent)/i],
+    ['grezzo', /\b(al grezzo|stato grezzo|grezzo avanzato|al rustico\b|rustico avanzato|non ultimat|incomplet|in corso di costruzione|mancante di (?:impianti|infissi|finiture))/i],
     ['da ristrutturare', /\b(da ristrutturare|necessit\w* di (?:importanti |radicali |consistenti )?(?:lavori|interventi|ristrutturazion)|pessim\w* stato|stato (?:di conservazione )?pessim|scadente|degradat|in abbandono|stato di abbandono)/i],
     ['mediocre', /\b(mediocr|discreto stato|stato discreto|sufficient\w* stato|manutenzione ordinaria (?:da|necessaria))/i],
     ['buono', /\b(buono stato|buone condizioni|stato buono|ben tenut|ristrutturat|rifinit|abitabile)/i],
@@ -229,7 +230,7 @@
     { chiave: 'superficie', etichetta: 'Diritto di superficie (proprietà superficiaria, spesso a tempo)', re: /\b(diritt\w* di superficie|propriet(?:\u00e0|a'|\w*)\s+superficiari\w*)/i },
     { chiave: 'condominio', etichetta: 'Spese condominiali arretrate', test: condominio },
     { chiave: 'vincoli', etichetta: 'Vincoli, servitù o edilizia convenzionata', re: /\b(vincol\w*|servit[uù]|prelazione|edilizia (?:convenzionata|economica e popolare)|peep|erp\b|convenzion\w* (?:ex )?art)/i },
-    { chiave: 'degrado', etichetta: 'Immobile al grezzo, inagibile o degradato', re: /\b(al grezzo|inagibil\w*|fatiscent\w*|rudere|pericolant\w*|crollat\w*|non ultimat\w*|in corso di costruzione)/i },
+    { chiave: 'degrado', etichetta: 'Immobile al grezzo, inagibile o degradato', re: /\b(al grezzo|stato grezzo|grezzo avanzato|al rustico\b|rustico avanzato|inagibil\w*|non agibil\w*|fatiscent\w*|rude(?:re|ri)\b|dirut\w*|collabent\w*|pericolant\w*|crollat\w*|non ultimat\w*|in corso di costruzione)/i },
     { chiave: 'occupazione', etichetta: 'Occupato o locato', re: /\b(occupat\w* (?:dal|da|con|senza)|locat\w* (?:a|con)|contratto di locazione|in corso di liberazione|comodato)/i },
     { chiave: 'agricolo', etichetta: 'Terreno agricolo o fabbricato rurale', re: /\b(terren\w* agricol\w*|fabbricat\w* rural\w*|uso agricolo|seminativo|uliveto|vigneto|bosco)/i },
     // veicoli

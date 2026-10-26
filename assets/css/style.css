@@ -588,7 +588,7 @@ body.con-confronto { padding-bottom: 84px; }
 
 /* ---------- home: domanda al consulente, tre passi ---------- */
 .chiedi { display: flex; gap: 6px; align-items: center; max-width: 640px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-3); padding: 6px; box-shadow: var(--ombra-2); transition: border-color var(--dur-1); }
-.chiedi:focus-within { border-color: var(--accent); }
+.chiedi:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow), var(--ombra-2); }
 .chiedi > .icona { margin-left: 10px; width: 20px; height: 20px; color: var(--accent); }
 .chiedi input { border: 0; background: transparent; box-shadow: none; font-size: 16px; padding: 10px 6px; min-width: 0; }
 .chiedi input:focus { box-shadow: none; background: transparent; }

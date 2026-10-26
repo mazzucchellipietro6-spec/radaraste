@@ -8,7 +8,8 @@
  *  - somme di prezzi, valori e costi solo dai dati di ogni lotto (il valore complessivo solo se tutti i lotti hanno un
  *    valore di affidabilità media o alta);
  *  - l'unico vantaggio "in più" calcolato è fiscale: il box, il posto auto o la cantina comprati come pertinenza della
- *    prima casa pagano l'imposta di registro agevolata (aliquote di config/tariffe.js, al prezzo base);
+ *    prima casa pagano l'imposta di registro agevolata (aliquote di config/tariffe.js, al prezzo base), una sola per
+ *    categoria catastale (C/2, C/6, C/7) e solo per lotti di una sola unità;
  *  - gli altri vantaggi (unire due unità, un solo sopralluogo…) sono scritti come motivi qualitativi, senza cifre.
  * Usato dalla raccolta (Node) per scrivere data/combinazioni.js e dal sito. */
 (function (root) {
@@ -23,16 +24,39 @@
   function num(x) { var n = Number(x); return isFinite(n) ? n : 0; }
   function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase(); }
 
-  // ruolo del lotto dal titolo e dalla descrizione: le pertinenze solo se il testo non parla anche di un'abitazione
+  function testo(a) { return norm((a.titolo || '') + ' ' + (a.descrizione || '').slice(0, 400)).replace(/\bPIANO TERRENO\b/g, 'PIANO TERRA'); }
+
+  // ruolo del lotto dal titolo e dalla descrizione: le pertinenze solo se il testo non parla anche di un'abitazione,
+  // di un locale per attività (ufficio, negozio, laboratorio, D/8...) o di un intero edificio: "Ufficio e cantina" o
+  // "Intero edificio da cielo a terra compresa l'autorimessa" non sono pertinenze della prima casa (casi reali del 22/10/2026)
   function ruolo(a) {
-    var t = norm((a.titolo || '') + ' ' + (a.descrizione || '').slice(0, 400));
-    var casa = /\b(APPARTAMENT|ABITAZION|ALLOGGI|VILLA|VILLIN|VILLETT|CASA |CASE |BILOCAL|TRILOCAL|MONOLOCAL|ATTICO|MANSARD|A\/[1-9]\b)/.test(t);
+    var t = testo(a);
+    var casa = /\b(APPARTAMENT|ABITAZION|ALLOGGI|VILLA|VILLIN|VILLETT|CASA |CASE |BILOCAL|TRILOCAL|MONOLOCAL|ATTICO|MANSARD|A\/[1-9]\b|(?:USO|DESTINAZIONE|UNITA) ABITATIV|(?:USO|DESTINAZIONE|UNITA|FABBRICATO) RESIDENZIAL)/.test(t);
     var pert = /\b(BOX|GARAGE|AUTORIMESS|POSTO AUTO|POSTI AUTO|CANTIN|SOFFITT|C\/2\b|C\/6\b|C\/7\b)/.test(t);
-    if (pert && !casa) return 'pertinenza';
+    var attivita = /\b(NEGOZI|UFFICI|CAPANNON|LABORATORI|OPIFICI|OFFICIN|ALBERG|HOTEL|DIREZIONAL|ARTIGIANAL|PRODUTTIV|INDUSTRIAL|(?:LOCALE|LOCALI|USO|DESTINAZIONE|ATTIVITA) COMMERCIAL|C\/1\b|C\/3\b|A\/10\b|D\/[1-9]\b)/.test(t);
+    var edificio = /\b(INTERO EDIFICIO|INTERO FABBRICATO|INTERO STABILE|CIELO A TERRA|(?:DUE|TRE|QUATTRO|CINQUE|SEI|SETTE|OTTO|NOVE|DIECI|\d+) FABBRICATI)\b/.test(t);
+    if (pert && !casa && !attivita && !edificio) return 'pertinenza';
     if (casa) return 'abitazione';
+    if (attivita) return 'commerciale';
     if (/\b(TERRENO|TERRENI|FONDO RUSTICO|APPEZZAMENT|AGRICOL)/.test(t)) return 'terreno';
-    if (/\b(NEGOZI|UFFICI|CAPANNON|MAGAZZIN|LABORATORI|LOCALE COMMERCIAL|LOCALE AD USO|LOCALI AD USO|OPIFICI|DEPOSITO|C\/1\b|D\/[1-9]\b)/.test(t)) return 'commerciale';
+    if (/\b(MAGAZZIN|LOCALE AD USO|LOCALI AD USO|DEPOSITO)/.test(t)) return 'commerciale';
     return 'altro';
+  }
+
+  // categoria catastale di una pertinenza (l'agevolazione "prima casa" vale per una sola per categoria); null se il
+  // lotto comprende più unità ("n. 9 posti auto", "due box", un testo che descrive anche altri lotti) o è troppo grande
+  // per un box o una cantina (oltre 60 mq, come in js/omi.js): il prezzo non è quello di una pertinenza e il calcolo non vale
+  function categoriaPertinenza(a) {
+    var t = testo(a), corpo = t.replace(/^\W*LOTTO\b[^A-Z]*/, '');
+    if (/\b(POSTI AUTO|BOXES|GARAGES|AUTORIMESSE|CANTINE|SOFFITTE|(?:[2-9]|\d{2,}|DUE|TRE|QUATTRO|CINQUE|SEI|SETTE|OTTO|NOVE|DIECI) (?:BOX|GARAGE|POSTI|CANTIN|AUTORIMESS))/.test(t)) return null;
+    if (/\bLOTTO\s*(?:N\W*)?\d/.test(corpo)) return null;
+    var mq = num(a.superficieMq), m, re = /(\d{1,5}(?:[.,]\d{1,2})?)\s*(?:MQ|M2)\b|\bMQ\.?\s*(\d{1,5}(?:[.,]\d{1,2})?)/g;
+    while ((m = re.exec(t))) mq = Math.max(mq, parseFloat((m[1] || m[2]).replace(',', '.')));
+    if (mq > 60) return null;
+    if (/\b(BOX|GARAGE|AUTORIMESS|POSTO AUTO|C\/6\b)/.test(t)) return 'C/6';
+    if (/\b(CANTIN|SOFFITT|C\/2\b)/.test(t)) return 'C/2';
+    if (/\b(TETTOI|C\/7\b)/.test(t)) return 'C/7';
+    return null;
   }
 
   function chiave(a) {
@@ -106,12 +130,18 @@
     }
     // vantaggio fiscale delle pertinenze della prima casa (al prezzo base)
     if (tipo === 'casa-pertinenza' && regimeDi(T, 'prima-privato') && regimeDi(T, 'seconda-privato')) {
-      var risparmio = 0, voci = [];
+      // per ogni categoria catastale la pertinenza con il risparmio più alto (una sola per categoria)
+      var perCategoria = {}, risparmio = 0, voci = [];
       lotti.forEach(function (a) {
-        if (a._ruolo !== 'pertinenza' || !(num(a.prezzoBase) > 0)) return;
+        var cat = a._ruolo === 'pertinenza' && num(a.prezzoBase) > 0 ? categoriaPertinenza(a) : null;
+        if (!cat) return;
         var s2 = imposte(a.prezzoBase, 'seconda-privato', T), s1 = imposte(a.prezzoBase, 'prima-privato', T);
         if (s1 == null || s2 == null || s2 <= s1) return;
-        risparmio += s2 - s1; voci.push({ id: a.id, senza: Math.round(s2), conPrimaCasa: Math.round(s1) });
+        if (!perCategoria[cat] || s2 - s1 > perCategoria[cat].senza - perCategoria[cat].conPrimaCasa)
+          perCategoria[cat] = { id: a.id, categoria: cat, senza: Math.round(s2), conPrimaCasa: Math.round(s1) };
+      });
+      lotti.forEach(function (a) {
+        for (var k in perCategoria) if (perCategoria[k].id === a.id) { risparmio += perCategoria[k].senza - perCategoria[k].conPrimaCasa; voci.push(perCategoria[k]); }
       });
       if (risparmio > 0) {
         var r1 = regimeDi(T, 'prima-privato');
@@ -158,7 +188,7 @@
     return { oggi: oggi, gruppiAnalizzati: analizzati, trovate: out.length, perTipo: perTipo, combinazioni: out.slice(0, opz.massimi || LIMITI.massimi) };
   }
 
-  var Combinazioni = { LIMITI: LIMITI, NOMI_RUOLO: NOMI_RUOLO, ruolo: ruolo, chiave: chiave, combina: combina, trova: trova };
+  var Combinazioni = { LIMITI: LIMITI, NOMI_RUOLO: NOMI_RUOLO, ruolo: ruolo, categoriaPertinenza: categoriaPertinenza, chiave: chiave, combina: combina, trova: trova };
   if (NODE) module.exports = Combinazioni;
   else root.Combinazioni = Combinazioni;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -23,6 +23,7 @@
   };
   var LIVELLI = ['bassa', 'media', 'alta'];
   var TETTO_INCERTO = 54;   // punteggio massimo quando il valore di mercato ha affidabilità bassa (fascia "Da valutare")
+  var CONCORDANZA = 1.35;   // due valori concordano se il più alto supera il più basso al massimo del 35%
 
   function num(x) { var n = Number(x); return isFinite(n) ? n : 0; }
   function abbassa(liv) { return LIVELLI[Math.max(0, LIVELLI.indexOf(liv) - 1)]; }
@@ -81,7 +82,10 @@
     var scelto = prim, aff = prim.aff;
     if (sec) {
       var r = sec.v / prim.v;
-      if (r >= 0.65 && r <= 1.35) { if (prim.fonte === 'omi') aff = 'alta'; }   // due fonti indipendenti concordano
+      // due fonti indipendenti concordano se il valore più alto supera il più basso al massimo del 35%, nei due sensi:
+      // prima un OMI fino al 54% sopra il perito contava come "concorde" e il valore scelto era l'OMI (caso reale
+      // pvp-4623595, box a Lerici: prima asta 33.000 €, OMI 49.500 €, sconto gonfiato al 42%)
+      if (r >= 1 / CONCORDANZA && r <= CONCORDANZA) { if (prim.fonte === 'omi') aff = 'alta'; }
       else {
         // non concordano: per prudenza si usa il valore più basso (lo sconto non si gonfia mai)
         var forte = r < 0.5 || r > 1.6, fo = prim.fonte.indexOf('omi') === 0 ? prim : sec, fp = fo === prim ? sec : prim;

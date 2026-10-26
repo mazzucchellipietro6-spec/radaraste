@@ -73,3 +73,38 @@ test('lotto con più unità e superfici diverse (caso reale Albosaggia): valore 
   const uno = Omi.stima(a, ind, { testo: 'Appartamento della superficie commerciale di 57,40 mq. Superficie commerciale di 57,40 mq.' });
   assert.equal(uno.affidabilita, 'media');
 });
+
+test('stato letto dall\'avviso come lo passa la raccolta (oggetto di Estrai.conservazione): quotazione "scadente" (bug trovato il 22/10/2026)', () => {
+  const E = require('../js/estrai.js');
+  const a = { categoria: 'immobile', tipo: 'Immobile residenziale', comune: 'Melilli', provincia: 'SR', indirizzo: 'frazione Villasmundo', superficieMq: 100 };
+  // testo reale di pvp-4638150 (Cerreto Guidi): prima lo stato si perdeva e si usava sempre la quotazione "normale"
+  const testo = 'Piena proprietà di un fabbricato urbano per civile abitazione su due piani fuori terra per circa 139 mq oltre ampia soffitta al piano secondo sottotetto di circa mq 69 e altro fabbricato accessorio di circa mq 34, in pessimo stato di conservazione ed in parte diruto, e corte esterna esclusiva di circa mq 360.';
+  const c = E.conservazione(testo);
+  assert.equal(Omi.statoOmi(c), 'S');
+  const s = Omi.stima(a, ind, { testo, conservazione: c });
+  assert.equal(s.stato, 'scadente');
+  assert.equal(s.euroMq.min, 450);
+});
+
+test('valori tipici del comune: lo stato si usa solo se tutte le zone lo quotano, senza mescolare stati diversi', () => {
+  // Melilli: la zona B1 quota solo "normale", la E1 anche "scadente" → per il comune si resta sul normale
+  const a = { categoria: 'immobile', tipo: 'Immobile residenziale', comune: 'Melilli', provincia: 'SR', indirizzo: 'Via Inesistente', superficieMq: 100 };
+  const s = Omi.stima(a, ind, { conservazione: { stato: 'da ristrutturare' } });
+  assert.equal(s.zona, null);
+  assert.equal(s.stato, 'normale');
+  assert.deepEqual(s.euroMq, { min: 720, max: 855 });   // mediana di 800/640 e 1000/710: solo righe "normale"
+  assert.match(s.note.join(), /non quotato in tutte le zone del comune/);
+});
+
+test('stato "ottimo" scritto nell\'avviso: per prudenza non alza il valore (caso reale pvp-4621160, Giovo)', () => {
+  const E = require('../js/estrai.js');
+  const a = { categoria: 'immobile', tipo: 'Immobile residenziale', comune: 'Melilli', provincia: 'SR', indirizzo: 'frazione Villasmundo', superficieMq: 100 };
+  const c = E.conservazione('un edificio che si sviluppa in quattro piani fuori terra, in ottimo stato di conservazione');
+  assert.equal(Omi.statoOmi(c), 'O');
+  // indice di prova con una quotazione "ottimo" (numeri finti) nella zona E1
+  const conOttimo = Omi.costruisciIndice(ZONE, VALORI + 'ISOLE;SICILIA;SR;19089012;I754; ;F107;MELILLI;E;E1;SR00000002;20;Abitazioni civili;OTTIMO;P;900;1100;L;3;4;L;\n', null);
+  const s = Omi.stima(a, conOttimo, { conservazione: c });
+  assert.equal(s.stato, 'normale');
+  assert.equal(s.euroMq.min, 640);
+  assert.match(s.note.join(), /per prudenza si usa la quotazione dello stato normale/);
+});

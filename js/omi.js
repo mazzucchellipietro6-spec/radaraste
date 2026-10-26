@@ -117,9 +117,10 @@
     return null; // terreni e altro: l'OMI non li quota
   }
 
-  // stato OMI: Ottimo, Normale, Scadente (dallo stato di conservazione letto nell'avviso)
+  // stato OMI: Ottimo, Normale, Scadente (dallo stato di conservazione letto nell'avviso: testo, oppure l'oggetto
+  // { stato, prova } di Estrai.conservazione, che è quello passato dalla raccolta)
   function statoOmi(conservazione) {
-    var c = String(conservazione || '').toLowerCase();
+    var c = String((conservazione && conservazione.stato) || conservazione || '').toLowerCase();
     if (/pessim|scadent|mediocre|fatiscent|grezzo|rudere|da ristruttur/.test(c)) return 'S';
     if (/ottim|ristrutturat|nuov/.test(c)) return 'O';
     return 'N';
@@ -176,7 +177,10 @@
     if (!comune) return { mancante: 'comune non trovato nelle quotazioni OMI' };
     var tipi = tipologia(a, opz.testo);
     if (!tipi) return { mancante: 'tipologia non quotata dall\'OMI (es. terreni)', comune: comune.nome };
-    var st = statoOmi(opz.conservazione);
+    // per prudenza lo stato "ottimo" scritto nell'avviso non alza il valore (spesso riguarda l'edificio, non l'unità):
+    // si usa la quotazione dello stato normale; lo stato scadente invece sì, perché abbassa il valore
+    var st = statoOmi(opz.conservazione), ottimo = st === 'O';
+    if (ottimo) st = 'N';
     var z = trovaZona(comune, a, opz.testo), base = null, zonaInfo = null, note = [];
     if (z.zona) {
       base = rigaValori(ind, z.zona[0], tipi, st);
@@ -186,20 +190,25 @@
     if (base) rr = base.riga;
     else {
       // valori tipici del comune: mediana delle zone non rurali per la stessa tipologia
-      var mins = [], maxs = [], lmin = [], lmax = [], tipUsato = null;
+      var righe = [], tipUsato = null;
       comune.zone.forEach(function (zz) {
         if (zz[1] === 'R' && comune.zone.some(function (y) { return y[1] !== 'R'; })) return;
         var b = rigaValori(ind, zz[0], tipi, st);
         if (!b) return;
         tipUsato = tipUsato || b.tip;
         if (b.tip !== tipUsato) return;
-        mins.push(b.riga[1]); maxs.push(b.riga[2]);
-        if (b.riga[3] > 0) { lmin.push(b.riga[3]); lmax.push(b.riga[4]); }
+        righe.push({ link: zz[0], riga: b.riga });
       });
-      if (!mins.length) return { mancante: 'nessuna quotazione OMI per questa tipologia nel comune', comune: comune.nome };
-      rr = ['N', mediana(mins), mediana(maxs), lmin.length ? mediana(lmin) : 0, lmax.length ? mediana(lmax) : 0, 'L', 'L'];
-      base = { tip: tipUsato, riga: rr, statoUsato: 'N' };
-      note.push('Zona OMI non riconosciuta dall\'indirizzo: valori tipici del comune (mediana di ' + mins.length + ' zone)');
+      if (!righe.length) return { mancante: 'nessuna quotazione OMI per questa tipologia nel comune', comune: comune.nome };
+      // lo stato letto nell'avviso si usa solo se tutte le zone lo quotano: mescolare stati diversi falserebbe la mediana
+      var tutte = righe.every(function (x) { return x.riga[0] === st; }), statoComune = tutte ? st : 'N';
+      if (!tutte) righe = righe.map(function (x) { var n = rigaValori(ind, x.link, [tipUsato], 'N'); return n ? n.riga : x.riga; });
+      else righe = righe.map(function (x) { return x.riga; });
+      var col = function (i) { return righe.map(function (r) { return r[i]; }).filter(function (v) { return v > 0; }); };
+      var lmin = col(3), lmax = col(4);
+      rr = [statoComune, mediana(col(1)), mediana(col(2)), lmin.length ? mediana(lmin) : 0, lmax.length ? mediana(lmax) : 0, 'L', 'L'];
+      base = { tip: tipUsato, riga: rr, statoUsato: statoComune };
+      note.push('Zona OMI non riconosciuta dall\'indirizzo: valori tipici del comune (mediana di ' + righe.length + ' zone)');
     }
     var out = {
       fonte: ind.fonte + ', ' + (ind.semestre ? 'semestre ' + ind.semestre : '') + (ind.licenza ? ' (' + ind.licenza + ')' : ''),
@@ -207,7 +216,8 @@
       stato: { O: 'ottimo', N: 'normale', S: 'scadente' }[base.statoUsato], euroMq: { min: rr[1], max: rr[2] },
       affittoMq: rr[3] > 0 ? { min: rr[3], max: rr[4], superficie: rr[6] === 'N' ? 'netta' : 'lorda' } : null, note: note
     };
-    if (st !== base.statoUsato) note.push('Stato "' + { O: 'ottimo', S: 'scadente' }[st] + '" non quotato in questa zona: usato lo stato normale');
+    if (ottimo) note.push('Stato "ottimo" indicato nell\'avviso: per prudenza si usa la quotazione dello stato normale');
+    if (st !== base.statoUsato) note.push('Stato "' + { O: 'ottimo', S: 'scadente' }[st] + '" non quotato ' + (zonaInfo ? 'in questa zona' : 'in tutte le zone del comune') + ': usato lo stato normale');
     if (!(mq > 0)) { out.mancante = 'metri quadri non indicati nell\'avviso'; return out; }
     out.mq = mq;
     out.valore = { min: Math.round(mq * rr[1]), max: Math.round(mq * rr[2]) };

@@ -74,10 +74,11 @@
       return;
     }
     testa += '<div class="ar-numeri">' +
-      tile('Aste nel piano', n(pi.scelte.length), 'tra ' + n(r.candidati.candidati.length) + ' con valore affidabile') +
+      tile('Aste nel piano', n(pi.scelte.length), 'tra ' + n(r.candidati.candidati.length) + ' adatte al tuo profilo, con valore affidabile') +
       tile('Cassa se le vinci tutte', U.eur(pi.sintesi.cassaSeVinciTutte), 'su ' + U.eur(r.profilo.capitale) + ' di capitale') +
       tile('Ne vinci almeno una', U.pct(sim.almenoUna, 0), sim.forchetta ? 'tra ' + U.pct(sim.forchetta.almenoUna[0], 0) + ' e ' + U.pct(sim.forchetta.almenoUna[1], 0) : '') +
-      tile('Margine atteso sul valore minimo', U.eur(sim.guadagno.media), 'dal ' + U.eur(sim.guadagno.p10) + ' (caso basso) al ' + U.eur(sim.guadagno.p90) + ' (caso alto)') +
+      // media delle simulazioni: può differire di poco dal "guadagno atteso" della sintesi, che è il calcolo diretto
+      tile('Margine medio nelle simulazioni', U.eur(sim.guadagno.media), 'sul valore minimo: dal ' + U.eur(sim.guadagno.p10) + ' (caso basso) al ' + U.eur(sim.guadagno.p90) + ' (caso alto)') +
       '</div><p class="note">' + U.esc(pi.sintesi.regola || '') + ' Simulazioni con offerte superiori alla cassa: ' + U.pct(sim.sforamento || 0, 0) + '.</p></section>';
     var scelte = '<section class="stack" style="gap:12px" aria-labelledby="h-scelte"><h2 id="h-scelte">Le aste, in ordine di data</h2>' + pi.scelte.map(function (c) { return rigaScelta(c, sim); }).join('') + '</section>';
     var grafico = '<section class="panel stack" style="gap:10px" aria-labelledby="h-sim"><h2 id="h-sim">Quante ne vinci: ' + n(sim.n) + ' simulazioni</h2>' +

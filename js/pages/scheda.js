@@ -807,7 +807,8 @@
 
   function vuota(titolo, testo) {
     $('#scheda').setAttribute('aria-busy', 'false');
-    $('#scheda').innerHTML = '<div class="panel empty sc-vuota">' + U.icona('cerca', 'sc-vuota-icona') + '<h2>' + titolo + '</h2><p>' + testo + '</p>' +
+    // senza asta il titolo della pagina è questo: h1, come nella scheda piena
+    $('#scheda').innerHTML = '<div class="panel empty sc-vuota">' + U.icona('cerca', 'sc-vuota-icona') + '<h1>' + titolo + '</h1><p>' + testo + '</p>' +
       '<div class="row-actions"><a class="btn" href="aste.html">Vai all\'elenco delle aste</a><a class="btn ghost" href="mie-aste.html">Le aste che segui</a></div></div>';
     document.title = titolo + ' – Radar Aste Italia';
   }

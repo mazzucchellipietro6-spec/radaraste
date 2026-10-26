@@ -35,6 +35,12 @@
     return 'tra ' + g + ' giorni';
   }
   function linkSicuro(u) { return /^https?:\/\//i.test(u || '') ? u : null; }
+  // fonti che oggi non si sono aggiornate (errore o blocco) ma restano in elenco con le aste di una raccolta precedente:
+  // [{ nome, data: giorno dell'ultima raccolta riuscita, AAAA-MM-GG nel fuso del browser }]
+  function fontiFerme(R) {
+    return ((R && R.fonti) || []).filter(function (f) { return (f.stato === 'errore' || f.stato === 'bloccata') && f.ultimaRaccolta && !isNaN(new Date(f.ultimaRaccolta)); })
+      .map(function (f) { return { nome: f.nome, data: oggi(new Date(f.ultimaRaccolta)) }; });
+  }
   function badgeStato(s) {
     return s === 'confermato'
       ? '<span class="pill p-good" title="Riscontrato su fonte ufficiale">confermato</span>'
@@ -381,7 +387,7 @@
 
   root.UI = {
     $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando, oggi: oggi,
-    linkSicuro: linkSicuro, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
+    linkSicuro: linkSicuro, fontiFerme: fontiFerme, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
     icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI, SERVIZIO: SERVIZIO,
     finestra: finestra, apriFinestra: apriFinestra, chiudiFinestra: chiudiFinestra, focusabili: focusabili, menoMovimento: function () { return menoMovimento.matches; },
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,

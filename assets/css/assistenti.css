@@ -174,8 +174,9 @@
 @media (max-width: 640px) {
   .cs-testa { flex-wrap: wrap; padding: 12px 14px; }
   .cs-testa h1 { font-size: 18px; }
-  .cs-testa > div { flex: 1; min-width: 0; }
+  /* su telefono "Nuova conversazione" va a capo invece di schiacciare titolo e stato in una colonna stretta */
+  .cs-testa > div { flex: 1 1 180px; min-width: 0; }
   .cs-testa .spacer { display: none; }
-  #csNuova { padding-inline: 10px; }
+  #csNuova { padding-inline: 10px; margin-left: auto; }
   .cs-messaggi { padding: 14px; }
 }

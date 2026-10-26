@@ -4,7 +4,7 @@
 // data decrescente e la lettura si ferma alla prima asta già passata.
 import { richiesta } from '../lib/http.mjs';
 import { provincia, titolo as maiuscole } from '../lib/luoghi.mjs';
-import { pulisci, spazi } from '../lib/dettaglio-pvp.mjs';
+import { pulisci, spazi, segnaposto } from '../lib/dettaglio-pvp.mjs';
 import { controllaCoordinate, soloBiciclette, prezzo, togliPrefisso, frase } from '../lib/correzioni.mjs';
 
 export const NOME = 'Portale Vendite Pubbliche';
@@ -35,11 +35,11 @@ function stato(disp) {
 export const tipo = (s) => s ? (s.charAt(0) + s.slice(1).toLowerCase()).replace(/_/g, ' ') : '';
 
 // "(Lotto n.1) - APPARTAMENTO SITO IN ..." → "Appartamento sito in ...", al massimo 110 caratteri
-// (la descrizione completa è nella scheda a pezzi)
+// (la descrizione completa è nella scheda a pezzi); senza descrizione vera ("Lotto 1", "NESSUNA"): categoria e comune
 export function titolo(x, comune, sigla) {
   let t = spazi(frase(togliPrefisso(pulisci(x.descLotto)), { comune, provincia: sigla })).trim();
   if (t.length > 110) t = t.slice(0, 110).replace(/\s+\S*$/, '').replace(/[\s,;:–-]+$/, '') + '…';
-  if (t.replace(/[^A-Za-zÀ-ÿ]/g, '').length < 6) t = tipo(x.categoriaLotto) + (comune ? ' – ' + comune : '');
+  if (t.replace(/[^A-Za-zÀ-ÿ]/g, '').length < 6 || segnaposto(t)) t = tipo(x.categoriaLotto) + (comune ? ' – ' + comune : '');
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 

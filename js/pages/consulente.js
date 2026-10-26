@@ -19,7 +19,9 @@
       document.head.appendChild(s);
     }).then(function (l) {
       var R = window.ASTE_RACCOLTE;
-      $('#csStato').textContent = l.length ? 'Pronto · ' + l.length.toLocaleString('it-IT') + ' aste' + (R && R.aggiornato ? ', dati del ' + U.dataIt(R.aggiornato.slice(0, 10)) : '') + ' · modalità regole'
+      // una fonte non aggiornata oggi resta con le aste dell'ultima raccolta riuscita: si dice di quando sono
+      var ferme = U.fontiFerme(R).map(function (f) { return ' · ' + f.nome + ': restano le aste del ' + U.dataIt(f.data); }).join('');
+      $('#csStato').textContent = l.length ? 'Pronto · ' + l.length.toLocaleString('it-IT') + ' aste' + (R && R.aggiornato ? ', dati del ' + U.dataIt(R.aggiornato.slice(0, 10)) : '') + ferme + ' · modalità regole'
         : 'Nessuna asta disponibile: posso comunque fare i conti e spiegare le regole.';
       return l;
     });

@@ -60,22 +60,35 @@ export function consentito(regole, percorso) {
   return !migliore || migliore.consenti;
 }
 
-async function regoleRobots(origine) {
+// attese prima di riprovare (per tentativo): errore di rete, errore del sito (5xx)
+export const ATTESE = { reteMs: 5000, sitoMs: 10000 };
+
+// robots.txt: errori di rete e 5xx si riprovano fino a 3 volte (22/10/2026: un solo UND_ERR_CONNECT_TIMEOUT fermava
+// il PVP per tutta la raccolta); se resta in 5xx la fonte si ferma, perché le regole non si conoscono (RFC 9309).
+async function regoleRobots(origine, tentativi = 3) {
   if (robotsCache.has(origine)) return robotsCache.get(origine);
-  let regole = [];
-  try {
-    const host = new URL(origine).host;
-    richiestePerHost.set(host, (richiestePerHost.get(host) || 0) + 1);
-    const r = await fetch(origine + '/robots.txt', { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(20000) });
-    if (r.ok) regole = analizzaRobots(await r.text());
-    else if (r.status === 401 || r.status === 403) throw new FonteBloccata(`robots.txt non accessibile (HTTP ${r.status})`);
-    // 404 o simili: nessuna restrizione dichiarata
-  } catch (e) {
-    if (e instanceof FonteBloccata) throw e;
-    throw new FonteBloccata(`sito non raggiungibile (${e.cause?.code || e.message})`, 'errore');
+  const host = new URL(origine).host;
+  for (let i = 1; ; i++) {
+    let r;
+    try {
+      richiestePerHost.set(host, (richiestePerHost.get(host) || 0) + 1);
+      r = await fetch(origine + '/robots.txt', { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(20000) });
+      if (r.status === 401 || r.status === 403) throw new FonteBloccata(`robots.txt non accessibile (HTTP ${r.status})`);
+      if (r.status < 500) {
+        // 404 o simili: nessuna restrizione dichiarata
+        const regole = r.ok ? analizzaRobots(await r.text()) : [];
+        robotsCache.set(origine, regole);
+        return regole;
+      }
+    } catch (e) {
+      if (e instanceof FonteBloccata) throw e;
+      if (i >= tentativi) throw new FonteBloccata(`sito non raggiungibile (${e.cause?.code || e.message})`, 'errore');
+      await pausa(ATTESE.reteMs * i);
+      continue;
+    }
+    if (i >= tentativi) throw new FonteBloccata(`robots.txt non disponibile (HTTP ${r.status})`, 'errore', r.status);
+    await pausa(ATTESE.sitoMs * i);
   }
-  robotsCache.set(origine, regole);
-  return regole;
 }
 
 /* ---- richiesta ---- */
@@ -98,14 +111,14 @@ export async function richiesta(url, { metodo = 'GET', corpo, intestazioni = {},
       });
     } catch (e) {
       if (i === tentativi) throw new FonteBloccata(`errore di rete (${e.cause?.code || e.message})`, 'errore');
-      await pausa(5000 * i);
+      await pausa(ATTESE.reteMs * i);
       continue;
     }
     if (r.status === 401 || r.status === 403) throw new FonteBloccata(`accesso negato dal sito (HTTP ${r.status})`, 'bloccata', r.status);
     if (r.status === 429) throw new FonteBloccata('il sito chiede di rallentare (HTTP 429): raccolta interrotta', 'bloccata', 429);
     if (r.status >= 500) {
       if (i === tentativi) throw new FonteBloccata(`errore del sito (HTTP ${r.status})`, 'errore');
-      await pausa(10000 * i);
+      await pausa(ATTESE.sitoMs * i);
       continue;
     }
     if (!r.ok) throw new Error(`HTTP ${r.status} su ${url}`);

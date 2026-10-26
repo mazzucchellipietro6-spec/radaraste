@@ -62,3 +62,24 @@ test('superficie: totale dichiarato prima delle misure parziali, pertinenze escl
   assert.equal(E.superficie('Appartamento a PORTO RECANATI, della superficie commerciale di 66,6 mq').mq, 66.6);
   assert.equal(E.superficie('appartamento di 76 mq di 5 vani catastali e terrazzo di 20 mq').mq, 76);
 });
+
+test('degrado e stato di conservazione: "allo stato grezzo", "al rustico avanzato", "diruto", "collabenti" (casi reali del PVP, 22/10/2026)', () => {
+  const casi = [
+    // pvp-4644746 (Sora)
+    ['appartamento ubicato a Sora (Fr) via dei Passionisti snc, primo piano posto al primo piano, adibito a civile abitazione attualmente allo stato grezzo, inserito in un fabbricato privo di ascensore', 'grezzo'],
+    // pvp-4619319 (Castegnato)
+    ['Piena proprietà di appartamento al rustico avanzato posto al piano secondo con cantina esclusiva', 'grezzo'],
+    // pvp-4631333 (Camerino)
+    ['Diritti di piena proprietà su fabbricati diruti a CAMERINO Frazione Tuseggia', 'rudere'],
+    // pvp-4623490 (Luni)
+    ['Quota di 12/42 della piena proprietà di due unità collabenti site nel Comune di Luni (SP).', 'rudere']
+  ];
+  for (const [t, stato] of casi) {
+    assert.ok(E.rischi(t).some((r) => r.chiave === 'degrado'), t);
+    assert.equal(E.conservazione(t).stato, stato, t);
+  }
+  // pvp-4638150 (Cerreto Guidi): il fabbricato accessorio "in parte diruto" è un rischio da verificare
+  assert.ok(E.rischi('altro fabbricato accessorio di circa mq 34, in pessimo stato di conservazione ed in parte diruto, e corte esterna esclusiva').some((r) => r.chiave === 'degrado'));
+  // fabbricato "rustico" (rurale) o in buono stato: nessun degrado
+  assert.ok(!E.rischi('Fabbricato rustico in pietra ristrutturato, in buono stato').some((r) => r.chiave === 'degrado'));
+});

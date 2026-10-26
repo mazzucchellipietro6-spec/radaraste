@@ -57,3 +57,65 @@ test('due abitazioni → unità vicine; due pertinenze sole → nessuna combinaz
   assert.equal(r.combinazioni[0].tipo, 'unita-vicine');
   assert.equal(K.trova([box, { ...box, id: 'a4' }], { T, oggi: '2026-10-13' }).trovate, 0);
 });
+
+// casi reali del 22/10/2026 (titoli dei lotti sul PVP): lotti scambiati per pertinenze della prima casa
+test('ruolo: uffici, D/8, laboratori e interi edifici non sono pertinenze; "unità a destinazione abitativa" è un\'abitazione', () => {
+  assert.equal(K.ruolo({ titolo: 'Ufficio e cantina' }), 'commerciale');                                     // pvp-4611293
+  assert.equal(K.ruolo({ titolo: 'Immobile a destinazione catastale D/8, costituito da autorimessa/officina al piano terreno, con soprastante…' }), 'commerciale'); // pvp-4620916
+  assert.equal(K.ruolo({ titolo: '(A1+A2+A3+A4)A1 Laboratorio di panificazione A2 DepositoA3 Posto auto coperto da tettoia A4 Terreno' }), 'commerciale'); // pvp-4617711
+  assert.notEqual(K.ruolo({ titolo: 'Intero edificio da cielo a terra compresa porzione di pertinenza dell’autorimessa al piano interrato…' }), 'pertinenza'); // pvp-4605394
+  assert.notEqual(K.ruolo({ titolo: 'Piena proprietà di quattro fabbricati civili, un\'autorimessa, un deposito (silos) e un complesso di immobili…' }), 'pertinenza'); // pvp-4621985
+  assert.equal(K.ruolo({ titolo: 'Piena proprietà di unità immobiliare a destinazione abitativa al rustico avanzato con adiacente soffitta al…' }), 'abitazione'); // pvp-4619357
+  // pertinenze vere restano tali, anche dentro un complesso
+  assert.equal(K.ruolo({ titolo: 'Posto auto scoperto posto nella corte interna di più ampio complesso immobiliare ubicato in Comune di…' }), 'pertinenza'); // pvp-4608725
+  assert.equal(K.ruolo({ titolo: 'Box singolo sito al piano S1 con altezza interna 2,60 mt.' }), 'pertinenza'); // pvp-4624124
+  // "piano terreno" non è un terreno
+  assert.equal(K.ruolo({ titolo: 'Locale commerciale al piano terreno con annessi locali di servizio' }), 'commerciale');
+});
+
+test('categoria della pertinenza: una sola unità per lotto, altrimenti niente calcolo', () => {
+  assert.equal(K.categoriaPertinenza({ titolo: 'Box singolo di mq 14,00 sito al piano S1' }), 'C/6');
+  assert.equal(K.categoriaPertinenza({ titolo: 'Trattasi di cantina nell\'ambito di complesso immobiliare' }), 'C/2');
+  assert.equal(K.categoriaPertinenza({ titolo: 'N. 9 posti auto e n. 1 cantina in autorimessa in Tarquinia (Vt) Vicolo delle Pietrare n. 4 al piano interrato…' }), null); // pvp-4605366
+  assert.equal(K.categoriaPertinenza({ titolo: 'Piena proprietà di posti auto. Libero da persone e da cose' }), null); // pvp-4619374
+});
+
+test('risparmio "prima casa": niente su edifici interi e lotti di più posti auto (caso reale Tarquinia, prima 154.153 €)', () => {
+  const p = { categoria: 'immobile', tribunale: 'Civitavecchia', rge: '145', comune: 'Tarquinia', provincia: 'VT', dataAsta: '2026-10-26' };
+  const lotti = [
+    { ...p, id: 'pvp-4604961', numeroLotto: '3', titolo: 'Appartamento con balcone al piano secondo interno 10 Palazzina A in Tarquinia (Vt) Vicolo delle Pietrare n. 4…', prezzoBase: 63000 },
+    { ...p, id: 'pvp-4605389', numeroLotto: '4', titolo: 'Appartamento con balcone al piano quarto interno 22 Palazzina A in Tarquinia (Vt) Vicolo delle Pietrare n. 4…', prezzoBase: 63000 },
+    { ...p, id: 'pvp-4605366', numeroLotto: '5', titolo: 'N. 9 posti auto e n. 1 cantina in autorimessa in Tarquinia (Vt) Vicolo delle Pietrare n. 4 al piano interrato…', prezzoBase: 84375 },
+    { ...p, id: 'pvp-4605394', numeroLotto: '6', titolo: 'Intero edificio da cielo a terra compresa porzione di pertinenza dell’autorimessa al piano interrato…', prezzoBase: 1209375 },
+    { ...p, id: 'pvp-4605399', numeroLotto: '7', titolo: 'Intero edificio da cielo a terra compresa porzione di pertinenza dell’autorimessa al piano interrato…', prezzoBase: 908437 }
+  ];
+  const c = K.trova(lotti, { T, oggi: '2026-10-22' }).combinazioni[0];
+  assert.equal(c.numeri.risparmioPrimaCasa, undefined);
+  assert.equal(c.risparmio, undefined);
+});
+
+test('risparmio "prima casa": una sola pertinenza per categoria (caso reale Ventimiglia, due box)', () => {
+  const p = { categoria: 'immobile', tribunale: 'Imperia', rge: '54', comune: 'Ventimiglia', provincia: 'IM', dataAsta: '2026-11-17' };
+  const lotti = [
+    { ...p, id: 'pvp-4624122', numeroLotto: '1', titolo: 'Appartamento sito al piano quinto sottotetto int.28 composto da piccolo ingresso, bagno, un vano con angolo…', prezzoBase: 75335 },
+    { ...p, id: 'pvp-4624124', numeroLotto: '3', titolo: 'Box singolo sito al piano S1 con altezza interna 2,60 mt.', prezzoBase: 71250 },
+    { ...p, id: 'pvp-4624083', numeroLotto: '6', titolo: 'Box singolo di mq 14,00 sito al piano S1 con altezza interno 2,50 composto da un unico ampio vano dotato si…', prezzoBase: 46550 }
+  ];
+  const c = K.trova(lotti, { T, oggi: '2026-10-22' }).combinazioni[0];
+  const atteso = C.imposteImmobile({ prezzo: 71250, regime: 'seconda-privato' }, T).totale - C.imposteImmobile({ prezzo: 71250, regime: 'prima-privato' }, T).totale;
+  assert.equal(c.numeri.risparmioPrimaCasa, Math.round(atteso));
+  assert.deepEqual(c.risparmio.voci.map((v) => [v.id, v.categoria]), [['pvp-4624124', 'C/6']]);
+});
+
+test('pertinenze troppo grandi o descritte insieme ad altri lotti: niente risparmio; "due unità residenziali" sono abitazioni', () => {
+  // pvp-4618159 (Pelago, 640.000 €): il testo descrive anche gli altri lotti
+  assert.equal(K.categoriaPertinenza({ titolo: 'Locale destinato urbanisticamente ad uso autorimessa. LOTTO 2: Locale destinato urbanisticamente ad uso…' }), null);
+  // pvp-4630407 (Gravina in Puglia): autorimessa di 241 mq
+  assert.equal(K.categoriaPertinenza({ titolo: 'Piena proprietà di Garage ubicato a Gravina in Puglia (BA)', superficieMq: 241 }), null);
+  assert.equal(K.categoriaPertinenza({ titolo: 'Si tratta un locale destinato ad autorimessa della superficie di circa 820 mq., in corso di costruzione…' }), null); // pvp-4607012
+  assert.equal(K.categoriaPertinenza({ titolo: 'Box della superficie commerciale di 22,63 mq, posta al piano terra.' }), 'C/6'); // pvp-4631427
+  assert.equal(K.categoriaPertinenza({ titolo: 'LOTTO 3: box auto al piano interrato' }), 'C/6');
+  // pvp-4633266 (Caraglio) e pvp-4608978
+  assert.equal(K.ruolo({ titolo: 'Piena proprietà di due unità residenziali in buono stato:1)tre livelli: sotterraneo-cantina; primo: cucina…' }), 'abitazione');
+  assert.equal(K.ruolo({ titolo: 'Piena proprietà di locale destinato ad attività commerciale al piano terra e locale box al piano semiterrato…' }), 'commerciale');
+});

@@ -85,3 +85,44 @@ test('nessuna chiave o segreto nel codice pubblicato', async () => {
   const cfg = require('../config/consulente.js');
   assert.equal(cfg.ponte, null, 'la modalità AI resta spenta finché non la attiva il proprietario');
 });
+
+test('nessun link vuoto: un link senza testo nelle pagine resta nascosto finché non ha un nome', async () => {
+  // un <a href> vuoto si raggiunge con Tab ma non dice dove porta (home: "Tutte le N →" quando non ci sono altre aste)
+  for (const f of await pagine()) {
+    const t = await readFile(path.join(RADICE, f), 'utf8');
+    for (const m of t.matchAll(/<a\b([^>]*\bhref="[^"]*"[^>]*)>\s*<\/a>/g)) assert.match(m[1], /\bhidden\b|aria-label="[^"]+"/, f + ': ' + m[0]);
+  }
+  const home = await readFile(path.join(RADICE, 'js/pages/home.js'), 'utf8');
+  assert.match(home, /a\.hidden = !altre/, 'la home mostra il link solo quando ha il testo');
+});
+
+test('fontiFerme: una fonte non aggiornata oggi si riconosce, con il giorno delle aste che restano', async () => {
+  const U = menu();
+  // stato delle fonti scritto in data/aste.js dalla raccolta locale del 22/10/2026 (il Portale non rispondeva)
+  const R = { fonti: [
+    { nome: 'Portale Vendite Pubbliche', stato: 'errore', aste: 20215, ultimaRaccolta: '2026-10-13T14:45:37.203Z' },
+    { nome: 'Agenzia del Demanio', stato: 'attiva', aste: 3, ultimaRaccolta: '2026-10-22T06:20:04.369Z' },
+    { nome: 'Aste Giudiziarie Inlinea', stato: 'vietata' },
+    { nome: 'IVG – Istituti Vendite Giudiziarie', stato: 'errore' }
+  ] };
+  assert.deepEqual(U.fontiFerme(R), [{ nome: 'Portale Vendite Pubbliche', data: '2026-10-13' }]);
+  assert.deepEqual(U.fontiFerme(null), []);
+  assert.deepEqual(U.fontiFerme({ fonti: [{ nome: 'X', stato: 'errore', ultimaRaccolta: 'non è una data' }] }), []);
+  // sui dati veri, se ci sono: solo fonti in errore o bloccate, ognuna con un giorno
+  if (await esiste('data/aste.js')) {
+    const ctx = { window: {} };
+    (await import('node:vm')).runInNewContext(await readFile(path.join(RADICE, 'data/aste.js'), 'utf8'), ctx);
+    const stati = Object.fromEntries((ctx.window.ASTE_RACCOLTE.fonti || []).map((f) => [f.nome, f.stato]));
+    for (const f of U.fontiFerme(ctx.window.ASTE_RACCOLTE)) { assert.ok(['errore', 'bloccata'].includes(stati[f.nome]), f.nome); assert.match(f.data, /^\d{4}-\d{2}-\d{2}$/); }
+  }
+  // le pagine che lo dicono: elenco, consulente e home
+  for (const p of ['js/pages/aste.js', 'js/pages/consulente.js', 'js/pages/home.js']) assert.match(await readFile(path.join(RADICE, p), 'utf8'), /U\.fontiFerme\(R\)/, p);
+});
+
+test('accessibilità: scheda senza asta con un h1, fuoco visibile sulla domanda della home', async () => {
+  const scheda = await readFile(path.join(RADICE, 'js/pages/scheda.js'), 'utf8');
+  assert.match(scheda, /function vuota\([\s\S]{0,300}'<h1>' \+ titolo \+ '<\/h1>/, 'il titolo della scheda vuota (asta non trovata, nessuna asta) è un h1');
+  const css = await readFile(path.join(RADICE, 'assets/css/style.css'), 'utf8');
+  // il campo dentro .chiedi non ha bordo né ombra: il segno del fuoco è sul riquadro
+  assert.match(css, /\.chiedi:focus-within \{[^}]*box-shadow: 0 0 0 4px var\(--accent-glow\)/);
+});

@@ -296,7 +296,7 @@ test('confronto: una riga per funzione a pagamento, con i limiti del piano Grati
   assert.deepEqual(per('combinazioni-tutte').celle[0], { testo: 'Le prime ' + CFG.limitiGratis.combinazioni });
   assert.deepEqual(per('seguite-illimitate').celle[0], { testo: 'Fino a ' + CFG.limitiGratis.seguite });
   assert.deepEqual(per('stratega').celle.map((x) => x.incluso), [false, false, true]);
-  assert.equal(per('report-pdf').inArrivo, true);
+  assert.equal(per('report-pdf').inArrivo, false);   // il report PDF è nella scheda dal 19/10
   assert.equal(per('stratega').inArrivo, false);
   assert.deepEqual(righe[righe.length - 1].celle, [{ incluso: false }, { incluso: false }, { testo: CFG.prova.giorni + ' giorni' }]);
   // con la lista "inArrivo" nella configurazione vale quella
