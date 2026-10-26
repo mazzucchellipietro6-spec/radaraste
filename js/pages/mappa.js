@@ -387,7 +387,8 @@
   }
   function htmlAnteprima(a, ritorno) {
     var p = punti(a), fa = fascia(p), cat = ICONA_CAT[a.categoria] ? a.categoria : 'beni';
-    var avviso = U.linkSicuro(a.linkAvviso), sc = sconto(a), q = U.quando ? U.quando(a.dataAsta) : '';
+    var D = window.Formato.date(a), xd = D.asta || D.termine;
+    var avviso = U.linkSicuro(a.linkAvviso), sc = sconto(a), q = U.quando && xd ? U.quando(xd.data) : '';
     var min = a.offertaMinima;
     if (!min && a.prezzoBase && window.Calcoli && window.Calcoli.offertaMinima && window.TARIFFE) { try { min = window.Calcoli.offertaMinima(a.prezzoBase, window.TARIFFE); } catch (e) { min = null; } }
     var aff = AFFIDABILE[a.affidabilita] || a.affidabilita === 'bassa' ? ' <small>affidabilità ' + esc(a.affidabilita) + '</small>' : '';
@@ -400,7 +401,8 @@
         (p != null && a.punteggioCompleto === false ? ' · parziale' : '') + '</p><h2 id="hScheda" tabindex="-1">' + esc(a.titolo) + '</h2></div></div>' +
       (luogo(a) ? '<p class="m-luogo">' + U.icona('luogo') + '<span>' + esc(luogo(a)) + '</span></p>' : '') +
       '<dl class="kv m-kv">' +
-        '<div><dt>' + (a.fonte === 'Agenzia del Demanio' ? 'Termine offerte' : 'Data asta') + '</dt><dd>' + U.dataIt(a.dataAsta) + (a.ora ? ' ' + esc(a.ora) : '') + (q ? ' <small>(' + esc(q) + ')</small>' : '') + '</dd></div>' +
+        // del Demanio a volte si conosce solo il termine per le offerte (js/formato.js)
+        '<div><dt>' + (D.asta || !D.termine ? 'Data asta' : 'Termine offerte') + '</dt><dd>' + (xd ? U.dataIt(xd.data) + (xd.ora ? ' ' + esc(xd.ora) : '') : '—') + (q ? ' <small>(' + esc(q) + ')</small>' : '') + '</dd></div>' +
         '<div><dt>Prezzo base</dt><dd>' + (a.prezzoBase ? U.eur(a.prezzoBase) : '<span class="muted">nell\'avviso</span>') + '</dd></div>' +
         '<div><dt>Offerta minima</dt><dd>' + (min ? U.eur(min) : '—') + '</dd></div>' +
         '<div><dt>Sconto sul valore</dt><dd>' + (sc != null ? U.pct(sc, 0) + aff : '<span class="muted">non stimato</span>') + '</dd></div>' +

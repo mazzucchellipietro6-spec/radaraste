@@ -149,4 +149,17 @@ test('spiega un bene mobile con la sola stima del perito: affidabilità bassa sp
   const c = blocco(K.rispondi('spiegami l\'asta pvp-4595365', { ...ctx, aste: [merci] }), 'conti');
   assert.equal(c.affidabilita, 'bassa');
   assert.match(c.perche, /per un bene mobile c'è solo la stima del perito, senza una seconda fonte che la confermi, per prudenza il punteggio resta al massimo 54/);
+  // senza stima: il valore viene dal prezzo della prima asta, e lo si dice
+  const senzaStima = { ...merci, stima: undefined };
+  Object.assign(senzaStima, P.compatto(P.valuta(senzaStima, { T })));
+  assert.equal(senzaStima.fonteValore, 'primo-prezzo');
+  assert.match(blocco(K.rispondi('spiegami l\'asta pvp-4595365', { ...ctx, aste: [senzaStima] }), 'conti').perche, /c'è solo il prezzo della prima asta, senza una seconda fonte che lo confermi/);
+});
+
+test('affari di oggi: frasi al singolare con un\'asta analizzata e nessuna scelta (data/affari.js del 22/10/2026)', () => {
+  const affari = { aggiornato: '2026-10-22T06:20:28.041Z', oggi: '2026-10-22', analizzate: 1, scartate: { 'prezzo base non indicato': 1 },
+    criteri: { scontoMinimo: 0.15, punteggioMinimo: 50, minimi: 5 }, nota: 'Oggi solo 0 aste superano tutti i criteri: non ne aggiungiamo altre per arrivare a 5.', migliori: [] };
+  const t = testi(K.rispondi('quali sono gli affari di oggi?', { ...ctx, affari }));
+  assert.match(t, /ha analizzato 1 asta nuova o ribassata nelle ultime 24 ore; nessuna supera tutti i criteri/);
+  assert.doesNotMatch(t, /1 aste|0 superano|solo 0/);
 });

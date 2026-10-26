@@ -137,16 +137,22 @@
       '</ul>';
   }
 
+  // giorno dell'asta e termine per le offerte (js/formato.js): del Demanio a volte si conosce solo il termine
+  function dateAsta(a) { return window.Formato.date(a); }
+
   function bloccoPrezzo(a, r) {
-    var dem = a.fonte === DEMANIO, t = istante(a.dataAsta, a.ora), futura = t && t > Date.now();
+    // conto alla rovescia: all'asta; per il Demanio al termine per le offerte (l'avviso spesso non dà l'ora della gara)
+    var dem = a.fonte === DEMANIO, D = dateAsta(a), x = dem && D.termine ? D.termine : D.asta || D.termine, soloTermine = !!x && x === D.termine;
+    var t = x && istante(x.data, x.ora), futura = t && t > Date.now();
     var base = r.prezzoBase ? '<b class="sc-grande">' + U.eur(r.prezzoBase) + '</b>'
       : '<b class="sc-grande sc-grande-nd">' + (dem ? 'Nel PDF dell\'avviso' : 'Non indicato') + '</b>';
     return '<div class="sc-prezzo">' +
       '<div class="sc-prezzi"><div><span class="sc-et">Prezzo base</span>' + base + '</div>' +
       '<div><span class="sc-et">Offerta minima</span><b class="sc-medio">' + (r.offertaMinima ? U.eur(r.offertaMinima) : '—') + '</b></div></div>' +
-      (futura ? '<div class="sc-conto-box"><span class="sc-et">' + (dem ? 'Mancano al termine per le offerte' : 'Mancano all\'asta') + '</span><div class="sc-conto" data-conto="' + t + '" data-blocchi="1" aria-hidden="true">' + blocchiConto(t) + '</div>' +
-        '<span class="sr-only">' + esc(conto(t, a.ora)) + '</span></div>' : '') +
-      '<p class="sc-quando">' + U.icona('calendario') + '<span>' + (a.dataAsta ? (dem ? 'Offerte entro ' : 'Asta ') + esc(quandoEsteso(a.dataAsta, a.ora)) : 'Data ' + nd(a)) + '</span></p>' +
+      (futura ? '<div class="sc-conto-box"><span class="sc-et">' + (soloTermine ? 'Mancano al termine per le offerte' : 'Mancano all\'asta') + '</span><div class="sc-conto" data-conto="' + t + '" data-blocchi="1" aria-hidden="true">' + blocchiConto(t) + '</div>' +
+        '<span class="sr-only">' + esc(conto(t, x.ora)) + '</span></div>' : '') +
+      '<p class="sc-quando">' + U.icona('calendario') + '<span>' + (D.asta ? 'Asta ' + esc(quandoEsteso(D.asta.data, D.asta.ora)) + (dem && D.termine ? ' · offerte entro ' + esc(quandoEsteso(D.termine.data, D.termine.ora)) : '')
+        : D.termine ? 'Offerte entro ' + esc(quandoEsteso(D.termine.data, D.termine.ora)) : 'Data ' + nd(a)) + '</span></p>' +
       '</div>';
   }
 
@@ -206,14 +212,17 @@
       notaC = r.offertaMinima ? U.eur(r.offertaMinima * a.cauzionePerc / 100) + ' con l\'offerta minima' : '';
     } else if (a.cauzione) cauz = esc(a.cauzione);
     h += tile('Cauzione', cauz || nd(a), cauz ? notaC : 'Di norma il ' + U.pct(T.asta.cauzione.quota, 0) + ' dell\'offerta: l\'importo esatto è nell\'avviso', cauz && a.cauzionePerc > 0 ? 't-testo t-medio' : 't-testo');
-    var t = istante(a.dataAsta, a.ora);
-    if (dem) {
-      h += tile('Termine per le offerte', a.dataAsta ? esc(quandoEsteso(a.dataAsta, a.ora)) : nd(a), t ? '<span data-conto="' + t + '" data-ora="' + esc(a.ora || '') + '">' + conto(t, a.ora) + '</span>' : '', 't-testo t-medio');
+    // Demanio: dataAsta è il giorno dell'asta solo se l'avviso lo scrive; altrimenti (e nei dati raccolti prima del 26/10/2026)
+    // è il termine per le offerte, e la data della gara resta nel PDF
+    var D = dateAsta(a), x = D.asta, te = D.termine, t = x && istante(x.data, x.ora), to = te && istante(te.data, te.ora);
+    var contoDi = function (ist, ora) { return ist ? '<span data-conto="' + ist + '" data-ora="' + esc(ora || '') + '">' + conto(ist, ora) + '</span>' : ''; };
+    if (dem && !x) {
+      h += tile('Termine per le offerte', te ? esc(quandoEsteso(te.data, te.ora)) : nd(a), contoDi(to, te && te.ora), 't-testo t-medio');
       h += tile('Apertura delle offerte', nd(a, 'indicata nel PDF dell\'avviso'), 'Data, ora e luogo della gara sono nell\'avviso', 't-testo');
     } else {
-      h += tile('Data e ora dell\'asta', a.dataAsta ? esc(quandoEsteso(a.dataAsta, a.ora)) : nd(a), t ? '<span data-conto="' + t + '" data-ora="' + esc(a.ora || '') + '">' + conto(t, a.ora) + '</span>' : '', 't-testo t-medio');
-      var to = a.termineOfferte && istante(a.termineOfferte);
-      h += tile('Termine per le offerte', a.termineOfferte ? esc(quandoEsteso(a.termineOfferte)) : nd(a), to ? '<span data-conto="' + to + '" data-ora="1">' + conto(to, '1') + '</span>' : 'Di solito entro le 12 del giorno feriale prima dell\'asta: verifica nell\'avviso', 't-testo t-medio');
+      // Demanio senza l'ora della gara: niente ore contate fino a fine giornata
+      h += tile(dem && x && !x.ora ? 'Data dell\'asta' : 'Data e ora dell\'asta', x ? esc(quandoEsteso(x.data, x.ora)) : nd(a), dem && x && !x.ora ? 'Ora e luogo della gara sono nell\'avviso' : contoDi(t, x && x.ora), 't-testo t-medio');
+      h += tile('Termine per le offerte', te ? esc(quandoEsteso(te.data, te.ora)) : nd(a), to ? contoDi(to, '1') : 'Di solito entro le 12 del giorno feriale prima dell\'asta: verifica nell\'avviso', 't-testo t-medio');
     }
     return '<section class="sc-sez" id="sez-numeri" aria-labelledby="h-numeri"><h2 id="h-numeri" class="sr-only">Prezzi e date</h2><div class="sc-numeri">' + h + '</div></section>';
   }
@@ -290,7 +299,8 @@
   var AFFIDABILITA = {
     alta: ['p-good', 'Alta', 'due fonti indipendenti concordano entro il 35%: quotazione OMI della zona e stima del perito (o prezzo della prima asta)'],
     media: ['p-info', 'Media', 'una sola fonte diretta: quotazione OMI della zona oppure stima del perito'],
-    bassa: ['p-warn', 'Bassa', 'stima indiretta o fonti molto diverse: il punteggio resta al massimo "Da valutare"']
+    // anche un bene mobile con la sola stima del perito (js/punteggio.js): il motivo è nei controlli qui sotto
+    bassa: ['p-warn', 'Bassa', 'stima indiretta, fonti molto diverse o non confermate (motivo nei controlli qui sotto o in «La zona»): il punteggio resta al massimo "Da valutare"']
   };
 
   function forchetta(v, r) {

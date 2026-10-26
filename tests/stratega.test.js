@@ -297,6 +297,11 @@ test('chi vuole viverci cerca una sola casa', () => {
   const sim = S.simula(S.piano(cand, prof), prof, { n: 200, seme: 5 });
   assert.equal(sim.vinte.istogramma[1], 1);
   assert.equal(sim.perAsta[1].nonServe, 1);
+  // una cifra sola per il guadagno: la somma diretta conta anche la seconda casa, che non serve; la sintesi non la scrive
+  const ris = S.esegui(aste, { capitale: 500000, concorrenza: 1, strategia: 'vivere' }, { T, oggi: OGGI, n: 200, seme: 5 });
+  assert.ok(ris.piano.sintesi.guadagnoAttesoTotale > ris.simulazione.guadagno.media * 1.5, 'qui le due cifre sono molto diverse');
+  assert.doesNotMatch(ris.piano.sintesi.testo, /[Gg]uadagno|margine/);
+  assert.match(ris.piano.sintesi.testo, /^Piano con 2 aste .* di cassa su 500\.000 €\.$/);
 });
 
 test('spiega: ipotesi con le fonti, cosa non si sa e avvertenza finale', () => {

@@ -126,12 +126,11 @@
     return scelte;
   }
 
-  // termineOfferte arriva come 'AAAA-MM-GG' o 'AAAA-MM-GGTHH:MM' (dal dettaglio del PVP)
+  // termineOfferte arriva come 'AAAA-MM-GG' o 'AAAA-MM-GGTHH:MM' (dal dettaglio del PVP); letto con js/formato.js, che sa
+  // anche quando la data del Demanio è il termine per le offerte
   function scadenza(a) {
-    if (a.termineOfferte) {
-      var p = String(a.termineOfferte).split('T'), ora = p[1] ? p[1].slice(0, 5) : a.oraTermine || null;
-      return { data: p[0], ora: ora, testo: 'Offerte entro il ' + dataIt(p[0]) + (ora ? ' alle ' + ora : '') + ' (dall\'avviso)' };
-    }
+    var F = NODE ? require('./formato.js') : root.Formato, te = F ? F.date(a).termine : null;
+    if (te) return { data: te.data, ora: te.ora || null, testo: 'Offerte entro il ' + dataIt(te.data) + (te.ora ? ' alle ' + te.ora : '') + ' (dall\'avviso)' };
     return { data: null, ora: null, testo: 'Termine per le offerte non letto dall\'avviso: di solito scade il giorno prima dell\'asta (asta il ' + dataIt(a.dataAsta) + '), verificalo nell\'avviso' };
   }
 

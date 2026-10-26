@@ -119,3 +119,29 @@ test('pertinenze troppo grandi o descritte insieme ad altri lotti: niente rispar
   assert.equal(K.ruolo({ titolo: 'Piena proprietà di due unità residenziali in buono stato:1)tre livelli: sotterraneo-cantina; primo: cucina…' }), 'abitazione');
   assert.equal(K.ruolo({ titolo: 'Piena proprietà di locale destinato ad attività commerciale al piano terra e locale box al piano semiterrato…' }), 'commerciale');
 });
+
+test('risparmio "prima casa": niente se la "pertinenza" costa più della casa (caso reale Genova, pvp-4623033)', () => {
+  const p = { categoria: 'immobile', tribunale: 'Genova', rge: '300', comune: 'Genova', provincia: 'GE', dataAsta: '2026-11-20' };
+  const lotti = [
+    { ...p, id: 'pvp-casa', numeroLotto: '1', titolo: 'Appartamento al quarto piano, composto da ingresso, cucina, due camere e bagno', prezzoBase: 66600 },
+    { ...p, id: 'pvp-4623033', numeroLotto: '2', titolo: 'Magazzino al piano terra, composto da due locali con servizio igienico, dotati di tre ingressi e posto auto…', prezzoBase: 103900 }
+  ];
+  const c = K.trova(lotti, { T, oggi: '2026-10-26' }).combinazioni[0];
+  assert.equal(c.tipo, 'casa-pertinenza');
+  assert.equal(c.risparmio, undefined);
+  assert.equal(c.numeri.risparmioPrimaCasa, undefined);
+  // lo stesso lotto a un prezzo da box: il risparmio torna
+  const box = K.trova([lotti[0], { ...lotti[1], prezzoBase: 30000 }], { T, oggi: '2026-10-26' }).combinazioni[0];
+  assert.ok(box.numeri.risparmioPrimaCasa > 0);
+});
+
+test('lotti senza comune: nessuna combinazione (caso reale: stessa procedura a Cantù, Carimate, Lomazzo, comune non indicato)', () => {
+  const p = { categoria: 'immobile', tribunale: 'Como', rge: '12', dataAsta: '2026-11-20' };
+  const lotti = [
+    { ...p, id: 'a1', titolo: 'Immobile di civile abitazione in cantù (CO)', prezzoBase: 471600 },
+    { ...p, id: 'a2', titolo: 'Appartamento sito in carimate (CO)', prezzoBase: 82500 },
+    { ...p, id: 'a3', titolo: 'Sottotetto non abitabile della superficie commerciale di 34,75 mq e posto auto', prezzoBase: 51750 }
+  ];
+  assert.equal(K.chiave(lotti[0]), null);
+  assert.equal(K.trova(lotti, { T, oggi: '2026-10-26' }).trovate, 0);
+});

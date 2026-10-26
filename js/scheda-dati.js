@@ -87,16 +87,21 @@
         nota: 'Da ' + eur(a.prezzoPrecedente) + ' a ' + eur(base) + ' (−' + pct(1 - base / a.prezzoPrecedente, 0) + '): rilevato dalla raccolta di quel giorno' });
     }
 
-    var asta = dataOra(a.dataAsta, a.ora);
+    // giorno dell'asta e termine per le offerte (js/formato.js). Demanio: il giorno dell'asta solo se l'avviso lo scrive;
+    // nei dati raccolti prima del 26/10/2026 e negli avvisi senza quel giorno la data è il termine per le offerte
+    var F = modulo('Formato', './formato.js');
+    // senza js/formato.js (non succede nelle pagine): per il Demanio nessun giorno d'asta, per prudenza
+    var D = F && F.date ? F.date(a) : { asta: a.dataAsta && !dem ? dataOra(a.dataAsta, a.ora) : null,
+      termine: a.termineOfferte ? dataOra(a.termineOfferte) : dem && a.dataAsta ? dataOra(a.dataAsta, a.ora) : null };
+    var asta = D.asta || { data: null, ora: '' };
     var termine = null;
-    if (dem) {
-      termine = { chiave: 'termine', data: asta.data, ora: asta.ora, titolo: 'Termine per le offerte', nota: 'Data, ora e luogo dell\'apertura delle offerte sono nell\'avviso PDF', qui: true };
-    } else if (a.termineOfferte) {
-      var t = dataOra(a.termineOfferte);
-      termine = { chiave: 'termine', data: t.data, ora: t.ora, titolo: 'Termine per le offerte', nota: 'Offerta e cauzione vanno depositate entro questo termine' };
+    if (D.termine && D.termine.data) {
+      termine = { chiave: 'termine', data: D.termine.data, ora: D.termine.ora, titolo: 'Termine per le offerte',
+        nota: !dem ? 'Offerta e cauzione vanno depositate entro questo termine' : D.asta ? 'Le offerte vanno presentate entro questo termine, come indicato nell\'avviso'
+          : 'Data, ora e luogo dell\'apertura delle offerte sono nell\'avviso PDF', qui: dem && !D.asta };
     } else {
       termine = { chiave: 'termine', data: null, ora: '', titolo: 'Termine per le offerte',
-        nota: 'Non indicato nei dati raccolti: di solito entro le 12 del giorno feriale prima dell\'asta, verifica nell\'avviso' };
+        nota: dem ? 'Non indicato nei dati raccolti: è nell\'avviso PDF' : 'Non indicato nei dati raccolti: di solito entro le 12 del giorno feriale prima dell\'asta, verifica nell\'avviso', qui: dem };
     }
     var astaEv = null;
     if (!dem) {
@@ -104,6 +109,10 @@
       if (base > 0 && num(a.ribasso) > 0) notaAsta += ' (−' + pct(a.ribasso, 0) + ' rispetto al tentativo precedente)';
       if (num(a.offertaMinima) > 0) notaAsta += ' · offerta minima ' + eur(a.offertaMinima);
       astaEv = { chiave: 'asta', data: asta.data, ora: asta.ora, titolo: tentativo ? tentativo + '° tentativo: questa asta' : 'Questa asta', nota: asta.data ? notaAsta : 'Data non indicata nei dati raccolti', qui: true };
+    } else if (D.asta) {
+      // giorno della gara scritto nell'avviso del Demanio; prezzo base e ora sono nel PDF
+      astaEv = { chiave: 'asta', data: asta.data, ora: asta.ora, titolo: 'Giorno dell\'asta', qui: true,
+        nota: (base > 0 ? 'Prezzo base ' + eur(base) : 'Prezzo base nel PDF dell\'avviso') + (asta.ora ? '' : ' · ora e luogo della gara nell\'avviso') };
     }
     var saldo;
     if (!dem && a.categoria === 'immobile' && asta.data) {

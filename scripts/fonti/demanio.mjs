@@ -30,13 +30,18 @@ function dataEn(s) { // "Fri Nov 06 12:00:00 CET 2026"
   return m && MESI_EN[m[1]] ? { data: `${m[4]}-${due(MESI_EN[m[1]])}-${due(m[2])}`, ora: m[3] } : null;
 }
 
-// giorno dell'asta scritto nell'avviso: "Asta pubblica del giorno 11 novembre 2026", "del giorno 09.06.2026 alle ore 10:00"
+// giorno dell'asta scritto nell'avviso: "Asta pubblica del giorno 11 novembre 2026", "del giorno 09.06.2026 alle ore 10:00".
+// "entro il giorno ...", "scadenza ... il giorno ..." sono il termine per le offerte, non l'asta: si saltano
+const PRIMA_DEL_TERMINE = /\b(?:entro|oltre|scadenz\w*|termine|pervenire|pervenute|presentat\w*|depositat\w*)\b[^.;]{0,30}$/i;
 export function giornoAsta(t) {
-  const m = String(t || '').match(/\b(?:del|il|nel)\s+giorno\s+(\d{1,2})(?:\s+([a-zà]+)\s+|[./-](\d{1,2})[./-])(\d{4})(?:[^.;:]{0,25}?\bore\s+(\d{1,2})[:.](\d{2}))?/i);
-  if (!m) return null;
-  const mese = m[2] ? MESI[m[2].toLowerCase()] : Number(m[3]), giorno = Number(m[1]);
-  if (!(mese >= 1 && mese <= 12) || !(giorno >= 1 && giorno <= 31)) return null;
-  return { data: `${m[4]}-${due(mese)}-${due(giorno)}`, ora: m[5] ? `${due(m[5])}:${m[6]}` : '' };
+  const s = String(t || '');
+  for (const m of s.matchAll(/\b(?:del|il|nel)\s+giorno\s+(\d{1,2})(?:\s+([a-zà]+)\s+|[./-](\d{1,2})[./-])(\d{4})(?:[^.;:]{0,25}?\bore\s+(\d{1,2})[:.](\d{2}))?/gi)) {
+    if (PRIMA_DEL_TERMINE.test(s.slice(Math.max(0, m.index - 40), m.index))) continue;
+    const mese = m[2] ? MESI[m[2].toLowerCase()] : Number(m[3]), giorno = Number(m[1]);
+    if (!(mese >= 1 && mese <= 12) || !(giorno >= 1 && giorno <= 31)) return null;
+    return { data: `${m[4]}-${due(mese)}-${due(giorno)}`, ora: m[5] ? `${due(m[5])}:${m[6]}` : '' };
+  }
+  return null;
 }
 
 const eVendita = (t) => /vendit|alienazion|asta pubblica/i.test(t) && !/locazion|concession|affitt/i.test(t);

@@ -149,3 +149,21 @@ test('accessibilità: scheda senza asta con un h1, fuoco visibile sulla domanda 
   // il campo dentro .chiedi non ha bordo né ombra: il segno del fuoco è sul riquadro
   assert.match(css, /\.chiedi:focus-within \{[^}]*box-shadow: 0 0 0 4px var\(--accent-glow\)/);
 });
+
+test('testo d\'esempio dei campi di ricerca: il più lungo che entra intero, mai tagliato (home ed elenco aste su telefono)', async () => {
+  const U = menu();
+  // misura finta: 8 px a carattere
+  const misura = (t) => t.length * 8;
+  const esempi = ['Parole, comune, n. procedura', 'Comune, parole, procedura', 'Comune o parole'];
+  assert.equal(U.esempioCheEntra(esempi, 400, misura), 'Parole, comune, n. procedura');
+  // 210 px: a 390 px di schermo il primo veniva tagliato a "Parole, comune, n. procedu"
+  assert.equal(U.esempioCheEntra(esempi, 210, misura), 'Comune, parole, procedura');
+  assert.equal(U.esempioCheEntra(esempi, 50, misura), 'Comune o parole', 'se non entra nessuno, il più corto');
+  // le due pagine usano la stessa funzione; il testo dell'HTML resta il primo esempio (pagina senza JavaScript)
+  const aste = await readFile(path.join(RADICE, 'js/pages/aste.js'), 'utf8'), home = await readFile(path.join(RADICE, 'js/pages/home.js'), 'utf8');
+  assert.match(aste, /U\.esempioAdattivo\(\$\('#fTesto'\), ESEMPI_RICERCA\)/);
+  assert.match(home, /U\.esempioAdattivo\(\$\('#chiedi'\), ESEMPI_DOMANDA\)/);
+  const primo = (src, nome) => src.match(new RegExp(nome + " = \\['([^']+)'"))[1];
+  assert.match(await readFile(path.join(RADICE, 'aste.html'), 'utf8'), new RegExp('id="fTesto" placeholder="' + primo(aste, 'ESEMPI_RICERCA') + '"'));
+  assert.match(await readFile(path.join(RADICE, 'index.html'), 'utf8'), new RegExp('id="chiedi"[^>]*placeholder="' + primo(home, 'ESEMPI_DOMANDA') + '"'));
+});

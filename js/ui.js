@@ -35,6 +35,29 @@
     return 'tra ' + g + ' giorni';
   }
   function linkSicuro(u) { return /^https?:\/\//i.test(u || '') ? u : null; }
+  /* Testo d'esempio di un campo (placeholder): il più lungo della lista che entra intero, l'ultimo se non ne entra nessuno.
+   * Su telefono un esempio lungo verrebbe tagliato a metà parola ("Parole, comune, n. procedu"). misura(testo) → px. */
+  function esempioCheEntra(esempi, largo, misura) {
+    for (var i = 0; i < esempi.length - 1; i++) if (misura(esempi[i]) <= largo) return esempi[i];
+    return esempi[esempi.length - 1];
+  }
+  var tela = null;
+  function adattaEsempio(el, esempi) {
+    var c = tela || (tela = document.createElement('canvas').getContext('2d'));
+    if (!el || !c) return;
+    var cs = getComputedStyle(el), largo = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    if (!(largo > 0)) return;
+    c.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    el.placeholder = esempioCheEntra(esempi, largo, function (t) { return c.measureText(t).width; });
+  }
+  // sceglie l'esempio adesso, quando cambia la larghezza della finestra e quando arrivano i caratteri del sito
+  function esempioAdattivo(el, esempi) {
+    if (!el || !esempi || !esempi.length) return;
+    var attesa = null, adatta = function () { adattaEsempio(el, esempi); };
+    adatta();
+    window.addEventListener('resize', function () { if (attesa) return; attesa = requestAnimationFrame(function () { attesa = null; adatta(); }); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(adatta);
+  }
   // fonti che oggi non si sono aggiornate (errore o blocco) ma restano in elenco con le aste di una raccolta precedente:
   // [{ nome, data: giorno dell'ultima raccolta riuscita, AAAA-MM-GG nel fuso del browser }]
   function fontiFerme(R) {
@@ -387,7 +410,7 @@
 
   root.UI = {
     $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando, oggi: oggi,
-    linkSicuro: linkSicuro, fontiFerme: fontiFerme, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
+    linkSicuro: linkSicuro, esempioCheEntra: esempioCheEntra, esempioAdattivo: esempioAdattivo, fontiFerme: fontiFerme, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
     icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI, SERVIZIO: SERVIZIO,
     finestra: finestra, apriFinestra: apriFinestra, chiudiFinestra: chiudiFinestra, focusabili: focusabili, menoMovimento: function () { return menoMovimento.matches; },
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,

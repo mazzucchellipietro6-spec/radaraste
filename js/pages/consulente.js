@@ -36,7 +36,11 @@
   }
 
   /* ---------- disegno dei blocchi della risposta ---------- */
-  function luogo(a) { return [a.comune ? a.comune + (a.provincia ? ' (' + a.provincia + ')' : '') : a.regione, a.dataAsta ? 'asta ' + U.dataIt(a.dataAsta) : ''].filter(Boolean).join(' · '); }
+  // del Demanio a volte si conosce solo il termine per le offerte (js/formato.js)
+  function luogo(a) {
+    var D = window.Formato.date(a), quando = D.asta ? 'asta ' + U.dataIt(D.asta.data) : D.termine ? 'offerte entro il ' + U.dataIt(D.termine.data) : '';
+    return [a.comune ? a.comune + (a.provincia ? ' (' + a.provincia + ')' : '') : a.regione, quando].filter(Boolean).join(' · ');
+  }
   function rigaAsta(a) {
     var p = a.punteggio, fa = window.Punteggio ? window.Punteggio.fascia(p == null ? null : p).chiave : 'nd';
     return '<a class="cs-asta" href="scheda.html?id=' + encodeURIComponent(a.id) + '" data-passa="id:' + U.esc(a.id) + '">' +
@@ -120,7 +124,7 @@
     if (nome === 'scheda_asta') {
       var a = perId(String(input && input.id || ''));
       if (!a) return { blocchi: [{ tipo: 'testo', testo: 'Asta non trovata.' }], mostra: [] };
-      var campi = {}; ['id', 'titolo', 'categoria', 'tipo', 'comune', 'provincia', 'tribunale', 'prezzoBase', 'offertaMinima', 'dataAsta', 'termineOfferte', 'stato', 'tentativo', 'superficieMq',
+      var campi = {}; ['id', 'titolo', 'categoria', 'tipo', 'comune', 'provincia', 'tribunale', 'fonte', 'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'termineOfferte', 'stato', 'tentativo', 'superficieMq',
         'valore', 'valoreMin', 'valoreMax', 'fonteValore', 'affidabilita', 'costoTotale', 'sconto', 'offertaMax', 'punteggio', 'rischi', 'rendimento', 'linkAvviso'].forEach(function (k) { if (a[k] != null) campi[k] = a[k]; });
       return { blocchi: [{ tipo: 'dati', asta: campi }], mostra: [{ tipo: 'aste', ids: [a.id], totale: 1 }] };
     }

@@ -167,3 +167,32 @@ test('omonimo ambiguo: nessun abbinamento, con il motivo', () => {
   assert.equal(Omi.trovaComune(indSigle, 'Castro', 'LE').prov, 'LE');
   assert.equal(Omi.stima({ categoria: 'immobile', comune: 'Castro', provincia: 'BA' }, indSigle, {}).mancante, 'comune non trovato nelle quotazioni OMI');
 });
+
+test('zona che quota solo lo stato "ottimo": la nota lo dice (prima: Stato "undefined") e l\'affidabilità è bassa', () => {
+  // 24 immobili così nei dati locali del 26/10/2026, es. pvp-4630309 (negozio, Potenza Picena) e pvp-4616531 (Andria):
+  // qui la zona E1 di Melilli con una quotazione dei negozi solo "ottimo" (numeri finti)
+  const soloOttimo = Omi.costruisciIndice(ZONE, VALORI + 'ISOLE;SICILIA;SR;19089012;I754; ;F107;MELILLI;E;E1;SR00000002;5;Negozi;OTTIMO;P;900;1100;L;5;6;L;\n', null);
+  const a = { categoria: 'immobile', tipo: 'Immobile commerciale', titolo: 'Negozio', comune: 'Melilli', provincia: 'SR', indirizzo: 'frazione Villasmundo', superficieMq: 50 };
+  const s = Omi.stima(a, soloOttimo, {});
+  assert.equal(s.zona.codice, 'E1');
+  assert.equal(s.stato, 'ottimo');
+  assert.equal(s.affidabilita, 'bassa');
+  assert.ok(s.note.every((n) => !/undefined/.test(n)), s.note.join(' / '));
+  assert.match(s.note.join(), /l'OMI quota solo lo stato "ottimo": il valore può essere più alto di quello reale/);
+  // anche con lo stato "scadente" letto nell'avviso la quotazione disponibile è solo "ottimo", e lo si dice
+  const sc = Omi.stima(a, soloOttimo, { conservazione: { stato: 'da ristrutturare' } });
+  assert.equal(sc.stato, 'ottimo');
+  assert.ok(sc.note.every((n) => !/undefined|usato lo stato normale/.test(n)), sc.note.join(' / '));
+});
+
+test('valori tipici del comune: solo le zone con lo stato normale, senza mescolare uno stato "ottimo" (stato detto com\'è)', () => {
+  // Melilli: B1 quota i negozi solo "ottimo", E1 solo "normale"; stato "scadente" letto nell'avviso, zona non riconosciuta
+  const v = VALORI + 'ISOLE;SICILIA;SR;19089012;I754; ;F107;MELILLI;B;B1;SR00000001;5;Negozi;OTTIMO;P;2000;2400;L;9;10;L;\n' +
+    'ISOLE;SICILIA;SR;19089012;I754; ;F107;MELILLI;E;E1;SR00000002;5;Negozi;NORMALE;P;700;900;L;3;4;L;\n';
+  const a = { categoria: 'immobile', tipo: 'Immobile commerciale', titolo: 'Negozio', comune: 'Melilli', provincia: 'SR', indirizzo: 'Via Inesistente', superficieMq: 50 };
+  const s = Omi.stima(a, Omi.costruisciIndice(ZONE, v, null), { conservazione: { stato: 'da ristrutturare' } });
+  assert.equal(s.zona, null);
+  assert.equal(s.stato, 'normale');
+  assert.deepEqual(s.euroMq, { min: 700, max: 900 }, 'la quotazione "ottimo" di B1 non entra nella mediana');
+  assert.match(s.note.join(), /valori tipici del comune \(una sola zona quotata\)/);
+});

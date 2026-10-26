@@ -9,7 +9,8 @@
  *    valore di affidabilità media o alta);
  *  - l'unico vantaggio "in più" calcolato è fiscale: il box, il posto auto o la cantina comprati come pertinenza della
  *    prima casa pagano l'imposta di registro agevolata (aliquote di config/tariffe.js, al prezzo base), una sola per
- *    categoria catastale (C/2, C/6, C/7) e solo per lotti di una sola unità;
+ *    categoria catastale (C/2, C/6, C/7), solo per lotti di una sola unità che non costano più dell'abitazione;
+ *  - gruppi solo tra lotti con tribunale, procedura e comune;
  *  - gli altri vantaggi (unire due unità, un solo sopralluogo…) sono scritti come motivi qualitativi, senza cifre.
  * Usato dalla raccolta (Node) per scrivere data/combinazioni.js e dal sito. */
 (function (root) {
@@ -59,8 +60,10 @@
     return null;
   }
 
+  // senza comune nessun gruppo: lotti della stessa procedura in paesi diversi non sono "vicini" né pertinenze della stessa
+  // casa (caso reale del 26/10/2026: abitazioni a Cantù, Carimate, Lomazzo e un sottotetto, tutti senza comune)
   function chiave(a) {
-    if (!a.tribunale || !a.rge || a.categoria !== 'immobile') return null;
+    if (!a.tribunale || !a.rge || !a.comune || a.categoria !== 'immobile') return null;
     return [a.tribunale, a.rge, a.annoProcedura || '', norm(a.comune), a.dataAsta || ''].join('|');
   }
 
@@ -130,10 +133,14 @@
     }
     // vantaggio fiscale delle pertinenze della prima casa (al prezzo base)
     if (tipo === 'casa-pertinenza' && regimeDi(T, 'prima-privato') && regimeDi(T, 'seconda-privato')) {
-      // per ogni categoria catastale la pertinenza con il risparmio più alto (una sola per categoria)
-      var perCategoria = {}, risparmio = 0, voci = [];
+      // per ogni categoria catastale la pertinenza con il risparmio più alto (una sola per categoria). Una "pertinenza" che
+      // costa più dell'abitazione più cara del gruppo non è un box o una cantina al servizio della casa: niente calcolo
+      // (casi reali del 26/10/2026: magazzino da 103.900 € con un appartamento da 66.600 € a Genova, garage da 247.731 €
+      // con un appartamento da 61.875 € a Misterbianco)
+      var perCategoria = {}, risparmio = 0, voci = [], casaMax = 0;
+      lotti.forEach(function (a) { if (a._ruolo === 'abitazione') casaMax = Math.max(casaMax, num(a.prezzoBase)); });
       lotti.forEach(function (a) {
-        var cat = a._ruolo === 'pertinenza' && num(a.prezzoBase) > 0 ? categoriaPertinenza(a) : null;
+        var cat = a._ruolo === 'pertinenza' && num(a.prezzoBase) > 0 && num(a.prezzoBase) <= casaMax ? categoriaPertinenza(a) : null;
         if (!cat) return;
         var s2 = imposte(a.prezzoBase, 'seconda-privato', T), s1 = imposte(a.prezzoBase, 'prima-privato', T);
         if (s1 == null || s2 == null || s2 <= s1) return;

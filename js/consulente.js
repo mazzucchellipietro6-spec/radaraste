@@ -20,7 +20,7 @@
 (function (root) {
   'use strict';
   var NODE = typeof module !== 'undefined' && module.exports;
-  var FILE = { Calcoli: './calcoli.js', Mutuo: './mutuo.js', Punteggio: './punteggio.js', GEO: '../data/geo.js', Estrai: './estrai.js' };
+  var FILE = { Calcoli: './calcoli.js', Mutuo: './mutuo.js', Punteggio: './punteggio.js', GEO: '../data/geo.js', Estrai: './estrai.js', Formato: './formato.js' };
   var moduli = {};
   // nel browser i moduli si leggono al momento dell'uso (gli script possono arrivare dopo questo)
   function modulo(nome) {
@@ -219,7 +219,7 @@
     'primo-prezzo': 'Prezzo base della prima asta, che di norma coincide con la stima del perito',
     'prima-asta': 'È la prima asta: il prezzo base di norma coincide con la stima del perito',
     omi: 'Quotazioni OMI della zona (Agenzia delle Entrate – OMI) per la superficie indicata',
-    'omi-comune': 'Quotazioni OMI tipiche del comune (zona OMI non riconosciuta dall\'indirizzo) per la superficie indicata'
+    'omi-comune': 'Quotazioni OMI usate con cautela (zona non riconosciuta dall\'indirizzo, o dati della zona incerti: vedi la scheda dell\'asta) per la superficie indicata'
   };
   var RISCHI_RISERVA = { abusi: 'Abusi o difformità edilizie', quota: 'Si vende solo una quota o un diritto parziale', superficie: 'Diritto di superficie',
     condominio: 'Spese condominiali arretrate', vincoli: 'Vincoli, servitù o edilizia convenzionata', degrado: 'Immobile al grezzo, inagibile o degradato',
@@ -503,8 +503,10 @@
     if (m) return 'pvp-' + m[1];
     m = s.match(/\b(?:asta|lotto|annuncio|inserzione|id)\s*(?:n\.?|n°|nr\.?|numero)?\s*(\d{5,})\b/i);
     if (m) return 'pvp-' + m[1];
-    m = s.match(/\b(dem-[A-Za-z0-9-]{6,}|m[a-z0-9]{9,})\b/);
-    if (m && ctx && trovaAsta(m[1], ctx.aste)) return m[1];
+    // gli id del Demanio vengono dall'indirizzo della pagina e possono avere punti ("...-di-n.-25-lotti-..."): il punto
+    // finale della frase non fa parte dell'id
+    m = s.match(/\b(dem-[A-Za-z0-9._~%-]{6,}|m[a-z0-9]{9,})/);
+    if (m && ctx) { var id = m[1].replace(/[.]+$/, ''); if (trovaAsta(id, ctx.aste)) return id; }
     m = s.match(/(?:^|\s)(\d{6,8})(?:\s|$|[?.!])/);
     if (m && ctx && trovaAsta('pvp-' + m[1], ctx.aste)) return 'pvp-' + m[1];
     return null;
@@ -1099,9 +1101,11 @@
     if (a.linkAvviso) fonti.unshift({ nome: 'Avviso di vendita dell\'asta ' + a.id, url: a.linkAvviso, data: a.vista || dataDati(ctx) });
     var dove = [a.comune, a.provincia ? '(' + a.provincia + ')' : ''].filter(Boolean).join(' ');
     b.push(testo(a.titolo + (dove ? ' – ' + dove : '') + (a.tribunale ? ', Tribunale di ' + a.tribunale : '') + (a.rge ? ', procedura R.G.E. ' + a.rge + (a.annoProcedura ? '/' + a.annoProcedura : '') : '') + '.'));
-    var quando = a.dataAsta ? 'Asta il ' + dataIt(a.dataAsta) + (a.ora ? ' alle ' + a.ora : '') : 'Data dell\'asta non indicata';
-    if (a.termineOfferte) { var to = String(a.termineOfferte).split('T'); quando += '; offerte entro il ' + dataIt(to[0]) + (to[1] ? ' alle ' + to[1].slice(0, 5) : '') + ' (dall\'avviso)'; }
-    else quando += '; il termine per le offerte è nell\'avviso (di solito il giorno prima)';
+    // giorno dell'asta e termine per le offerte (js/formato.js): del Demanio a volte si conosce solo il termine
+    var D = modulo('Formato').date(a), dem = a.fonte === 'Agenzia del Demanio';
+    var quando = D.asta ? 'Asta il ' + dataIt(D.asta.data) + (D.asta.ora ? ' alle ' + D.asta.ora : '') : dem ? 'Giorno della gara indicato nel PDF dell\'avviso' : 'Data dell\'asta non indicata';
+    if (D.termine) quando += '; offerte entro il ' + dataIt(D.termine.data) + (D.termine.ora ? ' alle ' + D.termine.ora : '') + ' (dall\'avviso)';
+    else quando += dem ? '; il termine per le offerte è nell\'avviso' : '; il termine per le offerte è nell\'avviso (di solito il giorno prima)';
     if (a.tentativo) quando += '. È il ' + a.tentativo + '° tentativo di vendita' + (num(a.primoPrezzo) > 0 && num(a.prezzoBase) > 0 && a.tentativo >= 2 ? ': prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dalla prima asta' : '');
     b.push(testo(quando + '.'));
     var righe = [];
@@ -1122,7 +1126,7 @@
     if (a.stato === 'occupato') ipotesi.push('Costi di liberazione ' + eur(I.liberazioneOccupato) + ' perché risulta occupato (ipotesi del sito)');
     if (a.categoria !== 'immobile') ipotesi = ['Offerta pari al prezzo base', 'Diritti d\'asta, IVA e passaggio di proprietà con le ipotesi del calcolatore (' + I.kw + ' kW per i veicoli)'];
     var perche = haValore ? (ETICHETTE_VALORE[a.fonteValore] || 'Valore stimato dal sito') + '.' : '';
-    if (haValore && a.affidabilita === 'bassa') perche += ' Affidabilità bassa: ' + (a.categoria === 'beni' ? 'per un bene mobile c\'è solo la stima del perito, senza una seconda fonte che la confermi' : 'fonte indiretta o fonti in disaccordo') + ', per prudenza il punteggio resta al massimo ' + P.TETTO_INCERTO + '.';
+    if (haValore && a.affidabilita === 'bassa') perche += ' Affidabilità bassa: ' + (a.categoria === 'beni' ? 'per un bene mobile c\'è solo ' + ({ 'primo-prezzo': 'il prezzo della prima asta, senza una seconda fonte che lo confermi', 'prima-asta': 'il prezzo base della prima asta, senza una seconda fonte che lo confermi' }[a.fonteValore] || 'la stima del perito, senza una seconda fonte che la confermi') : 'fonte indiretta o fonti in disaccordo') + ', per prudenza il punteggio resta al massimo ' + P.TETTO_INCERTO + '.';
     else if (haValore && a.affidabilita === 'media') perche += ' Affidabilità media: una sola fonte o fonti non del tutto concordi.';
     else if (haValore && a.affidabilita === 'alta') perche += ' Affidabilità alta: due fonti indipendenti concordano.';
     b.push(blocco('conti', { titolo: 'I numeri dell\'asta', righe: righe, totale: tot, affidabilita: haValore ? a.affidabilita || 'bassa' : 'bassa',
@@ -1427,8 +1431,9 @@
       return (!p.regione || x.regione === p.regione) && (!p.provincia || x.provincia === p.provincia) && (!p.comune || x.comune === p.comune);
     });
     var dove = nomeLuogo(p), b = [];
-    var intro = 'Affari di oggi' + (A.oggi ? ' (' + dataIt(A.oggi) + ')' : '') + ': il Cacciatore di affari ha analizzato ' + migliaia(String(A.analizzate || 0)) + ' aste nuove o ribassate nelle ultime 24 ore; ' +
-      A.migliori.length + ' superano tutti i criteri (sconto reale almeno ' + pct(A.criteri ? A.criteri.scontoMinimo : 0.15) + ', valore di mercato affidabile, punteggio almeno ' + (A.criteri ? A.criteri.punteggioMinimo : 50) + ').';
+    var nA = A.analizzate || 0, nM = A.migliori.length;
+    var intro = 'Affari di oggi' + (A.oggi ? ' (' + dataIt(A.oggi) + ')' : '') + ': il Cacciatore di affari ha analizzato ' + migliaia(String(nA)) + (nA === 1 ? ' asta nuova o ribassata' : ' aste nuove o ribassate') + ' nelle ultime 24 ore; ' +
+      (!nM ? 'nessuna supera' : nM === 1 ? '1 supera' : nM + ' superano') + ' tutti i criteri (sconto reale almeno ' + pct(A.criteri ? A.criteri.scontoMinimo : 0.15) + ', valore di mercato affidabile, punteggio almeno ' + (A.criteri ? A.criteri.punteggioMinimo : 50) + ').';
     b.push(testo(intro));
     if (!lista.length) {
       b.push(testo(A.migliori.length ? 'Nessuno degli affari di oggi è ' + dove + '. Ti propongo di cercare tra tutte le aste ' + dove + ' quelle con punteggio da buon affare.' : 'Oggi nessuna asta supera i criteri: meglio aspettare che proporre affari incerti.'));
@@ -1444,8 +1449,8 @@
       if (r.perche && r.perche.length) righe.push('Perché: ' + r.perche.slice(0, 3).join('; ') + '.');
       if (r.rischi && r.rischi.length) righe.push('Rischi: ' + r.rischi.slice(0, 2).join('; ') + '.');
       if (r.offertaMassima && r.offertaMassima.testo) righe.push(r.offertaMassima.testo + '.');
-      var sc = x.termineOfferte ? String(x.termineOfferte).split('T') : null;
-      righe.push(sc ? 'Offerte entro il ' + dataIt(sc[0]) + (sc[1] ? ' alle ' + sc[1].slice(0, 5) : '') + ' (dall\'avviso).' : r.scadenza && r.scadenza.testo ? r.scadenza.testo + '.' : 'Asta il ' + dataIt(x.dataAsta) + '.');
+      var sc = modulo('Formato').date(x).termine;
+      righe.push(sc ? 'Offerte entro il ' + dataIt(sc.data) + (sc.ora ? ' alle ' + sc.ora : '') + ' (dall\'avviso).' : r.scadenza && r.scadenza.testo ? r.scadenza.testo + '.' : 'Asta il ' + dataIt(x.dataAsta) + '.');
       b.push(testo(righe.join(' ')));
       if (x.valore && x.valore.fonte) fonti.push({ nome: 'Valore di mercato: ' + x.valore.fonte });
     });

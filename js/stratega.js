@@ -380,7 +380,10 @@
     };
     sintesi.testo = scelte.length
       ? 'Piano con ' + scelte.length + (scelte.length === 1 ? ' asta' : ' aste') + ' tra il ' + dataIt(scelte[0].dataAsta) + ' e il ' + dataIt(scelte[scelte.length - 1].dataAsta) +
-        ': vincendole tutte servirebbero ' + eur(cassaTutte) + ' di cassa su ' + eur(prof.capitale) + '. Guadagno atteso (probabilità × margine sul valore minimo) ' + eur(guadagno) + '.'
+        // il guadagno non si scrive qui: la pagina mostra una cifra sola, la media delle simulazioni (simula), che tiene conto
+        // della regola di cassa e di chi cerca una sola casa; la somma diretta (guadagnoAttesoTotale) per "ci vado a vivere"
+        // contava anche le case che non servono più (caso reale del 26/10/2026: 72.160 € contro 43.516 € simulati)
+        ': vincendole tutte servirebbero ' + eur(cassaTutte) + ' di cassa su ' + eur(prof.capitale) + '.'
       : (lista.length ? 'Nessuna delle ' + lista.length + ' aste candidate entra nel piano con le tue regole.' : 'Nessuna asta candidata') + ': meglio aspettare che forzare un piano.';
     var ordineMotivi = Object.keys(motivi).sort(function (x, y) { return motivi[y] - motivi[x]; });
     return { prudenza: prof.prudenza, scelte: scelte, escluse: escluse.slice(0, 30), motivi: motivi, motiviPrincipali: ordineMotivi.slice(0, 5), sintesi: sintesi };

@@ -145,6 +145,7 @@
     return null; // terreni e altro: l'OMI non li quota
   }
 
+  var NOMI_STATO = { O: 'ottimo', N: 'normale', S: 'scadente' };
   // stato OMI: Ottimo, Normale, Scadente (dallo stato di conservazione letto nell'avviso: testo, oppure l'oggetto
   // { stato, prova } di Estrai.conservazione, che è quello passato dalla raccolta)
   function statoOmi(conservazione) {
@@ -228,31 +229,42 @@
         righe.push({ link: zz[0], riga: b.riga });
       });
       if (!righe.length) return { mancante: 'nessuna quotazione OMI per questa tipologia nel comune', comune: comune.nome };
-      // lo stato letto nell'avviso si usa solo se tutte le zone lo quotano: mescolare stati diversi falserebbe la mediana
-      var tutte = righe.every(function (x) { return x.riga[0] === st; }), statoComune = tutte ? st : 'N';
-      if (!tutte) righe = righe.map(function (x) { var n = rigaValori(ind, x.link, [tipUsato], 'N'); return n ? n.riga : x.riga; });
-      else righe = righe.map(function (x) { return x.riga; });
+      // lo stato letto nell'avviso si usa solo se tutte le zone lo quotano: mescolare stati diversi falserebbe la mediana.
+      // Altrimenti solo le zone che quotano lo stato normale; se nessuna lo quota, tutte, e lo stato si dice com'è
+      var tutte = righe.every(function (x) { return x.riga[0] === st; });
+      if (!tutte) {
+        var normali = righe.map(function (x) { var n = rigaValori(ind, x.link, [tipUsato], 'N'); return n && n.riga[0] === 'N' ? n.riga : null; }).filter(Boolean);
+        righe = normali.length ? normali : righe.map(function (x) { return x.riga; });
+      } else righe = righe.map(function (x) { return x.riga; });
+      var statoComune = righe.every(function (r) { return r[0] === righe[0][0]; }) ? righe[0][0] : 'misto';
       var col = function (i) { return righe.map(function (r) { return r[i]; }).filter(function (v) { return v > 0; }); };
       var lmin = col(3), lmax = col(4);
       rr = [statoComune, mediana(col(1)), mediana(col(2)), lmin.length ? mediana(lmin) : 0, lmax.length ? mediana(lmax) : 0, 'L', 'L'];
       base = { tip: tipUsato, riga: rr, statoUsato: statoComune };
-      note.push('Zona OMI non riconosciuta dall\'indirizzo: valori tipici del comune (mediana di ' + righe.length + ' zone)');
+      note.push('Zona OMI non riconosciuta dall\'indirizzo: valori tipici del comune (' + (righe.length === 1 ? 'una sola zona quotata' : 'mediana di ' + righe.length + ' zone') + ')');
     }
     var out = {
       fonte: ind.fonte + ', ' + (ind.semestre ? 'semestre ' + ind.semestre : '') + (ind.licenza ? ' (' + ind.licenza + ')' : ''),
       semestre: ind.semestre, comune: comune.nome, zona: zonaInfo, tipologia: NOMI_TIP[base.tip] || base.tip,
-      stato: { O: 'ottimo', N: 'normale', S: 'scadente' }[base.statoUsato], euroMq: { min: rr[1], max: rr[2] },
+      stato: NOMI_STATO[base.statoUsato] || null, euroMq: { min: rr[1], max: rr[2] },
       affittoMq: rr[3] > 0 ? { min: rr[3], max: rr[4], superficie: rr[6] === 'N' ? 'netta' : 'lorda' } : null, note: note
     };
-    if (ottimo) note.push('Stato "ottimo" indicato nell\'avviso: per prudenza si usa la quotazione dello stato normale');
-    if (st !== base.statoUsato) note.push('Stato "' + { O: 'ottimo', S: 'scadente' }[st] + '" non quotato ' + (zonaInfo ? 'in questa zona' : 'in tutte le zone del comune') + ': usato lo stato normale');
+    // la nota dice la quotazione usata davvero: alcune zone quotano un solo stato (24 immobili con solo "ottimo" nei dati
+    // del 26/10/2026, prima la nota diceva 'Stato "undefined" non quotato')
+    var usato = base.statoUsato, dove = zonaInfo ? 'questa zona' : 'il comune';
+    if (usato === st) { if (ottimo) note.push('Stato "ottimo" indicato nell\'avviso: per prudenza si usa la quotazione dello stato normale'); }
+    else if (usato === 'N') note.push('Stato "' + NOMI_STATO[st] + '" non quotato ' + (zonaInfo ? 'in questa zona' : 'in tutte le zone del comune') + ': usato lo stato normale');
+    else if (usato === 'O') note.push('Per ' + dove + ' l\'OMI quota solo lo stato "ottimo": il valore può essere più alto di quello reale, per prudenza affidabilità bassa');
+    else if (usato === 'S') note.push('Per ' + dove + ' l\'OMI quota solo lo stato "scadente": usata questa quotazione, il valore può essere più basso di quello reale');
+    else note.push('Le zone del comune quotano stati di conservazione diversi: valori tipici solo indicativi');
     if (!(mq > 0)) { out.mancante = 'metri quadri non indicati nell\'avviso'; return out; }
     out.mq = mq;
     out.valore = { min: Math.round(mq * rr[1]), max: Math.round(mq * rr[2]) };
     out.valore.centrale = Math.round((out.valore.min + out.valore.max) / 2);
     if (out.affittoMq) out.affitto = { min: Math.round(mq * rr[3]), max: Math.round(mq * rr[4]) };
-    // zona riconosciuta (unica del comune o dall'indirizzo) → media; valori tipici del comune → bassa
-    out.affidabilita = zonaInfo ? 'media' : 'bassa';
+    // zona riconosciuta (unica del comune o dall'indirizzo) → media; valori tipici del comune → bassa; quotazione del solo
+    // stato "ottimo" (o di stati diversi) → bassa: non si usa come valore principale (scripts/lib/arricchimento.mjs)
+    out.affidabilita = zonaInfo && usato !== 'O' && usato !== 'misto' ? 'media' : 'bassa';
     // lotti con più unità (tenute, compendi, "n. 2 fabbricati"): la superficie letta copre solo una parte
     var tt = norm((a.titolo || '') + ' ' + (opz.testo || ''));
     if (/\b(COMPENDIO|TENUTA|COMPLESSO IMMOBILIARE|PIU UNITA|SEGUENTI UNITA|UNITA IMMOBILIARI|N\.?\s?[2-9]\s+(?:FABBRICATI|UNITA|APPARTAMENTI|IMMOBILI)|BENE\s+N?\.?\s*[2-9])\b/.test(tt)) {

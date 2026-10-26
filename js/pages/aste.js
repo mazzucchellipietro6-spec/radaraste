@@ -280,7 +280,11 @@
   }
 
   /* ---------- Avvio ---------- */
+  // testo d'esempio della ricerca: su telefono il più lungo non entra e veniva tagliato ("Parole, comune, n. procedu")
+  var ESEMPI_RICERCA = ['Parole, comune, n. procedura', 'Comune, parole, procedura', 'Comune o parole'];
+
   document.addEventListener('DOMContentLoaded', function () {
+    U.esempioAdattivo($('#fTesto'), ESEMPI_RICERCA);
     caricaFiltri();
     // filtri arrivati da altre pagine (ricerca istantanea, mappa, home): ?provincia=, ?regione=, ?comune=, ?filtri={json}
     // (anche tramite data-passa, vedi UI.parametro). Es. zona della mappa: ?filtri={"bbox":[sud,ovest,nord,est]}

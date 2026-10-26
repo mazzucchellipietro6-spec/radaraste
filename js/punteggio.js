@@ -19,7 +19,8 @@
     'primo-prezzo': 'Prezzo base della prima asta, che di norma coincide con la stima del perito',
     'prima-asta': 'È la prima asta: il prezzo base di norma coincide con la stima del perito',
     omi: 'Quotazioni OMI della zona (Agenzia delle Entrate – OMI) per la superficie indicata',
-    'omi-comune': 'Quotazioni OMI tipiche del comune (zona OMI non riconosciuta dall\'indirizzo) per la superficie indicata'
+    // anche una zona riconosciuta con dati incerti (lotto con più unità, box insolito, solo stato "ottimo"): vedi applicaOmi
+    'omi-comune': 'Quotazioni OMI usate con cautela (zona non riconosciuta dall\'indirizzo, o dati della zona incerti: vedi «La zona») per la superficie indicata'
   };
   var LIVELLI = ['bassa', 'media', 'alta'];
   var TETTO_INCERTO = 54;   // punteggio massimo quando il valore di mercato ha affidabilità bassa (fascia "Da valutare")

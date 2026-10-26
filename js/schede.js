@@ -70,15 +70,15 @@
   }
 
   function quando(a) {
-    var q = U.quando(a.dataAsta), g = U.giorniA(a.dataAsta);
-    // termineOfferte: 'AAAA-MM-GG' o 'AAAA-MM-GGTHH:MM'; Demanio senza il giorno dell'asta nell'avviso: la data è il termine
-    var to = a.termineOfferte ? String(a.termineOfferte).split('T') : null;
-    var et = a.fonte === 'Agenzia del Demanio' && (!to || to[0] === a.dataAsta) ? 'Termine offerte' : 'Asta';
-    if (!a.dataAsta) return '<div class="quando">' + U.icona('calendario') + '<span>' + et + ': data non indicata nell\'avviso</span></div>';
-    var presto = g !== null && g >= 0 && g <= 7;
-    return '<div class="quando">' + U.icona('calendario') + '<span><span class="sr-only">' + et + ': </span>' + U.dataIt(a.dataAsta) + (a.ora ? ', ' + U.esc(a.ora) : '') + '</span>' +
+    // giorno dell'asta e termine per le offerte (js/formato.js): per il Demanio senza il giorno dell'asta la data è il termine
+    var D = root.Formato.date(a), x = D.asta || D.termine, to = D.termine;
+    var et = D.asta || (!D.termine && a.fonte !== 'Agenzia del Demanio') ? 'Asta' : 'Termine offerte';
+    if (!x) return '<div class="quando">' + U.icona('calendario') + '<span>' + et + ': data non indicata nell\'avviso</span></div>';
+    var q = U.quando(x.data), g = U.giorniA(x.data), presto = g !== null && g >= 0 && g <= 7;
+    return '<div class="quando">' + U.icona('calendario') + '<span><span class="sr-only">' + et + ': </span>' + U.dataIt(x.data) + (x.ora ? ', ' + U.esc(x.ora) : '') + '</span>' +
       (q ? '<b class="tra' + (presto ? ' presto' : '') + (g !== null && g < 0 ? ' finita' : '') + '">' + q + '</b>' : '') + '</div>' +
-      (to && to[0] !== a.dataAsta ? '<div class="quando sub">' + U.icona('orologio') + '<span>Offerte entro il ' + U.dataIt(to[0]) + (to[1] ? ', ' + U.esc(to[1].slice(0, 5)) : '') + '</span></div>' : '');
+      // il termine sotto la data dell'asta, se è un altro giorno o ha l'ora (anche il giorno stesso dell'asta)
+      (D.asta && to && (to.data !== D.asta.data || to.ora) ? '<div class="quando sub">' + U.icona('orologio') + '<span>Offerte entro il ' + U.dataIt(to.data) + (to.ora ? ', ' + U.esc(to.ora) : '') + '</span></div>' : '');
   }
 
   function linkEsterni(a, opz) {

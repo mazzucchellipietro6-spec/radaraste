@@ -16,7 +16,7 @@ function schede() {
   };
   finto.window = finto;
   const ctx = vm.createContext(finto);
-  for (const f of ['config/tariffe.js', 'js/icone.js', 'js/ui.js', 'js/calcoli.js', 'js/schede.js']) vm.runInContext(fs.readFileSync(path.join(RADICE, f), 'utf8'), ctx, { filename: f });
+  for (const f of ['config/tariffe.js', 'js/icone.js', 'js/ui.js', 'js/formato.js', 'js/calcoli.js', 'js/schede.js']) vm.runInContext(fs.readFileSync(path.join(RADICE, f), 'utf8'), ctx, { filename: f });
   return { S: ctx.Schede, U: ctx.UI };
 }
 
@@ -49,4 +49,22 @@ test('card del Demanio: data dell\'asta come "Asta" e, sotto, il termine per le 
   const pvp = S.card({ id: 'pvp-4595365', titolo: 'Merci in giacenza', categoria: 'beni', fonte: 'Portale Vendite Pubbliche', dataAsta: '2026-12-03', ora: '09:30', termineOfferte: '2026-12-02T12:00', prezzoBase: 114393.6 }, {});
   assert.ok(pvp.includes('Offerte entro il ' + U.dataIt('2026-12-02') + ', 12:00'), pvp);
   assert.doesNotMatch(pvp, /T12:00/);
+});
+
+test('card: date del Demanio raccolte prima del 26/10 (senza termineOfferte) e termine del PVP nel giorno stesso dell\'asta', () => {
+  const { S, U } = schede();
+  // stessa vendita nei dati locali del 22/10/2026: dataAsta era il termine per le offerte (10/11 alle 16:00)
+  const vecchia = S.card({ ...VENETO, dataAsta: '2026-11-10', ora: '16:00', termineOfferte: undefined }, {});
+  assert.match(vecchia, /<span class="sr-only">Termine offerte: <\/span>/);
+  assert.ok(vecchia.includes(U.dataIt('2026-11-10') + ', 16:00'), vecchia);
+  assert.doesNotMatch(vecchia, /Offerte entro/);
+  // asta il giorno stesso del termine, a un'altra ora (dato dell'avviso): si dice anche l'ora del termine
+  const stessoGiorno = S.card({ ...VENETO, dataAsta: '2026-11-10', ora: '', termineOfferte: '2026-11-10T09:00' }, {});
+  assert.match(stessoGiorno, /<span class="sr-only">Asta: <\/span>/);
+  assert.ok(stessoGiorno.includes('Offerte entro il ' + U.dataIt('2026-11-10') + ', 09:00'), stessoGiorno);
+  // PVP: 152 aste nei dati del 13/10 hanno il termine con l'ora nel giorno dell'asta; la riga del termine resta
+  const pvp = S.card({ id: 'pvp-x', titolo: 'Box', categoria: 'immobile', fonte: 'Portale Vendite Pubbliche', dataAsta: '2026-11-20', ora: '15:00', termineOfferte: '2026-11-20T12:00', prezzoBase: 10000 }, {});
+  assert.ok(pvp.includes('Offerte entro il ' + U.dataIt('2026-11-20') + ', 12:00'), pvp);
+  // termine senza ora nel giorno dell'asta: nessuna riga in più
+  assert.doesNotMatch(S.card({ id: 'pvp-y', titolo: 'Box', categoria: 'immobile', fonte: 'Portale Vendite Pubbliche', dataAsta: '2026-11-20', ora: '15:00', termineOfferte: '2026-11-20', prezzoBase: 10000 }, {}), /Offerte entro/);
 });
