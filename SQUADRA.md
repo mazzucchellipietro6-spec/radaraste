@@ -10,7 +10,8 @@ Ogni mattina, dopo la raccolta automatica delle aste, una squadra di assistenti 
 
 - **Ogni giorno alle 08:13, ora italiana.** A quell'ora la raccolta del mattino è finita da almeno un'ora.
 - Parte da sola con un'attività programmata del tuo account Claude, nella stessa sessione di Claude Code che ha costruito il sito, così ricorda tutto il lavoro fatto.
-- **Consuma i limiti d'uso del tuo piano Claude.** Se un giorno il limite finisce a metà, il lavoro rimasto riparte il giorno dopo, prima di tutto il resto.
+- **Consuma i limiti d'uso del tuo piano Claude.** Il 22/10 un giro con 5 agenti ha esaurito il limite settimanale e i giri del 23, 24 e 25 sono saltati. Da allora la squadra lavora **leggera**: al massimo 3 agenti al giorno, cioè un controllo a rotazione, uno o due lavori e il Revisore. Se un giorno il limite finisce a metà, il lavoro rimasto riparte il giorno dopo, prima di tutto il resto.
+- **Rotazione dei controlli:** lunedì e giovedì il Guardiano della raccolta, martedì e venerdì il Controllore dei dati, mercoledì e sabato il Collaudatore del sito. La domenica nessun controllo, solo lavori. Se i dati locali non sono di oggi, il Controllore salta il turno. L'esito della raccolta su GitHub il capo squadra lo guarda comunque ogni giorno.
 
 ## Chi fa cosa
 
