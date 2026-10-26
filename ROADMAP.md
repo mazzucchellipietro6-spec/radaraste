@@ -4,7 +4,7 @@ Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce camb
 
 Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ aspetta una tua decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 20/10/2026.
+Ultimo aggiornamento: 26/10/2026 (giro della squadra).
 
 ---
 
@@ -130,11 +130,12 @@ Ultimo aggiornamento: 20/10/2026.
 
 ## In corso 🔄
 
-- 🔄 **Zona abbonamenti in modalità TEST** (vedi "Da decidere", punto 2). È tutta spenta finché non crei gli account: nel sito pubblicato non cambia nulla.
-  - Pronti: piani e blocchi (`config/abbonamenti.js`, `js/piani.js`) e funzioni Stripe di prova (`functions/`, `servizi/`), con i loro test.
-  - In lavorazione: account e accesso, pagina prezzi, bozze legali, guida `ABBONAMENTI.md`, preparazione per Cloudflare Pages.
+- 🔄 **Pull request [#4](https://github.com/mazzucchellipietro6-spec/radaraste/pull/4)**: correzioni del sito pubblicato rivedute dal Revisore il 26/10, più tutto il lavoro dal 19/10. Per pubblicare premi **Merge**.
+- 🔄 **Zona abbonamenti in modalità TEST** (vedi "Da decidere", punto 2). È tutta spenta finché non crei gli account. Nel sito pubblicato le pagine prezzi, account e bozze legali esistono ma non sono collegate da nessun menu.
+  - Pronti e riveduti: piani e blocchi (`config/abbonamenti.js`, `js/piani.js`) e funzioni Stripe di prova (`functions/`, `servizi/`), con i loro test.
+  - Scritti ma **non ancora riveduti** (i revisori si sono fermati sul limite d'uso): account e accesso con lo schema del database, pagina prezzi, bozze legali, guida `ABBONAMENTI.md`, preparazione per Cloudflare Pages. Prossimi giri della squadra.
 - 🔄 **Stratega su più anni**: calcolo della proiezione scritto e provato; mancano pagina e grafico.
-- ✅ **Squadra quotidiana** attiva dal 20/10 ([SQUADRA.md](SQUADRA.md)).
+- ✅ **Squadra quotidiana** attiva dal 20/10 ([SQUADRA.md](SQUADRA.md)). Dal 26/10 lavora leggera: al massimo 3 agenti al giorno.
 
 ---
 
@@ -163,6 +164,10 @@ Ultimo aggiornamento: 20/10/2026.
 
 ## Scelte fatte da me (puoi cambiarle)
 
+- **Beni mobili più prudenti (26/10).** Con la sola stima del perito l'affidabilità è bassa e il punteggio si ferma a "Da valutare" (54). Vale per tutta la categoria "beni": anche barche, quote societarie e marchi. Caso reale: "Merci in giacenza" a Nuoro passa da 77 a 54.
+- **Combinazioni d'oro (26/10).** Niente risparmio "prima casa" quando la "pertinenza" costa più dell'abitazione o non è una pertinenza (uffici, D/8). Niente gruppi di lotti senza comune.
+- **Squadra leggera (26/10).** Al massimo 3 agenti al giorno, con i controlli a rotazione, per non esaurire il limite settimanale del tuo piano Claude.
+
 - **Stile "Classica"** (proposta A) invece di "Istituzionale" (B): più riconoscibile, da rapporto finanziario. Cambiare è solo questione di colori e caratteri in `assets/css/style.css`.
 - **Probabilità dello Stratega dalle ultime 4 settimane di esiti.** Nell'indice del Portale le vendite più vecchie perdono quasi sempre l'esito "aggiudicata": sull'intero periodo verrebbe un 3% falso, sulle ultime 4 settimane circa il 27%. Il metodo è spiegato nella pagina, con la forchetta minima e massima.
 - **Combinazioni d'oro** = lotti della stessa procedura che insieme valgono di più, come hai scritto il 13/10. L'unico vantaggio in euro calcolato è quello fiscale; gli altri sono motivi scritti.
@@ -171,6 +176,12 @@ Ultimo aggiornamento: 20/10/2026.
 ---
 
 ## Da decidere ⏸ (per te)
+
+**Nuove del 26/10:**
+- **Limiti d'uso della squadra.** Il 22/10 un giro di 5 agenti ha esaurito il limite settimanale del tuo piano: i giri del 23, 24 e 25 sono saltati. Ora la squadra lavora leggera. Se vuoi che faccia di più ogni giorno serve un piano Claude con limiti più alti; altrimenti va bene così, solo più lenta.
+- **Fonti concordi.** Quando OMI e perito concordano entro il 35% si usa l'OMI anche se è il più alto. Esempio: Codogno pvp-4617243, OMI 150.608 € contro 112.450 € della prima asta. Vuoi usare sempre il valore più basso?
+
+**Già in elenco:**
 
 1. **Repository privato per i file OMI.** Crea `radaraste-omi` privato, caricaci gli zip, poi aggiungi il secret `OMI_TOKEN` e la variabile `OMI_REPO`: passi esatti nel README, sezione "Quotazioni OMI". Senza, il sito pubblicato usa solo perizie e prima asta. Le quotazioni OMI ci sono solo nella mia copia locale e nell'anteprima.
 2. **Abbonamenti.** Nel messaggio del 13/10 hai scritto prima "lascia stare gli abbonamenti" e poi "zona abbonamenti in modalità TEST".
@@ -219,5 +230,16 @@ Ultimo aggiornamento: 20/10/2026.
 - ✅ Sul telefono la riga di esempi della chat allargava la pagina.
 - ✅ Coordinate fuori dall'Italia, biciclette tra le auto, prezzi base a zero, aste di oggi già iniziate, titoli tagliati, offerte minime sopra il prezzo base: corretti nella raccolta del 12-13/10.
 - ✅ 19/10: la scheda dell'asta pubblicata mostrava "Scheda non disponibile" (un file mancava nella pagina) e il piè di pagina aveva 7 link a pagine non ancora create. Corretti con la #3; ora un test controlla che ogni voce del menu e del piè di pagina porti a una pagina esistente.
+- ✅ 22-26/10, trovati dalla squadra e corretti (in attesa del Merge):
+  - Combinazioni d'oro con un falso "risparmio prima casa" su uffici, D/8 e pertinenze più care della casa.
+  - Fonti OMI e perito considerate concordi anche con l'OMI più alto del 54%.
+  - Stato di conservazione mai passato all'OMI.
+  - Rischio "degrado" non visto per "allo stato grezzo", "diruto", "collabenti".
+  - Un affare intitolato "NESSUNA" con "nessun rischio".
+  - Date del Demanio: termine delle offerte scambiato per giorno dell'asta.
+  - Titoli sporchi e frasi sbagliate ("solo 0 aste", "ne ho trovate 1").
+  - Beni mobili segnati "Ottimo affare" con la sola stima.
+  - Stratega con due cifre diverse per la stessa cosa.
+  - Accessibilità di alcune pagine.
 - ⬜ Azioni di GitHub su Node 20 (avviso di deprecazione).
-- ⬜ Sigle di provincia diverse tra aste e indice OMI: PU/PS, FC/FO, e MB, SU, BT, FM mancanti. Circa 1.000 immobili restano senza dati OMI, per esempio Fano. Trovato dal costruttore della scheda il 19/10.
+- ✅ 26/10: sigle di provincia diverse tra aste e indice OMI corrette: 252 immobili in più con il valore OMI nei dati locali. Restano 606 "comune non trovato": 326 senza nome del comune; 280 con nomi scritti in modo diverso nell'indice ("S MARIA CAPUA VETERE", "MERANO .MERAN."), da fare.
