@@ -121,6 +121,14 @@
         }
       }
     }
+    // beni mobili (merci, mobili, attrezzature): nessuna seconda fonte conferma il perito, che da solo non basta per
+    // un "Ottimo affare" (casi reali pvp-4595365 "Merci in giacenza" e pvp-4594979 "Mobili da ufficio", Nuoro)
+    if (a.categoria === 'beni' && NOME_PERITO[fonte]) {
+      aff = 'bassa';
+      controlli.push('Bene mobile: il valore viene solo ' + { perizia: 'dalla stima del perito', 'primo-prezzo': 'dal prezzo della prima asta', 'prima-asta': 'dal prezzo base della prima asta' }[fonte] +
+        ', senza una seconda fonte che lo confermi, e rivendendo merci, arredi o attrezzature ' +
+        'si ricava spesso molto meno. Per prudenza il punteggio resta al massimo ' + TETTO_INCERTO + ' ("Da valutare").');
+    }
     return { centrale: Math.round(centrale), min: Math.round(min != null ? min : centrale * (1 - f)), max: Math.round(max != null ? max : centrale * (1 + f)),
       fonte: fonte, etichetta: ETICHETTE[fonte], affidabilita: aff, controlli: controlli, zona: zona };
   }

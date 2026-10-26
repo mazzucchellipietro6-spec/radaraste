@@ -66,6 +66,18 @@
     if (R.sconto) conta(t4.querySelector('.t-val'), R.sconto.medio, percento); else t4.querySelector('.t-val').innerHTML = '<span aria-hidden="true">—</span><span class="sr-only">' + NON_DISPONIBILE + '</span>';
   }
 
+  // testo d'esempio della domanda: il più lungo che entra intero nel campo (su telefono il più corto), mai tagliato a metà parola
+  var ESEMPI_DOMANDA = ['Chiedi: appartamenti liberi a Bari sotto 120 mila', 'Es.: case libere a Bari sotto 120 mila', 'Es.: case libere a Bari'];
+  function adattaEsempio() {
+    var el = $('#chiedi'), c = adattaEsempio.c || (adattaEsempio.c = document.createElement('canvas').getContext('2d'));
+    if (!el || !c) return;
+    var cs = getComputedStyle(el), largo = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    if (!(largo > 0)) return;
+    c.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    for (var i = 0; i < ESEMPI_DOMANDA.length - 1; i++) if (c.measureText(ESEMPI_DOMANDA[i]).width <= largo) break;
+    el.placeholder = ESEMPI_DOMANDA[i];
+  }
+
   /* Fonti che l'ultima raccolta non ha aggiornato (errore o blocco): le loro aste sono dell'ultima raccolta riuscita.
    * Nel riepilogo il giorno dell'ultima raccolta riuscita di ogni fonte è in R.agenti.fonti (scripts/lib/derivati.mjs). */
   function noteFerme(R) {
@@ -78,6 +90,10 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     var R = window.RIEPILOGO;
+    adattaEsempio();
+    var attesa = null;
+    window.addEventListener('resize', function () { if (attesa) return; attesa = requestAnimationFrame(function () { attesa = null; adattaEsempio(); }); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(adattaEsempio);
     // affari di oggi (Cacciatore) e stato degli assistenti: file piccoli, si disegnano subito
     if (window.Affari) window.Affari.disegna('#affari', { compatto: true, massimo: 3 });
     if (window.Agenti) $('#assistenti').innerHTML = window.Agenti.schede();

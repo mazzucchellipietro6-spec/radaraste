@@ -1053,7 +1053,8 @@
       return { blocchi: chiudi(blocchi, fontiAste(ctx, []), sugg.concat(['Quali sono gli affari di oggi?'])), memoria: nuovaMem };
     }
     var conAff = lista.filter(function (a) { return gruppo(a) === 0; }).length, bassa = lista.filter(function (a) { return gruppo(a) === 1; }).length, senza = lista.length - conAff - bassa;
-    var frase = 'Ne ho trovate ' + migliaia(String(lista.length)) + '. ' + (top.length < lista.length ? 'Ecco le prime ' + top.length : top.length === 1 ? 'Eccola' : 'Eccole') + (p.ordina && p.ordina !== 'punteggio' ? '.' : ': prima quelle con il punteggio più alto e un valore di mercato affidabile.');
+    var frase = lista.length === 1 ? 'Ne ho trovata una. Eccola.'
+      : 'Ne ho trovate ' + migliaia(String(lista.length)) + '. ' + (top.length < lista.length ? 'Ecco le prime ' + top.length : 'Eccole') + (p.ordina && p.ordina !== 'punteggio' ? '.' : ': prima quelle con il punteggio più alto e un valore di mercato affidabile.');
     blocchi.push(testo(frase));
     var note = [];
     if (!p.ordina || p.ordina === 'punteggio' || p.ordina === 'sconto') {
@@ -1121,7 +1122,7 @@
     if (a.stato === 'occupato') ipotesi.push('Costi di liberazione ' + eur(I.liberazioneOccupato) + ' perché risulta occupato (ipotesi del sito)');
     if (a.categoria !== 'immobile') ipotesi = ['Offerta pari al prezzo base', 'Diritti d\'asta, IVA e passaggio di proprietà con le ipotesi del calcolatore (' + I.kw + ' kW per i veicoli)'];
     var perche = haValore ? (ETICHETTE_VALORE[a.fonteValore] || 'Valore stimato dal sito') + '.' : '';
-    if (haValore && a.affidabilita === 'bassa') perche += ' Affidabilità bassa: fonte indiretta o fonti in disaccordo, per prudenza il punteggio resta al massimo ' + P.TETTO_INCERTO + '.';
+    if (haValore && a.affidabilita === 'bassa') perche += ' Affidabilità bassa: ' + (a.categoria === 'beni' ? 'per un bene mobile c\'è solo la stima del perito, senza una seconda fonte che la confermi' : 'fonte indiretta o fonti in disaccordo') + ', per prudenza il punteggio resta al massimo ' + P.TETTO_INCERTO + '.';
     else if (haValore && a.affidabilita === 'media') perche += ' Affidabilità media: una sola fonte o fonti non del tutto concordi.';
     else if (haValore && a.affidabilita === 'alta') perche += ' Affidabilità alta: due fonti indipendenti concordano.';
     b.push(blocco('conti', { titolo: 'I numeri dell\'asta', righe: righe, totale: tot, affidabilita: haValore ? a.affidabilita || 'bassa' : 'bassa',

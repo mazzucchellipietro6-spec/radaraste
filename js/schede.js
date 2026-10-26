@@ -134,7 +134,8 @@
 
     return '<article class="card cat-' + cat + (opz.nuova ? ' nuova' : '') + (opz.compatta ? ' compatta' : '') + '">' + copertina +
       '<div class="corpo">' + top +
-      '<h4><a href="scheda.html?id=' + encodeURIComponent(a.id) + '"' + passa + '>' + U.esc(a.titolo || 'Asta senza titolo') + '</a></h4>' +
+      // h3: le card stanno sotto un h2 (home, elenco aste); l'aspetto è quello di prima (.card-titolo in style.css)
+      '<h3 class="card-titolo"><a href="scheda.html?id=' + encodeURIComponent(a.id) + '"' + passa + '>' + U.esc(a.titolo || 'Asta senza titolo') + '</a></h3>' +
       (sotto ? '<div class="where">' + U.esc(sotto) + '</div>' : '') +
       prezzi + quando(a) + metriche(a, opz) + linkEsterni(a, opz) + azioni + '</div></article>';
   }

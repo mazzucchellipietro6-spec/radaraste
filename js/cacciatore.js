@@ -154,7 +154,8 @@
   }
 
   function testoTelegram(sel, info) {
-    var r = ['🎯 Affari di oggi – ' + dataIt(info.oggi), info.analizzate + ' aste nuove o ribassate analizzate, ' + sel.length + ' superano i criteri.', ''];
+    var r = ['🎯 Affari di oggi – ' + dataIt(info.oggi), info.analizzate + (info.analizzate === 1 ? ' asta nuova o ribassata analizzata, ' : ' aste nuove o ribassate analizzate, ') +
+      (!sel.length ? 'nessuna supera i criteri.' : sel.length + (sel.length === 1 ? ' supera' : ' superano') + ' i criteri.'), ''];
     sel.forEach(function (x, i) {
       var s = riassunto(x), a = x.asta;
       r.push((i + 1) + '. ' + a.titolo + (a.comune ? ' – ' + a.comune + (a.provincia ? ' (' + a.provincia + ')' : '') : ''));
@@ -208,6 +209,14 @@
     return o;
   }
 
+  // nota sotto gli affari quando sono meno dei minimi: si dice, senza riempire
+  function nota(n, criteri) {
+    var min = (criteri || CRITERI).minimi;
+    if (n >= min) return null;
+    if (!n) return 'Oggi nessuna asta supera tutti i criteri: meglio aspettare che proporre affari incerti.';
+    return 'Oggi solo ' + n + (n === 1 ? ' asta supera' : ' aste superano') + ' tutti i criteri: non ne aggiungiamo altre per arrivare a ' + min + '.';
+  }
+
   /* Giro completo: { aste, oggi, T, zone } → risultato pronto da scrivere in data/affari.js */
   function esegui(opz) {
     var c = candidati(opz.aste, opz.oggi);
@@ -221,7 +230,7 @@
       oggi: opz.oggi, analizzate: analizzate.length,
       perMotivo: c.reduce(function (m, x) { m[x.motivo] = (m[x.motivo] || 0) + 1; return m; }, {}),
       scartate: scarti, criteri: CRITERI,
-      nota: sel.length < CRITERI.minimi ? 'Oggi solo ' + sel.length + ' aste superano tutti i criteri: non ne aggiungiamo altre per arrivare a ' + CRITERI.minimi + '.' : null,
+      nota: nota(sel.length),
       migliori: sel.map(function (x) { return compatta(x, true); }),
       piscina: piscina.map(function (x) { return compatta(x, false); }),
       telegram: testoTelegram(sel, info)
@@ -268,7 +277,7 @@
   }
 
   var Cacciatore = { CRITERI: CRITERI, candidati: candidati, analizza: analizza, seleziona: seleziona, riassunto: riassunto, personale: personale,
-    compatta: compatta, esegui: esegui, testoTelegram: testoTelegram, aggiornaStorico: aggiornaStorico, misure: misure };
+    compatta: compatta, nota: nota, esegui: esegui, testoTelegram: testoTelegram, aggiornaStorico: aggiornaStorico, misure: misure };
   if (NODE) module.exports = Cacciatore;
   else root.Cacciatore = Cacciatore;
 })(typeof window !== 'undefined' ? window : globalThis);

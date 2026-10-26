@@ -195,3 +195,25 @@ test('OMI molto più alto del prezzo della prima asta (+50%) non "concorda": si 
   assert.equal(vicino.valore.fonte, 'omi');
   assert.equal(vicino.valore.affidabilita, 'alta');
 });
+
+test('beni mobili: la sola stima del perito dà affidabilità bassa e il punteggio si ferma al tetto (casi reali di Nuoro del 13/10)', () => {
+  // pvp-4595365 "Merci in giacenza" e pvp-4594979 "Mobili da ufficio" (Tribunale di Nuoro, R.G.E. 19/2017, secondo tentativo):
+  // prima del controllo punteggio 77 ("Ottimo affare") con affidabilità media
+  const merci = { id: 'pvp-4595365', titolo: 'Merci in giacenza', categoria: 'beni', tipo: 'Altra categoria m', provincia: 'NU', comune: 'Nuoro',
+    prezzoBase: 114393.6, offertaMinima: 114393.6, stato: 'nd', rischi: [], tentativo: 2, deserte: 1, primoPrezzo: 142992, stima: 238320.07 };
+  const mobili = { id: 'pvp-4594979', titolo: 'Mobili da ufficio', categoria: 'beni', tipo: 'Altra categoria m', provincia: 'NU', comune: 'Nuoro',
+    prezzoBase: 3060, offertaMinima: 3060, stato: 'nd', rischi: [], tentativo: 2, deserte: 1, primoPrezzo: 3825, stima: 6375 };
+  for (const a of [merci, mobili]) {
+    const r = P.valuta(a, { T });
+    assert.equal(r.valore.fonte, 'perizia', a.id);
+    assert.equal(r.valore.affidabilita, 'bassa', a.id);
+    assert.equal(r.punteggio, P.TETTO_INCERTO, a.id);
+    assert.equal(r.limitato, true, a.id);
+    assert.notEqual(P.fascia(r.punteggio).chiave, 'ottimo', a.id);
+    assert.equal(r.completo, false, a.id);
+    assert.match(r.valore.controlli.join(' '), /^Bene mobile: il valore viene solo dalla stima del perito, senza una seconda fonte che lo confermi/, a.id);
+    assert.match(r.valore.controlli.join(' '), /al massimo 54 \("Da valutare"\)/, a.id);
+  }
+  // veicoli e immobili non cambiano: un'auto con la stima del perito resta ad affidabilità media
+  assert.equal(P.valuta({ categoria: 'auto', provincia: 'MI', prezzoBase: 5000, stima: 9000, tentativo: 2, rischi: [] }, { T }).valore.affidabilita, 'media');
+});

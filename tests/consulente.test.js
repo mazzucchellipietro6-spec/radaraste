@@ -131,3 +131,22 @@ test('fonti: una fonte ferma dice il giorno dell\'ultima raccolta riuscita, non 
   assert.deepEqual(voce(K.rispondi('appartamenti a Bari', { ...ctx, oggi: '2026-10-22', raccolta: ok }), /Portale/),
     { nome: 'Portale delle Vendite Pubbliche (Ministero della Giustizia)', url: 'https://pvp.giustizia.it/pvp/', data: '2026-10-22' });
 });
+
+test('ricerca con un solo risultato: "Ne ho trovata una. Eccola." (non "Ne ho trovate 1")', () => {
+  const r = K.rispondi('box a Lecce', ctx);
+  assert.equal(blocco(r, 'aste').totale, 1);
+  assert.match(testi(r), /Ne ho trovata una\. Eccola\./);
+  assert.doesNotMatch(testi(r), /trovate 1\b/);
+  assert.match(testi(K.rispondi('appartamenti a Bari', ctx)), /Ne ho trovate 2\. Eccole: prima quelle/);
+});
+
+test('spiega un bene mobile con la sola stima del perito: affidabilità bassa spiegata (pvp-4595365, valori ricalcolati con js/punteggio.js)', () => {
+  const P = require('../js/punteggio.js');
+  const merci = { ...base, categoria: 'beni', tipo: 'Altra categoria m', id: 'pvp-4595365', titolo: 'Merci in giacenza', comune: 'Nuoro', provincia: 'NU', regione: 'Sardegna',
+    tribunale: 'Nuoro', rge: '19', prezzoBase: 114393.6, offertaMinima: 114393.6, dataAsta: '2026-12-03', stato: 'nd', rischi: [], tentativo: 2, primoPrezzo: 142992, stima: 238320.07 };
+  const r = P.valuta(merci, { T });
+  Object.assign(merci, P.compatto(r));
+  const c = blocco(K.rispondi('spiegami l\'asta pvp-4595365', { ...ctx, aste: [merci] }), 'conti');
+  assert.equal(c.affidabilita, 'bassa');
+  assert.match(c.perche, /per un bene mobile c'è solo la stima del perito, senza una seconda fonte che la confermi, per prudenza il punteggio resta al massimo 54/);
+});

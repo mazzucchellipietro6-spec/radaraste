@@ -112,3 +112,16 @@ test('riassunto: senza testo dell\'avviso non dice "nessun rischio" (caso reale 
   // testo letto e nessun rischio: la frase di prima
   assert.deepEqual(K.riassunto(K.analizza({ asta: asta({}) }, { T })).rischi, ['Nessun rischio trovato nel testo dell\'avviso: leggi comunque la perizia']);
 });
+
+test('frasi: con zero affari "nessuna asta", con uno il singolare (data/affari.js del 22/10: 1 analizzata, 0 scelte)', () => {
+  assert.equal(K.nota(0), 'Oggi nessuna asta supera tutti i criteri: meglio aspettare che proporre affari incerti.');
+  assert.equal(K.nota(1), 'Oggi solo 1 asta supera tutti i criteri: non ne aggiungiamo altre per arrivare a 5.');
+  assert.equal(K.nota(3), 'Oggi solo 3 aste superano tutti i criteri: non ne aggiungiamo altre per arrivare a 5.');
+  assert.equal(K.nota(5), null);
+  // giro reale del 22/10: una sola asta nuova, scartata per il prezzo base mancante
+  const r = K.esegui({ aste: [asta({ prezzoBase: null })], oggi: OGGI, T });
+  assert.equal(r.nota, 'Oggi nessuna asta supera tutti i criteri: meglio aspettare che proporre affari incerti.');
+  assert.match(r.telegram, /^1 asta nuova o ribassata analizzata, nessuna supera i criteri\.$/m);
+  const uno = K.esegui({ aste: [asta({})], oggi: OGGI, T });
+  assert.match(uno.telegram, /^1 asta nuova o ribassata analizzata, 1 supera i criteri\.$/m);
+});
