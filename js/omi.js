@@ -64,18 +64,19 @@
       var z = valori[v.LinkZona] = valori[v.LinkZona] || {};
       (z[v.Cod_Tip] = z[v.Cod_Tip] || []).push([v.Stato.charAt(0), cmin, cmax, num(v.Loc_min), num(v.Loc_max), v.Sup_NL_compr || 'L', v.Sup_NL_loc || '']);
     });
-    var compravendite = {};
+    var compravendite = {}, annoNtn = null;
     if (vcn && vcn.valoriRes) {
       var taglie = {};
       if (vcn.listaCom) leggiCsvVcn(vcn.listaCom).forEach(function (r) { taglie[r['2025_CodCom'] || r[Object.keys(r).filter(function (h) { return /CodCom/.test(h); })[0]]] = r['TAGLIA MERCATO']; });
       leggiCsvVcn(vcn.valoriRes).forEach(function (r) {
         var cod = r[Object.keys(r).filter(function (h) { return /CodCom/.test(h); })[0]], k = catastali[cod];
         var tot = Object.keys(r).filter(function (h) { return /^NTN[_ ]\d{4}$/.test(h); })[0];
+        if (tot) annoNtn = tot.slice(-4); // anno dalla colonna (es. NTN_2025), più sicuro del nome del file
         if (k && tot) compravendite[k] = { ntn: num(r[tot]), taglia: taglie[cod] || null };
       });
     }
     return { fonte: 'Agenzia delle Entrate – OMI', licenza: 'CC BY 4.0', semestre: sem, elaborazione: elab, comuni: comuni, valori: valori,
-      compravendite: compravendite, anno: vcn && vcn.anno || null };
+      compravendite: compravendite, anno: annoNtn || (vcn && vcn.anno) || null };
   }
   function leggiCsvVcn(testo) {
     var righe = String(testo).replace(/\r/g, '').split('\n').filter(function (r) { return r.trim(); });
@@ -85,16 +86,43 @@
 
   /* ---------- uso dell'indice ---------- */
 
-  function trovaComune(ind, nome, prov) {
-    if (!ind || !nome) return null;
-    var k = chiaveComune(nome, prov);
-    if (ind.comuni[k]) return ind.comuni[k];
-    // nomi scritti in modo diverso dalla fonte (es. "Reggio Calabria" / "REGGIO DI CALABRIA"): stessa provincia, stesse lettere senza "DI/NEL..."
-    var corta = function (s) { return norm(s).split('/')[0].replace(/\b(DI|DEL|DELLA|NELL|NEL|SUL|IN)\b/g, '').replace(/[^A-Z]/g, ''); };
-    var cercato = corta(nome), trovati = [];
-    for (var j in ind.comuni) { var c = ind.comuni[j]; if (c.prov === String(prov || '').toUpperCase() && corta(c.nome) === cercato) trovati.push(c); }
-    return trovati.length === 1 ? trovati[0] : null;
+  // l'indice OMI usa le sigle catastali: PS per Pesaro e Urbino, FO per Forlì-Cesena
+  var SIGLE_OMI = { PU: 'PS', FC: 'FO' };
+  // province nate dopo, assenti nell'indice: il comune si cerca nelle province da cui sono nate
+  var ORIGINI = { MB: ['MI'], SU: ['CA', 'CI', 'VS', 'OG', 'OT', 'MD', 'SS', 'NU', 'OR'], BT: ['BA', 'FG'], FM: ['AP'] };
+  var MANCA = 'comune non trovato nelle quotazioni OMI';
+  var AMBIGUO = 'nelle quotazioni OMI ci sono più comuni con questo nome: per prudenza nessun abbinamento';
+
+  // nomi scritti in modo diverso dalla fonte (es. "Reggio Calabria" / "REGGIO DI CALABRIA"): stesse lettere senza "DI/NEL..."
+  function corta(s) { return norm(s).split('/')[0].replace(/\b(DI|DEL|DELLA|NELL|NEL|SUL|IN)\b/g, '').replace(/[^A-Z]/g, ''); }
+  // comuni dell'indice per nome corto, calcolati una volta per indice
+  var indNomi = null, perNome = null;
+  function comuniPerNome(ind) {
+    if (indNomi !== ind) {
+      indNomi = ind; perNome = {};
+      for (var k in ind.comuni) { var n = corta(ind.comuni[k].nome); (perNome[n] = perNome[n] || []).push(ind.comuni[k]); }
+    }
+    return perNome;
   }
+
+  /* Comune dell'indice dal nome e dalla sigla dell'asta → { comune } oppure { motivo }.
+   * Mai un abbinamento incerto: se i comuni possibili sono più di uno, nessun dato. */
+  function cercaComune(ind, nome, prov) {
+    if (!ind || !nome) return { motivo: MANCA };
+    var p = String(prov || '').toUpperCase(), sigla = SIGLE_OMI[p] || p;
+    var c = ind.comuni[chiaveComune(nome, p)] || ind.comuni[chiaveComune(nome, sigla)];
+    if (c) return { comune: c };
+    var simili = comuniPerNome(ind)[corta(nome)] || [];
+    var stessa = simili.filter(function (x) { return x.prov === p || x.prov === sigla; });
+    if (stessa.length) return stessa.length === 1 ? { comune: stessa[0] } : { motivo: AMBIGUO };
+    if (!ORIGINI[p]) return { motivo: MANCA };
+    // provincia nuova: prima le province d'origine, poi tutta Italia se il nome è unico
+    var origine = simili.filter(function (x) { return ORIGINI[p].indexOf(x.prov) >= 0; });
+    var scelti = origine.length ? origine : simili;
+    if (scelti.length === 1) return { comune: scelti[0] };
+    return { motivo: scelti.length ? AMBIGUO : MANCA };
+  }
+  function trovaComune(ind, nome, prov) { return cercaComune(ind, nome, prov).comune || null; }
 
   // tipologia OMI dall'asta (tipo del PVP + parole del testo)
   function tipologia(a, testo) {
@@ -173,8 +201,8 @@
     opz = opz || {};
     if (!ind || a.categoria !== 'immobile') return null;
     var mq = num(a.superficieMq);
-    var comune = trovaComune(ind, a.comune, a.provincia);
-    if (!comune) return { mancante: 'comune non trovato nelle quotazioni OMI' };
+    var cerca = cercaComune(ind, a.comune, a.provincia), comune = cerca.comune;
+    if (!comune) return { mancante: cerca.motivo };
     var tipi = tipologia(a, opz.testo);
     if (!tipi) return { mancante: 'tipologia non quotata dall\'OMI (es. terreni)', comune: comune.nome };
     // per prudenza lo stato "ottimo" scritto nell'avviso non alza il valore (spesso riguarda l'edificio, non l'unità):
@@ -241,12 +269,13 @@
     }
     if (/SUPERFICIE\s+(?:NETTA|CALPESTABILE|UTILE)/.test(tt)) note.push('L\'avviso indica la superficie netta: le quotazioni OMI sono sulla superficie lorda, quindi il valore può essere più alto');
     var cv = ind.compravendite && ind.compravendite[chiaveComune(comune.nome, comune.prov)];
-    if (cv) out.compravendite = cv;
+    // con l'anno delle compravendite la scheda scrive "Nel 2025" invece di "In un anno"
+    if (cv) out.compravendite = ind.anno ? { ntn: cv.ntn, taglia: cv.taglia, anno: String(ind.anno) } : cv;
     return out;
   }
 
   var Omi = { TIP: TIP, NOMI_TIP: NOMI_TIP, FASCE: FASCE, chiaveComune: chiaveComune, leggiCsv: leggiCsv, costruisciIndice: costruisciIndice,
-    trovaComune: trovaComune, tipologia: tipologia, statoOmi: statoOmi, trovaZona: trovaZona, stima: stima };
+    trovaComune: trovaComune, cercaComune: cercaComune, tipologia: tipologia, statoOmi: statoOmi, trovaZona: trovaZona, stima: stima };
   if (typeof module !== 'undefined' && module.exports) module.exports = Omi;
   else root.Omi = Omi;
 })(typeof window !== 'undefined' ? window : globalThis);

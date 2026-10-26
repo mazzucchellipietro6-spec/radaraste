@@ -108,3 +108,62 @@ test('stato "ottimo" scritto nell\'avviso: per prudenza non alza il valore (caso
   assert.equal(s.euroMq.min, 640);
   assert.match(s.note.join(), /per prudenza si usa la quotazione dello stato normale/);
 });
+
+/* Sigle di provincia delle aste diverse dall'indice OMI (bug del 19/10: ~1.000 immobili senza dati OMI, es. Fano).
+ * Nomi e sigle come nell'indice OMI 2025/2; codici, zone, valori e compravendite sono finti. */
+const SIGLE = [['PS', 'FANO'], ['PS', 'PEGLIO'], ['CO', 'PEGLIO'], ['FO', 'FORLI`'], ['BA', 'ANDRIA'], ['FG', 'TRINITAPOLI'], ['MI', 'MONZA'],
+  ['CA', 'CARBONIA'], ['AP', 'SANT`ELPIDIO A MARE'], ['BG', 'CASTRO'], ['LE', 'CASTRO']];
+const ZONE_SIGLE = ZONE.split('\n').slice(0, 2).join('\n') + '\n' +
+  SIGLE.map(([p, n], i) => `X;X;${p};0;Z${i}; ;Z${i};${n};B;'CENTRO';B1;L${i};20;Abitazioni civili;N;1;`).join('\n') + '\n';
+const VALORI_SIGLE = VALORI.split('\n').slice(0, 2).join('\n') + '\nX;X;PS;0;Z0; ;Z0;FANO;B;B1;L0;20;Abitazioni civili;NORMALE;P;1000;1400;L;4;5;L;\n';
+const VCN = { listaCom: 'Area;Regione;Provincia;2025_CodCom;Comune;Cap;TAGLIA MERCATO\nX;X;PS;Z0;FANO;0;M\n',
+  valoriRes: 'Area;Regione;Provincia;2025_CodCom;NTN 2025 fino a 50 mq;NTN_2025\nX;X;PS;Z0;10;512,5\n', anno: null };
+const indSigle = Omi.costruisciIndice(ZONE_SIGLE, VALORI_SIGLE, VCN);
+// caso reale pvp-4635797
+const FANO = { categoria: 'immobile', tipo: 'Immobile residenziale', comune: 'Fano', provincia: 'PU', indirizzo: 'Via Alessandro Brenci n. 6', superficieMq: 222,
+  titolo: 'Unità immobiliare sita in Fano, Via Alessandro Brenci, n. 6' };
+
+test('sigle diverse dall\'indice OMI: PU è PS, FC è FO (casi reali Fano pvp-4635797, Forlì pvp-4613346, Peglio pvp-4630242)', () => {
+  assert.equal(Omi.trovaComune(indSigle, 'Fano', 'PU').prov, 'PS');
+  assert.equal(Omi.trovaComune(indSigle, 'Forlì', 'FC').nome, 'FORLI`');
+  // Peglio c'è anche in provincia di Como: con la sigla PU si prende quello di Pesaro e Urbino
+  assert.equal(Omi.trovaComune(indSigle, 'Peglio', 'PU').prov, 'PS');
+});
+
+test('Fano (PU): valore OMI e compravendite con l\'anno, la scheda scrive "Nel 2025"', () => {
+  const s = Omi.stima(FANO, indSigle, {});
+  assert.equal(s.comune, 'FANO');
+  assert.deepEqual(s.valore, { min: 222000, max: 310800, centrale: 266400 });
+  assert.deepEqual(s.compravendite, { ntn: 512.5, taglia: 'M', anno: '2025' });
+  const SD = require('../js/scheda-dati.js');
+  assert.match(SD.zona({ ...FANO, omi: s }).omi.compravendite.testo, /^Nel 2025 a /);
+  // indice senza anno: compravendite come prima (la scheda scrive "In un anno")
+  assert.deepEqual(Omi.stima(FANO, { ...indSigle, anno: null }, {}).compravendite, { ntn: 512.5, taglia: 'M' });
+});
+
+test('anno delle compravendite dalla colonna NTN_2025, anche se il nome del file dice altro', () => {
+  assert.equal(indSigle.anno, '2025');
+  assert.equal(Omi.costruisciIndice(ZONE_SIGLE, VALORI_SIGLE, { ...VCN, anno: '2024' }).anno, '2025');
+});
+
+test('province nate dopo l\'indice OMI (MB, SU, BT, FM): il comune si cerca nelle province da cui sono nate (casi reali)', () => {
+  assert.equal(Omi.trovaComune(indSigle, 'Andria', 'BT').prov, 'BA');        // pvp-4620844
+  assert.equal(Omi.trovaComune(indSigle, 'Trinitapoli', 'BT').prov, 'FG');   // pvp-4636781
+  assert.equal(Omi.trovaComune(indSigle, 'Monza', 'MB').prov, 'MI');         // pvp-4630879
+  assert.equal(Omi.trovaComune(indSigle, 'Carbonia', 'SU').prov, 'CA');      // pvp-4616674
+  assert.equal(Omi.trovaComune(indSigle, 'Sant\'Elpidio a Mare', 'FM').nome, 'SANT`ELPIDIO A MARE'); // pvp-4618077
+  // fuori dalle province d'origine solo un nome unico in tutta Italia (caso costruito)
+  assert.equal(Omi.trovaComune(indSigle, 'Fano', 'FM').prov, 'PS');
+});
+
+test('omonimo ambiguo: nessun abbinamento, con il motivo', () => {
+  // Castro c'è in provincia di Bergamo e di Lecce, nessuno dei due nelle province d'origine della BAT (Bari, Foggia).
+  // Asta costruita: nei dati del 22/10 nessuna asta delle province nuove ha un nome ambiguo.
+  assert.equal(Omi.trovaComune(indSigle, 'Castro', 'BT'), null);
+  const s = Omi.stima({ categoria: 'immobile', tipo: 'Immobile residenziale', comune: 'Castro', provincia: 'BT', superficieMq: 80 }, indSigle, {});
+  assert.equal(s.valore, undefined);
+  assert.match(s.mancante, /più comuni con questo nome/);
+  // con la sigla giusta si trova; una sigla vecchia senza il comune resta "non trovato"
+  assert.equal(Omi.trovaComune(indSigle, 'Castro', 'LE').prov, 'LE');
+  assert.equal(Omi.stima({ categoria: 'immobile', comune: 'Castro', provincia: 'BA' }, indSigle, {}).mancante, 'comune non trovato nelle quotazioni OMI');
+});
