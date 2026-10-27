@@ -4,7 +4,7 @@ Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce camb
 
 Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ aspetta una tua decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 26/10/2026 (giro della squadra).
+Ultimo aggiornamento: 27/10/2026 (giro della squadra).
 
 ---
 
@@ -132,8 +132,11 @@ Ultimo aggiornamento: 26/10/2026 (giro della squadra).
 
 - 🔄 **Pull request [#4](https://github.com/mazzucchellipietro6-spec/radaraste/pull/4)**: correzioni del sito pubblicato rivedute dal Revisore il 26/10, più tutto il lavoro dal 19/10. Per pubblicare premi **Merge**.
 - 🔄 **Zona abbonamenti in modalità TEST** (vedi "Da decidere", punto 2). È tutta spenta finché non crei gli account. Nel sito pubblicato le pagine prezzi, account e bozze legali esistono ma non sono collegate da nessun menu.
-  - Pronti e riveduti: piani e blocchi (`config/abbonamenti.js`, `js/piani.js`) e funzioni Stripe di prova (`functions/`, `servizi/`), con i loro test.
-  - Scritti ma **non ancora riveduti** (i revisori si sono fermati sul limite d'uso): account e accesso con lo schema del database, pagina prezzi, bozze legali, guida `ABBONAMENTI.md`, preparazione per Cloudflare Pages. Prossimi giri della squadra.
+  - Pronti e riveduti:
+    - piani e blocchi (`config/abbonamenti.js`, `js/piani.js`) e funzioni Stripe di prova (`functions/`, `servizi/`);
+    - dal 27/10 anche account e accesso, con lo schema del database (provato su PostgreSQL), la pagina prezzi e le bozze legali.
+    - La revisione dell'account ha trovato e chiuso due falle gravi: si poteva far entrare qualcuno nell'account di un altro con un link, e i dati di una persona potevano finire nell'account di un'altra.
+  - Da rivedere: preparazione per Cloudflare Pages (`_headers`, `wrangler.toml`, passo nel workflow) e il resto della guida `ABBONAMENTI.md`.
 - 🔄 **Stratega su più anni**: calcolo della proiezione scritto e provato; mancano pagina e grafico.
 - ✅ **Squadra quotidiana** attiva dal 20/10 ([SQUADRA.md](SQUADRA.md)). Dal 26/10 lavora leggera: al massimo 3 agenti al giorno.
 
@@ -176,6 +179,16 @@ Ultimo aggiornamento: 26/10/2026 (giro della squadra).
 ---
 
 ## Da decidere ⏸ (per te)
+
+**Nuove del 27/10 (abbonamenti, da vedere con calma prima di attivarli):**
+- **Rimborso alla cancellazione dell'account:** oggi il server annulla l'abbonamento senza rimborsare la parte già pagata.
+- **IVA:** regime IVA del titolare e IVA per i clienti degli altri Paesi UE (segnaposto nei termini).
+- **Recesso:** per non dover rimborsare tutto a chi recede entro 14 giorni, prima del pagamento serve una casella "inizia subito" (art. 57 c. 3). Da decidere con il professionista, insieme ai ruoli di Stripe, alla sede di Supabase e a quando partono i 14 giorni con la prova gratuita.
+- **Prova gratuita:** il server la controlla per account; chi cancella l'account e lo ricrea con la stessa email può riaverla. Va bene così?
+- **Link di accesso via email:** vanno aperti nello stesso browser in cui si chiedono (protezione PKCE). Le app di posta con il loro browser interno non funzionano: in futuro si può usare un codice di 6 cifre.
+- **Computer condivisi:** uscendo, i dati restano nel browser. Serve un pulsante "Esci e cancella i dati"?
+- **Registrazione con Google:** il consenso alle condizioni non viene registrato nell'account.
+- **GitHub Pages:** se il sito resta anche lì, va scritto nell'informativa privacy.
 
 **Nuove del 26/10:**
 - **Limiti d'uso della squadra.** Il 22/10 un giro di 5 agenti ha esaurito il limite settimanale del tuo piano: i giri del 23, 24 e 25 sono saltati. Ora la squadra lavora leggera. Se vuoi che faccia di più ogni giorno serve un piano Claude con limiti più alti; altrimenti va bene così, solo più lenta.

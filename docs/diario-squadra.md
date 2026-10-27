@@ -4,6 +4,17 @@ Un paragrafo per ogni giro del mattino, il più recente in alto: come sta il sit
 
 ---
 
+## 27/10/2026 – zona abbonamenti riveduta
+
+- **Sito pubblicato:** funziona, la raccolta n. 20 su GitHub è riuscita. La pull request #4 aspetta il tuo Merge.
+- **Controllo del giorno** (Controllore dei dati): saltato, perché i dati locali non sono di oggi.
+- **Lavori:** riviste la pagina prezzi e le bozze legali (testi come il server, segnaposto dove i dati non sono certi, servizi esterni in privacy e cookie) e l'account con il database. In quest'ultimo, due falle gravi chiuse:
+  - un link poteva far entrare qualcuno nell'account di un altro (ora c'è l'accesso con PKCE);
+  - i dati di una persona potevano finire nell'account di un'altra.
+- **Revisore indipendente:** pronto. Ha corretto lo schema perché si possa rieseguire e un caso con due link chiesti di seguito.
+- **Test:** 395 su 395.
+- **Per te:** nuove decisioni sugli abbonamenti in ROADMAP (rimborsi, IVA, recesso, prova gratuita); niente di urgente, gli abbonamenti restano spenti.
+
 ## 26/10/2026 – giro leggero, correzioni rivedute
 
 - **Sito pubblicato:** funziona. Le raccolte su GitHub del 23, 24, 25 e 26/10 sono tutte riuscite.
