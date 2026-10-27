@@ -108,7 +108,8 @@ test('privacy: informativa art. 13 con titolare, dati, basi giuridiche, fornitor
   const t = await leggi('privacy.html');
   for (const s of ['art. 13 del Regolamento (UE) 2016/679', 'Titolare del trattamento', 'email', 'Stripe', 'non li vede e non li conserva',
     'art. 6, par. 1, lett. b', 'art. 6, par. 1, lett. c', 'art. 6, par. 1, lett. f', 'Per quanto tempo', 'art. 2220 del Codice civile',
-    'Supabase', 'Cloudflare', 'Servizio di invio email', 'art. 28', 'Stati Uniti', 'art. 45', 'art. 46',
+    'Supabase', 'Cloudflare', 'Servizi di invio email', 'art. 28', 'Stati Uniti', 'art. 45', 'art. 46',
+    'Responsabile della protezione dei dati', 'Dati obbligatori e facoltativi', 'Decisioni automatizzate', 'Legittimo interesse', 'art. 77 GDPR',
     'artt. 15-22', 'art. 15', 'art. 16', 'art. 17', 'art. 18', 'art. 20', 'art. 21', 'art. 22', 'art. 77',
     'href="https://www.garanteprivacy.it"']) assert.ok(t.includes(s), 'privacy: ' + s);
 });
@@ -347,4 +348,116 @@ test('codice per il browser in ES5, nessuna emoji, nessuna chiave', async () => 
     assert.doesNotMatch(t, /\p{Extended_Pictographic}/u, f + ': emoji');
     assert.doesNotMatch(t, /sk_(?:live|test)_|pk_(?:live|test)_|rk_(?:live|test)_|whsec_|eyJ[A-Za-z0-9_-]{20,}/, f + ': chiave');
   }
+});
+
+/* ---------- revisione: coerenza con quello che il sito fa davvero, interruttore, contrasto ---------- */
+
+test('interruttore Mensile/Annuale: due radio vere in un fieldset con legenda, risparmio nell\'etichetta, focus visibile', async () => {
+  const t = await leggi('prezzi.html'), css = await leggi('assets/css/abbonamenti.css'), js = await leggi('js/pages/prezzi.js');
+  const f = t.match(/<fieldset class="pz-periodo">([\s\S]*?)<\/fieldset>/);
+  assert.ok(f, 'fieldset dell\'interruttore');
+  assert.match(f[1], /^\s*<legend class="sr-only">Periodo di pagamento<\/legend>/);
+  const radio = [...f[1].matchAll(/<label class="pz-scelta"><input type="radio" name="pzPeriodo" value="(\w+)"( checked)?><span>/g)];
+  assert.deepEqual(radio.map((m) => m[1]), ['mensile', 'annuale'], 'ogni radio dentro la sua etichetta');
+  assert.deepEqual(radio.map((m) => Boolean(m[2])), [true, false], 'all\'avvio è scelto Mensile');
+  assert.match(f[1], /value="annuale"><span>Annuale <span class="pill p-good" id="pzRisparmio" hidden><\/span><\/span>/, 'il risparmio fa parte del nome di "Annuale"');
+  // niente pulsanti con aria-pressed al posto di una scelta esclusiva
+  assert.doesNotMatch(t, /aria-pressed|data-periodo/);
+  assert.ok(js.includes('input[name="pzPeriodo"]') && js.includes('\'change\''), 'la pagina ascolta le radio');
+  assert.match(css, /\.pz-scelta input\[type=radio\] \{[^}]*opacity: 0;/, 'radio invisibile ma raggiungibile');
+  assert.doesNotMatch(css, /\.pz-scelta input[^{]*\{[^}]*display: none/, 'una radio con display:none non si raggiunge con la tastiera');
+  assert.match(css, /\.pz-scelta input:checked \+ span \{[^}]*background: var\(--accent\)/);
+  assert.match(css, /\.pz-scelta input:focus-visible \+ span \{[^}]*outline: 2px solid var\(--accent\)/);
+});
+
+test('contrasto: i colori delle pagine degli abbonamenti si leggono in tema chiaro e scuro (almeno 4,5:1)', async () => {
+  const style = await leggi('assets/css/style.css'), css = await leggi('assets/css/abbonamenti.css');
+  const blocco = (sel) => {
+    const i = style.indexOf(sel + ' {');
+    assert.ok(i >= 0, 'token di ' + sel);
+    const o = {};
+    for (const m of style.slice(i, style.indexOf('}', i)).matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})\b/g)) o[m[1]] = m[2];
+    return o;
+  };
+  const rgb = (h) => (Array.isArray(h) ? h : [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
+  const lum = (h) => rgb(h).map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
+  const contrasto = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const misto = (a, b, p) => rgb(a).map((x, i) => Math.round(x * p + rgb(b)[i] * (1 - p)));
+  // testo (primo colore) sullo sfondo (secondo) come li usa assets/css/abbonamenti.css
+  const COPPIE = [['muted', 'surface'], ['muted', 'bg'], ['muted', 'surface-3'], ['fg-2', 'surface'], ['accent-ink', 'accent'], ['accent-ink', 'good'],
+    ['good', 'surface'], ['good', 'good-bg'], ['warn', 'warn-bg'], ['info', 'info-bg'], ['fg', 'warn-bg'], ['fg', 'info-bg']];
+  for (const [tema, t] of [['chiaro', blocco(':root')], ['scuro', blocco(':root[data-theme="dark"]')]]) {
+    for (const [a, b] of COPPIE) assert.ok(contrasto(t[a], t[b]) >= 4.5, tema + ': --' + a + ' su --' + b + ' = ' + contrasto(t[a], t[b]).toFixed(2));
+    // colonna del piano consigliato nella tabella (--accent-soft al 60% sulla superficie)
+    const colonna = misto(t['accent-soft'], t.surface, 0.6);
+    for (const a of ['muted', 'fg-2', 'accent']) assert.ok(contrasto(t[a], colonna) >= 4.5, tema + ': --' + a + ' sulla colonna Pro');
+  }
+  // --faint non basta per un testo (2,9:1 nel tema chiaro): il trattino "non incluso" usa --muted
+  assert.doesNotMatch(css, /(?<![\w-])color:\s*var\(--faint\)/);
+  assert.match(css, /\.pz-no \{ color: var\(--muted\); \}/);
+});
+
+test('vantaggi dei piani: "in arrivo" solo per ciò che il sito non fa ancora, il resto esiste davvero', async () => {
+  const vantaggi = CFG.piani.flatMap((p) => p.vantaggi.map((v) => ({ piano: p.id, v })));
+  const inArrivo = vantaggi.filter((x) => /\(in arrivo\)$/.test(x.v));
+  // la tabella (Prezzi.IN_ARRIVO) e le schede (vantaggi della configurazione) dicono la stessa cosa
+  const PAROLA = { avvisi: /avvisi/i, 'consulente-ai': /intelligenza artificiale/i, 'statistiche-avanzate': /statistiche/i };
+  assert.equal(inArrivo.length, Prezzi.IN_ARRIVO.length, 'vantaggi "(in arrivo)": ' + inArrivo.map((x) => x.v).join(' | '));
+  for (const f of Prezzi.IN_ARRIVO) {
+    assert.ok(PAROLA[f], f + ': aggiungi la parola chiave a questo test');
+    assert.ok(inArrivo.some((x) => x.piano === CFG.funzioni[f] && PAROLA[f].test(x.v)), f + ': manca "(in arrivo)" tra i vantaggi del piano ' + CFG.funzioni[f]);
+  }
+  // quello che è "in arrivo" non c'è ancora: il consulente con intelligenza artificiale è spento
+  assert.equal(require('../config/consulente.js').ponte, null, 'consulente con IA acceso: togli "(in arrivo)" dai piani e da Prezzi.IN_ARRIVO');
+  // quello che si vende come pronto esiste nel sito
+  assert.ok(!Prezzi.IN_ARRIVO.includes('report-pdf'));
+  assert.ok(vantaggi.some((x) => x.piano === 'base' && /^Report PDF/.test(x.v) && !/in arrivo/.test(x.v)), 'report PDF tra i vantaggi del Base');
+  assert.ok((await leggi('js/pages/scheda.js')).includes('Stampa o salva in PDF'), 'il report PDF è nella scheda dell\'asta');
+  assert.ok(vantaggi.some((x) => /promemoria in calendario/.test(x.v)));
+  assert.ok((await leggi('js/pages/scheda.js')).includes('text/calendar') && (await leggi('js/pages/mie-aste.js')).includes('text/calendar'), 'promemoria .ics');
+  assert.ok(vantaggi.some((x) => x.piano === 'pro' && /migliaia di scenari simulati/.test(x.v)));
+  assert.ok(require('../js/stratega.js').PARAMETRI.simulazioni >= 1000, 'lo Stratega simula migliaia di scenari');
+  // i limiti del piano Gratis vengono dalla configurazione, mai scritti a mano nella pagina
+  const t = await leggi('prezzi.html');
+  for (const n of Object.values(CFG.limitiGratis)) assert.doesNotMatch(testo(t), new RegExp('(?:primi|prime|fino a)\\s+' + n + '\\b', 'i'));
+});
+
+test('termini e domande frequenti come il server: prova solo al primo abbonamento, cancellazione che annulla l\'abbonamento', async () => {
+  const termini = await leggi('termini.html'), prezzi = await leggi('prezzi.html');
+  const checkout = await leggi('functions/api/stripe/checkout.js'), cancella = await leggi('functions/api/account/cancella.js');
+  // functions/api/stripe/checkout.js dà la prova solo a chi non ha mai avuto un abbonamento
+  assert.match(checkout, /const prova = piano === 'pro' && !haGiaAvuto\(precedente\) && !suStripe\.length;/);
+  assert.equal(CFG.prova.piano, 'pro');
+  for (const [f, t] of [['termini', termini], ['prezzi', prezzi]]) {
+    assert.ok(t.includes('solo al primo abbonamento'), f + ': prova solo al primo abbonamento');
+    assert.doesNotMatch(t, /una sola volta per persona/, f + ': il server controlla l\'account, non la persona');
+  }
+  // functions/api/account/cancella.js annulla subito l'abbonamento Stripe prima di cancellare l'account
+  assert.match(cancella, /chiamaStripe\(env, 'DELETE', '\/subscriptions\/'/);
+  assert.ok(termini.includes('Se cancelli l\'account, anche l\'abbonamento in corso viene annullato subito'));
+  assert.doesNotMatch(termini, /non annulla da sola/);
+  // IVA: dipende dal regime fiscale, che decide il titolare
+  assert.ok(termini.includes('[DA COMPLETARE: regime IVA del titolare'));
+});
+
+test('privacy e cookie: ogni servizio esterno che il browser contatta è descritto', async () => {
+  const privacy = await leggi('privacy.html'), cookie = await leggi('cookie.html'), headers = await leggi('_headers');
+  const csp = headers.match(/Content-Security-Policy: ([^\n]+)/)[1];
+  const host = [...csp.matchAll(/https:\/\/([^\s;]+)/g)].map((m) => m[1]);
+  assert.ok(host.length >= 3, 'indirizzi esterni nella CSP');
+  // indirizzo esterno → nome del servizio nelle due pagine (Supabase solo nell'informativa: nel browser c'è la sessione, già descritta)
+  const SERVIZIO = { 'tile.openstreetmap.org': 'OpenStreetMap', 'nominatim.openstreetmap.org': 'OpenStreetMap', 'resource-pvp.giustizia.it': 'Portale delle Vendite Pubbliche', '*.supabase.co': 'Supabase' };
+  for (const h of host) {
+    assert.ok(SERVIZIO[h], h + ': servizio nuovo nella Content-Security-Policy, descrivilo in privacy.html e cookie.html e aggiungilo a questo test');
+    assert.ok(privacy.includes(SERVIZIO[h]), 'privacy.html: ' + SERVIZIO[h]);
+    if (h !== '*.supabase.co') assert.ok(cookie.includes(SERVIZIO[h]), 'cookie.html: ' + SERVIZIO[h]);
+  }
+  // il sito oggi è pubblicato anche su GitHub Pages (workflow): chi lo ospita riceve i dati di navigazione
+  if ((await leggi('.github/workflows/aggiorna-aste.yml')).includes('actions/configure-pages')) assert.ok(privacy.includes('GitHub Pages'));
+  // le email sull'abbonamento partono con Resend (servizi/email.js)
+  if ((await leggi('servizi/email.js')).includes('api.resend.com')) assert.ok(privacy.includes('Resend'));
+  // fornitori: solo nomi e sedi certi, il resto è un segnaposto
+  assert.doesNotMatch(privacy, /Supabase[^<]{0,30}\(Stati Uniti\)/, 'sede di Supabase da verificare nel suo accordo');
+  assert.ok(privacy.includes('[DA COMPLETARE: ragione sociale e sede di Supabase'));
+  assert.ok(privacy.includes('[DA COMPLETARE: verificare nell\'accordo di Stripe'));
 });

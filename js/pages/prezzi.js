@@ -1,5 +1,5 @@
 /* Pagina "Prezzi": piani e prezzi letti da config/abbonamenti.js (nell'HTML non c'è nessun prezzo), interruttore
- * Mensile/Annuale, tabella di confronto delle funzioni e pulsanti per abbonarsi.
+ * Mensile/Annuale (due radio in un fieldset), tabella di confronto delle funzioni e pulsanti per abbonarsi.
  *
  * Cosa fa il pulsante di un piano a pagamento (funzione azione):
  *   abbonamenti spenti e niente anteprima      → disattivato, con la spiegazione
@@ -265,12 +265,13 @@
     var ctx = contesto(), c = ctx.cfg;
     $('#pzAnteprima').innerHTML = P ? P.avvisoAnteprima() : '';
     $('#pzTest').hidden = c.modalita !== 'test';
-    $('#pzTestCarta').hidden = !ctx.vendita;
+    // la carta di prova serve solo quando si può davvero arrivare alla pagina di pagamento (account configurati)
+    $('#pzTestCarta').hidden = !(ctx.vendita && ctx.configurato);
     $('#pzSpenti').hidden = ctx.attivi;
     $('#pzSpentiPulsanti').textContent = ctx.anteprima
       ? 'Stai vedendo l\'anteprima per il proprietario: i prezzi sono una proposta e i pulsanti portano alla pagina di accesso, con pagamenti solo di prova. Gli altri visitatori vedono tutte le funzioni libere.'
       : 'I prezzi qui sotto sono una proposta: i pulsanti per abbonarsi restano disattivati finché gli abbonamenti non partono.';
-    U.$$('[data-periodo]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-periodo') === periodo)); });
+    U.$$('input[name="pzPeriodo"]').forEach(function (r) { r.checked = r.value === periodo; });
     var et = etichettaAnnuale(c), pill = $('#pzRisparmio');
     pill.textContent = et; pill.hidden = !et;
     $('#pzPiani').innerHTML = (c.piani || []).length ? c.piani.map(function (p) { return htmlPiano(p, ctx); }).join('') : '<p class="muted">Nessun piano configurato.</p>';
@@ -305,8 +306,9 @@
     var q = null, pagamento = null;
     try { q = new URLSearchParams(root.location.search); pagamento = q.get('pagamento'); q = q.get('periodo'); } catch (e) { q = null; }
     if (q === 'annuale') periodo = 'annuale';
-    U.$$('[data-periodo]').forEach(function (b) {
-      b.addEventListener('click', function () { periodo = b.getAttribute('data-periodo') === 'annuale' ? 'annuale' : 'mensile'; rendi(); });
+    // interruttore Mensile/Annuale: due radio vere (frecce della tastiera, una sola scelta, letto bene dai lettori di schermo)
+    U.$$('input[name="pzPeriodo"]').forEach(function (r) {
+      r.addEventListener('change', function () { if (r.checked) { periodo = r.value === 'annuale' ? 'annuale' : 'mensile'; rendi(); } });
     });
     $('#pzPiani').addEventListener('click', clic);
     document.addEventListener('radaraste:account', function () { letto = null; if (!inCorso) rendi(); });

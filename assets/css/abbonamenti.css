@@ -32,12 +32,16 @@
 .pz-test strong { color: var(--info); font-weight: 600; }
 .pz-spenti p + p { margin-top: 6px; }
 
-.pz-periodo { justify-self: center; display: inline-flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line-2); border-radius: calc(var(--r-ctrl) + 4px); }
-.pz-scelta { font: inherit; font-size: 14.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 18px; border: 0; border-radius: var(--r-ctrl); background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; transition: background var(--dur-2) var(--ease), color var(--dur-2); -webkit-tap-highlight-color: transparent; }
-.pz-scelta:hover { color: var(--fg); }
-.pz-scelta[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
-@media (max-width: 899px), (pointer: coarse) { .pz-scelta { min-height: 44px; } }
-@media (max-width: 400px) { .pz-scelta { padding-inline: 12px; } }
+/* interruttore Mensile/Annuale: fieldset con due radio vere; la radio, invisibile, copre tutta la sua etichetta */
+.pz-periodo { justify-self: center; display: inline-flex; gap: 4px; margin: 0; min-width: 0; padding: 4px; background: var(--surface); border: 1px solid var(--line-2); border-radius: calc(var(--r-ctrl) + 4px); }
+.pz-scelta { position: relative; display: inline-flex; }
+.pz-scelta input[type=radio] { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; margin: 0; opacity: 0; cursor: pointer; }
+.pz-scelta > span { font-size: 14.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 18px; border-radius: var(--r-ctrl); color: var(--muted); white-space: nowrap; transition: background var(--dur-2) var(--ease), color var(--dur-2); -webkit-tap-highlight-color: transparent; }
+.pz-scelta:hover > span { color: var(--fg); }
+.pz-scelta input:checked + span { background: var(--accent); color: var(--accent-ink); }
+.pz-scelta input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 899px), (pointer: coarse) { .pz-scelta > span { min-height: 44px; } }
+@media (max-width: 400px) { .pz-scelta > span { padding-inline: 12px; } }
 
 /* ---------- pagina Prezzi: i piani ---------- */
 .pz-piani { display: grid; gap: 22px 18px; grid-template-columns: minmax(0, 1fr); align-items: stretch; padding-top: 8px; }
@@ -88,7 +92,8 @@
 .pz-confronto tbody tr:last-child th { border-bottom: 0; }
 .pz-confronto .pz-col-consigliato { background: color-mix(in srgb, var(--accent-soft) 60%, transparent); }
 .pz-confronto thead .pz-col-consigliato { color: var(--accent); }
-.pz-no { color: var(--faint); }
+/* --muted e non --faint: il trattino "non incluso" deve avere un contrasto sufficiente anche sulla colonna evidenziata */
+.pz-no { color: var(--muted); }
 /* su telefono: il nome della funzione su una riga, sotto i tre piani affiancati con la loro etichetta */
 @media (max-width: 640px) {
   .pz-confronto, .pz-confronto tbody { display: block; }

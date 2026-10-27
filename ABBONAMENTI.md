@@ -28,7 +28,7 @@ Questa guida spiega la "zona abbonamenti" del sito: cosa è già pronto, quanto 
 - l'approvazione dei prezzi (quelli qui sotto sono una **proposta**);
 - i tuoi dati di titolare, la partita IVA e le scelte fiscali;
 - un dominio tuo, se vuoi inviare email agli utenti (vedi passo 4);
-- alcune funzioni elencate nei piani sono segnate "(in arrivo)": report PDF, avvisi sulle aste nuove, consulente con intelligenza artificiale, statistiche avanzate. Non si possono vendere finché non esistono davvero.
+- alcune funzioni elencate nei piani sono segnate "(in arrivo)": avvisi sulle aste nuove, consulente con intelligenza artificiale, statistiche avanzate. Non si possono vendere finché non esistono davvero.
 
 **Anteprima solo per te.** Aggiungi `?anteprima=abbonamenti` all'indirizzo di una pagina (per esempio `prezzi.html?anteprima=abbonamenti`): vedi blocchi e prezzi con la fascia "Anteprima abbonamenti – modalità test: nessun pagamento reale". Resta attiva finché tieni aperta la scheda del browser; `?anteprima=no` la spegne. Gli altri visitatori non vedono nulla.
 
@@ -41,7 +41,7 @@ Prezzi in euro, IVA inclusa. L'annuale costa come 10 mesi: due mesi gratis.
 | Piano | Al mese | All'anno | Per chi | Cosa include |
 |---|---|---|---|---|
 | **Gratis** | 0 € | 0 € | Chi cerca aste e fa i conti | Elenco, mappa, schede, calcolatore, mutuo, confronto, guida, consulente con le regole del sito. I primi 3 affari di oggi, le prime 3 combinazioni d'oro, fino a 10 aste seguite. |
-| **Base** | 9 € | 90 € (risparmio 18 €) | Chi segue le aste con costanza | Tutti gli affari di oggi e la selezione personale, tutte le combinazioni d'oro, aste seguite senza limite; report PDF e avvisi (in arrivo). |
+| **Base** | 9 € | 90 € (risparmio 18 €) | Chi segue le aste con costanza | Tutti gli affari di oggi e la selezione personale, tutte le combinazioni d'oro, aste seguite senza limite, report PDF di ogni asta; avvisi (in arrivo). |
 | **Pro** (consigliato) | 24 € | 240 € (risparmio 48 €) | Chi investe con un piano | Tutto il Base, lo Stratega d'asta; consulente con intelligenza artificiale e statistiche avanzate (in arrivo). |
 
 **Prova gratuita:** 14 giorni del piano Pro, una sola volta per persona (solo a chi non ha mai avuto un abbonamento). Si inserisce la carta all'inizio; chi disdice prima della fine non paga nulla, e tre giorni prima della scadenza Stripe manda l'avviso che il sito trasforma in un'email.

@@ -27,21 +27,22 @@
   <div class="as-testa pz-testa">
     <p class="eyebrow"><svg class="icona" aria-hidden="true"><use href="#i-euro"/></svg>Piani e prezzi</p>
     <h1>Le aste restano libere, <em>gli assistenti lavorano per te</em></h1>
-    <p class="sub">Elenco, mappa, schede e calcoli sono gratuiti. Con Base e Pro sblocchi tutti gli affari del giorno, le combinazioni e lo Stratega d'asta. Disdici quando vuoi.</p>
+    <p class="sub">Elenco, mappa, schede e calcoli sono gratuiti. Con Base sblocchi tutti gli affari del giorno e tutte le combinazioni d'oro, con Pro anche lo Stratega d'asta. Disdici quando vuoi.</p>
   </div>
 
   <div class="pz-avvisi">
-    <p class="pz-test" id="pzTest" role="note"><svg class="icona" aria-hidden="true"><use href="#i-allerta"/></svg><span><strong>Modalità test: nessun pagamento reale.</strong> Stripe è collegato solo in modalità di prova: nessuna carta viene addebitata. <span id="pzTestCarta" hidden>Per provare il pagamento usa la carta di prova di Stripe 4242 4242 4242 4242, una scadenza futura e un codice di sicurezza qualsiasi.</span></span></p>
+    <p class="pz-test" id="pzTest" role="note"><svg class="icona" aria-hidden="true"><use href="#i-allerta"/></svg><span><strong>Modalità test: nessun pagamento reale.</strong> Gli abbonamenti usano Stripe solo in modalità di prova: nessuna carta viene addebitata. <span id="pzTestCarta" hidden>Per provare il pagamento usa la carta di prova di Stripe 4242 4242 4242 4242, una scadenza futura e un codice di sicurezza qualsiasi.</span></span></p>
     <div class="callout warn pz-spenti" id="pzSpenti" role="note">
       <p><strong>Abbonamenti non ancora attivi.</strong> Oggi tutte le funzioni del sito sono libere per tutti, senza account e senza pagare.</p>
       <p id="pzSpentiPulsanti">I prezzi qui sotto sono una proposta: i pulsanti per abbonarsi restano disattivati finché gli abbonamenti non partono.</p>
     </div>
   </div>
 
-  <div class="pz-periodo" role="group" aria-label="Periodo di pagamento">
-    <button class="pz-scelta" type="button" data-periodo="mensile" aria-pressed="true">Mensile</button>
-    <button class="pz-scelta" type="button" data-periodo="annuale" aria-pressed="false">Annuale <span class="pill p-good" id="pzRisparmio" hidden></span></button>
-  </div>
+  <fieldset class="pz-periodo">
+    <legend class="sr-only">Periodo di pagamento</legend>
+    <label class="pz-scelta"><input type="radio" name="pzPeriodo" value="mensile" checked><span>Mensile</span></label>
+    <label class="pz-scelta"><input type="radio" name="pzPeriodo" value="annuale"><span>Annuale <span class="pill p-good" id="pzRisparmio" hidden></span></span></label>
+  </fieldset>
 
   <div class="pz-piani" id="pzPiani"><p class="muted">Carico i piani…</p></div>
   <div class="pz-esito" id="pzEsito" role="status"></div>
@@ -68,7 +69,8 @@
       <details class="box" id="pzFaqProva">
         <summary>Come funziona la prova gratuita?</summary>
         <div class="inner">
-          <p>Il piano <span data-cfg="prova-piano">Pro</span> si prova gratis per <span data-cfg="prova-giorni">alcuni</span> giorni. Se lo disdici durante la prova non paghi nulla; altrimenti alla fine della prova l'abbonamento parte con il periodo che hai scelto e si rinnova automaticamente.</p>
+          <p>Il piano <span data-cfg="prova-piano">Pro</span> si prova gratis per <span data-cfg="prova-giorni">alcuni</span> giorni, solo al primo abbonamento: chi ha già avuto un abbonamento o una prova non ne ha un'altra. All'inizio si indica un metodo di pagamento, che durante la prova non viene addebitato.</p>
+          <p>Se disdici durante la prova non paghi nulla; altrimenti alla fine della prova l'abbonamento parte con il periodo che hai scelto e si rinnova automaticamente.</p>
         </div>
       </details>
       <details class="box">
@@ -80,7 +82,7 @@
       <details class="box">
         <summary>Chi gestisce i pagamenti?</summary>
         <div class="inner">
-          <p>Stripe, uno dei principali servizi di pagamento online. I dati della carta li inserisci sulla pagina sicura di Stripe: Radar Aste Italia non li vede e non li conserva, riceve solo l'esito del pagamento e le date dell'abbonamento.</p>
+          <p>Stripe, un servizio di pagamento online. I dati della carta li inserisci sulla pagina sicura di Stripe: Radar Aste Italia non li vede e non li conserva, riceve solo l'esito del pagamento e le date dell'abbonamento.</p>
         </div>
       </details>
       <details class="box">
@@ -98,7 +100,8 @@
       <details class="box">
         <summary>Che cosa resta gratis?</summary>
         <div class="inner">
-          <p>Le aste raccolte ogni giorno dalle fonti ufficiali con filtri, mappa e scheda, il calcolatore "Conviene?", il simulatore del mutuo, il confronto, la guida, le tariffe e il consulente con le regole del sito. Senza account le aste che segui restano salvate nel tuo browser.</p>
+          <p>Le aste raccolte ogni giorno dalle fonti ufficiali con filtri, mappa e scheda, il calcolatore "Conviene?", il simulatore del mutuo, il confronto, la guida, le tariffe e il consulente con le regole del sito. Gli affari di oggi, le combinazioni d'oro e le aste seguite sono gratis fino ai limiti indicati nella tabella qui sopra.</p>
+          <p>Senza account le aste che segui restano salvate nel tuo browser.</p>
         </div>
       </details>
     </div>
