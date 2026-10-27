@@ -1,7 +1,8 @@
 -- RADAR ASTE ITALIA — account e abbonamenti (Supabase, PostgreSQL). MODALITÀ TEST.
 -- -------------------------------------------------------------------------------------------------------------------
 -- Da eseguire nell'editor SQL del progetto Supabase (SQL Editor → New query → Run). È idempotente: si può rieseguire
--- senza perdere dati (create ... if not exists, create or replace, drop policy/trigger if exists).
+-- senza perdere dati (create ... if not exists, create or replace, drop policy if exists). Serve PostgreSQL 14 o
+-- successivo (create or replace trigger).
 --
 -- Tabelle
 --   profili        una riga per utente (email), creata da sola alla registrazione
@@ -93,8 +94,9 @@ end;
 $$;
 comment on function public.radaraste_nuovo_utente() is 'Alla registrazione crea il profilo e la riga dell''abbonamento con il piano Gratis.';
 
-drop trigger if exists radaraste_nuovo_utente on auth.users;
-create trigger radaraste_nuovo_utente
+-- create or replace (non drop + create): per togliere un trigger da auth.users bisogna esserne il proprietario, per
+-- crearlo o sostituirlo basta il permesso TRIGGER; così lo schema si riesegue anche senza possedere auth.users
+create or replace trigger radaraste_nuovo_utente
   after insert on auth.users
   for each row execute function public.radaraste_nuovo_utente();
 
@@ -112,8 +114,7 @@ end;
 $$;
 comment on function public.radaraste_email_aggiornata() is 'Tiene l''email del profilo allineata a quella dell''account.';
 
-drop trigger if exists radaraste_email_aggiornata on auth.users;
-create trigger radaraste_email_aggiornata
+create or replace trigger radaraste_email_aggiornata
   after update of email on auth.users
   for each row when (old.email is distinct from new.email)
   execute function public.radaraste_email_aggiornata();
@@ -130,8 +131,7 @@ begin
 end;
 $$;
 
-drop trigger if exists radaraste_dati_aggiornati on public.dati_utente;
-create trigger radaraste_dati_aggiornati
+create or replace trigger radaraste_dati_aggiornati
   before insert or update on public.dati_utente
   for each row execute function public.radaraste_dati_aggiornati();
 

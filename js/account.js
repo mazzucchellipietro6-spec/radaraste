@@ -392,15 +392,26 @@
       return { verificatore: v, sfida: base64url(new Uint8Array(h)), metodo: 's256' };
     }, function () { return semplice; });
   }
-  // accesso via email o Google in arrivo: tiene il verificatore (sostituisce quello di una richiesta precedente) e
-  // restituisce i campi da mandare a GoTrue. tipo: 'signup', 'magiclink' o 'oauth'
+  /* accesso via email o Google in arrivo: tiene il verificatore (sostituisce quello di una richiesta precedente) e
+   * restituisce { campi: da mandare a GoTrue, annulla }. tipo: 'signup', 'magiclink' o 'oauth'.
+   * annulla(): GoTrue ha rifiutato la richiesta (per esempio un secondo link chiesto troppo presto): nessuna email è
+   * partita, quindi torna il verificatore di prima e il link già ricevuto resta buono. */
   function preparaAttesa(tipo) {
     return codiciPkce().then(function (p) {
       var s = leggi(K_SESSIONE);
       if (!s || typeof s !== 'object' || Array.isArray(s)) s = {};
+      var prima = s.attesa && typeof s.attesa === 'object' ? s.attesa : null;
       s.attesa = { verificatore: p.verificatore, tipo: tipo, chiesto: new Date().toISOString() };
       if (!scrivi(K_SESSIONE, s)) throw errore('Il browser non permette di salvare l\'accesso (memoria piena o navigazione privata).', 'memoria');
-      return { code_challenge: p.sfida, code_challenge_method: p.metodo };
+      return {
+        campi: { code_challenge: p.sfida, code_challenge_method: p.metodo },
+        annulla: function () {
+          var x = leggi(K_SESSIONE);
+          // nel frattempo un'altra richiesta (anche da un'altra scheda) ha messo il suo verificatore: resta quello
+          if (!x || !x.attesa || x.attesa.verificatore !== p.verificatore) return;
+          if (prima) { x.attesa = prima; scrivi(K_SESSIONE, x); } else togliAttesa();
+        }
+      };
     });
   }
   function togliAttesa() {
@@ -440,11 +451,13 @@
     if (!emailValida(email)) return rifiuta(ERRORI.email_address_invalid, 'email_address_invalid');
     if (String(password || '').length < MIN_PASSWORD) return rifiuta('La password deve avere almeno ' + MIN_PASSWORD + ' caratteri.', 'weak_password');
     return preparaAttesa('signup').then(function (pk) {
-      var corpo = assegna({ email: email, password: String(password) }, pk);
+      var corpo = assegna({ email: email, password: String(password) }, pk.campi);
       if (consenso(opz)) corpo.data = consenso(opz);
-      return auth('POST', '/signup?redirect_to=' + encodeURIComponent(indirizzoRitorno(opz && opz.dopo)), corpo);
+      return auth('POST', '/signup?redirect_to=' + encodeURIComponent(indirizzoRitorno(opz && opz.dopo)), corpo).then(function (r) {
+        if (!r.ok) { pk.annulla(); throw erroreAuth(r); }
+        return r;
+      });
     }).then(function (r) {
-      if (!r.ok) throw erroreAuth(r);
       var d = r.dati || {};
       // con la conferma dell'email attiva (consigliata) non arriva la sessione: si entra dal link dell'email
       if (!d.access_token) return { accesso: false, confermaEmail: true, email: email };
@@ -472,8 +485,8 @@
     if (!configurato()) return spento();
     return preparaAttesa('oauth').then(function (pk) {
       var url = base() + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(indirizzoRitorno(dopo)) +
-        '&code_challenge=' + encodeURIComponent(pk.code_challenge) + '&code_challenge_method=' + pk.code_challenge_method;
-      try { root.location.assign(url); } catch (e) { throw errore('Non riesco ad aprire la pagina di Google: riprova.', 'navigazione'); }
+        '&code_challenge=' + encodeURIComponent(pk.campi.code_challenge) + '&code_challenge_method=' + pk.campi.code_challenge_method;
+      try { root.location.assign(url); } catch (e) { pk.annulla(); throw errore('Non riesco ad aprire la pagina di Google: riprova.', 'navigazione'); }
       return { url: url };
     });
   }
@@ -485,11 +498,13 @@
     if (!emailValida(email)) return rifiuta(ERRORI.email_address_invalid, 'email_address_invalid');
     var crea = !!(opz && opz.crea);
     return preparaAttesa(crea ? 'signup' : 'magiclink').then(function (pk) {
-      var corpo = assegna({ email: email, create_user: crea }, pk);
+      var corpo = assegna({ email: email, create_user: crea }, pk.campi);
       if (crea && consenso(opz)) corpo.data = consenso(opz);
-      return auth('POST', '/otp?redirect_to=' + encodeURIComponent(indirizzoRitorno(dopo)), corpo);
-    }).then(function (r) {
-      if (!r.ok) throw erroreAuth(r);
+      return auth('POST', '/otp?redirect_to=' + encodeURIComponent(indirizzoRitorno(dopo)), corpo).then(function (r) {
+        if (!r.ok) { pk.annulla(); throw erroreAuth(r); }
+        return r;
+      });
+    }).then(function () {
       return { inviato: true, email: email };
     });
   }
@@ -1052,6 +1067,7 @@
       root.addEventListener('pagehide', function () { osserva(); });
     }
     prontoP = ritornoDaIndirizzo().then(function () {
+      attesa();                                    // un verificatore di più di 24 ore fa non resta nel browser
       var s = sessione();
       if (s && inScadenza(s)) return aggiorna().catch(niente);
     }).then(function () {

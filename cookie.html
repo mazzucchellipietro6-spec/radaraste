@@ -80,10 +80,10 @@
               <tr><td><code>radaraste.scheda.ipotesi</code></td><td data-label="Serve a"><span class="v">Ipotesi sugli altri offerenti scelta nella scheda di un'asta.</span></td></tr>
               <tr><td><code>radaraste.pezziAssenti</code></td><td data-label="Serve a"><span class="v">Nota tecnica: evita di scaricare di nuovo file di dettaglio che non esistono.</span></td></tr>
               <tr><td><code>radaraste.test</code></td><td data-label="Serve a"><span class="v">Prova che la memoria funzioni: viene scritta e cancellata subito.</span></td></tr>
-              <tr><td><code>radaraste.account</code></td><td data-label="Serve a"><span class="v">Solo se accedi: sessione dell'account (vedi sotto).</span></td></tr>
+              <tr><td><code>radaraste.account</code></td><td data-label="Serve a"><span class="v">Solo se accedi: sessione dell'account e, mentre aspetti il link via email o il ritorno da Google, il codice temporaneo che completa l'accesso in questo browser (vedi sotto).</span></td></tr>
               <tr><td><code>radaraste.account.abbonamento</code></td><td data-label="Serve a"><span class="v">Solo se accedi: ultimo stato del tuo abbonamento letto, per mostrare subito le funzioni del tuo piano.</span></td></tr>
-              <tr><td><code>radaraste.account.sync</code></td><td data-label="Serve a"><span class="v">Solo se accedi: registro di che cosa è cambiato e quando, per sincronizzare i dati con il tuo account.</span></td></tr>
-              <tr><td><code>radaraste.account.precedenti</code></td><td data-label="Serve a"><span class="v">Solo se accedi: copia dei dati di questo browser sostituiti dall'ultima sincronizzazione, così non si perdono.</span></td></tr>
+              <tr><td><code>radaraste.account.sync</code></td><td data-label="Serve a"><span class="v">Solo se accedi: registro di che cosa è cambiato e quando, e a quale account sono collegati i dati di questo browser, per sincronizzarli con il tuo account senza mescolarli con quelli di un'altra persona.</span></td></tr>
+              <tr><td><code>radaraste.account.precedenti</code></td><td data-label="Serve a"><span class="v">Solo se accedi: copie di sicurezza delle versioni sostituite dalle sincronizzazioni (le ultime 100), ognuna con l'account a cui appartiene, così non si perdono. Nel file "Scarica i miei dati" vanno solo quelle del tuo account.</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -107,6 +107,7 @@
       <section id="sessione" aria-labelledby="h-sessione">
         <h2 id="h-sessione">3. Sessione dell'account</h2>
         <p>Solo se accedi, il browser conserva nella chiave <code>radaraste.account</code> i codici della sessione (un codice di accesso a scadenza breve e uno per rinnovarlo), la loro scadenza e i dati essenziali dell'account, per tenerti collegato tra una pagina e l'altra. Non sono cookie e non servono a seguirti su altri siti. La sessione e l'ultimo stato dell'abbonamento vengono cancellati quando scegli "Esci".</p>
+        <p>Quando chiedi un link di accesso via email, crei l'account o scegli "Accedi con Google", nella stessa chiave il browser tiene anche un codice segreto temporaneo, generato a caso sul tuo dispositivo: al ritorno sul sito serve a completare l'accesso, e solo in questo browser, così un link aperto altrove o mandato da un'altra persona non fa entrare nessuno in un account. Il codice vale al massimo 24 ore: si cancella appena l'accesso riesce, chiedendo un nuovo link lo sostituisci, e dopo le 24 ore non si usa più e si cancella alla prima apertura delle pagine Prezzi, Accedi o Il mio account.</p>
       </section>
 
       <section id="offline" aria-labelledby="h-offline">

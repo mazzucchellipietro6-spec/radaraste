@@ -122,12 +122,17 @@ Senza la variabile `CF_PAGES_PROGETTO` il passo non parte; se fallisce, GitHub P
    - *Site URL*: l'indirizzo del sito su Cloudflare (es. `https://radaraste.pages.dev`);
    - *Redirect URLs*: `https://radaraste.pages.dev/accedi.html**` (con il tuo indirizzo).
 4. **Authentication → Providers**: Email con "Confirm email" attivo. Google solo se lo vuoi (servono ID e segreto client da Google Cloud).
-5. **Authentication → Email Templates**: traduci i testi in italiano.
+5. **Authentication → Email Templates**: traduci i testi in italiano, senza cambiare il link `{{ .ConfirmationURL }}` dei modelli.
 6. Email agli utenti veri: secondo le regole attuali di Supabase (da verificare), il servizio email incluso manda le email solo agli indirizzi del tuo team e con pochi invii all'ora. Per le prove va bene; per gli utenti veri imposta un servizio SMTP tuo (**Authentication → Emails → SMTP Settings**), per esempio quello di Resend.
 7. Da **Project Settings → API** copia:
    - l'indirizzo del progetto (`https://<id>.supabase.co`): pubblico;
    - la chiave **anon** o **publishable** (`sb_publishable_...`): pubblica per natura;
    - la chiave **service_role** o **secret** (`sb_secret_...`): **SEGRETISSIMA**, scavalca tutte le regole di sicurezza. Va solo su Cloudflare.
+
+**Link via email: vanno aperti nello stesso browser.** Il sito usa l'accesso con PKCE: chi chiede un link di accesso, crea un account o sceglie Google tiene nel proprio browser un codice segreto, valido 24 ore, e al ritorno sul sito l'accesso si completa solo con quel codice. Così un link aperto altrove, o mandato da un'altra persona, non fa entrare nessuno in un account. Di conseguenza:
+
+- il link dell'email va aperto **nello stesso browser** (stesso dispositivo, stessa app) in cui è stato chiesto. Attenzione alle app di posta del telefono che aprono i link in un loro browser interno: lì il codice non c'è. Il sito in quel caso dice di aprire il link nel browser giusto o di chiederne uno nuovo; per chi si è registrato con la password l'email risulta comunque confermata e si entra con email e password;
+- gli **inviti** e i **link di accesso mandati dal pannello di Supabase** (pagina degli utenti) **non funzionano**: non hanno il codice del browser e il sito li rifiuta. Per le prove crea gli account e chiedi i link sempre da `accedi.html`.
 
 ### Passo 3 – Stripe in modalità test
 
@@ -201,7 +206,7 @@ Con le chiavi di test Stripe non addebita nulla. Carte di prova (qualunque data 
 
 Percorso da provare:
 
-1. Crea un account da `accedi.html` con una tua email e confermala.
+1. Crea un account da `accedi.html` con una tua email e confermala aprendo il link **nello stesso browser** in cui hai creato l'account (vedi "Link via email" al passo 2).
 2. Da `prezzi.html` scegli **Pro**: si apre la pagina di Stripe, paghi con 4242..., torni su `account.html?pagamento=ok` e vedi il piano Pro in prova. Su Stripe, in **Webhook**, le notifiche devono risultare consegnate (stato 200); su Supabase, nella tabella `abbonamenti`, compare la tua riga.
 3. Con un secondo account prova il piano Base con la carta 4000 0000 0000 0341: il pagamento viene rifiutato e l'abbonamento non parte.
 4. Da `account.html` apri **Gestisci pagamenti e fatture** (portale clienti di Stripe) e disdici: l'abbonamento resta fino alla fine del periodo già pagato.

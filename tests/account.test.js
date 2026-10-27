@@ -376,6 +376,64 @@ test('sicurezza: codice senza verificatore (link aperto altrove) o con il verifi
   assert.equal(local.getItem('radaraste.account'), null);
 });
 
+test('secondo link chiesto troppo presto (GoTrue rifiuta, nessuna email): il link già ricevuto resta buono', async (t) => {
+  let verificatore = null, risposta = { json: {} };
+  const { A, local, loc } = ambiente(t, {
+    search: '',
+    rotte: [['POST', SUPABASE + '/auth/v1/otp', () => risposta], ['POST', SUPABASE + '/auth/v1/signup', () => risposta],
+      ['POST', SUPABASE + '/auth/v1/token?grant_type=pkce', (req) => (req.corpo.code_verifier === verificatore ? { json: SESSIONE_GOTRUE } : { status: 400, json: { error_code: 'bad_code_verifier' } })]]
+  });
+  await A.linkMagico(EMAIL, 'aste.html');
+  verificatore = leggi(local, 'radaraste.account').attesa.verificatore;
+  const prima = leggi(local, 'radaraste.account').attesa;
+  risposta = { status: 429, json: { error_code: 'over_email_send_rate_limit', msg: 'For security purposes, you can only request this after 42 seconds.' } };
+  await assert.rejects(A.linkMagico(EMAIL, 'aste.html'), { codice: 'over_email_send_rate_limit' });
+  assert.deepEqual(leggi(local, 'radaraste.account').attesa, prima, 'torna il verificatore del link già inviato');
+  await assert.rejects(A.registrati(EMAIL, 'password-lunga', { consenso: true }), { codice: 'over_email_send_rate_limit' });
+  assert.deepEqual(leggi(local, 'radaraste.account').attesa, prima);
+  // il link della prima email funziona
+  loc.search = '?dopo=aste.html&code=codice-finto';
+  assert.deepEqual(await A.avvia(), { tipo: 'magiclink', accesso: true });
+  await A.attendi();
+  // senza una richiesta precedente, una richiesta rifiutata non lascia nulla nel browser
+  await A.esci();
+  local.removeItem('radaraste.account');
+  risposta = { status: 422, json: { error_code: 'user_already_exists' } };
+  await assert.rejects(A.registrati(EMAIL, 'password-lunga', { consenso: true }), { codice: 'user_already_exists' });
+  assert.equal(local.getItem('radaraste.account'), null);
+});
+
+test('verificatore PKCE: 32 byte casuali (43 caratteri), tolto all\'avvio dopo 24 ore anche senza ritorno, la sessione resta', async (t) => {
+  const { A, local } = ambiente(t, { search: '', rotte: [['POST', SUPABASE + '/auth/v1/otp', { json: {} }]] });
+  conSessione(local);
+  await A.linkMagico(EMAIL);
+  const s = leggi(local, 'radaraste.account');
+  assert.match(s.attesa.verificatore, /^[A-Za-z0-9_-]{43}$/, 'base64url di 32 byte, come vuole PKCE (43-128 caratteri)');
+  assert.equal(s.access_token, TOKEN, 'chiedere un link non tocca la sessione');
+  // dentro le 24 ore resta
+  delete require.cache[require.resolve('../js/account.js')];
+  const A1 = require('../js/account.js');
+  await A1.avvia();
+  await A1.attendi();
+  assert.ok(leggi(local, 'radaraste.account').attesa);
+  // dopo 24 ore si toglie alla prima apertura di una pagina dell'account; la sessione resta com'era
+  s.attesa.chiesto = new Date(Date.now() - 25 * 3600000).toISOString();
+  local.setItem('radaraste.account', JSON.stringify(s));
+  delete require.cache[require.resolve('../js/account.js')];
+  const A2 = require('../js/account.js');
+  await A2.avvia();
+  const dopo = leggi(local, 'radaraste.account');
+  assert.equal(dopo.attesa, undefined);
+  assert.equal(dopo.access_token, TOKEN);
+  assert.equal(A2.utente().id, UTENTE);
+  await A2.attendi();
+  // senza sessione: la chiave sparisce del tutto
+  local.setItem('radaraste.account', JSON.stringify({ attesa: { verificatore: 'v'.repeat(43), tipo: 'magiclink', chiesto: new Date(Date.now() - 25 * 3600000).toISOString() } }));
+  delete require.cache[require.resolve('../js/account.js')];
+  await require('../js/account.js').avvia();
+  assert.equal(local.getItem('radaraste.account'), null);
+});
+
 test('ritorno con errore (link scaduto) nell\'indirizzo o nel frammento: messaggio chiaro, nessuna sessione, indirizzo ripulito', async (t) => {
   const { A, local, storia, chiamate } = ambiente(t, { search: '?dopo=aste.html&error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired' });
   const r = await A.avvia();
@@ -962,8 +1020,12 @@ test('supabase/schema.sql: RLS su tutte le tabelle, abbonamenti ed eventi_stripe
   assert.doesNotMatch(sql, /grant[^;]*on\s+(table\s+)?public\.eventi_stripe\b/i);
   // idempotenza e registrazione
   assert.doesNotMatch(sql, /create table (?!if not exists)/i);
-  assert.doesNotMatch(sql, /create trigger(?![^;]*)/i);
-  for (const tr of sql.matchAll(/create trigger\s+(\w+)\s+[^;]*?on\s+([\w.]+)/gi)) assert.ok(sql.includes('drop trigger if exists ' + tr[1] + ' on ' + tr[2]), tr[1]);
+  // trigger: create or replace (togliere un trigger da auth.users richiede di possedere la tabella, sostituirlo no:
+  // con drop + create la seconda esecuzione dello schema si fermerebbe)
+  const trigger = [...sql.matchAll(/create\s+(or\s+replace\s+)?trigger\s+(\w+)/gi)];
+  assert.ok(trigger.length >= 3, 'trigger dello schema');
+  for (const tr of trigger) assert.ok(tr[1], tr[2] + ': create or replace trigger');
+  assert.doesNotMatch(sql, /drop trigger[^;]*on\s+auth\.users/i);
   assert.match(sql, /after insert on auth\.users/i);
   assert.match(sql, /insert into public\.abbonamenti \(utente, piano\) values \(new\.id, 'gratis'\)/i);
   assert.match(sql, /check \(piano in \('gratis', 'base', 'pro'\)\)/i);
