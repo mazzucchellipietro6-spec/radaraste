@@ -135,7 +135,11 @@ create trigger radaraste_dati_aggiornati
   before insert or update on public.dati_utente
   for each row execute function public.radaraste_dati_aggiornati();
 
--- (le funzioni che restituiscono trigger non si possono chiamare dall'API: nessun permesso da togliere)
+-- le funzioni dei trigger non servono a nessuno fuori dai trigger: niente permesso di eseguirle (Supabase lo concede
+-- di serie a anon e authenticated). PostgreSQL non lo controlla quando scatta il trigger, quindi i trigger funzionano.
+revoke execute on function public.radaraste_nuovo_utente() from public, anon, authenticated;
+revoke execute on function public.radaraste_email_aggiornata() from public, anon, authenticated;
+revoke execute on function public.radaraste_dati_aggiornati() from public, anon, authenticated;
 
 -- utenti registrati prima di questo schema: profilo e piano Gratis anche per loro
 insert into public.profili (id, email) select id, email from auth.users on conflict (id) do nothing;
@@ -150,10 +154,10 @@ alter table public.eventi_stripe enable row level security;
 
 -- permessi di base (oltre alla RLS): chi non ha fatto l'accesso non tocca nulla, l'abbonamento si legge soltanto,
 -- gli eventi di Stripe non si vedono dal browser
-revoke all on table public.profili from anon, authenticated;
-revoke all on table public.abbonamenti from anon, authenticated;
-revoke all on table public.dati_utente from anon, authenticated;
-revoke all on table public.eventi_stripe from anon, authenticated;
+revoke all on table public.profili from public, anon, authenticated;
+revoke all on table public.abbonamenti from public, anon, authenticated;
+revoke all on table public.dati_utente from public, anon, authenticated;
+revoke all on table public.eventi_stripe from public, anon, authenticated;
 grant select on table public.profili to authenticated;
 grant select on table public.abbonamenti to authenticated;
 grant select, insert, update on table public.dati_utente to authenticated;

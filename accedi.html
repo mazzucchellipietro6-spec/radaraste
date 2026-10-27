@@ -37,45 +37,51 @@
   </div>
 
   <div class="callout acc-dentro" id="accDentro" hidden></div>
-  <div class="callout acc-msg" id="accMsg" role="status" aria-live="polite" tabindex="-1" hidden></div>
+  <div class="callout acc-msg" id="accMsg" tabindex="-1" hidden></div>
+  <p class="sr-only" id="accAnnuncio" role="status" aria-live="polite" aria-atomic="true"></p>
+  <p class="sr-only" id="accAvviso" role="alert" aria-atomic="true"></p>
 
   <section class="panel acc-google" id="accGoogleBox" aria-labelledby="h-google">
     <div class="acc-google-testo">
       <h2 id="h-google">Il modo più rapido</h2>
-      <p class="note">Se non hai ancora un account ne creiamo uno con la tua email di Google: continuando accetti i <a href="termini.html">Termini del servizio</a> e confermi di aver letto l'<a href="privacy.html">Informativa sulla privacy</a>.</p>
+      <p class="note" id="accNotaGoogle">Se non hai ancora un account ne creiamo uno con la tua email di Google: continuando accetti le <a href="termini.html">Condizioni d'uso e di abbonamento</a> e confermi di aver letto l'<a href="privacy.html">Informativa sulla privacy</a>.</p>
     </div>
-    <button class="btn ghost" type="button" id="accGoogle">Continua con Google</button>
+    <button class="btn ghost" type="button" id="accGoogle" aria-describedby="accNotaGoogle" disabled>Continua con Google</button>
   </section>
 
   <div class="acc-griglia" id="accModuli">
     <section class="panel stack acc-blocco" aria-labelledby="h-accedi">
       <h2 id="h-accedi">Accedi</h2>
-      <form id="fAccedi" class="stack acc-form" novalidate>
-        <label>Email<input type="email" name="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" required></label>
-        <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
-        <label class="check"><input type="checkbox" data-mostra="fAccedi"> Mostra la password</label>
-        <div class="row-actions"><button class="btn" type="submit">Accedi</button></div>
+      <form id="fAccedi" class="acc-form" method="post" novalidate>
+        <fieldset class="acc-campi" aria-labelledby="h-accedi" disabled>
+          <label>Email<input type="email" name="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" required></label>
+          <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+          <label class="check"><input type="checkbox" data-mostra="fAccedi"> Mostra la password</label>
+          <div class="row-actions"><button class="btn" type="submit">Accedi</button></div>
+        </fieldset>
       </form>
       <div class="acc-oppure" aria-hidden="true"><span>oppure</span></div>
       <div class="stack acc-alternativa">
-        <button class="btn ghost" type="button" id="accLink">Ricevi un link di accesso via email</button>
-        <p class="note">Scrivi la tua email qui sopra: ti mandiamo un link che ti fa entrare senza password. Serve anche se hai dimenticato la password (poi puoi cambiarla dalla pagina del tuo account).</p>
+        <button class="btn ghost" type="button" id="accLink" aria-describedby="accNotaLink" disabled>Ricevi un link di accesso via email</button>
+        <p class="note" id="accNotaLink">Scrivi la tua email qui sopra: ti mandiamo un link che ti fa entrare senza password. Aprilo in questo stesso browser. Serve anche se hai dimenticato la password (poi puoi cambiarla dalla pagina del tuo account).</p>
       </div>
     </section>
 
     <section class="panel stack acc-blocco" aria-labelledby="h-registra">
       <h2 id="h-registra">Crea un account</h2>
-      <form id="fRegistra" class="stack acc-form" novalidate>
-        <label>Email<input type="email" name="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required></label>
-        <label>Password (almeno 8 caratteri)<input type="password" name="password" autocomplete="new-password" minlength="8" required aria-describedby="accNotaPw"></label>
-        <label class="check"><input type="checkbox" data-mostra="fRegistra"> Mostra la password</label>
-        <p class="note" id="accNotaPw">Scegli una password che non usi su altri siti.</p>
-        <label class="check acc-consenso"><input type="checkbox" name="consenso" required> <span>Ho letto e accetto i <a href="termini.html">Termini del servizio</a> e ho letto l'<a href="privacy.html">Informativa sulla privacy</a>.</span></label>
-        <div class="row-actions">
-          <button class="btn" type="submit">Crea account</button>
-          <button class="btn ghost" type="button" id="accRegLink">Crea con un link via email</button>
-        </div>
-        <p class="note">Riceverai un'email per confermare l'indirizzo. Creare l'account non costa nulla e non attiva nessun abbonamento.</p>
+      <form id="fRegistra" class="acc-form" method="post" novalidate>
+        <fieldset class="acc-campi" aria-labelledby="h-registra" disabled>
+          <label>Email<input type="email" name="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required></label>
+          <label>Password (almeno 8 caratteri)<input type="password" name="password" autocomplete="new-password" minlength="8" required aria-describedby="accNotaPw"></label>
+          <label class="check"><input type="checkbox" data-mostra="fRegistra"> Mostra la password</label>
+          <p class="note" id="accNotaPw">Scegli una password che non usi su altri siti.</p>
+          <label class="check acc-consenso"><input type="checkbox" name="consenso" required> <span>Ho letto e accetto le <a href="termini.html">Condizioni d'uso e di abbonamento</a> e ho letto l'<a href="privacy.html">Informativa sulla privacy</a>.</span></label>
+          <div class="row-actions">
+            <button class="btn" type="submit">Crea account</button>
+            <button class="btn ghost" type="button" id="accRegLink">Crea con un link via email</button>
+          </div>
+          <p class="note">Riceverai un'email per confermare l'indirizzo: apri il link in questo stesso browser. Creare l'account non costa nulla e non attiva nessun abbonamento.</p>
+        </fieldset>
       </form>
     </section>
   </div>
@@ -87,7 +93,7 @@
       <li>Le aste che segui con le note, le aste inserite a mano, le ricerche salvate, le preferenze degli affari e il profilo dello Stratega, per ritrovarli sugli altri dispositivi.</li>
       <li>Puoi scaricare tutti i tuoi dati o cancellare l'account quando vuoi dalla pagina <a href="account.html">Il mio account</a>.</li>
     </ul>
-    <p class="note">Tutti i dettagli nell'<a href="privacy.html">Informativa sulla privacy</a> e nei <a href="termini.html">Termini del servizio</a>.</p>
+    <p class="note">Tutti i dettagli nell'<a href="privacy.html">Informativa sulla privacy</a>, nella pagina <a href="cookie.html">Cookie e memoria del browser</a> e nelle <a href="termini.html">Condizioni d'uso e di abbonamento</a>.</p>
   </section>
 </main>
 

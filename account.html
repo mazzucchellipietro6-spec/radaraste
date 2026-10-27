@@ -32,7 +32,9 @@
     <p class="sub">Abbonamento, pagamenti e dati salvati nell'account. Puoi scaricare i tuoi dati o cancellare l'account quando vuoi.</p>
   </div>
 
-  <div class="callout acc-msg" id="acMsg" role="status" aria-live="polite" tabindex="-1" hidden></div>
+  <div class="callout acc-msg" id="acMsg" tabindex="-1" hidden></div>
+  <p class="sr-only" id="acAnnuncio" role="status" aria-live="polite" aria-atomic="true"></p>
+  <p class="sr-only" id="acAvviso" role="alert" aria-atomic="true"></p>
   <div class="callout acc-ok" id="acPagamento" role="status" aria-live="polite" hidden></div>
 
   <!-- senza configurazione o senza accesso -->
@@ -69,15 +71,20 @@
         <h2 id="h-dati">Dati salvati nell'account</h2>
         <button class="btn small ghost" type="button" id="acSincronizza">Sincronizza ora</button>
       </div>
+      <div class="callout warn acc-collega" id="acCollega" hidden>
+        <p><strong>I dati salvati in questo browser sono collegati a un altro account.</strong> Per non mescolare i dati di persone diverse non li uniamo da soli. Se sono tuoi (per esempio li hai salvati con un tuo account precedente), uniscili a questo account. Finché non lo fai, in questo browser l'account non si sincronizza e i dati restano solo qui.</p>
+        <div class="row-actions"><button class="btn small" type="button" id="acUnisci">Unisci i dati di questo browser al mio account</button></div>
+      </div>
       <div class="acc-conteggi" id="acConteggi"></div>
       <p class="note" id="acSync" aria-live="polite"></p>
-      <p class="note">Le aste seguite su più dispositivi si uniscono: per ogni asta resta la nota modificata per ultima e un'asta che smetti di seguire sparisce anche dagli altri dispositivi. Per preferenze, ricerche e Stratega vale la versione più recente. Nessun dato di questo browser va perso: quello sostituito resta nel file "Scarica i miei dati".</p>
+      <p class="note">Le aste seguite su più dispositivi si uniscono: per ogni asta resta la nota modificata per ultima. Un'asta che smetti di seguire sparisce anche dagli altri dispositivi, salvo che lì sia stata modificata nel frattempo. Per preferenze, ricerche e Stratega vale la versione più recente. Nessun dato va perso: le versioni sostituite (le ultime 100) restano nel file "Scarica i miei dati".</p>
     </section>
 
     <section class="panel stack acc-blocco" aria-labelledby="h-gdpr">
       <h2 id="h-gdpr">I tuoi dati</h2>
       <p>Scarica in un file JSON tutto quello che sappiamo di te: account, abbonamento, dati sincronizzati e dati salvati in questo browser.</p>
       <div class="row-actions acc-azioni"><button class="btn ghost" type="button" id="acScarica">Scarica i miei dati</button></div>
+      <p class="note">Come trattiamo i tuoi dati e quali sono i tuoi diritti: <a href="privacy.html">Informativa sulla privacy</a>, <a href="cookie.html">Cookie e memoria del browser</a> e <a href="termini.html">Condizioni d'uso e di abbonamento</a>.</p>
     </section>
 
     <section class="panel stack acc-blocco acc-pericolo" aria-labelledby="h-cancella">
@@ -90,13 +97,16 @@
         <li>i dati salvati in questo browser (aste seguite, note, preferenze) restano su questo dispositivo;</li>
         <li>ti mandiamo un'email di conferma. L'operazione è definitiva.</li>
       </ul>
-      <div class="row-actions acc-azioni"><button class="btn danger" type="button" id="acCancella">Cancella il mio account</button></div>
-      <p class="note">Serve un secondo clic per confermare.</p>
+      <div class="row-actions acc-azioni"><button class="btn danger" type="button" id="acCancella" aria-describedby="acCancellaNota">Cancella il mio account</button></div>
+      <p class="note" id="acCancellaNota">Serve un secondo clic, entro 4 secondi, per confermare.</p>
     </section>
 
-    <div class="row-actions acc-azioni">
-      <button class="btn quiet" type="button" id="acEsci">Esci da questo dispositivo</button>
-      <a class="btn ghost" href="mie-aste.html">Le mie aste</a>
+    <div class="stack acc-uscita">
+      <div class="row-actions acc-azioni">
+        <button class="btn quiet" type="button" id="acEsci" aria-describedby="acEsciNota">Esci da questo dispositivo</button>
+        <a class="btn ghost" href="mie-aste.html">Le mie aste</a>
+      </div>
+      <p class="note" id="acEsciNota">Uscendo, le aste seguite, le note e le preferenze restano salvate in questo browser: su un computer condiviso, chi lo usa dopo di te può vederle.</p>
     </div>
   </div>
 </main>

@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { createHash } = require('node:crypto');
 const CFG = require('../config/abbonamenti.js');
 
 const SUPABASE = 'https://progetto-finto.supabase.co';
@@ -12,6 +13,8 @@ const UTENTE = '11111111-2222-4333-8444-555555555555';
 const EMAIL = 'prova@example.com';
 const SITO = 'https://radaraste.example';
 const NON_CONFIGURATO = 'Account non ancora attivo: configurazione mancante (modalità test)';
+// impronta PKCE (S256) di un verificatore, come la calcola GoTrue
+const sfida = (v) => createHash('sha256').update(v).digest('base64url');
 
 // token JWT finto (firma finta: il browser non la verifica, lo fa GoTrue)
 function jwt(dati) {
@@ -56,10 +59,10 @@ function ambiente(t, opz = {}) {
   globale('document', doc);
   const eventi = [];
   doc.addEventListener('radaraste:account', (e) => eventi.push(e.detail.motivo));
-  const loc = { origin: SITO, pathname: '/accedi.html', search: '?dopo=aste.html', hash: opz.hash || '', assegnato: null };
+  const loc = { origin: SITO, pathname: '/accedi.html', search: opz.search == null ? '?dopo=aste.html' : opz.search, hash: opz.hash || '', assegnato: null };
   loc.assign = (u) => { loc.assegnato = u; };
   globale('location', loc);
-  const storia = { state: null, chiamate: [], replaceState(s, titolo, u) { storia.chiamate.push(u); loc.hash = ''; } };
+  const storia = { state: null, chiamate: [], replaceState(s, titolo, u) { storia.chiamate.push(u); const i = u.indexOf('#'), q = u.indexOf('?'); loc.hash = i >= 0 ? u.slice(i) : ''; loc.search = q >= 0 ? u.slice(q, i >= 0 ? i : undefined) : ''; } };
   globale('history', storia);
   const chiamate = [], rotte = [...(opz.rotte || []), ...BASE];
   globale('fetch', async (url, init = {}) => {
@@ -187,7 +190,14 @@ test('registrati: POST /auth/v1/signup con ritorno ad accedi.html e consenso; co
   assert.equal(c.corpo.email, 'nuovo@example.com');
   assert.equal(c.corpo.password, 'password-lunga');
   assert.ok(!isNaN(Date.parse(c.corpo.data.consenso_termini)), 'data del consenso nei metadati');
-  assert.equal(local.getItem('radaraste.account'), null);
+  // PKCE: a GoTrue va solo l'impronta; il verificatore resta in questo browser per il ritorno dall'email
+  const attesa = leggi(local, 'radaraste.account').attesa;
+  assert.equal(attesa.tipo, 'signup');
+  assert.match(attesa.verificatore, /^[A-Za-z0-9_-]{43,128}$/);
+  assert.equal(c.corpo.code_challenge_method, 's256');
+  assert.equal(c.corpo.code_challenge, sfida(attesa.verificatore));
+  assert.ok(!JSON.stringify(c).includes(attesa.verificatore), 'il verificatore non esce dal browser');
+  assert.equal(A.sessione(), null, 'nessuna sessione prima della conferma');
 
   // conferma dell'email spenta nel progetto: si entra subito
   risposta = { json: { access_token: TOKEN, refresh_token: 'rinnovo-finto', expires_in: 3600, user: UTENTE_GOTRUE } };
@@ -204,17 +214,24 @@ test('registrati: POST /auth/v1/signup con ritorno ad accedi.html e consenso; co
 });
 
 test('link via email e Google: indirizzi giusti, nessun account creato senza consenso, ritorno solo a pagine del sito', async (t) => {
-  const { A, loc, chiamate } = ambiente(t, { rotte: [['POST', SUPABASE + '/auth/v1/otp', { json: {} }]] });
+  const { A, local, loc, chiamate } = ambiente(t, { rotte: [['POST', SUPABASE + '/auth/v1/otp', { json: {} }]] });
+  const verificatore = () => leggi(local, 'radaraste.account').attesa.verificatore;
   assert.deepEqual(await A.linkMagico(EMAIL, 'scheda.html?id=a1'), { inviato: true, email: EMAIL });
   assert.equal(chiamate[0].url, SUPABASE + '/auth/v1/otp?redirect_to=' + encodeURIComponent(SITO + '/accedi.html?dopo=' + encodeURIComponent('scheda.html?id=a1')));
-  assert.deepEqual(chiamate[0].corpo, { email: EMAIL, create_user: false });
+  assert.deepEqual(chiamate[0].corpo, { email: EMAIL, create_user: false, code_challenge: sfida(verificatore()), code_challenge_method: 's256' });
+  assert.equal(leggi(local, 'radaraste.account').attesa.tipo, 'magiclink');
+  const primo = verificatore();
   await A.linkMagico(EMAIL, null, { crea: true, consenso: true });
   assert.equal(chiamate[1].corpo.create_user, true);
   assert.ok(chiamate[1].corpo.data.consenso_termini);
   assert.equal(chiamate[1].url, SUPABASE + '/auth/v1/otp?redirect_to=' + encodeURIComponent(SITO + '/accedi.html'));
+  assert.notEqual(verificatore(), primo, 'un verificatore nuovo a ogni richiesta');
+  assert.equal(chiamate[1].corpo.code_challenge, sfida(verificatore()));
 
   const g = await A.accediConGoogle('mappa.html');
-  assert.equal(loc.assegnato, SUPABASE + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(SITO + '/accedi.html?dopo=mappa.html'));
+  assert.equal(loc.assegnato, SUPABASE + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(SITO + '/accedi.html?dopo=mappa.html') +
+    '&code_challenge=' + sfida(verificatore()) + '&code_challenge_method=s256');
+  assert.equal(leggi(local, 'radaraste.account').attesa.tipo, 'oauth');
   assert.equal(g.url, loc.assegnato);
   assert.equal(chiamate.length, 2, 'Google: solo un cambio di pagina, nessuna richiesta');
 
@@ -265,48 +282,121 @@ test('rinnovo: token rifiutato (401) → si rinnova e si riprova una volta; toke
   assert.ok(eventi.includes('scaduta'));
 });
 
-/* ---- Ritorno da email o Google ---- */
+/* ---- Ritorno da email o Google (PKCE) ---- */
 
-test('ritorno dal link o da Google: token letti dal frammento, verificati con GoTrue, indirizzo ripulito', async (t) => {
-  const hash = '#access_token=' + TOKEN + '&expires_at=' + (ora() + 3600) + '&expires_in=3600&refresh_token=rinnovo-finto&token_type=bearer&type=magiclink';
-  const { A, local, sess, storia, loc, eventi, chiamate } = ambiente(t, { hash, rotte: [['GET', SUPABASE + '/auth/v1/user', { json: UTENTE_GOTRUE }]] });
+const SESSIONE_GOTRUE = { access_token: TOKEN, refresh_token: 'rinnovo-finto', expires_in: 3600, token_type: 'bearer', user: UTENTE_GOTRUE };
+
+test('ritorno dal link o da Google: il codice si scambia solo con il verificatore di questo browser, indirizzo ripulito', async (t) => {
+  let verificatore = null;
+  const { A, local, sess, storia, loc, eventi, chiamate } = ambiente(t, {
+    rotte: [['POST', SUPABASE + '/auth/v1/otp', { json: {} }],
+      ['POST', SUPABASE + '/auth/v1/token?grant_type=pkce', (req) => (req.corpo.auth_code === 'codice-finto' && req.corpo.code_verifier === verificatore ? { json: SESSIONE_GOTRUE } : { status: 400, json: { error_code: 'bad_code_verifier' } })]]
+  });
+  await A.linkMagico(EMAIL, 'aste.html');
+  verificatore = leggi(local, 'radaraste.account').attesa.verificatore;
+  // GoTrue riporta su accedi.html con ?code=... dopo i parametri di redirect_to
+  loc.search = '?dopo=aste.html&code=codice-finto';
   const r = await A.avvia();
   assert.deepEqual(r, { tipo: 'magiclink', accesso: true });
   assert.deepEqual(A.ritorno(), r);
-  assert.deepEqual(storia.chiamate, ['/accedi.html?dopo=aste.html'], 'i token non restano nell\'indirizzo');
-  assert.equal(loc.hash, '');
-  const u = chiamate.find((c) => c.url === SUPABASE + '/auth/v1/user');
-  assert.equal(u.intestazioni.Authorization, 'Bearer ' + TOKEN);
+  assert.deepEqual(storia.chiamate, ['/accedi.html?dopo=aste.html'], 'il codice non resta nell\'indirizzo né nella cronologia');
+  const scambio = chiamate.find((c) => c.url === SUPABASE + '/auth/v1/token?grant_type=pkce');
+  assert.deepEqual(scambio.corpo, { auth_code: 'codice-finto', code_verifier: verificatore });
+  assert.equal(scambio.intestazioni.apikey, ANONIMA);
   const s = leggi(local, 'radaraste.account');
   assert.equal(s.access_token, TOKEN);
   assert.equal(s.refresh_token, 'rinnovo-finto');
   assert.equal(s.utente.id, UTENTE);
   assert.equal(s.utente.creato, '2026-10-01T10:00:00Z');
+  assert.equal(s.attesa, undefined, 'verificatore usato una volta sola');
   assert.ok(eventi.includes('accesso'));
   await A.attendi();
   assert.equal(sess.getItem('radaraste.account.caricati'), UTENTE, 'dati caricati una volta per sessione del browser');
 });
 
-test('ritorno con errore (link scaduto) o con token non validi: messaggio chiaro, nessuna sessione', async (t) => {
-  const { A, local, storia, chiamate } = ambiente(t, { hash: '#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired' });
-  const r = await A.avvia();
-  assert.equal(r.errore, 'Il link è scaduto o è già stato usato: chiedine uno nuovo.');
-  assert.equal(storia.chiamate.length, 1);
-  assert.equal(local.getItem('radaraste.account'), null);
-  assert.equal(chiamate.length, 0);
-  // frammenti qualsiasi non toccano nulla
-  assert.equal(A.leggiFrammento(''), null);
-  assert.equal(A.leggiFrammento('#contenuto'), null);
-  assert.equal(A.leggiFrammento('#access_token=solo-questo'), null);
-  assert.deepEqual(A.leggiFrammento('#access_token=a.b.c&refresh_token=r&expires_in=60&type=signup'), { access_token: 'a.b.c', refresh_token: 'r', expires_at: null, expires_in: 60, tipo: 'signup' });
+test('ritorno dalla conferma della registrazione: tipo "signup", evento "registrazione"', async (t) => {
+  const { A, local, loc, eventi } = ambiente(t, {
+    rotte: [['POST', SUPABASE + '/auth/v1/signup', { json: { id: UTENTE, email: EMAIL } }], ['POST', SUPABASE + '/auth/v1/token?grant_type=pkce', { json: SESSIONE_GOTRUE }]]
+  });
+  await A.registrati(EMAIL, 'password-lunga', { consenso: true });
+  assert.ok(leggi(local, 'radaraste.account').attesa);
+  loc.search = '?code=codice-finto';
+  assert.deepEqual(await A.avvia(), { tipo: 'signup', accesso: true });
+  assert.ok(eventi.includes('registrazione'));
+  await A.attendi();
 });
 
-test('ritorno con un token che GoTrue rifiuta: niente accesso', async (t) => {
-  const hash = '#access_token=' + TOKEN + '&expires_in=3600&refresh_token=rinnovo-finto&type=magiclink';
-  const { A, local } = ambiente(t, { hash, rotte: [['GET', SUPABASE + '/auth/v1/user', { status: 401, json: { msg: 'invalid JWT' } }]] });
+test('sicurezza: token nell\'indirizzo (link di un altro, flusso vecchio) → nessun accesso, nessuna rete, indirizzo ripulito', async (t) => {
+  // chi manda questo link vorrebbe farti entrare nel SUO account per ricevere i dati che hai in questo browser
+  const hash = '#access_token=' + TOKEN + '&expires_in=3600&refresh_token=rinnovo-di-un-altro&token_type=bearer&type=magiclink';
+  const { A, local, storia, chiamate } = ambiente(t, { hash });
+  local.setItem('radaraste.v1.seguite', JSON.stringify([{ id: 'a', note: 'nota privata' }]));
   const r = await A.avvia();
-  assert.match(r.errore, /non è più valido/);
+  assert.match(r.errore, /link di accesso non è valido/);
+  assert.equal(A.sessione(), null);
   assert.equal(local.getItem('radaraste.account'), null);
+  assert.deepEqual(storia.chiamate, ['/accedi.html?dopo=aste.html'], 'i token non restano nell\'indirizzo');
+  assert.equal(chiamate.length, 0, 'nessuna richiesta: né verifica del token né invio dei dati');
+});
+
+test('sicurezza: codice senza verificatore (link aperto altrove) o con il verificatore sbagliato → nessun accesso', async (t) => {
+  let n = 0;
+  const { A, local, loc, storia, chiamate } = ambiente(t, {
+    search: '?dopo=aste.html&code=codice-di-un-altro',
+    rotte: [['POST', SUPABASE + '/auth/v1/otp', { json: {} }], ['POST', SUPABASE + '/auth/v1/token?grant_type=pkce', () => (n++, { status: 400, json: { error_code: 'bad_code_verifier', msg: 'code challenge does not match' } })]]
+  });
+  // nessun accesso chiesto da questo browser: il codice da solo non basta e non parte nessuna richiesta
+  let r = await A.avvia();
+  assert.match(r.errore, /stesso browser in cui l'hai chiesto/);
+  assert.match(r.errore, /email è già confermata/);
+  assert.equal(chiamate.length, 0);
+  assert.deepEqual(storia.chiamate, ['/accedi.html?dopo=aste.html']);
+
+  // verificatore di una richiesta di questo browser, ma codice di un altro: GoTrue rifiuta lo scambio
+  delete require.cache[require.resolve('../js/account.js')];
+  const A2 = require('../js/account.js');
+  await A2.linkMagico(EMAIL);
+  loc.search = '?code=codice-di-un-altro';
+  r = await A2.avvia();
+  assert.equal(n, 1);
+  assert.match(r.errore, /stesso browser/);
+  assert.equal(A2.sessione(), null);
+  assert.ok(leggi(local, 'radaraste.account').attesa, 'la richiesta vera di questo browser resta valida');
+
+  // verificatore più vecchio di 24 ore: non vale più
+  const s = leggi(local, 'radaraste.account');
+  s.attesa.chiesto = new Date(Date.now() - 25 * 3600000).toISOString();
+  local.setItem('radaraste.account', JSON.stringify(s));
+  delete require.cache[require.resolve('../js/account.js')];
+  const A3 = require('../js/account.js');
+  loc.search = '?code=codice-finto';
+  r = await A3.avvia();
+  assert.match(r.errore, /stesso browser/);
+  assert.equal(n, 1, 'nessuno scambio con un verificatore scaduto');
+  assert.equal(local.getItem('radaraste.account'), null);
+});
+
+test('ritorno con errore (link scaduto) nell\'indirizzo o nel frammento: messaggio chiaro, nessuna sessione, indirizzo ripulito', async (t) => {
+  const { A, local, storia, chiamate } = ambiente(t, { search: '?dopo=aste.html&error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired' });
+  const r = await A.avvia();
+  assert.equal(r.errore, 'Il link è scaduto o è già stato usato: chiedine uno nuovo.');
+  assert.deepEqual(storia.chiamate, ['/accedi.html?dopo=aste.html']);
+  assert.equal(local.getItem('radaraste.account'), null);
+  assert.equal(chiamate.length, 0);
+  assert.deepEqual(A.leggiRitorno('', '#error=access_denied&error_code=otp_expired'), { errore: 'otp_expired', descrizione: '' });
+  // parametri qualsiasi non toccano nulla
+  assert.equal(A.leggiRitorno('', ''), null);
+  assert.equal(A.leggiRitorno('?dopo=aste.html', '#contenuto'), null);
+  assert.deepEqual(A.leggiRitorno('?code=abc&dopo=x.html', ''), { codice: 'abc' });
+  assert.deepEqual(A.leggiRitorno('', '#access_token=a.b.c&refresh_token=r'), { implicito: true });
+  assert.equal(A.leggiRitorno('?__proto__=x', '#constructor=y'), null);
+});
+
+test('non configurato: un codice o dei token nell\'indirizzo si tolgono comunque, senza rete', async (t) => {
+  const { A, storia, chiamate } = ambiente(t, { configurato: false, search: '?dopo=aste.html&code=codice-finto&anteprima=abbonamenti', hash: '#access_token=' + TOKEN + '&refresh_token=r' });
+  assert.equal(await A.avvia(), null);
+  assert.deepEqual(storia.chiamate, ['/accedi.html?dopo=aste.html&anteprima=abbonamenti']);
+  assert.equal(chiamate.length, 0);
 });
 
 /* ---- Sincronizzazione dei dati ---- */
@@ -340,17 +430,93 @@ test('unione dei dati: aste seguite unite per id con la nota più recente, nessu
 test('unione dei dati: un\'asta tolta su un altro dispositivo sparisce solo se non è stata modificata dopo', (t) => {
   const { A } = ambiente(t);
   const K = 'radaraste.v1.seguite';
-  const locale = (orari) => ({ [K]: { valore: [{ id: 'b', note: 'x', aggiunta: T(2) }, { id: 'd', aggiunta: T(2) }], aggiornato: T(5), orari, rimosse: {} } });
-  const remoto = { [K]: { valore: [{ id: 'd', aggiunta: T(2) }], aggiornato: T(9), orari: {}, rimosse: { b: T(9) } } };
+  const B = { id: 'b', note: 'x', aggiunta: T(2) };
+  const locale = (orari, b = B) => ({ [K]: { valore: [b, { id: 'd', aggiunta: T(2) }], aggiornato: T(5), orari, rimosse: {} } });
+  // registro di oggi: ora e impronta della versione tolta
+  const remoto = { [K]: { valore: [{ id: 'd', aggiunta: T(2) }], aggiornato: T(9), orari: {}, rimosse: { b: { t: T(9), f: A.impronta(B) } } } };
   let u = A.unisci(locale({}), remoto, T(19))[K];
   assert.deepEqual(u.valore.map((v) => v.id), ['d']);
-  assert.equal(u.rimosse.b, T(9));
-  u = A.unisci(locale({ b: T(12) }), remoto, T(19))[K];
-  assert.deepEqual(u.valore.map((v) => v.id), ['b', 'd'], 'modificata qui dopo la rimozione: resta');
+  assert.deepEqual(u.rimosse.b, { t: T(9), f: A.impronta(B) });
+  u = A.unisci(locale({ b: T(12) }, { ...B, note: 'scritta qui' }), remoto, T(19))[K];
+  assert.deepEqual(u.valore.map((v) => v.id), ['b', 'd'], 'modificata qui: resta');
+  assert.deepEqual(u.rimosse, {}, 'ripresa: la rimozione si dimentica');
   // le rimozioni si dimenticano dopo 180 giorni
   u = A.unisci(locale({}), remoto, '2027-06-01T00:00:00Z')[K];
   assert.deepEqual(u.valore.map((v) => v.id), ['b', 'd']);
   assert.deepEqual(u.rimosse, {});
+  // registri di prima (solo l'ora): tolta dopo l'ultima modifica → sparisce
+  const vecchio = { [K]: { ...remoto[K], rimosse: { b: T(9) } } };
+  assert.deepEqual(A.unisci(locale({}), vecchio, T(19))[K].valore.map((v) => v.id), ['d']);
+  assert.deepEqual(A.unisci(locale({ b: T(12) }), vecchio, T(19))[K].valore.map((v) => v.id), ['b', 'd']);
+});
+
+test('orologi diversi: le aste tolte si confrontano per versione, non per ora (nessuna asta persa, nessuna che torna)', (t) => {
+  const { A } = ambiente(t);
+  const K = 'radaraste.v1.seguite';
+  const B = { id: 'b', note: '', stato: 'da-valutare', aggiunta: T(2) };
+  // 1. il telefono ha l'orologio un anno avanti e toglie b; qui (orologio giusto) b era stata seguita di nuovo, con una
+  //    nota, dopo: con il confronto delle ore sparirebbe, con quello delle versioni resta
+  const ripresa = { id: 'b', note: 'la rivoglio', stato: 'da-valutare', aggiunta: T(15) };
+  let u = A.unisci({ [K]: { valore: [ripresa], aggiornato: T(15), orari: { b: T(15) }, rimosse: {} } },
+    { [K]: { valore: [], aggiornato: '2027-10-10T10:00:00.000Z', orari: {}, rimosse: { b: { t: '2027-10-10T10:00:00.000Z', f: A.impronta(B) } } } }, T(19))[K];
+  assert.deepEqual(u.valore, [ripresa]);
+  assert.deepEqual(u.rimosse, {});
+  // 2. una nota scritta su un altro dispositivo PRIMA (in ore) della rimozione, ma che chi ha tolto l'asta non aveva visto: resta
+  const modificata = { ...B, note: 'nota importante' };
+  u = A.unisci({ [K]: { valore: [], aggiornato: T(9), orari: {}, rimosse: { b: { t: T(9), f: A.impronta(B) } } } },
+    { [K]: { valore: [modificata], aggiornato: T(8), orari: { b: T(8) }, rimosse: {} } }, T(19))[K];
+  assert.deepEqual(u.valore, [modificata]);
+  // 3. il dispositivo che toglie ha l'orologio indietro (ora della rimozione prima dell'ultima modifica): la versione è
+  //    quella tolta, quindi sparisce lo stesso (con il confronto delle ore resterebbe per sempre)
+  u = A.unisci({ [K]: { valore: [B], aggiornato: T(10), orari: { b: T(10) }, rimosse: {} } },
+    { [K]: { valore: [], aggiornato: T(1), orari: {}, rimosse: { b: { t: T(1), f: A.impronta(B) } } } }, T(19))[K];
+  assert.deepEqual(u.valore, []);
+  // 4. la stessa versione con le chiavi in un altro ordine (jsonb le riordina) è la stessa versione
+  const riordinata = { aggiunta: T(2), stato: 'da-valutare', note: '', id: 'b' };
+  assert.equal(A.impronta(riordinata), A.impronta(B));
+});
+
+test('versioni che perdono: restano tra le copie di sicurezza, da tutte e due le parti', (t) => {
+  const { A } = ambiente(t);
+  const K = 'radaraste.v1.seguite', P = 'radaraste.preferenze';
+  const perse = [];
+  const u = A.unisci(
+    { [K]: { valore: [{ id: 'a', note: 'di qui', aggiunta: T(1) }, { id: 'c', note: 'uguale', aggiunta: T(1) }], aggiornato: T(5), orari: { a: T(5) }, rimosse: {} }, [P]: { valore: { zona: 'MI' }, aggiornato: T(9) } },
+    { [K]: { valore: [{ id: 'a', note: 'di là', aggiunta: T(1) }, { id: 'c', note: 'uguale', aggiunta: T(1) }], aggiornato: T(6), orari: { a: T(6) }, rimosse: {} }, [P]: { valore: { zona: 'RM' }, aggiornato: T(3) } },
+    T(19), perse);
+  assert.equal(u[K].valore[0].note, 'di là');
+  assert.deepEqual(u[P].valore, { zona: 'MI' });
+  assert.deepEqual(perse, [
+    { chiave: K, id: 'a', valore: { id: 'a', note: 'di qui', aggiunta: T(1) }, da: 'browser' },
+    { chiave: P, id: null, valore: { zona: 'RM' }, da: 'account' }
+  ]);
+  // una versione con meno campi, tutti uguali, non è persa
+  const perse2 = [];
+  A.unisci({ [K]: { valore: [{ id: 'a', note: 'n', aggiunta: T(1), copia: { titolo: 'Casa' } }], orari: { a: T(5) } } }, { [K]: { valore: [{ id: 'a', note: 'n', aggiunta: T(1) }], orari: { a: T(2) } } }, T(19), perse2);
+  assert.deepEqual(perse2, []);
+});
+
+test('sicurezza: un id "__proto__" (file importato) non cambia i prototipi e l\'asta non si perde', (t) => {
+  const { A, local } = ambiente(t);
+  const K = 'radaraste.v1.seguite';
+  const u = A.unisci(
+    { [K]: { valore: JSON.parse('[{"id":"__proto__","note":"qui","aggiunta":"' + T(1) + '"}]'), orari: JSON.parse('{"__proto__":"' + T(2) + '"}'), rimosse: {} } },
+    { [K]: { valore: JSON.parse('[{"id":"__proto__","note":"là","aggiunta":"' + T(1) + '"}]'), orari: JSON.parse('{"__proto__":"' + T(3) + '"}'), rimosse: {} } }, T(19))[K];
+  assert.equal(({}).v, undefined, 'Object.prototype non toccato');
+  assert.equal(({}).t, undefined);
+  assert.equal(u.valore.length, 1);
+  assert.equal(u.valore[0].note, 'là');
+  assert.equal(JSON.parse(JSON.stringify(u.orari)).__proto__, T(3));
+  // osserva: un'asta "__proto__" tolta finisce nel registro come le altre
+  conSessione(local);
+  local.setItem(K, '[{"id":"__proto__","note":""},{"id":"x"}]');
+  A.osserva(T(4));
+  local.setItem(K, '[{"id":"x"}]');
+  A.osserva(T(5));
+  const reg = JSON.parse(local.getItem('radaraste.account.sync')).chiavi[K];
+  assert.deepEqual(Object.keys(reg.rimosse), ['__proto__']);
+  assert.equal(reg.rimosse.__proto__.t, T(5));
+  assert.equal(Object.getPrototypeOf(reg.rimosse), Object.prototype);
 });
 
 test('unione dei dati: preferenze, ricerche e Stratega → vince il dato più recente', (t) => {
@@ -397,8 +563,13 @@ test('caricaDati: unisce account e browser, aggiorna la pagina, salva l\'unione 
   assert.equal(seguiteAggiornate, 1, 'le pagine si aggiornano come quando cambia il sito');
   // copia di sicurezza di quanto sostituito
   const prec = leggi(local, 'radaraste.account.precedenti');
-  assert.equal(prec[K].valore[0].note, 'locale');
-  assert.deepEqual(prec['radaraste.preferenze'].valore, { zona: 'MI' });
+  assert.equal(prec.versione, 2);
+  const voce = (chiave, id) => prec.voci.find((x) => x.chiave === chiave && x.id === id);
+  assert.deepEqual(voce(K, 'a').valore, { id: 'a', note: 'locale', aggiunta: T(1) });
+  assert.equal(voce(K, 'a').da, 'browser');
+  assert.equal(voce(K, 'a').utente, UTENTE);
+  assert.deepEqual(voce('radaraste.preferenze', null).valore, { zona: 'MI' });
+  assert.equal(prec.voci.length, 2, 'solo ciò che è stato sostituito, non tutta la lista');
   // salvataggio dell'unione: upsert con il token dell'utente
   const post = verso(chiamate, SUPABASE + '/rest/v1/dati_utente?on_conflict=utente', 'POST');
   assert.equal(post.length, 1);
@@ -432,12 +603,12 @@ test('osserva: le modifiche e le aste tolte si annotano con l\'ora e poi si sinc
   assert.deepEqual(A.osserva(T(2)), [K]);
   const reg = leggi(local, 'radaraste.account.sync').chiavi[K];
   assert.equal(reg.orari.a, T(2));
-  assert.equal(reg.rimosse.b, T(2));
+  assert.deepEqual(reg.rimosse.b, { t: T(2), f: A.impronta({ id: 'b', note: '' }) }, 'ora e versione tolta');
   assert.equal(A.pendenti(), true);
   await A.salvaDati();
   const corpo = verso(chiamate, SUPABASE + '/rest/v1/dati_utente?on_conflict=utente', 'POST')[0].corpo;
   assert.deepEqual(corpo.dati.chiavi[K].valore, [{ id: 'a', note: 'cambiata' }]);
-  assert.equal(corpo.dati.chiavi[K].rimosse.b, T(2), 'la rimozione arriva agli altri dispositivi');
+  assert.deepEqual(corpo.dati.chiavi[K].rimosse.b, { t: T(2), f: A.impronta({ id: 'b', note: '' }) }, 'la rimozione arriva agli altri dispositivi');
   assert.equal(A.pendenti(), false);
 });
 
@@ -479,25 +650,42 @@ test('salvataggio automatico: niente senza accesso', async (t) => {
   assert.equal(A.pendenti(), true, 'la modifica resta annotata per quando si accede');
 });
 
-test('un altro account nello stesso browser: si riparte senza le aste tolte e senza la data di sincronizzazione dell\'altro', async (t) => {
+test('privacy: i dati di un altro account in questo browser non entrano in un nuovo account senza conferma', async (t) => {
   const K = 'radaraste.v1.seguite';
   const ALTRO = '99999999-8888-4777-8666-555555555555';
   let remota = [];
   const { A, local, chiamate } = ambiente(t, { rotte: [['GET', SUPABASE + '/rest/v1/dati_utente?', () => ({ json: remota })]] });
   conSessione(local);
-  local.setItem(K, JSON.stringify([{ id: 'a', note: '' }, { id: 'b', note: '' }]));
+  local.setItem(K, JSON.stringify([{ id: 'a', note: 'nota di Anna' }, { id: 'b', note: '' }]));
   A.osserva(T(1));
-  local.setItem(K, JSON.stringify([{ id: 'a', note: '' }]));          // l'utente di prima toglie l'asta b
+  local.setItem(K, JSON.stringify([{ id: 'a', note: 'nota di Anna' }]));          // l'utente di prima toglie l'asta b
   A.osserva(T(2));
   await A.salvaDati();
   assert.ok(A.riepilogoDati().ultima);
   assert.equal(A.pendenti(), false);
+  assert.equal(A.riepilogoDati().daConfermare, false);
 
-  // entra un altro account che segue anche l'asta b (aggiunta prima che l'altro la togliesse)
+  // entra un altro account (un'altra persona sullo stesso computer): niente rete e niente unione da soli
   conSessione(local, { utente: { id: ALTRO, email: 'altro@example.com' } });
-  assert.equal(A.riepilogoDati().ultima, null, 'la data era dell\'altro account');
   remota = [{ utente: ALTRO, aggiornato: T(1), dati: { versione: 1, chiavi: { [K]: { valore: [{ id: 'b', note: 'mia', aggiunta: T(1) }], aggiornato: T(1), orari: {}, rimosse: {} } } } }];
-  const r = await A.caricaDati();
+  const prima = chiamate.length;
+  const r0 = await A.caricaDati();
+  assert.equal(r0.daConfermare, true);
+  assert.equal((await A.salvaDati()).daConfermare, true, 'neanche il salvataggio automatico');
+  assert.equal(chiamate.length, prima, 'nessuna richiesta: la nota di Anna non va nell\'account dell\'altro');
+  const rg = A.riepilogoDati();
+  assert.equal(rg.daConfermare, true);
+  assert.equal(rg.ultima, null, 'la data era dell\'altro account');
+  assert.deepEqual(leggi(local, K), [{ id: 'a', note: 'nota di Anna' }], 'questo browser non cambia');
+  // né nel file "Scarica i miei dati" dell'altro account
+  globalThis.fetch = (orig => async (url, init) => (/\/rest\/v1\/(profili|abbonamenti)\?/.test(String(url)) ? new Response('[]', { status: 200 }) : orig(url, init)))(globalThis.fetch);
+  const file = await A.esportaDati();
+  assert.equal(file.datiDiQuestoBrowser, null);
+  assert.match(file.notaBrowser, /collegati a un altro account/);
+  assert.ok(!JSON.stringify(file).includes('nota di Anna'));
+
+  // con la conferma si uniscono: si riparte senza le aste tolte dall'account di prima
+  const r = await A.caricaDati({ unisci: true });
   assert.equal(r.salvato, true, 'i dati di questo browser vanno anche nel nuovo account');
   assert.deepEqual(leggi(local, K).map((s) => s.id), ['a', 'b'], 'l\'asta tolta dall\'altro account resta in questo');
   const post = verso(chiamate, SUPABASE + '/rest/v1/dati_utente?on_conflict=utente', 'POST');
@@ -505,6 +693,68 @@ test('un altro account nello stesso browser: si riparte senza le aste tolte e se
   assert.equal(ultimo.utente, ALTRO);
   assert.deepEqual(ultimo.dati.chiavi[K].rimosse, {});
   assert.equal(leggi(local, 'radaraste.account.sync').utente, ALTRO);
+  assert.equal(A.riepilogoDati().daConfermare, false);
+  assert.equal((await A.salvaDati()).daConfermare, undefined, 'da qui in poi si sincronizza da solo');
+
+  // un browser collegato a un altro account ma senza dati: nessun rischio, nessuna domanda
+  for (const k of A.CHIAVI) local.removeItem(k);
+  conSessione(local, { utente: { id: UTENTE, email: EMAIL } });
+  assert.equal(A.riepilogoDati().daConfermare, false);
+  assert.notEqual((await A.caricaDati()).daConfermare, true);
+});
+
+test('le copie di sicurezza non si sovrascrivono a ogni sincronizzazione (le ultime 100) e vanno solo nel file del loro account', async (t) => {
+  const K = 'radaraste.v1.seguite';
+  let remota = [];
+  const { A, local } = ambiente(t, {
+    rotte: [['GET', SUPABASE + '/rest/v1/dati_utente?', () => ({ json: remota })],
+      ['GET', SUPABASE + '/rest/v1/profili?', { json: [] }], ['GET', SUPABASE + '/rest/v1/abbonamenti?', { json: [] }]]
+  });
+  conSessione(local);
+  const daAltrove = (note, giorno) => [{ utente: UTENTE, aggiornato: T(giorno), dati: { versione: 1, chiavi: { [K]: { valore: [{ id: 'a', note, aggiunta: T(1) }], aggiornato: T(giorno), orari: { a: T(giorno) }, rimosse: {} } } } }];
+  // due sincronizzazioni, ognuna sostituisce la nota scritta qui: tutte e due restano
+  local.setItem(K, JSON.stringify([{ id: 'a', note: 'prima nota di qui', aggiunta: T(1) }]));
+  remota = daAltrove('dal telefono', 3);
+  await A.caricaDati();
+  local.setItem(K, JSON.stringify([{ id: 'a', note: 'seconda nota di qui', aggiunta: T(1) }]));
+  A.osserva(T(4));
+  remota = daAltrove('dal tablet', 5);
+  await A.caricaDati();
+  assert.equal(leggi(local, K)[0].note, 'dal tablet');
+  const note = leggi(local, 'radaraste.account.precedenti').voci.map((x) => x.valore.note);
+  assert.ok(note.includes('prima nota di qui') && note.includes('seconda nota di qui'), JSON.stringify(note));
+
+  // una copia di un altro account usato in questo browser non finisce nel file di questo
+  const p = leggi(local, 'radaraste.account.precedenti');
+  p.voci.push({ chiave: K, id: 'z', valore: { id: 'z', note: 'di un\'altra persona' }, da: 'browser', sostituito: T(2), utente: '99999999-8888-4777-8666-555555555555' });
+  local.setItem('radaraste.account.precedenti', JSON.stringify(p));
+  const d = await A.esportaDati();
+  assert.ok(d.copieDiSicurezza.length >= 2);
+  assert.ok(d.copieDiSicurezza.every((x) => x.utente === UTENTE));
+  assert.ok(!JSON.stringify(d).includes('di un\'altra persona'));
+
+  // tetto: 120 note sostituite in una volta → restano le ultime 100
+  const molte = Array.from({ length: 120 }, (_, i) => ({ id: 'm' + i, note: 'qui ' + i, aggiunta: T(1) }));
+  local.setItem(K, JSON.stringify(molte));
+  A.osserva(T(6));
+  remota = [{ utente: UTENTE, aggiornato: T(7), dati: { versione: 1, chiavi: { [K]: { valore: molte.map((v) => ({ ...v, note: 'là ' + v.id })), aggiornato: T(7), orari: Object.fromEntries(molte.map((v) => [v.id, T(7)])), rimosse: {} } } } }];
+  await A.caricaDati();
+  const voci = leggi(local, 'radaraste.account.precedenti').voci;
+  assert.equal(voci.length, A.MAX_COPIE);
+  assert.equal(voci[voci.length - 1].valore.note, 'qui 119');
+});
+
+test('memoria piena: se le copie di sicurezza non si salvano, la sincronizzazione non cambia nulla', async (t) => {
+  const K = 'radaraste.v1.seguite';
+  const remota = [{ utente: UTENTE, aggiornato: T(5), dati: { versione: 1, chiavi: { [K]: { valore: [{ id: 'a', note: 'di là', aggiunta: T(1) }], aggiornato: T(5), orari: { a: T(5) }, rimosse: {} } } } }];
+  const { A, local, chiamate } = ambiente(t, { rotte: [['GET', SUPABASE + '/rest/v1/dati_utente?', { json: remota }]] });
+  conSessione(local);
+  local.setItem(K, JSON.stringify([{ id: 'a', note: 'di qui', aggiunta: T(1) }]));
+  const scrivi = local.setItem;
+  local.setItem = (k, v) => { if (k === 'radaraste.account.precedenti') throw new Error('QuotaExceededError'); return scrivi(k, v); };
+  await assert.rejects(A.caricaDati(), { codice: 'memoria', message: /memoria del browser è piena/ });
+  assert.deepEqual(leggi(local, K), [{ id: 'a', note: 'di qui', aggiunta: T(1) }], 'la nota di qui resta');
+  assert.equal(verso(chiamate, SUPABASE + '/rest/v1/dati_utente?on_conflict=utente', 'POST').length, 0, 'e non viene sovrascritta nell\'account');
 });
 
 test('dati troppo grandi per l\'account (vincolo dello schema): errore chiaro, i dati restano nel browser', async (t) => {
@@ -589,9 +839,15 @@ test('cancellaAccount ed esci: sessione chiusa, i dati del sito restano nel brow
   const c = chiamate.find((x) => x.url === '/api/account/cancella');
   assert.equal(c.intestazioni.Authorization, 'Bearer ' + TOKEN);
   assert.equal(A.sessione(), null);
-  assert.equal(local.getItem('radaraste.account.sync'), null);
   assert.deepEqual(leggi(local, 'radaraste.v1.seguite'), [{ id: 'a' }]);
   assert.ok(eventi.includes('cancellato'));
+  // i dati rimasti in questo browser restano legati all'account cancellato: un altro account non li prende da solo
+  const reg = leggi(local, 'radaraste.account.sync');
+  assert.equal(reg.utente, UTENTE);
+  assert.equal(reg.ultima, undefined);
+  assert.deepEqual(reg.sincronizzate, {});
+  conSessione(local, { utente: { id: '99999999-8888-4777-8666-555555555555', email: 'altro@example.com' } });
+  assert.equal(A.riepilogoDati().daConfermare, true);
 
   conSessione(local);
   assert.equal(await A.esci(), true);
@@ -602,6 +858,62 @@ test('cancellaAccount ed esci: sessione chiusa, i dati del sito restano nel brow
   assert.ok(eventi.includes('uscita'));
   assert.deepEqual(leggi(local, 'radaraste.v1.seguite'), [{ id: 'a' }]);
   assert.equal(await A.esci(), false, 'già fuori');
+});
+
+test('uscita durante un rinnovo del token: la sessione non torna (nessun token salvato dopo l\'uscita)', async (t) => {
+  let rilascia;
+  const fermo = new Promise((ok) => { rilascia = ok; });
+  const { A, local, chiamate } = ambiente(t, {
+    rotte: [['POST', SUPABASE + '/auth/v1/token?grant_type=refresh_token', async () => { await fermo; return { json: { access_token: TOKEN2, refresh_token: 'rinnovo-nuovo', expires_in: 3600, user: UTENTE_GOTRUE } }; }]]
+  });
+  conSessione(local);
+  const rinnovo = A.aggiorna();               // per esempio il rinnovo programmato, partito un attimo prima
+  assert.equal(await A.esci(), true);
+  assert.equal(local.getItem('radaraste.account'), null);
+  rilascia();
+  await assert.rejects(rinnovo, { codice: 'non-autenticato' });
+  assert.equal(local.getItem('radaraste.account'), null, 'il token rinnovato non riapre la sessione');
+  assert.equal(A.sessione(), null);
+  assert.equal(verso(chiamate, SUPABASE + '/auth/v1/logout').length, 1);
+});
+
+test('uscita con il token scaduto: prima si rinnova, poi la sessione si chiude anche sul servizio', async (t) => {
+  let logout401 = false;
+  const { A, local, chiamate } = ambiente(t, {
+    rotte: [['POST', SUPABASE + '/auth/v1/token?grant_type=refresh_token', { json: { access_token: TOKEN2, refresh_token: 'rinnovo-nuovo', expires_in: 3600, user: UTENTE_GOTRUE } }],
+      ['POST', SUPABASE + '/auth/v1/logout', (req) => (logout401 && req.intestazioni.Authorization === 'Bearer ' + TOKEN ? { status: 401, json: { msg: 'invalid JWT' } } : { status: 204 })]]
+  });
+  conSessione(local, { expires_at: ora() - 10 });
+  assert.equal(await A.esci(), true);
+  const out = verso(chiamate, SUPABASE + '/auth/v1/logout');
+  assert.equal(out.length, 1);
+  assert.equal(out[0].intestazioni.Authorization, 'Bearer ' + TOKEN2, 'con il token rinnovato: il token di rinnovo viene revocato');
+  assert.equal(local.getItem('radaraste.account'), null);
+
+  // token che sembra valido ma il servizio rifiuta (401): si rinnova e si riprova
+  logout401 = true;
+  conSessione(local);
+  assert.equal(await A.esci(), true);
+  assert.deepEqual(verso(chiamate, SUPABASE + '/auth/v1/logout').slice(1).map((c) => c.intestazioni.Authorization), ['Bearer ' + TOKEN, 'Bearer ' + TOKEN2]);
+  assert.equal(local.getItem('radaraste.account'), null);
+});
+
+test('orologio del dispositivo avanti: la scadenza si conta da expires_in, nessun rinnovo a ripetizione', async (t) => {
+  const { A, local, chiamate } = ambiente(t, {
+    // il servizio ha l'orologio due ore indietro rispetto al dispositivo: il suo expires_at sembra già passato
+    rotte: [['POST', SUPABASE + '/auth/v1/token?grant_type=password', () => ({ json: { access_token: TOKEN, refresh_token: 'rinnovo-finto', expires_in: 3600, expires_at: ora() - 3600, user: UTENTE_GOTRUE } })],
+      ['POST', SUPABASE + '/auth/v1/token?grant_type=refresh_token', () => ({ json: { access_token: TOKEN2, refresh_token: 'rinnovo-nuovo', expires_at: ora() - 3600, user: UTENTE_GOTRUE } })]]
+  });
+  await A.accedi(EMAIL, 'password-lunga');
+  await A.attendi();
+  const s = leggi(local, 'radaraste.account');
+  assert.ok(Math.abs(s.expires_at - (ora() + 3600)) <= 2, 'un\'ora dal nostro orologio');
+  await A.abbonamento();
+  await A.abbonamento();
+  assert.equal(verso(chiamate, SUPABASE + '/auth/v1/token?grant_type=refresh_token').length, 0, 'nessun rinnovo inutile');
+  // senza expires_in e con un expires_at assurdo: un'ora (se scade prima il servizio risponde 401 e si rinnova)
+  await A.aggiorna();
+  assert.ok(Math.abs(leggi(local, 'radaraste.account').expires_at - (ora() + 3600)) <= 2);
 });
 
 test('js/piani.js legge lo stato dell\'account da Account.statoCorrente()', (t) => {
@@ -656,4 +968,111 @@ test('supabase/schema.sql: RLS su tutte le tabelle, abbonamenti ed eventi_stripe
   assert.match(sql, /insert into public\.abbonamenti \(utente, piano\) values \(new\.id, 'gratis'\)/i);
   assert.match(sql, /check \(piano in \('gratis', 'base', 'pro'\)\)/i);
   assert.match(sql, /security definer\s+set search_path = ''/i);
+  // ogni funzione: search_path fisso; quelle SECURITY DEFINER non eseguibili da chi usa il sito
+  const funzioni = [...sql.matchAll(/create or replace function\s+(public\.\w+)\(\)([\s\S]*?)as \$\$/gi)];
+  assert.ok(funzioni.length >= 3);
+  for (const [, nome, corpo] of funzioni) {
+    assert.match(corpo, /set search_path = ''/i, nome + ': search_path fisso');
+    if (/security definer/i.test(corpo)) {
+      assert.match(sql, new RegExp('revoke execute on function ' + nome.replace('.', '\\.') + '\\(\\) from public, anon, authenticated;', 'i'), nome + ': non eseguibile dal browser');
+    }
+  }
+  // nessuna policy aperta a tutti, nessun permesso ai visitatori senza accesso
+  assert.doesNotMatch(sql, /using\s*\(\s*true\s*\)|with check\s*\(\s*true\s*\)/i);
+  assert.doesNotMatch(sql, /\bto\s+anon\b|\bto\s+public\b/i);
+  assert.doesNotMatch(sql, /grant[^;]*\bdelete\b/i, 'il browser non cancella righe: lo fa la funzione del sito');
+  for (const n of TABELLE) assert.match(sql, new RegExp('revoke all on table public\\.' + n + ' from public, anon, authenticated;', 'i'), n);
+});
+
+/* ---- Pagine accedi.html e account.html ---- */
+
+const pagina = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+
+test('pagine dell\'account: struttura comune, id unici, riferimenti aria esistenti, ogni campo con la sua etichetta', () => {
+  for (const f of ['accedi.html', 'account.html']) {
+    const h = pagina(f);
+    assert.match(h, /^<!doctype html>\n<html lang="it">/, f);
+    assert.match(h, /<title>[^<]{3,} – Radar Aste Italia<\/title>/, f);
+    assert.ok(h.includes('<meta name="robots" content="noindex">'), f);
+    assert.match(h, /<a class="salta" href="#contenuto">Salta al contenuto<\/a>/, f);
+    assert.equal(h.match(/<main\b/g).length, 1, f);
+    assert.equal(h.match(/<h1\b/g).length, 1, f);
+    const id = [...h.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+    assert.equal(new Set(id).size, id.length, f + ': id doppi');
+    for (const [, rif] of h.matchAll(/aria-(?:labelledby|describedby)="([^"]+)"/g)) for (const r of rif.split(/\s+/)) assert.ok(id.includes(r), f + ': ' + r + ' non esiste');
+    // ogni campo sta dentro la sua etichetta
+    assert.doesNotMatch(h.replace(/<label\b[\s\S]*?<\/label>/g, ''), /<input\b/, f + ': campo senza etichetta');
+    // messaggi letti dal lettore di schermo: zona di stato e zona di avviso sempre presenti (non nascoste)
+    const p = f === 'accedi.html' ? 'acc' : 'ac';
+    assert.ok(h.includes('<p class="sr-only" id="' + p + 'Annuncio" role="status" aria-live="polite" aria-atomic="true"></p>'), f);
+    assert.ok(h.includes('<p class="sr-only" id="' + p + 'Avviso" role="alert" aria-atomic="true"></p>'), f);
+    assert.match(h, new RegExp('<div class="callout acc-msg" id="' + p + 'Msg" tabindex="-1" hidden></div>'), f);
+    // collegamenti a condizioni, privacy e cookie
+    for (const l of ['termini.html', 'privacy.html', 'cookie.html']) assert.ok(h.includes('href="' + l + '"'), f + ': ' + l);
+    assert.doesNotMatch(h, /Termini del servizio/, f + ': la pagina si chiama "Condizioni d\'uso e di abbonamento"');
+    const ordine = ['js/ui.js', 'config/abbonamenti.js', 'js/account.js', 'js/piani.js', 'js/pages/' + f.replace('.html', '.js')].map((s) => h.indexOf('<script src="' + s + '"></script>'));
+    for (const o of ordine) assert.ok(o > 0, f + ': script mancante');
+    assert.deepEqual([...ordine].sort((a, b) => a - b), ordine, f + ': ordine degli script');
+  }
+});
+
+test('accedi.html: moduli disattivati finché gli account non sono configurati, consenso non preselezionato', () => {
+  const h = pagina('accedi.html');
+  // senza JavaScript o senza configurazione non si può inviare nulla (e mai la password nell'indirizzo)
+  for (const [id, h2] of [['fAccedi', 'h-accedi'], ['fRegistra', 'h-registra']]) {
+    assert.match(h, new RegExp('<form id="' + id + '" class="acc-form" method="post" novalidate>\\s*<fieldset class="acc-campi" aria-labelledby="' + h2 + '" disabled>'), id);
+  }
+  assert.match(h, /<button class="btn ghost" type="button" id="accGoogle" aria-describedby="accNotaGoogle" disabled>/);
+  assert.match(h, /<button class="btn ghost" type="button" id="accLink" aria-describedby="accNotaLink" disabled>/);
+  assert.ok(h.includes('<strong>Account non ancora attivo (modalità test).</strong>'));
+  // consenso: casella vuota e obbligatoria, con i collegamenti nella sua etichetta
+  const casella = h.match(/<input type="checkbox" name="consenso"[^>]*>/)[0];
+  assert.doesNotMatch(casella, /checked/);
+  assert.match(casella, /required/);
+  const etichetta = h.match(/<label class="check acc-consenso">([\s\S]*?)<\/label>/)[1];
+  assert.ok(etichetta.includes('<a href="termini.html">Condizioni d\'uso e di abbonamento</a>') && etichetta.includes('<a href="privacy.html">Informativa sulla privacy</a>'));
+  // i link di accesso vanno aperti nello stesso browser (PKCE)
+  assert.match(h, /Aprilo in questo stesso browser/);
+  // lo script accende i moduli solo con gli account configurati
+  const js = pagina('js/pages/accedi.js');
+  assert.match(js, /if \(!A \|\| !A\.configurato\(\)\) \{ \$\('#accSpento'\)\.hidden = false; accendi\(false\); return; \}\s*accendi\(true\);/);
+  // errori di un campo: sotto il campo, come sua descrizione, con aria-invalid (in entrambe le pagine)
+  for (const [f, p] of [['js/pages/accedi.js', 'acc'], ['js/pages/account.js', 'ac']]) {
+    const s = pagina(f);
+    assert.ok(s.includes("campo.setAttribute('aria-invalid', 'true');"), f);
+    assert.ok(s.includes("e.id = '" + p + "ErroreCampo'") && s.includes("('" + p + "ErroreCampo ' +"), f);
+    assert.ok(s.includes("el = $(errore ? '#" + p + "Avviso' : '#" + p + "Annuncio')"), f);
+  }
+});
+
+test('account.html: dati di un altro account da confermare, uscita e cancellazione spiegate', () => {
+  const h = pagina('account.html');
+  assert.match(h, /<div class="callout warn acc-collega" id="acCollega" hidden>[\s\S]*?<button class="btn small" type="button" id="acUnisci">Unisci i dati di questo browser al mio account<\/button>/);
+  assert.match(h, /<button class="btn danger" type="button" id="acCancella" aria-describedby="acCancellaNota">/);
+  assert.match(h, /<button class="btn quiet" type="button" id="acEsci" aria-describedby="acEsciNota">/);
+  assert.match(h, /id="acEsciNota">Uscendo, le aste seguite, le note e le preferenze restano salvate in questo browser/);
+  assert.match(h, /le versioni sostituite \(le ultime 100\)/);
+});
+
+test('pagina dell\'account: con un pagamento non riuscito la data è quella di js/piani.js, testi protetti', () => {
+  delete require.cache[require.resolve('../js/pages/account.js')];
+  const Pagina = require('../js/pages/account.js');
+  const P = require('../js/piani.js');
+  const GIORNO = 86400000, adesso = new Date().toISOString();
+  const giorno = (iso) => new Date(iso).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+  // Stripe ha già spostato finePeriodo alla fine del mese NON pagato: il piano resta fino a 7 giorni dopo la fine del
+  // periodo pagato (finePeriodo - 28 + 7 giorni), non fino a finePeriodo + 7 giorni
+  const ab = { piano: 'base', periodo: 'mensile', stato: 'past_due', finePeriodo: new Date(Date.now() + 25 * GIORNO).toISOString() };
+  const giusta = P.fineRitardo(ab), sbagliata = new Date(Date.parse(ab.finePeriodo) + 7 * GIORNO).toISOString();
+  assert.equal(P.piano({ abbonamento: ab }, adesso), 'base');
+  const h = Pagina.descrivi(ab, adesso);
+  assert.ok(h.includes('il piano Base resta attivo fino al ' + giorno(giusta) + ', poi torni al piano Gratis'), h);
+  assert.ok(!h.includes(giorno(sbagliata)));
+  // tolleranza finita: lo dice
+  const scaduto = { ...ab, finePeriodo: new Date(Date.now() + 10 * GIORNO).toISOString() };
+  assert.equal(P.piano({ abbonamento: scaduto }, adesso), 'gratis');
+  assert.match(Pagina.descrivi(scaduto, adesso), /nel frattempo usi il piano Gratis/);
+  // nessun HTML dai dati salvati nel browser
+  assert.doesNotMatch(Pagina.descrivi({ piano: '<img src=x onerror=alert(1)>', stato: 'active', periodo: 'mensile' }, adesso), /<img/);
+  assert.match(Pagina.descrivi({ piano: 'gratis', stato: null }, adesso), /Usi il piano Gratis/);
 });

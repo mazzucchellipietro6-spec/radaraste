@@ -3,7 +3,9 @@
 
 .acc-griglia { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px; align-items: start; }
 .acc-blocco { gap: 14px; min-width: 0; }
-.acc-form { gap: 14px; }
+.acc-form { display: grid; gap: 14px; }
+/* campi raggruppati in un fieldset (disattivato finché gli account non sono configurati), senza la cornice del browser */
+.acc-campi { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }
 .acc-form .row-actions { margin-top: 2px; }
 /* testi lunghi nei pulsanti: vanno a capo invece di uscire dal riquadro sui telefoni */
 .acc-blocco .btn, .acc-azioni .btn, .acc-google .btn, .acc-dentro .btn, .acc-vuoto .btn { white-space: normal; text-align: center; }
@@ -11,6 +13,7 @@
 /* messaggi */
 .acc-msg:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
 .acc-msg.acc-errore { border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); background: var(--bad-bg); color: var(--fg); }
+.acc-errore-campo { margin: -6px 0 0; color: var(--bad); font-size: 14px; font-weight: 600; }
 .acc-ok { border-color: color-mix(in srgb, var(--good) 40%, var(--line)); background: var(--good-bg); color: var(--fg); }
 .acc-spento p, .acc-dentro p { margin: 0; }
 .acc-spento .row-actions, .acc-dentro .row-actions { margin-top: 10px; }
@@ -51,6 +54,11 @@ label.check.acc-consenso input { margin-top: 1px; }
 .acc-pericolo { border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); }
 .acc-pericolo h2 { color: var(--bad); }
 .acc-vuoto p { max-width: 56ch; }
+.acc-collega p { margin: 0; }
+.acc-collega .row-actions { margin-top: 10px; }
+.acc-collega strong { color: var(--warn); }
+.acc-uscita { gap: 8px; }
+.acc-uscita .note { margin: 0; max-width: 72ch; }
 
 @media (max-width: 899px) {
   .acc-password > summary { min-height: 44px; }
