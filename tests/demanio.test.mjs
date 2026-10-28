@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { leggiScheda, giornoAsta } from '../scripts/fonti/demanio.mjs';
+import { leggiScheda, giornoAsta, categoriaBene } from '../scripts/fonti/demanio.mjs';
 
 const URL_VENETO = 'https://www.agenziademanio.it/it/gare-aste/beni-mobili-e-veicoli-confiscati/gara/Asta-pubblica-per-la-vendita-di-n.-25-lotti-di-beni-mobili-di-competenza-della-Direzione-Regionale-Veneto';
 
@@ -22,6 +22,31 @@ test('scheda reale (Veneto, 25 lotti): asta l\'11/11 come scritto nell\'avviso, 
   assert.match(a.descrizione, /^Asta pubblica del giorno 11 novembre 2026/);
   // il termine si legge anche dalla scheda, senza quello dell'elenco
   assert.equal(leggiScheda(h, URL_VENETO, 'beni', 'Asta pubblica', null, '').termineOfferte, '2026-11-10T16:00');
+});
+
+test('categoria: "beni mobili" restano beni, salvo veicoli veri (testi reali del Demanio del 21-22/10/2026)', async () => {
+  const VENETO = 'Asta pubblica per la vendita di n. 25 lotti di beni mobili di competenza della Direzione Regionale Veneto';
+  // il titolo da solo dice "beni mobili": nessuna parola dei veicoli, quindi beni
+  assert.equal(categoriaBene(VENETO, 'beni'), 'beni');
+  // ma la descrizione della stessa gara dice che ogni lotto è un veicolo confiscato (art. 215 C.d.S.): sono veicoli veri
+  const h = await readFile(new URL('./fixture/demanio-veneto-17839.html', import.meta.url), 'utf8');
+  const a = leggiScheda(h, URL_VENETO, 'beni', VENETO, { data: '2026-11-10', ora: '16:00' }, '2026-10-21');
+  assert.match(a.descrizione, /ciascuno composto da veicolo oggetto di confisca definitiva/);
+  assert.equal(a.categoria, 'auto', 'veicoli: la categoria dei veicoli del sito (come AUTOVEICOLI_E_CICLI del PVP)');
+  // senza la frase sui veicoli la stessa pagina è una vendita di beni
+  assert.equal(leggiScheda(h.replace('ciascuno composto da veicolo oggetto di confisca definitiva ovvero assoggettato', 'ciascuno composto da beni assoggettati'), URL_VENETO, 'beni', VENETO, null, '').categoria, 'beni');
+  // gara reale del 22/10/2026 (stessa sezione): materiale metallico, DPR 189/2001
+  assert.equal(categoriaBene('Asta pubblica per la vendita di n. 1 lotto di materiale metallico di competenza della Direzione Regionale Veneto Asta pubblica per la vendita di n. 1 lotto di materiale metallico ovvero assoggettato alle procedure di cui al DPR 189/2001.', 'beni'), 'beni');
+  // parole dei veicoli usate per altri beni (frasi costruite sul modello degli avvisi): restano beni
+  assert.equal(categoriaBene('Vendita di ricambi per autoveicoli e pneumatici', 'beni'), 'beni');
+  assert.equal(categoriaBene('Lotto di rottami ferrosi derivanti da veicoli demoliti', 'beni'), 'beni');
+  assert.equal(categoriaBene('Pezzi di ricambio per moto', 'beni'), 'beni');
+  // veicoli veri: moto solo senza auto nello stesso testo; "motoveicoli" non è un'auto
+  assert.equal(categoriaBene('Asta per n. 3 motoveicoli confiscati', 'beni'), 'moto');
+  assert.equal(categoriaBene('Lotti composti da autovetture e motocicli', 'beni'), 'auto');
+  assert.equal(categoriaBene('Autovettura Fiat Panda', 'beni'), 'auto');
+  // la sezione immobiliare resta immobile
+  assert.equal(categoriaBene('Autorimessa con posti auto', 'immobile'), 'immobile');
 });
 
 test('giorno dell\'asta: scritto in lettere o in cifre (titoli e descrizioni reali dell\'elenco), con l\'ora se c\'è', () => {

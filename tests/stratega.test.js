@@ -784,3 +784,42 @@ test('pagina: campi su più anni con valori prudenti e aiuto, sezione del patrim
   assert.match(js, /<summary>I numeri del grafico<\/summary>/);
   assert.match(js, /S\.datiGrafico\(/);
 });
+
+test('pagina: affitti e imposte con una cifra sola, quella della simulazione mediana mostrata anche nel riquadro dell\'anno e nella tabella', () => {
+  // collaudo del 28/10/2026 (150.000 €, "Lo affitto"): la frase diceva 33.799 € "nella mediana delle simulazioni",
+  // il riquadro dell'anno 32.268 € "affitti incassati". Erano due statistiche diverse con nomi quasi uguali.
+  const ris = S.esegui([
+    asta({ comune: 'A', dataAsta: '2026-11-03', omiAffMin: 500, omiAffMax: 800, valoreMin: 150000 }),
+    asta({ comune: 'B', dataAsta: '2026-12-20', omiAffMin: 300, omiAffMax: 1200, valoreMin: 200000 }),
+    asta({ comune: 'C', dataAsta: '2027-01-20', omiAffMin: 900, omiAffMax: 1000, valoreMin: 170000 })
+  ], { capitale: 400000, strategia: 'affittare', prudenza: 'prudente', concorrenza: 0.3 }, { T, oggi: OGGI, n: 400, seme: 1 });
+  const p = S.proiezione(ris, { anni: 3 });
+  const d = S.datiGrafico(p, { larghezza: 640 });
+  // le due statistiche qui sono davvero diverse: per questo la pagina ne mostra una sola
+  assert.notEqual(p.finale.affitti.p50, p.finale.mediana.affitti);
+  // riquadro dell'anno e tabella leggono la simulazione mediana (punti[A].mediana), la stessa di p.finale.mediana
+  assert.deepEqual(d.punti[d.punti.length - 1].mediana, p.finale.mediana);
+  const js = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'js', 'pages', 'stratega.js'), 'utf8');
+  const frase = js.slice(js.indexOf('var diff = P.p50 - p.capitale'), js.indexOf('h += \'<div class="ar-numeri">\' +\n      tile(\'Dopo \''));
+  assert.match(frase, /um = u\.mediana \|\| \{\}/);
+  assert.match(frase, /U\.eur\(um\.affitti\)/);
+  assert.match(frase, /U\.eur\(um\.imposte\)/);
+  assert.doesNotMatch(frase, /u\.affitti\.p50|nella mediana delle simulazioni/);
+  assert.match(frase, /nella simulazione mediana \(quella con il patrimonio a metà classifica\), la stessa del grafico e della tabella/);
+  // la media delle imposte resta, ma con un nome che dice che è un'altra cosa
+  assert.match(frase, /Media di tutte le simulazioni: ' \+ U\.eur\(p\.vendite\.impostaMedia\)/);
+  assert.match(js, /'<p class="pt-tip-s">Nella simulazione mediana<\/p>'/);
+});
+
+test('cookie.html: la chiave radaraste.stratega descrive il profilo e tutti i campi «Su più anni» che la pagina salva', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  const js = fs.readFileSync(path.join(__dirname, '..', 'js', 'pages', 'stratega.js'), 'utf8');
+  const campi = JSON.parse(js.match(/var CAMPI_ANNI = (\[[^\]]+\])/)[1].replace(/'/g, '"'));
+  const NOMI = { anni: /anni da simulare/, rivalutazione: /rivalutazione degli immobili/, costiAffitto: /costi e sfitto/, mesiRivendita: /mesi alla rivendita/,
+    costiVendita: /costi di vendita/, tassoMutuo: /tasso del mutuo/, reinvesti: /reinvestire i guadagni/ };
+  assert.deepEqual(campi.slice().sort(), Object.keys(NOMI).sort(), 'un campo nuovo va descritto anche in cookie.html');
+  const riga = fs.readFileSync(path.join(__dirname, '..', 'cookie.html'), 'utf8').match(/<code>radaraste\.stratega<\/code><\/td><td[^>]*><span class="v">([^<]+)<\/span>/)[1];
+  assert.match(riga, /«Su più anni»/);
+  for (const k of campi) assert.match(riga, NOMI[k], k);
+  for (const p of [/capitale/, /mutuo/, /orizzonte/, /strategia/, /prudenza/, /regione/, /altri offerenti/]) assert.match(riga, p);
+});

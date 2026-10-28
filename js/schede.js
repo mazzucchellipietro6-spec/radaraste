@@ -75,7 +75,9 @@
     var et = D.asta || (!D.termine && a.fonte !== 'Agenzia del Demanio') ? 'Asta' : 'Termine offerte';
     if (!x) return '<div class="quando">' + U.icona('calendario') + '<span>' + et + ': data non indicata nell\'avviso</span></div>';
     var q = U.quando(x.data), g = U.giorniA(x.data), presto = g !== null && g >= 0 && g <= 7;
-    return '<div class="quando">' + U.icona('calendario') + '<span><span class="sr-only">' + et + ': </span>' + U.dataIt(x.data) + (x.ora ? ', ' + U.esc(x.ora) : '') + '</span>' +
+    // solo il termine (Demanio senza il giorno dell'asta): la scritta si vede, altrimenti la data sembra il giorno dell'asta
+    var prima = D.asta ? '<span class="sr-only">Asta: </span>' : 'Offerte entro ';
+    return '<div class="quando">' + U.icona('calendario') + '<span>' + prima + U.dataIt(x.data) + (x.ora ? ', ' + U.esc(x.ora) : '') + '</span>' +
       (q ? '<b class="tra' + (presto ? ' presto' : '') + (g !== null && g < 0 ? ' finita' : '') + '">' + q + '</b>' : '') + '</div>' +
       // il termine sotto la data dell'asta, se è un altro giorno o ha l'ora (anche il giorno stesso dell'asta)
       (D.asta && to && (to.data !== D.asta.data || to.ora) ? '<div class="quando sub">' + U.icona('orologio') + '<span>Offerte entro il ' + U.dataIt(to.data) + (to.ora ? ', ' + U.esc(to.ora) : '') + '</span></div>' : '');

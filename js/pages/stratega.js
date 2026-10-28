@@ -143,14 +143,17 @@
     var avvisi = p.avvertenze && p.avvertenze.length ? '<div class="callout warn pt-avvisi"><h3>Dati mancanti e limiti</h3><ul>' + p.avvertenze.map(function (x) { return '<li>' + U.esc(x) + '</li>'; }).join('') + '</ul></div>' : '';
     if (dati.vuoto) return h + '<p>' + U.esc(dati.riassunto) + '</p>' + avvisi;
     h += '<p class="note">Cassa + immobili − mutuo da restituire, alla fine di ogni anno per ' + anniTesto(A) + ', in ' + n(p.n) + ' simulazioni del piano. Strategia: ' + U.esc(NOMI_STRATEGIA[p.strategia] || p.strategia) + '.</p>' + avvisi;
-    var diff = P.p50 - p.capitale, frase = '';
+    // affitti e imposte: la cifra della simulazione mediana, la stessa del riquadro dell'anno e della tabella
+    // (prima qui c'era la mediana degli affitti di tutte le simulazioni: due cifre diverse per la stessa voce)
+    var diff = P.p50 - p.capitale, frase = '', um = u.mediana || {}, SIM_MEDIANA = 'nella simulazione mediana (quella con il patrimonio a metà classifica), la stessa del grafico e della tabella';
     if (p.strategia === 'affittare') {
       frase = p.affitto && p.affitto.conQuotazione
-        ? 'Affitti incassati in ' + anniTesto(A) + ', già tolti costi e sfitto: <b>' + U.eur(u.affitti.p50) + '</b> nella mediana delle simulazioni.'
+        ? 'Affitti incassati in ' + anniTesto(A) + ', già tolti costi e sfitto: <b>' + U.eur(um.affitti) + '</b> ' + SIM_MEDIANA + '.'
         : 'Affitti: <b>non stimati</b>, perché per nessuna asta del piano c\'è la quotazione OMI di locazione.';
     } else if (p.strategia === 'rivendere') {
       frase = p.vendite.quotaGiri
-        ? 'Imposta sulle plusvalenze: <b>' + U.eur(p.vendite.impostaMedia) + '</b> in media per simulazione, con ' + String(Math.round(p.vendite.media * 10) / 10).replace('.', ',') + ' vendite in media entro ' + anniTesto(A) + '.'
+        ? 'Imposta sulle plusvalenze pagata in ' + anniTesto(A) + ': <b>' + U.eur(um.imposte) + '</b> ' + SIM_MEDIANA + '. Media di tutte le simulazioni: ' + U.eur(p.vendite.impostaMedia) +
+          ' di imposta e ' + String(Math.round(p.vendite.media * 10) / 10).replace('.', ',') + ' vendite.'
         : 'Nessuna vendita entro ' + anniTesto(A) + ': il patrimonio conta il valore stimato degli immobili, non un incasso.';
     } else frase = 'Compri casa nel <b>' + U.pct(u.posseduti, 0) + '</b> delle simulazioni.';
     h += '<div class="ar-numeri">' +

@@ -46,10 +46,21 @@ export function giornoAsta(t) {
 
 const eVendita = (t) => /vendit|alienazion|asta pubblica/i.test(t) && !/locazion|concession|affitt/i.test(t);
 
-function categoriaBene(t, base) {
+/* Categoria di una vendita della sezione "beni mobili e veicoli confiscati": 'beni', salvo veicoli veri.
+ * Si legge titolo + descrizione dell'avviso: il titolo dice spesso solo "beni mobili", la descrizione dice che cosa sono
+ * (es. Veneto, 21/10/2026: "25 lotti, ciascuno composto da veicolo oggetto di confisca … art. 215 del C.d.S." → veicoli).
+ * Le parole dei veicoli usate per altri beni ("ricambi per autoveicoli", "rottami di veicoli") non fanno un veicolo.
+ * Moto solo se il testo non nomina anche auto o autocarri (lotti misti: 'auto', la categoria generica dei veicoli,
+ * come per il Portale delle Vendite Pubbliche). */
+const MOTO = /motocicl|motoveicol|ciclomotor|\bmoto\b|scooter/i;
+const AUTO = /autovettur|autoveicol|automezz|autocarr|furgon|\bauto\b/i;
+const VEICOLO = /veicol/i;
+const PER_ALTRI_BENI = /\b(?:ricamb\w*|pezz[io]|parti|accessor\w*|pneumatic\w*|gomme|rottam\w*|carcass\w*|materiale|carburant\w*|lubrificant\w*|batteri\w*)\b(?:\s+[^\s.;]+){0,3}?\s+(?:di|da|dei|degli|delle|per)\s+(?:[^\s.;]+\s+){0,2}?(?:autovettur|autoveicol|automezz|motoveicol|veicol|motocicl|ciclomotor|furgon|autocarr|auto\b|moto\b)\w*/gi;
+export function categoriaBene(t, base) {
   if (base === 'immobile') return 'immobile';
-  if (/motocicl|ciclomotor|\bmoto\b|scooter/i.test(t)) return 'moto';
-  if (/autovettur|autoveicol|veicol|\bauto\b|furgon|autocarr/i.test(t)) return 'auto';
+  const s = String(t || '').replace(PER_ALTRI_BENI, ' ');
+  if (MOTO.test(s) && !AUTO.test(s)) return 'moto';
+  if (AUTO.test(s) || VEICOLO.test(s) || MOTO.test(s)) return 'auto';
   return 'beni';
 }
 
