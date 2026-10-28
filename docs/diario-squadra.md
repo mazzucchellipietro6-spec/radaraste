@@ -4,6 +4,19 @@ Un paragrafo per ogni giro del mattino, il più recente in alto: come sta il sit
 
 ---
 
+## 28/10/2026 – Stratega su più anni e collaudo
+
+- **Sito pubblicato:** funziona, la raccolta n. 21 su GitHub è riuscita. La raccolta locale funziona di nuovo: 24.023 aste del 28/10.
+- **Collaudatore** (turno del mercoledì): 256 caricamenti di pagina, percorsi principali tutti funzionanti, nessun errore. Ha corretto 4 problemi minori: livelli dei titoli, luogo tagliato nelle card, data nella mappa, anteprima degli abbonamenti che non restava aperta.
+- **Lavoro:** fatta la pagina dello Stratega su più anni, con il grafico. La proiezione è stata corretta in 3 punti.
+- **Revisore:** pronto. Ha corretto anche:
+  - il calcolatore "Conviene?", che aperto da un'asta non riceveva il valore di mercato del sito;
+  - la doppia cifra degli affitti nello Stratega;
+  - la scritta "Offerte entro" nelle card del Demanio;
+  - le categorie del Demanio.
+- **Test:** 416 su 416.
+- **Per te:** Merge della pull request #4 e tre decisioni nuove in ROADMAP, nessuna urgente.
+
 ## 27/10/2026 – zona abbonamenti riveduta
 
 - **Sito pubblicato:** funziona, la raccolta n. 20 su GitHub è riuscita. La pull request #4 aspetta il tuo Merge.

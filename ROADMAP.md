@@ -4,7 +4,7 @@ Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce camb
 
 Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ aspetta una tua decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 27/10/2026 (giro della squadra).
+Ultimo aggiornamento: 28/10/2026 (giro della squadra).
 
 ---
 
@@ -137,7 +137,7 @@ Ultimo aggiornamento: 27/10/2026 (giro della squadra).
     - dal 27/10 anche account e accesso, con lo schema del database (provato su PostgreSQL), la pagina prezzi e le bozze legali.
     - La revisione dell'account ha trovato e chiuso due falle gravi: si poteva far entrare qualcuno nell'account di un altro con un link, e i dati di una persona potevano finire nell'account di un'altra.
   - Da rivedere: preparazione per Cloudflare Pages (`_headers`, `wrangler.toml`, passo nel workflow) e il resto della guida `ABBONAMENTI.md`.
-- 🔄 **Stratega su più anni**: calcolo della proiezione scritto e provato; mancano pagina e grafico.
+- ✅ **Stratega su più anni** (28/10): proiezione da 1 a 5 anni, con il grafico "Il patrimonio nel tempo" (caso basso, mediana, caso alto) e ipotesi e fonti elencate. Il calcolo è stato corretto: costi e sfitto come il calcolatore, plusvalenza prudente, rivalutazione solo degli immobili.
 - ✅ **Squadra quotidiana** attiva dal 20/10 ([SQUADRA.md](SQUADRA.md)). Dal 26/10 lavora leggera: al massimo 3 agenti al giorno.
 
 ---
@@ -179,6 +179,11 @@ Ultimo aggiornamento: 27/10/2026 (giro della squadra).
 ---
 
 ## Da decidere ⏸ (per te)
+
+**Nuove del 28/10:**
+- **Stratega, reinvestimento:** con "Reinvesti i guadagni" le cifre crescono molto: sui dati reali 300.000 € diventano circa 1,25 milioni in 5 anni, supponendo altre aste con lo stesso margine. È spento di partenza e segnato come ipotesi ottimista. Lo teniamo?
+- **Stratega, plusvalenza:** per prudenza i costi di vendita non riducono la base tassata. Se un commercialista conferma che la provvigione d'agenzia si può dedurre, l'imposta scende.
+- **Calcolatore aperto da un'asta:** parte da "seconda casa da privato", come la scheda; il calcolo libero parte da "prima casa". Va bene così?
 
 **Nuove del 27/10 (abbonamenti, da vedere con calma prima di attivarli):**
 - **Rimborso alla cancellazione dell'account:** oggi il server annulla l'abbonamento senza rimborsare la parte già pagata.
