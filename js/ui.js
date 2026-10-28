@@ -180,10 +180,17 @@
     { href: 'termini.html', nome: 'Termini d\'uso' }, { href: 'privacy.html', nome: 'Privacy' }, { href: 'cookie.html', nome: 'Cookie' },
     { href: 'recesso.html', nome: 'Recesso' }, { href: 'avvertenze.html', nome: 'Non è consulenza finanziaria' }
   ];
+  // ?anteprima=abbonamenti vale per tutta la scheda del browser e ?anteprima=no la spegne, come in js/piani.js:
+  // prima, aperta da una pagina senza js/piani.js (es. la home), l'anteprima spariva alla pagina successiva
   function abbonamentiVisibili() {
     if (root.ABBONAMENTI && root.ABBONAMENTI.attivi === true) return true;
-    if (root.ANTEPRIMA_ABBONAMENTI === true || /[?&]anteprima=abbonamenti\b/.test(root.location.search || '')) return true;
-    try { return root.sessionStorage.getItem('radaraste.anteprima-abbonamenti') === '1'; } catch (e) { return false; }
+    if (root.ANTEPRIMA_ABBONAMENTI === true) return true;
+    var v = (/[?&]anteprima=([^&#]*)/.exec(root.location.search || '') || [])[1];
+    try {
+      if (v === 'abbonamenti') { root.sessionStorage.setItem('radaraste.anteprima-abbonamenti', '1'); return true; }
+      if (v === 'no') { root.sessionStorage.removeItem('radaraste.anteprima-abbonamenti'); return false; }
+      return root.sessionStorage.getItem('radaraste.anteprima-abbonamenti') === '1';
+    } catch (e) { return v === 'abbonamenti'; }
   }
   // su telefono: le prime quattro sezioni nella barra in basso, il resto nel foglio "Menu"
   var TAB = ['index.html', 'aste.html', 'mappa.html', 'assistenti.html'];
@@ -233,7 +240,8 @@
     var f = $('#site-footer');
     if (f) {
       var agg = root.TARIFFE ? dataIt(root.TARIFFE.aggiornamento) : '';
-      var col = function (titolo, voci) { return '<div><h3>' + titolo + '</h3><ul>' + voci.map(function (v) { return '<li><a href="' + v.href + '">' + esc(v.nome) + '</a></li>'; }).join('') + '</ul></div>'; };
+      // h2: le colonne del piè di pagina stanno subito sotto l'h1 della pagina (con un h3 la scala dei titoli saltava un livello)
+      var col = function (titolo, voci) { return '<div><h2 class="piede-titolo">' + titolo + '</h2><ul>' + voci.map(function (v) { return '<li><a href="' + v.href + '">' + esc(v.nome) + '</a></li>'; }).join('') + '</ul></div>'; };
       f.className = 'site-footer';
       f.innerHTML = '<div class="wrap">' +
         '<div class="piede-colonne">' +
@@ -410,7 +418,7 @@
 
   root.UI = {
     $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando, oggi: oggi,
-    linkSicuro: linkSicuro, esempioCheEntra: esempioCheEntra, esempioAdattivo: esempioAdattivo, fontiFerme: fontiFerme, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
+    linkSicuro: linkSicuro, esempioCheEntra: esempioCheEntra, esempioAdattivo: esempioAdattivo, fontiFerme: fontiFerme, abbonamentiVisibili: abbonamentiVisibili, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
     icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI, SERVIZIO: SERVIZIO,
     finestra: finestra, apriFinestra: apriFinestra, chiudiFinestra: chiudiFinestra, focusabili: focusabili, menoMovimento: function () { return menoMovimento.matches; },
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,

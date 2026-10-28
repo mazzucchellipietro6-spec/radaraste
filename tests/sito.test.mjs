@@ -167,3 +167,63 @@ test('testo d\'esempio dei campi di ricerca: il più lungo che entra intero, mai
   assert.match(await readFile(path.join(RADICE, 'aste.html'), 'utf8'), new RegExp('id="fTesto" placeholder="' + primo(aste, 'ESEMPI_RICERCA') + '"'));
   assert.match(await readFile(path.join(RADICE, 'index.html'), 'utf8'), new RegExp('id="chiedi"[^>]*placeholder="' + primo(home, 'ESEMPI_DOMANDA') + '"'));
 });
+
+test('titoli in ordine anche nel piè di pagina e su telefono: colonne del piè di pagina h2, h1 della mappa e h2 dell\'elenco nascosti solo alla vista', async () => {
+  // collaudo del 28/10/2026 nel browser: account, scheda senza asta e affari passavano da h1 a h3; la mappa su telefono non aveva h1
+  const ui = await readFile(path.join(RADICE, 'js/ui.js'), 'utf8');
+  assert.match(ui, /<h2 class="piede-titolo">' \+ titolo \+ '<\/h2>/);
+  assert.doesNotMatch(ui, /'<div><h3>' \+ titolo/);
+  const css = await readFile(path.join(RADICE, 'assets/css/style.css'), 'utf8');
+  // stesso aspetto di prima (quello degli h3)
+  assert.match(css, /\.piede-colonne \.piede-titolo \{ font-family: var\(--f-body\); font-size: 11\.5px; font-weight: 600;[^}]*text-transform: uppercase;/);
+  // telefono: l'h2 "Elenco aste" non è più display:none (sparirebbe anche per i lettori di schermo)
+  const tel = css.slice(css.indexOf('@media (max-width: 899px) {\n  .elenco-pagina'));
+  assert.doesNotMatch(tel.slice(0, tel.indexOf('\n}')), /\.toolbar h2[^{]*\{ display: none/);
+  assert.match(tel, /\.elenco-pagina \.toolbar h2 \{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect\(0 0 0 0\)/);
+  const mappa = await readFile(path.join(RADICE, 'assets/css/mappa.css'), 'utf8');
+  assert.doesNotMatch(mappa, /\.m-testa(?:\s*,[^{]*)? \{ display: none/, 'la testata intera (con l\'h1) non sparisce');
+  assert.match(mappa, /\.m-testa \{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect\(0 0 0 0\)/);
+  assert.match(await readFile(path.join(RADICE, 'mappa.html'), 'utf8'), /<div class="m-testa">\s*<h1>/);
+  // affari: l'h1 è "Affari di oggi", le card hanno h3
+  assert.match(await readFile(path.join(RADICE, 'js/pages/affari.js'), 'utf8'), /insertAdjacentHTML\('beforebegin', '<h2 class="sr-only">Le aste scelte oggi<\/h2>'\)/);
+});
+
+test('anteprima degli abbonamenti: ?anteprima=abbonamenti resta per la scheda del browser, ?anteprima=no la spegne (anche dalle pagine senza js/piani.js)', () => {
+  const U = menu();
+  const mem = {}, sessione = { getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: (k) => { delete mem[k]; } };
+  const prima = { location: globalThis.location, sessionStorage: Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage') };
+  const imposta = (search, s) => { globalThis.location = { pathname: '/index.html', search }; Object.defineProperty(globalThis, 'sessionStorage', { value: s, configurable: true, writable: true }); };
+  try {
+    imposta('', sessione);
+    assert.equal(U.abbonamentiVisibili(), false, 'visitatore: niente link');
+    imposta('?anteprima=abbonamenti', sessione);
+    assert.equal(U.abbonamentiVisibili(), true);
+    assert.equal(mem['radaraste.anteprima-abbonamenti'], '1', 'ricordata per le pagine dopo');
+    imposta('', sessione);
+    assert.equal(U.abbonamentiVisibili(), true, 'pagina successiva senza parametro');
+    imposta('?x=1&anteprima=no', sessione);
+    assert.equal(U.abbonamentiVisibili(), false);
+    assert.equal('radaraste.anteprima-abbonamenti' in mem, false);
+    imposta('?anteprima=abbonamentiX', sessione);
+    assert.equal(U.abbonamentiVisibili(), false, 'solo il valore esatto');
+    // memoria del browser bloccata: l'anteprima vale solo per la pagina con il parametro
+    const rotta = { getItem() { throw new Error('bloccata'); }, setItem() { throw new Error('bloccata'); }, removeItem() { throw new Error('bloccata'); } };
+    imposta('?anteprima=abbonamenti', rotta);
+    assert.equal(U.abbonamentiVisibili(), true);
+    imposta('', rotta);
+    assert.equal(U.abbonamentiVisibili(), false);
+  } finally {
+    globalThis.location = prima.location;
+    if (prima.sessionStorage) Object.defineProperty(globalThis, 'sessionStorage', prima.sessionStorage); else delete globalThis.sessionStorage;
+  }
+});
+
+test('card: il luogo va su due righe al massimo invece di perdere la provincia ("Aosta (…" su telefono)', async () => {
+  const css = await readFile(path.join(RADICE, 'assets/css/style.css'), 'utf8');
+  const regola = css.match(/\.card \.copertina \.luogo span \{([^}]*)\}/)[1];
+  assert.match(regola, /-webkit-line-clamp: 2/);
+  assert.doesNotMatch(regola, /white-space: nowrap/);
+  // mappa, "Le 5 migliori": la riga luogo · prezzo · data va a capo (a 1366 px la data perdeva l'anno)
+  const mappa = await readFile(path.join(RADICE, 'assets/css/mappa.css'), 'utf8');
+  assert.doesNotMatch(mappa.match(/\.m-voce-t small \{([^}]*)\}/)[1], /nowrap|ellipsis/);
+});
