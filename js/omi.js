@@ -124,9 +124,53 @@
   }
   function trovaComune(ind, nome, prov) { return cercaComune(ind, nome, prov).comune || null; }
 
-  // tipologia OMI dall'asta (tipo del PVP + parole del testo)
+  // "Villa" nei nomi di luogo non dice che l'immobile è una villa: frazioni e località (Fraz. Villa Pitignano, Località
+  // Villa Adriana), vie e contrade (Via Colle Villa, C.da Cozzo Villa) e comuni (Villa San Giovanni, Villa Literno).
+  // Caso reale pvp-4651261: "Porzioni di complesso polifunzionale" commerciale a Perugia, Fraz. Villa Pitignano,
+  // stimato come "Ville e villini" (punteggio 90, affidabilità alta, secondo nel Radar 3D del 29/10/2026).
+  var LUOGO_VILLA = /\b(?:FRAZ(?:IONE)?|LOC(?:ALITA)?|CONTRADA|C\.?\s?DA|C\/DA|BORGO|BORGATA|QUARTIERE|RIONE|ZONA|VIA|VIALE|VICOLO|VICO|PIAZZA|PIAZZALE|LARGO|CORSO|STRADA|SALITA|TRAVERSA|COLLE|COZZO)\b\.?\s+(?:(?:DI|DE|DEL|DELLA)\s+)?VILLA\b/g;
+  function senzaLuoghi(t, comune) {
+    t = t.replace(LUOGO_VILLA, ' ');
+    var c = norm(comune).replace(/\s+/g, ' ').trim();
+    return c && /\bVILLA\b/.test(c) ? t.split(c).join(' ') : t;
+  }
+
+  // quanti gruppi di unità principali diverse nomina il testo con la categoria catastale ("cat. A/2", "categoria D/7"):
+  // abitazioni (A/1-A/9, A/11), uffici (A/10) e ogni altra categoria a sé; pertinenze (C/2, C/6, C/7) e aree (F/1, F/2,
+  // F/5, F/6) non contano
+  var PERTINENZE = { 'C/2': 1, 'C/6': 1, 'C/7': 1, 'F/1': 1, 'F/2': 1, 'F/5': 1, 'F/6': 1 };
+  function categoriePrincipali(tt) {
+    var gruppi = {}, m, re = /\b(?:CAT\.?|CATEGORIA)\s*([A-F])\s*\/\s*(\d{1,2})\b/g;
+    while ((m = re.exec(tt))) {
+      var c = m[1] + '/' + Number(m[2]);
+      if (!PERTINENZE[c]) gruppi[c === 'A/10' ? 'uffici' : m[1] === 'A' ? 'abitazioni' : c] = 1;
+    }
+    return Object.keys(gruppi).length;
+  }
+
+  /* Il lotto comprende più unità? → la nota da mostrare (il valore OMI riguarda solo la superficie letta, quindi
+   * affidabilità bassa) oppure null. Casi reali:
+   *  - tenute, compendi, "n. 2 fabbricati", "porzioni di complesso": pvp-4651261, Perugia, "Porzioni di complesso
+   *    polifunzionale", commerciale 514,4 mq più direzionale e autorimesse per altri 2.900 mq circa, valutato sui soli
+   *    514,4 mq con affidabilità alta (punteggio 90);
+   *  - tre o più superfici commerciali diverse ("Abitazione di 57 mq + Deposito di 20 mq + Fabbricato rurale di 75 mq");
+   *  - unità principali di categorie catastali diverse: pvp-4641495, San Severino Marche, "appartamento di mq 214,25
+   *    (cat. A/6), ufficio di mq 155,84 (cat. F/3) e terreni", valutato sui soli 214,25 mq con affidabilità alta. */
+  function piuUnita(testo) {
+    var tt = norm(testo);
+    if (/\b(COMPENDIO|TENUTA|COMPLESSO IMMOBILIARE|PIU UNITA|SEGUENTI UNITA|UNITA IMMOBILIARI|PORZIONI|N\.?\s?[2-9]\s+(?:FABBRICATI|UNITA|APPARTAMENTI|IMMOBILI)|BENE\s+N?\.?\s*[2-9])\b/.test(tt)) {
+      return 'Il lotto comprende più unità: il valore OMI riguarda solo la superficie indicata';
+    }
+    var sup = {}, m, reSup = /SUPERFICIE\s+COMMERCIALE\s+(?:COMPLESSIVA\s+)?(?:DI\s+)?(?:CIRCA\s+)?(?:MQ\.?\s*)?(\d+(?:[.,]\d+)?)/g;
+    while ((m = reSup.exec(tt))) sup[m[1].replace(',', '.')] = 1;
+    if (Object.keys(sup).length >= 3) return 'Il lotto comprende più unità con superfici diverse: il valore OMI riguarda solo la superficie indicata';
+    if (categoriePrincipali(tt) >= 2) return 'Il lotto comprende unità di categorie catastali diverse: il valore OMI riguarda solo la superficie indicata';
+    return null;
+  }
+
+  // tipologia OMI dall'asta (tipo del PVP + parole del testo, senza i nomi di luogo con "Villa")
   function tipologia(a, testo) {
-    var t = norm((a.titolo || '') + ' ' + (testo || ''));
+    var t = senzaLuoghi(norm((a.titolo || '') + ' ' + (testo || '')), a.comune);
     if (/\b(BOX|GARAGE|AUTORIMESSA)\b/.test(t) && !/\b(APPARTAMENT|ABITAZION|VILL|NEGOZI|FABBRICAT|TENUTA|CASA)/.test(t)) return /AUTORIMESSA/.test(t) ? [TIP.autorimessa, TIP.box] : [TIP.box];
     if (/POSTO AUTO/.test(t) && !/\b(APPARTAMENT|ABITAZION|VILLA)/.test(t)) return [/SCOPERT/.test(t) ? TIP.postoScoperto : TIP.postoCoperto, TIP.box];
     if (/residenzial/i.test(a.tipo || '') || /\b(APPARTAMENT|ABITAZION|ALLOGGI|VILLA|VILLINO|BILOCALE|TRILOCALE|MONOLOCALE|ATTICO|MANSARDA|CASA)\b/.test(t)) {
@@ -265,16 +309,9 @@
     // zona riconosciuta (unica del comune o dall'indirizzo) → media; valori tipici del comune → bassa; quotazione del solo
     // stato "ottimo" (o di stati diversi) → bassa: non si usa come valore principale (scripts/lib/arricchimento.mjs)
     out.affidabilita = zonaInfo && usato !== 'O' && usato !== 'misto' ? 'media' : 'bassa';
-    // lotti con più unità (tenute, compendi, "n. 2 fabbricati"): la superficie letta copre solo una parte
-    var tt = norm((a.titolo || '') + ' ' + (opz.testo || ''));
-    if (/\b(COMPENDIO|TENUTA|COMPLESSO IMMOBILIARE|PIU UNITA|SEGUENTI UNITA|UNITA IMMOBILIARI|N\.?\s?[2-9]\s+(?:FABBRICATI|UNITA|APPARTAMENTI|IMMOBILI)|BENE\s+N?\.?\s*[2-9])\b/.test(tt)) {
-      out.affidabilita = 'bassa'; note.push('Il lotto comprende più unità: il valore OMI riguarda solo la superficie indicata');
-    } else {
-      // "Abitazione di 57 mq + Deposito di 20 mq + Fabbricato rurale di 75 mq…": tre o più superfici commerciali diverse
-      var sup = {}, m, reSup = /SUPERFICIE\s+COMMERCIALE\s+(?:COMPLESSIVA\s+)?(?:DI\s+)?(?:CIRCA\s+)?(?:MQ\.?\s*)?(\d+(?:[.,]\d+)?)/g;
-      while ((m = reSup.exec(tt))) sup[m[1].replace(',', '.')] = 1;
-      if (Object.keys(sup).length >= 3) { out.affidabilita = 'bassa'; note.push('Il lotto comprende più unità con superfici diverse: il valore OMI riguarda solo la superficie indicata'); }
-    }
+    // lotti con più unità: la superficie letta copre solo una parte
+    var tt = norm((a.titolo || '') + ' ' + (opz.testo || '')), unita = piuUnita(tt);
+    if (unita) { out.affidabilita = 'bassa'; note.push(unita); }
     // box o posti auto molto grandi: probabilmente la tipologia letta dal testo non è quella giusta
     if ((base.tip === TIP.box || base.tip === TIP.postoCoperto || base.tip === TIP.postoScoperto) && mq > 50) {
       out.affidabilita = 'bassa'; note.push('Superficie insolita per un box o posto auto: tipologia da verificare');
@@ -287,7 +324,7 @@
   }
 
   var Omi = { TIP: TIP, NOMI_TIP: NOMI_TIP, FASCE: FASCE, chiaveComune: chiaveComune, leggiCsv: leggiCsv, costruisciIndice: costruisciIndice,
-    trovaComune: trovaComune, cercaComune: cercaComune, tipologia: tipologia, statoOmi: statoOmi, trovaZona: trovaZona, stima: stima };
+    trovaComune: trovaComune, cercaComune: cercaComune, tipologia: tipologia, piuUnita: piuUnita, statoOmi: statoOmi, trovaZona: trovaZona, stima: stima };
   if (typeof module !== 'undefined' && module.exports) module.exports = Omi;
   else root.Omi = Omi;
 })(typeof window !== 'undefined' ? window : globalThis);

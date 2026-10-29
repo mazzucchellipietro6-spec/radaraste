@@ -196,3 +196,56 @@ test('valori tipici del comune: solo le zone con lo stato normale, senza mescola
   assert.deepEqual(s.euroMq, { min: 700, max: 900 }, 'la quotazione "ottimo" di B1 non entra nella mediana');
   assert.match(s.note.join(), /valori tipici del comune \(una sola zona quotata\)/);
 });
+
+// --- revisione del 29/10/2026: "Villa" nei nomi di luogo e lotti con più unità (casi reali dei dati locali del 29/10) ---
+
+const PERUGIA = { id: 'pvp-4651261', categoria: 'immobile', tipo: 'Immobile commerciale', comune: 'Perugia', provincia: 'PG',
+  titolo: 'Porzioni di complesso polifunzionale, sito in Perugia (PG), Fraz. Villa Pitignano, Via della Vecchia Fornace.…',
+  descrizione: 'Porzioni di complesso polifunzionale, sito in Perugia (PG), Fraz. Villa Pitignano, Via della Vecchia Fornace. Superfici: commerciale 514,4 mq; uso direzionale 324 mq; autorimessa uso pubblico 180 mq circa; autorimessa uso privato 2.437,40 mq Per maggiori informazioni visitare il portale www.quimmo.it - Codice annuncio 25428.' };
+
+test('tipologia: "Villa" in un nome di luogo non fa dell\'immobile una villa (caso reale pvp-4651261, Perugia, Fraz. Villa Pitignano)', () => {
+  // prima: "Ville e villini" per un complesso commerciale, punteggio 90 con affidabilità alta (secondo nel Radar 3D)
+  assert.notEqual(Omi.tipologia(PERUGIA, PERUGIA.descrizione)[0], Omi.TIP.villa);
+  // altri casi reali: box in località Villa Adriana, negozio in frazione Villa Torre, terreno in località Villa Reale,
+  // appartamento nel comune di Villa Santa Lucia, casa in contrada Villa Elce
+  assert.deepEqual(Omi.tipologia({ tipo: 'Altra categoria', comune: 'Tivoli', titolo: 'Quota pari a 1/1 del diritto di proprietà su Box Auto sito nel Comune di Tivoli (RM), località Villa Adriana…' }), [Omi.TIP.box]);
+  assert.deepEqual(Omi.tipologia({ tipo: 'Immobile commerciale', comune: 'Cingoli', titolo: 'Diritti di piena proprietà di negozio a CINGOLI Frazione Villa Torre 25, della superficie commerciale di…' }), [Omi.TIP.negozio]);
+  assert.equal(Omi.tipologia({ tipo: 'Altra categoria', comune: 'Chieti', titolo: 'Terreno sito nel Comune di Chieti in località Villa Reale' }), null);
+  assert.equal(Omi.tipologia({ tipo: 'Immobile residenziale', comune: 'Villa Santa Lucia', titolo: 'Nuda proprietà di appartamento arredato con terreno a Villa Santa Lucia (FR), via Giosuè Carducci 2.…' })[0], Omi.TIP.civile);
+  assert.equal(Omi.tipologia({ tipo: 'Immobile residenziale', comune: 'Lanciano', titolo: 'Piena proprietà di edificio in muratura ad uso residenziale sito nel Comune di Lanciano (CH), alla contrada Villa Elce n.36' })[0], Omi.TIP.civile);
+  assert.equal(Omi.tipologia({ tipo: 'Immobile industriale', comune: 'Siracusa', titolo: 'Opificio industriale in Siracusa, c.da Cozzo Villa, via Elorina n. 117' })[0] === Omi.TIP.villa, false);
+  // le ville vere restano ville (caso reale pvp-4635783, Ostuni; "villa" anche tra parentesi nell'indirizzo)
+  assert.equal(Omi.tipologia({ tipo: 'Immobile residenziale', comune: 'Ostuni', titolo: 'Villa singola a Ostuni (BR) alla via Lucy civ. 33 ( villa BL/33), frazione di Rosa Marina, della superficie…' })[0], Omi.TIP.villa);
+  assert.equal(Omi.tipologia({ tipo: 'Immobile residenziale', comune: 'Latina', titolo: 'Villino sviluppato su n.2 piani' })[0], Omi.TIP.villa);
+});
+
+test('più unità: "porzioni di complesso" (Perugia) e unità di categorie catastali diverse (San Severino Marche) → affidabilità bassa', () => {
+  assert.match(Omi.piuUnita(PERUGIA.titolo + ' ' + PERUGIA.descrizione), /più unità/);
+  // caso reale pvp-4641495: appartamento A/6 di 214,25 mq più ufficio F/3 e terreni, valutato sui soli 214,25 mq (punteggio 89, alta)
+  const sanSeverino = 'Diritti di piena proprietà per l\'intero di appartamento di mq 214,25 (Fg. 151 part 125 sub.2 - cat.A/6), di ufficio di mq. 155,84 (fg. 151 part. 125 sub.3 - cat. F/3) e di terreni per complessivi m...';
+  assert.match(Omi.piuUnita(sanSeverino), /categorie catastali diverse/);
+  // abitazione con deposito e garage (A/3 + C/2 + C/6, caso reale pvp-4624358, Mazzarino): le pertinenze non contano
+  assert.equal(Omi.piuUnita('LOTTO2 Fabbricato sito in Mazzarino in Viale della Repubblica N° 43/A, risultante nel N.C.E.U. al foglio di mappa 70 particella 380 Sub.3 abitazione a primo piano, Cat. A/3 Classe 2^ consistenza 6,5 vani, dati superficie totale mq.147 totale escluse aree scoperte mq.143; Sub. 6 locale di deposito a piano terra Cat. C/2 consistenza mq. 39 Superficie totale mq.46; Sub. 9 Garage a piano terra Cat. C/6 classe 3^ consistenza 43 mq. Dati superficie totale mq. 40.'), null);
+  // un'unità sola: il lotto uno di Sant'Elpidio a Mare (laboratorio C/3 di 828 mq, caso del 29/10/2026)
+  assert.equal(Omi.piuUnita('LOTTO UNO (A in perizia). Diritti di piena proprietà su Unità immobiliare sita in Sant’Elpidio a Mare (FM), Via E. Lussu, n. 300 – Località Cascinare, destinata ad uso laboratorio, che occupa tutto il piano terra, avente superficie pari a mq. 828 Unità immobiliare descritta al Catasto Fabbricati del comune di Sant\'Elpidio a Mare al foglio n. 8, part. 316, sub. 2, cat. C/3, classe 2, Piano Terra, rendita € 1.859,35, Via E. Lussu n. 300, località Cascinare.'), null);
+  // nella stima: la nota e l'affidabilità bassa (zona di prova di Melilli, testo vero di San Severino)
+  const a = { categoria: 'immobile', tipo: 'Immobile residenziale', comune: 'Melilli', provincia: 'SR', indirizzo: 'frazione Villasmundo', superficieMq: 214.25, titolo: sanSeverino.slice(0, 110) };
+  const s = Omi.stima(a, ind, { testo: sanSeverino });
+  assert.equal(s.zona.codice, 'E1');
+  assert.equal(s.affidabilita, 'bassa');
+  assert.match(s.note.join(), /categorie catastali diverse/);
+});
+
+test('caso del 29/10/2026, lotto uno di Sant\'Elpidio a Mare (FM): laboratorio, zona E1 "Casette d\'Ete - Cascinare" dall\'indirizzo', () => {
+  // comune cercato nelle province d'origine (FM → AP) e zona dalla località Cascinare; le descrizioni delle zone sono quelle OMI
+  const comune = { nome: 'SANT`ELPIDIO A MARE', prov: 'AP', zone: [
+    ['AP00001633', 'B', 'B1', 'CENTRO STORICO'], ['AP00001672', 'B', 'B2', 'PERIMETRO ESTERNO AL CENTRO STORICO'],
+    ['AP00002090', 'D', 'D1', 'PORZIONE DI TERRITORIO LUNGO LA S.P. FALERIENSE'], ['AP00002857', 'E', 'E1', 'CASETTE D`ETE - CASCINARE E DINTORNI'],
+    ['AP00002858', 'R', 'R1', 'PORZIONE AGRICOLA DEL TERRITORIO']] };
+  const a = { categoria: 'immobile', tipo: 'Immobile industriale', comune: 'Sant\'Elpidio a Mare', provincia: 'FM', indirizzo: 'Via Lussu, n. 300, 63811 Sant\'Elpidio a Mare FM, Italia',
+    titolo: 'LOTTO UNO (A in perizia). Diritti di piena proprietà su Unità immobiliare sita in Sant’Elpidio a Mare (FM)…' };
+  const testo = 'Via E. Lussu, n. 300 – Località Cascinare, destinata ad uso laboratorio, che occupa tutto il piano terra, avente superficie pari a mq. 828';
+  assert.equal(Omi.trovaZona(comune, a, testo).zona[2], 'E1');
+  assert.deepEqual(Omi.tipologia(a, testo), [Omi.TIP.laboratorio]);
+  assert.equal(Omi.cercaComune({ comuni: { 'SANTELPIDIOAMARE|AP': comune } }, 'Sant\'Elpidio a Mare', 'FM').comune, comune);
+});

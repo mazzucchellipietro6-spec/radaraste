@@ -353,13 +353,22 @@ test('_headers: Permissions-Policy non spegne le funzioni del browser che il sit
   for (const f of ['bluetooth', 'web-share', 'interest-cohort']) assert.ok(!(f in pp), f + ': il browser la segnala come sconosciuta, toglila');
 });
 
-test('_headers: worker-src per il service worker e per MapLibre (file del sito o blob:), nient\'altro', async () => {
+test('_headers: worker-src solo \'self\' (service worker e worker di MapLibre sono file del sito), niente blob:', async () => {
   const d = await csp();
   const w = valoriPer(d, 'worker-src');
   // sw.js si registra con worker-src: senza 'self' il sito non funziona più offline
   assert.match(await leggi('js/ui.js'), /serviceWorker\.register\(/);
-  assert.ok(w.includes("'self'"), "worker-src: serve 'self' per sw.js");
-  for (const v of w) assert.ok(["'self'", 'blob:'].includes(v), 'worker-src: niente ' + v + ' (un worker preso da un altro sito eseguirebbe codice esterno)');
+  assert.deepEqual(w, ["'self'"], "worker-src: solo 'self' (un worker blob: o di un altro sito eseguirebbe codice non preso dai file del sito)");
+  // il Radar 3D usa la versione "csp" di MapLibre con il worker preso dai file del sito: senza, MapLibre creerebbe
+  // un worker blob:, bloccato da questa CSP (prova nel browser del 29/10/2026: nessuna violazione senza blob:)
+  const html = await leggi('radar3d.html');
+  assert.match(html, /<script src="assets\/vendor\/maplibre-gl\/maplibre-gl-csp\.js"><\/script>/);
+  assert.doesNotMatch(html, /maplibre-gl\.js"/, 'versione normale di MapLibre (worker blob:)');
+  assert.match(await leggi('js/pages/radar3d.js'), /\.setWorkerUrl\('assets\/vendor\/maplibre-gl\/maplibre-gl-csp-worker\.js'\)/);
+  // nessun worker creato in memoria dal codice del sito
+  for (const f of (await fileDelSito()).filter((x) => /\.js$/.test(x) && !x.startsWith(path.join('assets', 'vendor')))) {
+    assert.doesNotMatch(await leggi(f), /new (Shared)?Worker\(\s*URL\.createObjectURL|createObjectURL\([^)]*\)[^;\n]*Worker/, f + ': worker blob:');
+  }
 });
 
 test('_headers: se il service worker gestisse richieste verso altri siti, anche quegli indirizzi starebbero in connect-src', async () => {

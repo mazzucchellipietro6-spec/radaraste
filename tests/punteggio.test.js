@@ -217,3 +217,27 @@ test('beni mobili: la sola stima del perito dà affidabilità bassa e il puntegg
   // veicoli e immobili non cambiano: un'auto con la stima del perito resta ad affidabilità media
   assert.equal(P.valuta({ categoria: 'auto', provincia: 'MI', prezzoBase: 5000, stima: 9000, tentativo: 2, rischi: [] }, { T }).valore.affidabilita, 'media');
 });
+
+test('caso del 29/10/2026, lotto uno di Sant\'Elpidio a Mare (pvp-4566904): valore OMI confermato dal perito, non gonfiato', () => {
+  // campi pubblicati in data/aste.js (raccolta del 29/10/2026): laboratorio C/3 di 828 mq, zona OMI E1 "Casette d'Ete -
+  // Cascinare" dall'indirizzo, Laboratori 510–660 €/mq (semestre 2025/2) → 422.280–546.480 €; prima asta 534.800 € (06/11/2024)
+  const a = { categoria: 'immobile', tipo: 'Immobile industriale', comune: 'Sant\'Elpidio a Mare', provincia: 'FM', stato: 'nd', rischi: [],
+    prezzoBase: 169214.06, superficieMq: 828, tentativo: 3, primoPrezzo: 534800,
+    omiMin: 422280, omiMax: 546480, omiAffMin: 2153, omiAffMax: 2732, omiMetodo: 'indirizzo' };
+  const r = P.valuta(a, { T });
+  // OMI e prima asta concordano (534.800 / 484.380 = 1,10): valore OMI con affidabilità alta
+  assert.equal(r.valore.fonte, 'omi');
+  assert.equal(r.valore.centrale, 484380);
+  assert.equal(r.valore.affidabilita, 'alta');
+  assert.equal(r.sconto, 0.616);
+  assert.equal(r.offertaMax, 308400);
+  assert.equal(r.punteggio, 90);
+  // lo sconto viene dai ribassi, non dal valore: il prezzo base è la prima asta con quattro ribassi del 25%
+  // (534.800 × 0,75⁴ = 169.214,06), anche se l'indice del portale ha solo due tentativi precedenti (tentativo 3)
+  assert.equal(Math.round(534800 * Math.pow(0.75, 4) * 100) / 100, a.prezzoBase);
+  // i lotti due e tre nello stesso punto (pvp-4620343 e pvp-4620348) sono altre unità di 124 mq al secondo tentativo:
+  // costo oltre il valore, sconto -8%
+  const lotto3 = P.valuta({ ...a, tipo: 'Immobile residenziale', prezzoBase: 131100, superficieMq: 124, tentativo: 2, primoPrezzo: 174800,
+    omiMin: 111600, omiMax: 155000, omiAffMin: 446, omiAffMax: 632 }, { T });
+  assert.equal(lotto3.sconto, -0.084);
+});

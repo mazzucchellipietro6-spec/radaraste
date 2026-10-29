@@ -17,9 +17,10 @@
 #                Supabase degli account (*.supabase.co: se usi un dominio personalizzato, aggiungilo qui);
 #                tiles.openfreemap.org (Radar 3D: stile, tile vettoriali, caratteri e icone) e tile.openstreetmap.org
 #                (Radar 3D, sfondo di ripiego): MapLibre scarica tutto con fetch, quindi servono qui e non in img-src.
-#   worker-src   'self' per il service worker (sw.js) e per il worker di MapLibre preso dai file del sito; blob: per
-#                il worker che MapLibre (e deck.gl) possono creare in memoria. Il codice dentro un worker blob: segue
-#                questa stessa CSP: non può caricare script da altri siti.
+#   worker-src   solo 'self': il service worker (sw.js) e il worker di MapLibre, che è un file del sito (versione
+#                "csp" di MapLibre con setWorkerUrl, che elabora anche le tile vettoriali). Niente blob:: provato nel
+#                browser il 29/10/2026 (Radar 3D con lo sfondo OpenStreetMap e con i confini delle regioni, tutte le
+#                altre pagine) senza violazioni; deck.gl qui non crea worker.
 #   Stripe Checkout, il portale clienti di Stripe e l'accesso con Google sono pagine su cui il sito porta
 #   l'utente (navigazione): non servono nella CSP, e nessuno script o richiesta va a Stripe dal browser.
 #   I moduli del sito si inviano solo al sito (form-action 'self'). Documenti e avvisi delle aste sono link.
@@ -34,7 +35,7 @@
 # la posizione ("vicino a me"), cambia geolocation=(self).
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-AuRrEURHuEvIPVaIwyFxbQnSFt5SRQtPHQyFcTZ7IAE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://resource-pvp.giustizia.it; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org https://*.supabase.co https://tiles.openfreemap.org https://tile.openstreetmap.org; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-AuRrEURHuEvIPVaIwyFxbQnSFt5SRQtPHQyFcTZ7IAE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://resource-pvp.giustizia.it; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org https://*.supabase.co https://tiles.openfreemap.org https://tile.openstreetmap.org; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
