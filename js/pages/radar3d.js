@@ -35,7 +35,7 @@
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
   };
   var ATTR_ISTAT = 'Confini: <a href="https://www.istat.it/" target="_blank" rel="noopener">ISTAT</a> (CC BY)';
-  var K_FORZA = 'radaraste.radar3d.forza3d';
+  var FORZA = /[?&]forza3d=1(&|$)/;                 // radar3d.html?forza3d=1: niente misura (pulsante "Prova comunque il 3D")
   var NOMI_AFF = { alta: 'alta', media: 'media', bassa: 'bassa' };
   var PLAY = '<svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/></svg>';
   var PAUSA = '<svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13M16 5.5v13" stroke-width="3"/></svg>';
@@ -54,8 +54,6 @@
   function aste(n) { return num(n) + (n === 1 ? ' asta' : ' aste'); }
   function limita(x, a, b) { return Math.max(a, Math.min(b, x)); }
   function fuoco(el) { if (!el) return; try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } }
-  function leggiSessione(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
-  function scriviSessione(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
   function fascia(p) { return window.Punteggio && window.Punteggio.fascia ? window.Punteggio.fascia(p) : { chiave: 'nd', etichetta: p == null ? 'Senza punteggio' : 'Punteggio' }; }
   function temaScuro() {
     var t = document.documentElement.getAttribute('data-theme');
@@ -74,18 +72,24 @@
   }
 
   /* ---------- colori dal tema ---------- */
+  // token del tema (--s-0, --accent…) in [r, g, b]: valore scritto in style.css, altrimenti come lo calcola il browser
+  function token(v, d) {
+    var c = R.rgb(getComputedStyle(document.documentElement).getPropertyValue(v));
+    if (c) return c;
+    var p = document.createElement('i');
+    p.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;visibility:hidden;color:var(' + v + ', ' + d + ')';
+    document.body.appendChild(p);
+    c = R.rgb(getComputedStyle(p).color);
+    p.remove();
+    return c || R.rgb(d);
+  }
   function colori() {
     if (COL) return COL;
-    var p = document.createElement('i');
-    p.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;visibility:hidden';
-    document.body.appendChild(p);
-    var leggi = function (v, d) { p.style.color = ''; p.style.color = 'var(' + v + ', ' + d + ')'; return R.rgb(getComputedStyle(p).color) || R.rgb(d); };
     COL = {
-      s0: leggi('--s-0', '#a8473a'), s50: leggi('--s-50', '#b08431'), s100: leggi('--s-100', '#2f7253'), grigio: leggi('--faint', '#9a978f'),
-      accento: leggi('--accent', '#1f3a5f'), fondo: leggi('--bg', '#f7f5f0'), terra: leggi('--mappa-terra', '#efebe3'), bordo: leggi('--mappa-bordo', '#cfc6b6'),
-      superficie: leggi('--surface', '#ffffff')
+      s0: token('--s-0', '#a8473a'), s50: token('--s-50', '#b08431'), s100: token('--s-100', '#2f7253'), grigio: token('--faint', '#9a978f'),
+      accento: token('--accent', '#1f3a5f'), fondo: token('--bg', '#f7f5f0'), terra: token('--mappa-terra', '#efebe3'), bordo: token('--mappa-bordo', '#cfc6b6'),
+      superficie: token('--surface', '#ffffff')
     };
-    p.remove();
     COL.esagoni = R.coloriEsagoni(COL);
     return COL;
   }
@@ -109,7 +113,7 @@
       : { 'raster-brightness-min': 0, 'raster-brightness-max': 1, 'raster-hue-rotate': 0, 'raster-saturation': -0.3, 'raster-contrast': 0 };
   }
   // mare appena tinto dell'accento, terra e confini con i colori della mappa 2D senza sfondo
-  function mare(c) { return c.fondo.map(function (v, k) { return Math.round(v + (c.accento[k] - v) * 0.08); }); }
+  function mare(c) { var t = temaScuro() ? 0.02 : 0.08; return c.fondo.map(function (v, k) { return Math.round(v + (c.accento[k] - v) * t); }); }
   function stileRegioni() {
     var c = colori(), s = { version: 8, sources: {}, layers: [{ id: 'fondo', type: 'background', paint: { 'background-color': css(mare(c)) } }] };
     if (window.ITALIA_REGIONI) {
@@ -192,18 +196,19 @@
       (lento ? '<button class="btn ghost" type="button" id="r3Riprova">Prova comunque il 3D</button>' : '') + '</div>' +
       '<p class="r3-nota">Numeri e migliori affari restano in ' + (TELEFONO.matches ? '“Legenda”' : 'questa pagina, nella colonna a sinistra') + '.</p></div>';
     el.hidden = false;
+    $('#r3Alt').textContent = 'Radar 3D fermo: ' + (lento ? 'troppo lento su questo dispositivo.' : 'manca WebGL.') + ' Usa la mappa 2D.';
     $('#r3Mappa').classList.add('ripiegato');
     $('#r3Carico').hidden = true; $('#r3Tempo').hidden = true; $('#r3Avviso').hidden = true; $('#r3Tip').hidden = true;
     $('#r3Migliore').hidden = true;
     var r = $('#r3Riprova');
-    if (r) r.addEventListener('click', function () { scriviSessione(K_FORZA, '1'); location.reload(); });
+    if (r) r.addEventListener('click', function () { location.href = 'radar3d.html?forza3d=1'; });
     if (dati) { aggiornaTesti(); }
   }
   // fotogrammi al secondo nei primi secondi: la mappa si ridisegna di continuo (senza muoversi) e si contano i disegni
   function misuraVelocita() {
     if (misurato || fermo || !mappa) return;
     misurato = true;
-    if (leggiSessione(K_FORZA) === '1') return;
+    if (FORZA.test(location.search)) return;
     var t0 = 0, n = 0;
     function giro() {
       if (fermo || !mappa) return;
@@ -476,14 +481,14 @@
   function aggiornaTesti() {
     if (!dati) return;
     var T = dati.totali, m = meseCorrente(), nVis = visibili.length, nAlte = alte.length;
-    var dove = m ? ' a ' + m.etichetta : '';
-    $('#r3Sintesi').innerHTML = '<b>' + num(nVis) + '</b> ' + (nVis === 1 ? 'asta' : 'aste') + ' sulla mappa' + esc(dove) + ' · <b>' + num(nAlte) + '</b> con sconto affidabile';
+    var dove = m ? ' a ' + m.etichetta : '', qui = fermo ? ' in corso con posizione' : ' sulla mappa';
+    $('#r3Sintesi').innerHTML = '<b>' + num(nVis) + '</b> ' + (nVis === 1 ? 'asta' : 'aste') + qui + esc(dove) + ' · <b>' + num(nAlte) + '</b> con sconto affidabile';
     // numeri
     var somma = 0, maxS = null;
     alte.forEach(function (p) { somma += p.sconto; if (maxS == null || p.sconto > maxS) maxS = p.sconto; });
     var righe = [
       ['Aste in corso', '<b>' + num(T.inCorso) + '</b><small>' + num(T.conPosizione) + ' con posizione sulla mappa, ' + num(T.senzaPosizione) + ' senza posizione precisa (non disegnate)</small>'],
-      [m ? 'Sulla mappa a ' + m.etichetta : 'Sulla mappa, tutti i mesi', '<b>' + num(nVis) + '</b><small>' + num(nAlte) + ' colonne con sconto affidabile, ' + num(nVis - nAlte) + ' punti grigi</small>'],
+      [(fermo ? 'Con posizione' : 'Sulla mappa') + (m ? ' a ' + m.etichetta : ', tutti i mesi'), '<b>' + num(nVis) + '</b><small>' + num(nAlte) + (fermo ? ' con sconto affidabile, ' + num(nVis - nAlte) + ' senza' : ' colonne con sconto affidabile, ' + num(nVis - nAlte) + ' punti grigi') + '</small>'],
       ['Sconto medio delle affidabili', nAlte ? '<b>' + U.pct(somma / nAlte, 0) + '</b><small>su ' + aste(nAlte) + '; il più alto ' + U.pct(maxS, 0) + '</small>' : '<span class="muted">non calcolabile</span><small>nessuna asta con sconto e valore affidabile</small>'],
       ['Escluse', '<b>' + num(T.passate) + '</b><small>aste con la data già passata' + (T.senzaMese ? '; ' + num(T.senzaMese) + ' senza giorno dell\'asta solo in “tutti i mesi”' : '') + '</small>']
     ];
@@ -498,7 +503,7 @@
     b.disabled = !top.length;
     b.title = top.length ? '' : 'Nessuna asta con valore affidabile' + dove;
     // testo alternativo della mappa
-    $('#r3Alt').textContent = 'Mappa 3D delle aste in corso' + dove + ': ' + aste(nVis) + ' con posizione, di cui ' + num(nAlte) + ' colonne alte quanto lo sconto (valore affidabile) e ' + num(nVis - nAlte) +
+    if (!fermo) $('#r3Alt').textContent = 'Mappa 3D delle aste in corso' + dove + ': ' + aste(nVis) + ' con posizione, di cui ' + num(nAlte) + ' colonne alte quanto lo sconto (valore affidabile) e ' + num(nVis - nAlte) +
       ' punti grigi. ' + (top.length ? 'Il miglior affare è «' + top[0].a.titolo + '», ' + luogo(top[0].a).split(' · ')[0] + ', punteggio ' + Math.round(top[0].punteggio) + ' su 100. ' : '') +
       'Numeri ed elenco dei migliori affari sono nella colonna “Legenda e numeri”.';
   }
@@ -557,7 +562,8 @@
       h = '<b>' + aste(r.n) + '</b><span>' + (r.classe >= 0 ? 'Sconto medio ' + U.pct(r.media, 0) + ' su ' + num(r.campione) + ' affidabili' : r.campione ? 'Solo ' + num(r.campione) + ' con valore affidabile: grigio' : 'Nessuna con valore affidabile') + '</span><small>Clic per avvicinare</small>';
     } else {
       var a = o.a;
-      h = '<b>' + esc(String(a.titolo || '').slice(0, 80)) + '</b><span>' + esc(luogo(a).split(' · ')[0]) + '</span><span>' +
+      var tit = String(a.titolo || '');
+      h = '<b>' + esc(tit.length > 80 ? tit.slice(0, 78) + '…' : tit) + '</b><span>' + esc(luogo(a).split(' · ')[0]) + '</span><span>' +
         (o.affidabile ? 'Sconto ' + U.pct(o.sconto, 0) + ' · punteggio ' + (o.punteggio == null ? 'n.d.' : Math.round(o.punteggio)) : 'Sconto non affidabile') + '</span>' +
         (o.insieme > 1 ? '<small>' + aste(o.insieme) + ' nello stesso punto</small>' : '');
     }

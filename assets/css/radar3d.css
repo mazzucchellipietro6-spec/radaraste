@@ -104,7 +104,7 @@
 .r3-tip { position: absolute; z-index: 8; max-width: 280px; display: grid; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-2); box-shadow: var(--ombra-2); font-size: 12.5px; color: var(--fg-2); pointer-events: none; }
 .r3-tip b { font-weight: 600; color: var(--fg); font-size: 13px; line-height: 1.35; }
 .r3-tip small { color: var(--muted); }
-.r3-avviso { position: absolute; z-index: 7; left: 50%; top: 14px; transform: translateX(-50%); width: min(520px, calc(100% - 140px)); display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-2); box-shadow: var(--ombra-2); font-size: 13.5px; color: var(--fg-2); }
+.r3-avviso { position: absolute; z-index: 7; right: 64px; top: 14px; width: min(420px, calc(100% - 330px)); display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-2); box-shadow: var(--ombra-2); font-size: 13.5px; color: var(--fg-2); }
 .r3-avviso > .icona { color: var(--muted); }
 .r3-avviso span { flex: 1; min-width: 0; }
 .r3-avviso .r3-x { width: 32px; height: 32px; }
@@ -147,7 +147,8 @@
   .r3-lato .piede-marchio { display: none; }
 }
 @media (min-width: 900px) and (max-width: 1099px) { :root { --r3-lato: 330px; } }
-@media (min-width: 900px) and (max-height: 640px) { .r3-legenda-mappa { display: none; } }
+/* mappa stretta o bassa: la legenda resta solo nella colonna, così non copre le colonne */
+@media (min-width: 900px) and (max-width: 1199px), (min-width: 900px) and (max-height: 640px) { .r3-legenda-mappa { display: none; } }
 @media (min-width: 900px) and (prefers-reduced-motion: reduce) { .r3-scheda { transition: none; } }
 
 /* ---------- telefono ---------- */
@@ -183,7 +184,7 @@
   .r3-scheda { max-height: 58vh; max-height: 58dvh; }
   .r3-mappa .maplibregl-ctrl-top-right .maplibregl-ctrl { margin: 10px 10px 0 0; }
   .r3-mappa .maplibregl-ctrl-group button { width: 40px; height: 40px; }
-  .r3-avviso { top: 64px; width: calc(100% - 20px); }
+  .r3-avviso { top: 64px; left: 10px; right: 10px; width: auto; }
   .r3-ripiego { align-items: start; padding-top: 70px; }
 }
 @media (max-width: 899px) and (prefers-reduced-motion: reduce) { .r3-foglio { transition: none; } }
