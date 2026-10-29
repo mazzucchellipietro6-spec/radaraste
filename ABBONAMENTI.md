@@ -103,7 +103,7 @@ Segui l'ordine. Tieni le chiavi in un gestore di password: non incollarle in cha
 ### Passo 1 – Cloudflare Pages
 
 1. Crea un account gratuito su cloudflare.com.
-2. Crea il progetto: **Workers e Pages → Crea → Pages → carica i file direttamente** ("Direct Upload"). Nome: **`radaraste`** (lo stesso scritto in `wrangler.toml`; se scegli un altro nome, cambialo anche lì), ramo di produzione `main`. Non serve caricare nulla adesso: lo fa il workflow.
+2. Crea il progetto: **Workers e Pages → Crea → Pages → carica i file direttamente** ("Direct Upload"). Nome: **`radaraste`** (lo stesso scritto in `wrangler.toml`; se scegli un altro nome, cambialo anche lì), ramo di produzione `main`. Il sito vero lo carica il workflow: se il pannello vuole comunque dei file per finire, carica una cartella con un solo file `index.html` qualsiasi, che la prima pubblicazione sostituirà.
 3. Crea un token: **icona del profilo → Profilo → Token API → Crea token → Token personalizzato**, con il permesso **Account → Cloudflare Pages → Modifica**, limitato al tuo account.
 4. Copia l'**ID account** (pagina principale dell'account o "Workers e Pages", colonna a destra).
 5. Su GitHub, nel repository del sito: **Settings → Secrets and variables → Actions**:
@@ -112,7 +112,7 @@ Segui l'ordine. Tieni le chiavi in un gestore di password: non incollarle in cha
    - nella scheda *Variables*, variabile `CF_PAGES_PROGETTO` = `radaraste`.
 6. Lancia il workflow a mano (**Actions → "Aggiorna aste e pubblica il sito" → Run workflow**). Alla fine il sito è anche su `https://radaraste.pages.dev` (o l'indirizzo che Cloudflare ti mostra). Cloudflare mostra le pagine senza ".html" (per esempio `/prezzi`): è normale.
 
-Senza la variabile `CF_PAGES_PROGETTO` il passo non parte; se fallisce, GitHub Pages viene pubblicato lo stesso.
+Senza la variabile `CF_PAGES_PROGETTO` il passo non parte. Il passo viene **dopo** la pubblicazione su GitHub Pages: se fallisce (per esempio perché manca uno dei due secret, e il log lo dice in italiano), GitHub Pages è già pubblicato e non cambia nulla.
 
 ### Passo 2 – Supabase (utenti e dati)
 
@@ -145,8 +145,10 @@ Senza la variabile `CF_PAGES_PROGETTO` il passo non parte; se fallisce, GitHub P
 4. **Impostazioni → Fatturazione → Portale clienti**: attiva aggiornamento del metodo di pagamento, fatture, disdetta (alla fine del periodo) e, se vuoi, il cambio tra Base e Pro con i quattro prezzi. Salva.
 5. **Sviluppatori → Chiavi API**: copia la **chiave segreta di test** (`sk_test_...`) e la **chiave pubblicabile di test** (`pk_test_...`).
 6. **Sviluppatori → Webhook → Aggiungi destinazione/endpoint**:
-   - indirizzo: `https://radaraste.pages.dev/api/stripe/webhook` (con il tuo indirizzo);
+   - eventi del **tuo account** (non degli "account connessi");
    - eventi: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.trial_will_end`, `invoice.payment_failed`;
+   - se Stripe chiede il formato degli eventi, scegli quello completo ("Snapshot"), non "Thin";
+   - tipo di destinazione: endpoint webhook, indirizzo `https://radaraste.pages.dev/api/stripe/webhook` (con il tuo indirizzo);
    - copia il **segreto di firma** (`whsec_...`).
 
 ### Passo 4 – Resend (email)
@@ -159,7 +161,7 @@ Puoi saltare questo passo all'inizio: senza Resend tutto funziona, solo le email
 
 ### Passo 5 – Variabili d'ambiente su Cloudflare
 
-Su Cloudflare: **Workers e Pages → radaraste → Impostazioni → Variabili e segreti**, ambiente **Produzione**. Aggiungile **tutte di tipo "Segreto"**, anche quelle non segrete: con `wrangler.toml` nel repository le variabili in chiaro del pannello non sono modificabili, i segreti sì. In alternativa, dal tuo computer: `npx wrangler@4.151.2 pages secret put NOME --project-name radaraste`.
+Su Cloudflare: **Workers e Pages → radaraste → Impostazioni → Variabili e segreti**, ambiente **Produzione**. Aggiungile **tutte di tipo "Segreto"**, anche quelle non segrete: con `wrangler.toml` nel repository le variabili in chiaro del pannello non sono modificabili, i segreti sì. In alternativa, dal tuo computer: `npx wrangler@4.151.2 login` e poi, per ogni variabile, `npx wrangler@4.151.2 pages secret put NOME --project-name radaraste` (il valore lo chiede dopo, senza mostrarlo).
 
 | Variabile | Valore | A cosa serve | Segreta? |
 |---|---|---|---|
@@ -175,7 +177,7 @@ Su Cloudflare: **Workers e Pages → radaraste → Impostazioni → Variabili e 
 | `SITO_URL` | `https://radaraste.pages.dev` | Pagine di ritorno da Stripe, link nelle email, controllo dell'origine delle richieste. | No |
 | `RESEND_API_KEY` | `re_...` | Invio delle email. | **Sì** |
 | `EMAIL_MITTENTE` | `Radar Aste Italia <avvisi@tuodominio.it>` | Mittente delle email. | No |
-| `PAGAMENTI_REALI` | **non impostarla** | Solo il valore `si` permette le chiavi reali di Stripe. In modalità test deve mancare. | — |
+| `PAGAMENTI_REALI` | **non impostarla** | Solo il valore `si` (scritto così: minuscolo, senza accento) permette le chiavi reali di Stripe. In modalità test deve mancare. | — |
 
 Facoltative, per il consulente con intelligenza artificiale (vedi `CONSULENTE.md`): `ANTHROPIC_API_KEY` (segreta), `CONSULENTE_MODELLO`, `ORIGINE`, `MAX_TOKEN`.
 
@@ -203,6 +205,7 @@ Con le chiavi di test Stripe non addebita nulla. Carte di prova (qualunque data 
 |---|---|
 | `4242 4242 4242 4242` | Pagamento riuscito. |
 | `4000 0000 0000 0341` | La carta si salva, ma l'addebito viene rifiutato: serve a provare il pagamento non riuscito. |
+| `4000 0025 0000 3155` | Chiede la conferma della banca (3D Secure), come molte carte europee: nella finestra di prova di Stripe conferma per farlo riuscire, oppure rifiuta per vedere il pagamento non riuscito. |
 
 Percorso da provare:
 
@@ -228,7 +231,7 @@ Con lo strumento a riga di comando di Stripe (`stripe login`, poi per esempio `s
 - [ ] account Stripe attivato per i pagamenti reali (identità, conto per gli accrediti, descrizione sull'estratto conto);
 - [ ] in modalità reale: prodotti e quattro prezzi ricreati (gli ID cambiano: aggiorna le quattro `STRIPE_PREZZO_...`), portale clienti configurato, nuovo webhook con il suo nuovo `STRIPE_WEBHOOK_SECRET`;
 - [ ] su Cloudflare `STRIPE_SECRET_KEY` reale (`sk_live_...` o una chiave limitata `rk_live_...`) e in `config/abbonamenti.js` la chiave pubblicabile reale (`pk_live_...`);
-- [ ] **`PAGAMENTI_REALI=si`** su Cloudflare, solo in Produzione: è l'interruttore finale, senza il quale le funzioni rifiutano le chiavi reali;
+- [ ] **`PAGAMENTI_REALI`** con valore `si` su Cloudflare, solo in Produzione: è l'interruttore finale, senza il quale le funzioni rifiutano le chiavi reali e le notifiche reali di Stripe;
 - [ ] email di Supabase e di Resend dal tuo dominio, con testi in italiano;
 - [ ] un primo pagamento vero con la tua carta, poi rimborsato dal pannello di Stripe.
 
@@ -243,7 +246,7 @@ Per tornare subito alla modalità test: togli `PAGAMENTI_REALI` (o rimetti le ch
 - **Diritti degli utenti:** "Scarica i miei dati" (copia completa in un file) e "Cancella l'account" (annulla l'abbonamento, cancella dati e utente; restano presso Stripe solo fatture e pagamenti, per gli obblighi fiscali).
 - **Regole del database:** ognuno vede solo i propri dati; l'abbonamento si scrive solo dalle funzioni del sito, dopo una notifica firmata di Stripe.
 - **Chiavi:** segrete solo su Cloudflare, mai nel codice; i test controllano che nel repository non ci siano chiavi.
-- **Intestazioni di sicurezza** (`_headers`): il browser carica script solo dal sito, immagini solo dal sito, dalle tile di OpenStreetMap e dal Portale Vendite Pubbliche, e si collega solo al sito, alla ricerca dei luoghi di OpenStreetMap e a Supabase. Il sito non può essere mostrato dentro altri siti.
+- **Intestazioni di sicurezza** (`_headers`, valgono solo su Cloudflare): il browser carica script solo dal sito (niente librerie da altri siti), immagini solo dal sito, dalle tile di OpenStreetMap e dal Portale Vendite Pubbliche, e si collega solo al sito, alla ricerca dei luoghi di OpenStreetMap, a Supabase e, per il Radar 3D, alle mappe di OpenFreeMap e OpenStreetMap. Stripe e Google si aprono come pagine a parte. Il sito non può essere mostrato dentro altri siti. Provato nel browser il 29/10/2026 su tutte le pagine: nessun blocco.
 - **Cookie:** il sito non usa cookie di profilazione; la sessione dell'account resta nella memoria del browser (strumento tecnico). Dettagli nella bozza `cookie.html`.
 - Se usi Cloudflare Web Analytics o un dominio Supabase personalizzato, vanno aggiunti alla `Content-Security-Policy` in `_headers` (il test `tests/cloudflare.test.mjs` aiuta a non dimenticarlo).
 

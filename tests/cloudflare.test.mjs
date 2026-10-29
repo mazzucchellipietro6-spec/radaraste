@@ -28,20 +28,24 @@ function passo(y, nome) {
   return fine < 0 ? y.slice(i) : y.slice(i, i + 1 + fine);
 }
 
-test('workflow: Cloudflare Pages dopo "Prepara il sito", solo se c\'è il progetto, token e account solo dai secret', async () => {
+test('workflow: Cloudflare Pages dopo GitHub Pages, solo se c\'è il progetto, token e account solo dai secret', async () => {
   const y = await leggi('.github/workflows/aggiorna-aste.yml');
   const cf = passo(y, 'Pubblica su Cloudflare Pages');
   assert.ok(cf, 'manca il passo "Pubblica su Cloudflare Pages"');
   assert.ok(y.indexOf('- name: Pubblica su Cloudflare Pages') > y.indexOf('- name: Prepara il sito'), 'dopo "Prepara il sito"');
+  // dopo la pubblicazione su GitHub Pages: un ritardo di Cloudflare non deve portare il lavoro oltre il tempo massimo
+  // prima che GitHub Pages sia pubblicato
+  assert.ok(y.indexOf('- id: deploy') > 0 && y.indexOf('- name: Pubblica su Cloudflare Pages') > y.indexOf('- id: deploy'), 'dopo "deploy" (GitHub Pages)');
   assert.match(cf, /^\s+if: \$\{\{ vars\.CF_PAGES_PROGETTO != '' \}\}\s*$/m, 'parte solo con la variabile CF_PAGES_PROGETTO');
-  assert.match(cf, /^\s+continue-on-error: true\s*$/m, 'un errore non deve fermare GitHub Pages');
+  assert.match(cf, /^\s+continue-on-error: true\s*$/m, 'un errore non deve fermare il resto');
+  assert.match(cf, /^\s+timeout-minutes: \d+\s*$/m, 'tempo massimo del passo');
   assert.match(cf, /^\s+CLOUDFLARE_API_TOKEN: \$\{\{ secrets\.CLOUDFLARE_API_TOKEN \}\}\s*$/m);
   assert.match(cf, /^\s+CLOUDFLARE_ACCOUNT_ID: \$\{\{ secrets\.CLOUDFLARE_ACCOUNT_ID \}\}\s*$/m);
-  const run = cf.match(/^\s+run: npx --yes wrangler@(\S+) pages deploy _site --project-name "(\$CF_PAGES_PROGETTO|\$\{\{ vars\.CF_PAGES_PROGETTO \}\})" --branch main\s*$/m);
+  const run = cf.match(/^\s+(?:run: )?npx --yes wrangler@(\S+) pages deploy _site --project-name "(\$CF_PAGES_PROGETTO|\$\{\{ vars\.CF_PAGES_PROGETTO \}\})" --branch main( --commit-dirty=true)?\s*$/m);
   assert.ok(run, 'comando: npx --yes wrangler@<versione> pages deploy _site --project-name "..." --branch main');
   if (run[2] === '$CF_PAGES_PROGETTO') assert.match(cf, /^\s+CF_PAGES_PROGETTO: \$\{\{ vars\.CF_PAGES_PROGETTO \}\}\s*$/m);
   // dalla radice del repository: wrangler prende anche functions/ (e servizi/, che le funzioni importano)
-  assert.doesNotMatch(cf, /working-directory/);
+  assert.doesNotMatch(cf, /working-directory|^\s+cd\s|--cwd/m);
   // la pubblicazione su GitHub Pages resta com'era
   assert.match(y, /uses: actions\/upload-pages-artifact@v\d+\s*\n\s+with:\s*\n\s+path: _site/);
   assert.match(y, /- id: deploy\s*\n\s+uses: actions\/deploy-pages@v\d+/);
@@ -56,6 +60,10 @@ test('workflow: wrangler con una versione esatta (3 o 4) e Node adatto', async (
   // le versioni recenti di wrangler 4 chiedono Node 22 (campo engines del pacchetto)
   const node = Number((y.match(/node-version:\s*'?(\d+)/) || [])[1]);
   assert.ok(node >= 22, 'Node ' + node + ': wrangler 4 vuole Node 22 o superiore');
+  // la guida e il README indicano la stessa versione del workflow (per esempio per "pages secret put")
+  for (const f of ['ABBONAMENTI.md', 'README.md', 'wrangler.toml']) {
+    for (const m of (await leggi(f)).matchAll(/wrangler@(\S+?)[\s`)]/g)) assert.equal(m[1], usi[0], f + ': wrangler@' + m[1] + ' diversa dal workflow');
+  }
 });
 
 test('workflow: chiavi e token solo dai secret, mai scritti nel file', async () => {
@@ -157,6 +165,9 @@ const CARICAMENTI = [
   [/\b(fetch|sendBeacon|EventSource|WebSocket)\s*\(\s*['"`]$/, ['connect-src']],
   [/\.open\(\s*['"][A-Za-z]+['"]\s*,\s*['"`]$/, ['connect-src']],
   [/\btileLayer(\.\w+)?\s*\(\s*['"`]$/, ['img-src']],
+  // stile di MapLibre (Radar 3D): stile, caratteri, icone e tile si scaricano con fetch, anche le immagini raster
+  [/\b(style|glyphs|sprite)\s*:\s*['"`]$/, ['connect-src']],
+  [/\btiles\s*:\s*\[\s*(['"`][^'"`]*['"`]\s*,\s*)*['"`]$/, ['connect-src']],
   [/<img\b[^>]*\bsrc(set)?=\s*\\?['"][^'"]*$/i, ['img-src']],
   [/<script\b[^>]*\bsrc=\s*\\?['"]$/i, ['script-src']],
   [/<i?frame\b[^>]*\bsrc=\s*\\?['"]$/i, ['frame-src']],
@@ -173,6 +184,8 @@ const usiDiVariabile = (nome) => [
   [new RegExp('\\b(fetch|sendBeacon|EventSource|WebSocket)\\s*\\(\\s*' + nome + '\\b'), ['connect-src']],
   [new RegExp('\\.open\\(\\s*[\'"][A-Za-z]+[\'"]\\s*,\\s*' + nome + '\\b'), ['connect-src']],
   [new RegExp('\\btileLayer(\\.\\w+)?\\s*\\(\\s*' + nome + '\\b'), ['img-src']],
+  [new RegExp('\\b(style|glyphs|sprite)\\s*:\\s*' + nome + '\\b'), ['connect-src']],
+  [new RegExp('\\btiles\\s*:\\s*\\[[^\\]]*\\b' + nome + '\\b'), ['connect-src']],
   [new RegExp('\\b(importScripts|Worker|SharedWorker)\\s*\\(\\s*' + nome + '\\b'), ['script-src', 'worker-src']],
   [new RegExp('\\.(src|poster)\\s*=\\s*' + nome + '\\b'), ['img-src', 'script-src', 'media-src']]
 ];
@@ -212,7 +225,20 @@ async function risorseDinamiche() {
   for (const [k, u] of Object.entries(abb.api || {})) if (/^https?:\/\//.test(u || '')) r.push({ host: new URL(u).hostname, direttive: ['connect-src'], dove: 'config/abbonamenti.js → api.' + k });
   const ponte = require('../config/consulente.js').ponte;
   if (/^https?:\/\//.test(ponte || '')) r.push({ host: new URL(ponte).hostname, direttive: ['connect-src'], dove: 'config/consulente.js → ponte' });
-  return r;
+  return [...r, ...await risorsePreviste()];
+}
+
+// indirizzi già nella CSP per il Radar 3D, che è in lavorazione (MapLibre scarica sfondo, caratteri e icone con fetch).
+// Finché i suoi file non esistono valgono così; quando esistono devono nominarli, altrimenti vanno tolti dalla CSP.
+const PREVISTI = [
+  { host: 'tiles.openfreemap.org', direttive: ['connect-src'], perche: 'Radar 3D: stile, tile vettoriali, caratteri e icone di OpenFreeMap' },
+  { host: 'tile.openstreetmap.org', direttive: ['connect-src'], perche: 'Radar 3D: sfondo raster di ripiego di OpenStreetMap' }
+];
+async function risorsePreviste() {
+  const radar3d = (await fileDelSito()).filter((f) => /radar3d/i.test(f) && !f.startsWith(path.join('assets', 'vendor')));
+  const testi = await Promise.all(radar3d.map(leggi));
+  return PREVISTI.filter((p) => !radar3d.length || testi.some((t) => t.includes(p.host)))
+    .map((p) => ({ host: p.host, direttive: p.direttive, dove: p.perche + (radar3d.length ? '' : ' (pagina in arrivo)') }));
 }
 
 async function csp() {
@@ -316,10 +342,77 @@ test('_headers: Permissions-Policy non spegne le funzioni del browser che il sit
   }
   for (const f of ['camera', 'microphone', 'payment']) assert.equal(pp[f], '()', f + ' spento');
   // funzioni usate dal codice del sito (le librerie in assets/vendor/ ne hanno di non usate, es. la posizione di Leaflet)
-  const USI = { 'web-share': /navigator\.share\b/, 'clipboard-write': /navigator\.clipboard\b/, geolocation: /navigator\.geolocation\b|\.locate\(\s*\{/,
-    camera: /getUserMedia/, microphone: /getUserMedia/, fullscreen: /requestFullscreen/, payment: /new PaymentRequest/ };
+  const USI = { 'web-share': /navigator\.share\b/, 'clipboard-write': /navigator\.clipboard\b/, geolocation: /navigator\.geolocation\b|\.locate\(\s*\{|GeolocateControl/,
+    camera: /getUserMedia/, microphone: /getUserMedia/, fullscreen: /requestFullscreen|FullscreenControl/, payment: /new PaymentRequest/ };
   const codice = (await Promise.all((await fileDelSito()).filter((f) => /\.js$/.test(f) && !f.startsWith(path.join('assets', 'vendor'))).map(leggi))).join('\n');
   for (const [funzione, re] of Object.entries(USI)) {
     if (re.test(codice)) assert.notEqual(pp[funzione], '()', funzione + ': il sito la usa, non spegnerla in Permissions-Policy');
   }
+  // Chromium (prova del 29/10/2026) scrive in console "Unrecognized feature" per queste: non servono ("web-share" è
+  // già permessa al sito di norma)
+  for (const f of ['bluetooth', 'web-share', 'interest-cohort']) assert.ok(!(f in pp), f + ': il browser la segnala come sconosciuta, toglila');
+});
+
+test('_headers: worker-src per il service worker e per MapLibre (file del sito o blob:), nient\'altro', async () => {
+  const d = await csp();
+  const w = valoriPer(d, 'worker-src');
+  // sw.js si registra con worker-src: senza 'self' il sito non funziona più offline
+  assert.match(await leggi('js/ui.js'), /serviceWorker\.register\(/);
+  assert.ok(w.includes("'self'"), "worker-src: serve 'self' per sw.js");
+  for (const v of w) assert.ok(["'self'", 'blob:'].includes(v), 'worker-src: niente ' + v + ' (un worker preso da un altro sito eseguirebbe codice esterno)');
+});
+
+test('_headers: se il service worker gestisse richieste verso altri siti, anche quegli indirizzi starebbero in connect-src', async () => {
+  // un service worker che passa le richieste con fetch() segue connect-src, non img-src: le foto delle aste e le tile
+  // si romperebbero su Cloudflare
+  const sw = await leggi('sw.js');
+  const soloSito = /if\s*\([^)]*new URL\(req\.url\)\.origin\s*!==\s*(self\.)?location\.origin\)\s*return\s*;/.test(sw);
+  if (soloSito) return;
+  const d = await csp();
+  for (const s of sorgentiHost(d['img-src'] || [])) {
+    const host = s.replace(/^https?:\/\//, '').replace(/[:/].*$/, '');
+    assert.ok(permesso(d, 'connect-src', host), 'sw.js gestisce richieste esterne: aggiungi ' + s + ' anche a connect-src');
+  }
+});
+
+// --- guide: ABBONAMENTI.md e README --------------------------------------------------------------------------------
+
+test('ABBONAMENTI.md: tutte le variabili d\'ambiente lette dalle funzioni, nessuna chiave vera', async () => {
+  const guida = await leggi('ABBONAMENTI.md');
+  const nomi = new Set();
+  for (const c of ['functions', 'servizi']) {
+    for (const f of await readdir(path.join(RADICE, c), { recursive: true })) {
+      if (!/\.m?js$/.test(f)) continue;
+      const t = await leggi(path.join(c, f));
+      for (const m of t.matchAll(/\benv\.([A-Z][A-Z0-9_]+)/g)) nomi.add(m[1]);
+      for (const m of t.matchAll(/['"]((?:STRIPE|SUPABASE|RESEND|EMAIL|SITO|PAGAMENTI|ANTHROPIC|CONSULENTE)_[A-Z0-9_]+)['"]/g)) nomi.add(m[1]);
+    }
+  }
+  assert.ok(nomi.has('STRIPE_SECRET_KEY') && nomi.has('STRIPE_PREZZO_PRO_ANNUALE') && nomi.size >= 15, 'variabili trovate nel codice: ' + [...nomi]);
+  for (const n of nomi) assert.ok(guida.includes('`' + n + '`'), 'ABBONAMENTI.md: manca la variabile ' + n);
+  for (const f of ['ABBONAMENTI.md', 'README.md']) for (const re of CHIAVI) assert.doesNotMatch(await leggi(f), re, f + ': sembra una chiave vera');
+});
+
+test('ABBONAMENTI.md: eventi del webhook uguali a quelli gestiti da functions/api/stripe/webhook.js', async () => {
+  const codice = await leggi('functions/api/stripe/webhook.js');
+  const gestiti = new Set([...codice.matchAll(/^\s+async '([a-z_.]+)'\(/gm), ...codice.matchAll(/GESTORI\['([a-z_.]+)'\]\s*=/g)].map((m) => m[1]));
+  assert.ok(gestiti.size >= 6, 'eventi trovati: ' + [...gestiti]);
+  const guida = await leggi('ABBONAMENTI.md');
+  const riga = guida.split('\n').find((r) => /eventi:/.test(r) && /checkout\.session\.completed/.test(r));
+  assert.ok(riga, 'ABBONAMENTI.md: riga con gli eventi del webhook');
+  const elencati = new Set([...riga.matchAll(/`([a-z_]+\.[a-z_.]+)`/g)].map((m) => m[1]));
+  assert.deepEqual([...elencati].sort(), [...gestiti].sort());
+});
+
+test('ABBONAMENTI.md: nessun "(in arrivo)" per il report PDF, che esiste; link via email nello stesso browser', async () => {
+  const guida = await leggi('ABBONAMENTI.md');
+  const cfg = require('../config/abbonamenti.js');
+  const pdf = cfg.piani.flatMap((p) => p.vantaggi).find((v) => /PDF/.test(v));
+  assert.ok(pdf && !/in arrivo/i.test(pdf), 'config: il report PDF non è "in arrivo"');
+  for (const r of guida.split('\n')) if (/PDF/.test(r)) assert.doesNotMatch(r.replace(/;[^;]*\(in arrivo\)/g, ''), /PDF[^;|]*\(in arrivo\)/i, 'ABBONAMENTI.md: ' + r.trim());
+  // le funzioni "(in arrivo)" della guida sono quelle della configurazione
+  const inArrivo = cfg.piani.flatMap((p) => p.vantaggi).filter((v) => /\(in arrivo\)/.test(v));
+  assert.equal(inArrivo.length, 3, 'avvisi, consulente AI, statistiche avanzate');
+  assert.match(guida, /stesso browser/);
+  assert.match(guida, /PKCE/);
 });

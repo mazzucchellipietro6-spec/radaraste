@@ -1,38 +1,50 @@
 # Intestazioni HTTP del sito su Cloudflare Pages (GitHub Pages le ignora). Il workflow copia questo file in _site.
 # Valgono solo per i file statici: le risposte delle funzioni (/api/...) mettono da sole le loro intestazioni.
-# Controllato da tests/cloudflare.test.mjs: ogni indirizzo esterno che il sito carica deve essere qui.
+# Controllato da tests/cloudflare.test.mjs: ogni indirizzo esterno che il sito carica deve essere qui, e ogni
+# indirizzo che è qui deve servire a qualcosa. Provato nel browser il 29/10/2026: nessuna violazione nelle pagine.
 #
 # Content-Security-Policy, cosa permette e perché:
 #   script-src   solo i file del sito e lo script del tema scritto in <head> di ogni pagina, autorizzato con la sua
 #                impronta (sha256) invece di 'unsafe-inline': così uno script iniettato con un testo delle aste non
 #                parte. Lo script è identico in tutte le pagine: se lo cambi, aggiorna l'impronta (il test la
-#                ricalcola e dice quale mettere). Niente 'unsafe-eval': il sito non lo usa.
-#   style-src    'unsafe-inline' serve agli attributi style="..." scritti dalle pagine e da Leaflet (solo stili, non
-#                codice).
+#                ricalcola e dice quale mettere). Niente 'unsafe-eval': il sito e le librerie non lo usano.
+#   style-src    'unsafe-inline' serve agli attributi style="..." scritti dalle pagine, da Leaflet e da MapLibre
+#                (solo stili, non codice).
 #   img-src      tile di OpenStreetMap (sfondo della mappa), foto delle aste dal Portale Vendite Pubbliche
-#                (resource-pvp.giustizia.it) e data: (immagini vuote di Leaflet).
-#   connect-src  nominatim.openstreetmap.org (cerca un luogo sulla mappa) e il progetto Supabase degli account
-#                (*.supabase.co). Se usi un dominio personalizzato per Supabase, aggiungilo qui.
+#                (resource-pvp.giustizia.it), data: (immagini vuote di Leaflet) e blob: (immagini che MapLibre
+#                ricava dai file scaricati).
+#   connect-src  nominatim.openstreetmap.org (posizione delle aste inserite a mano, nella mappa); il progetto
+#                Supabase degli account (*.supabase.co: se usi un dominio personalizzato, aggiungilo qui);
+#                tiles.openfreemap.org (Radar 3D: stile, tile vettoriali, caratteri e icone) e tile.openstreetmap.org
+#                (Radar 3D, sfondo di ripiego): MapLibre scarica tutto con fetch, quindi servono qui e non in img-src.
+#   worker-src   'self' per il service worker (sw.js) e per il worker di MapLibre preso dai file del sito; blob: per
+#                il worker che MapLibre (e deck.gl) possono creare in memoria. Il codice dentro un worker blob: segue
+#                questa stessa CSP: non può caricare script da altri siti.
 #   Stripe Checkout, il portale clienti di Stripe e l'accesso con Google sono pagine su cui il sito porta
-#   l'utente (navigazione): non servono nella CSP. Documenti e avvisi delle aste sono link, idem.
+#   l'utente (navigazione): non servono nella CSP, e nessuno script o richiesta va a Stripe dal browser.
+#   I moduli del sito si inviano solo al sito (form-action 'self'). Documenti e avvisi delle aste sono link.
 #   frame-ancestors 'none' (e X-Frame-Options) impedisce di mostrare il sito dentro altri siti.
+#   Se un giorno sw.js metterà in cache foto o tile di altri siti, quegli indirizzi vanno anche in connect-src
+#   (il test lo controlla).
 #
 # Referrer-Policy: verso gli altri siti va solo l'indirizzo del sito, senza pagina né parametri. Le regole d'uso
 # delle tile e di Nominatim di OpenStreetMap chiedono che il sito si faccia riconoscere: non usare no-referrer.
-# Permissions-Policy: spegne fotocamera, microfono, posizione, pagamenti nel browser e sensori, che il sito non usa;
-# lascia "condividi" (scheda dell'asta). Se un giorno servirà la posizione ("vicino a me"), cambia geolocation=(self).
+# Permissions-Policy: spegne fotocamera, microfono, posizione, pagamenti nel browser e sensori, che il sito non usa.
+# "Condividi" (scheda dell'asta) e lo schermo intero restano permessi al sito, come di norma. Se un giorno servirà
+# la posizione ("vicino a me"), cambia geolocation=(self).
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-AuRrEURHuEvIPVaIwyFxbQnSFt5SRQtPHQyFcTZ7IAE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://tile.openstreetmap.org https://resource-pvp.giustizia.it; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-AuRrEURHuEvIPVaIwyFxbQnSFt5SRQtPHQyFcTZ7IAE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://resource-pvp.giustizia.it; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org https://*.supabase.co https://tiles.openfreemap.org https://tile.openstreetmap.org; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), hid=(), midi=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=(), browsing-topics=(), web-share=(self)
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), midi=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=(), browsing-topics=()
   Cross-Origin-Opener-Policy: same-origin
   Strict-Transport-Security: max-age=31536000
 
-# Caratteri e librerie: non cambiano, il browser li tiene un anno. Se aggiorni una libreria in assets/vendor/,
-# cambia il nome della cartella o del file (es. leaflet-1.9.5/), altrimenti chi ha già visitato il sito tiene la vecchia.
+# Caratteri e librerie: non cambiano, il browser li tiene un anno senza ricontrollarli. Se aggiorni una libreria in
+# assets/vendor/, cambia il nome della cartella o del file (es. maplibre-gl-5.24.0/), altrimenti chi ha già visitato
+# il sito tiene la vecchia fino a un anno.
 /assets/fonts/*
   Cache-Control: public, max-age=31536000, immutable
 
