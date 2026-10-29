@@ -4,6 +4,21 @@ Un paragrafo per ogni giro del mattino, il più recente in alto: come sta il sit
 
 ---
 
+## 29/10/2026 – Radar 3D e Cloudflare
+
+- **Sito pubblicato:** funziona, la raccolta n. 22 su GitHub è riuscita.
+- **Lavori rimasti a metà:** i tre rilanciati la sera del 28/10 si erano fermati subito sul limite d'uso di 5 ore. Oggi ne sono ripartiti due:
+  - **Radar 3D finito:** funziona con WebGL, con i ripieghi dello sfondo e al 2D;
+  - **preparazione per Cloudflare riveduta:** le intestazioni di sicurezza avrebbero bloccato il Radar 3D; corrette e provate su 27 pagine.
+- **Revisore:** pronto.
+  - Il caso sospetto di Sant'Elpidio a Mare (sconto 62%) è vero: il valore è confermato da OMI e perito, e lo sconto viene da 4 ribassi.
+  - Ha trovato due valori OMI gonfiati e li ha corretti:
+    - Perugia, "Fraz. Villa Pitignano" letto come villa;
+    - San Severino Marche, lotto con più unità.
+- **Test:** 436 su 436.
+- **Aste estere:** ancora da fare.
+- **Per te:** Merge della pull request #4 e due decisioni nuove in ROADMAP (offerta massima dopo molte aste deserte, OpenFreeMap).
+
 ## 28/10/2026 – Stratega su più anni e collaudo
 
 - **Sito pubblicato:** funziona, la raccolta n. 21 su GitHub è riuscita. La raccolta locale funziona di nuovo: 24.023 aste del 28/10.

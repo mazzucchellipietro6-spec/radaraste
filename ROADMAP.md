@@ -4,7 +4,7 @@ Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce camb
 
 Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ aspetta una tua decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 28/10/2026 (giro della squadra).
+Ultimo aggiornamento: 29/10/2026 (giro della squadra).
 
 ---
 
@@ -136,8 +136,14 @@ Ultimo aggiornamento: 28/10/2026 (giro della squadra).
     - piani e blocchi (`config/abbonamenti.js`, `js/piani.js`) e funzioni Stripe di prova (`functions/`, `servizi/`);
     - dal 27/10 anche account e accesso, con lo schema del database (provato su PostgreSQL), la pagina prezzi e le bozze legali.
     - La revisione dell'account ha trovato e chiuso due falle gravi: si poteva far entrare qualcuno nell'account di un altro con un link, e i dati di una persona potevano finire nell'account di un'altra.
-  - Da rivedere: preparazione per Cloudflare Pages (`_headers`, `wrangler.toml`, passo nel workflow) e il resto della guida `ABBONAMENTI.md`.
+  - Dal 29/10 è riveduta anche la preparazione per Cloudflare Pages: intestazioni di sicurezza provate nel browser, passo nel workflow dopo GitHub Pages, wrangler 4.151.2, guida `ABBONAMENTI.md` completa. **Tutta la zona abbonamenti è ora riveduta.**
 - ✅ **Stratega su più anni** (28/10): proiezione da 1 a 5 anni, con il grafico "Il patrimonio nel tempo" (caso basso, mediana, caso alto) e ipotesi e fonti elencate. Il calcolo è stato corretto: costi e sfitto come il calcolatore, plusvalenza prudente, rivalutazione solo degli immobili.
+- ✅ **Radar 3D** (29/10, in attesa del Merge):
+  - colonne per sconto e punteggio, esagoni, viaggio nel tempo, "Mostrami il miglior affare";
+  - ripieghi dello sfondo e al 2D;
+  - maplibre-gl 5.24.0 e deck.gl 9.3.11 inclusi con le licenze.
+  - Oggi solo 114 aste su 12.170 con posizione hanno uno sconto affidabile: le altre sono punti grigi.
+- ⬜ **Aste auto dall'estero**: rilanciate il 28/10 ma fermate subito dal limite d'uso; si riprendono nei prossimi giri.
 - ✅ **Squadra quotidiana** attiva dal 20/10 ([SQUADRA.md](SQUADRA.md)). Dal 26/10 lavora leggera: al massimo 3 agenti al giorno.
 
 ---
@@ -179,6 +185,10 @@ Ultimo aggiornamento: 28/10/2026 (giro della squadra).
 ---
 
 ## Da decidere ⏸ (per te)
+
+**Nuove del 29/10:**
+- **Offerta massima dopo molte aste deserte.** Esempio: Sant'Elpidio a Mare, laboratorio di 828 m². Il valore è confermato da OMI e perito, ma dopo 4 ribassi a luglio nessuno ha offerto 169.214 €, mentre il sito consiglia fino a 308.400 €. Vuoi che, dopo molte aste deserte, l'affidabilità scenda o che l'offerta consigliata non superi l'ultimo prezzo andato deserto?
+- **OpenFreeMap** (sfondo del Radar 3D): condizioni d'uso da verificare. Da qui il sito è bloccato. Se preferisci, si spegne con una riga e resta OpenStreetMap.
 
 **Nuove del 28/10:**
 - **Stratega, reinvestimento:** con "Reinvesti i guadagni" le cifre crescono molto: sui dati reali 300.000 € diventano circa 1,25 milioni in 5 anni, supponendo altre aste con lo stesso margine. È spento di partenza e segnato come ipotesi ottimista. Lo teniamo?
