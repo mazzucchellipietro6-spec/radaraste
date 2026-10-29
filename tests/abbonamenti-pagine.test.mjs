@@ -446,7 +446,7 @@ test('privacy e cookie: ogni servizio esterno che il browser contatta è descrit
   const host = [...csp.matchAll(/https:\/\/([^\s;]+)/g)].map((m) => m[1]);
   assert.ok(host.length >= 3, 'indirizzi esterni nella CSP');
   // indirizzo esterno → nome del servizio nelle due pagine (Supabase solo nell'informativa: nel browser c'è la sessione, già descritta)
-  const SERVIZIO = { 'tile.openstreetmap.org': 'OpenStreetMap', 'nominatim.openstreetmap.org': 'OpenStreetMap', 'resource-pvp.giustizia.it': 'Portale delle Vendite Pubbliche', '*.supabase.co': 'Supabase' };
+  const SERVIZIO = { 'tile.openstreetmap.org': 'OpenStreetMap', 'tiles.openfreemap.org': 'OpenFreeMap', 'nominatim.openstreetmap.org': 'OpenStreetMap', 'resource-pvp.giustizia.it': 'Portale delle Vendite Pubbliche', '*.supabase.co': 'Supabase' };
   for (const h of host) {
     assert.ok(SERVIZIO[h], h + ': servizio nuovo nella Content-Security-Policy, descrivilo in privacy.html e cookie.html e aggiungilo a questo test');
     assert.ok(privacy.includes(SERVIZIO[h]), 'privacy.html: ' + SERVIZIO[h]);
