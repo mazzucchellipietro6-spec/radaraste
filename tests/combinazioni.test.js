@@ -145,3 +145,21 @@ test('lotti senza comune: nessuna combinazione (caso reale: stessa procedura a C
   assert.equal(K.chiave(lotti[0]), null);
   assert.equal(K.trova(lotti, { T, oggi: '2026-10-26' }).trovate, 0);
 });
+
+test('ruolo: un bar con autorimessa e un\'unità con garage non sono pertinenze (casi reali delle Combinazioni d\'oro del 30/10/2026)', () => {
+  // pvp-4652065, Pontevico (BS): 5.325 € di risparmio "prima casa" calcolato su un bar
+  assert.equal(K.ruolo({ titolo: 'Piena proprietà di Bar situato nel centro storico del paese con annessa autorimessa' }), 'commerciale');
+  // pvp-4651260, Messina: 10.564 € di risparmio calcolato su un'unità al quarto piano con garage (150.910 €)
+  assert.notEqual(K.ruolo({ titolo: 'Unità immobiliare posta al piano quarto con garage coperto, facente parte di un edificio composto da cinque…' }), 'pertinenza');
+  // restano pertinenze: box con cantina (frase di prova), posti auto a Barletta ("BAR" dentro un nome non è un bar), garage
+  assert.equal(K.ruolo({ titolo: 'Box auto con cantina al piano interrato' }), 'pertinenza');
+  assert.equal(K.ruolo({ titolo: 'Piena proprietà per la quota 1/1 di posto auto ubicato in Barletta la via…' }), 'pertinenza');
+  assert.equal(K.ruolo(box), 'pertinenza');
+  // la combinazione di Pontevico non c'è più (abitazione + bar), e nessun risparmio
+  const p = { categoria: 'immobile', tribunale: 'Brescia', rge: '138', annoProcedura: 2025, comune: 'Pontevico', provincia: 'BS', dataAsta: '2026-12-16' };
+  const r = K.trova([
+    { ...p, id: 'pvp-4652065', numeroLotto: '1', titolo: 'Piena proprietà di Bar situato nel centro storico del paese con annessa autorimessa', prezzoBase: 76082.63 },
+    { ...p, id: 'pvp-4652090', numeroLotto: '2', titolo: 'Piena proprietà di abitazione con magazzino e garage', prezzoBase: 95770.13 }
+  ], { T, oggi: '2026-10-30' });
+  assert.equal(r.trovate, 0);
+});

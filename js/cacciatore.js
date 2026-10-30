@@ -81,8 +81,13 @@
 
     // segnali di affare (solo da dati presenti)
     if (out.sconto >= CRITERI.scontoMinimo) out.segnaliAffare.push('Sconto reale del ' + pct(out.sconto) + ' sul valore stimato, imposte e spese comprese' + (out.sconto >= CRITERI.scontoAffare ? ' (oltre la soglia d\'affare del ' + pct(CRITERI.scontoAffare) + ')' : ''));
-    var t = num(a.tentativo);
-    if (t >= 3) out.segnaliAffare.push('È il ' + t + '° tentativo' + (num(a.deserte) ? ' (' + a.deserte + ' aste andate deserte)' : '') + (num(a.primoPrezzo) > 0 ? ': prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo' : ''));
+    var t = num(a.tentativo), tm = P.tentativoMinimo ? P.tentativoMinimo(a) : null;
+    // tentativi intermedi mancanti nell'indice del Portale: il numero dedotto dai prezzi si dice come stima (js/punteggio.js)
+    if (tm) {
+      out.tentativoMinimo = tm.tentativo;
+      out.segnaliAffare.push('È almeno il ' + tm.tentativo + '° tentativo (stima: il prezzo base è quello della prima asta, ' + eur(a.primoPrezzo) + ', ridotto ' +
+        tm.ribassi + ' volte del 25%; l\'indice del Portale ne mostra ' + t + '): prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo');
+    } else if (t >= 3) out.segnaliAffare.push('È il ' + t + '° tentativo' + (num(a.deserte) ? ' (' + a.deserte + ' aste andate deserte)' : '') + (num(a.primoPrezzo) > 0 ? ': prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo' : ''));
     else if (t === 2) out.segnaliAffare.push('Secondo tentativo' + (num(a.primoPrezzo) > 0 ? ': prezzo già sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) : ''));
     if (c.motivo === 'ribasso' && num(a.prezzoPrecedente) > 0) out.segnaliAffare.push('Prezzo ribassato ieri da ' + eur(a.prezzoPrecedente) + ' a ' + eur(a.prezzoBase));
     if (a.categoria === 'immobile' && a.stato === 'libero') out.segnaliAffare.push('Immobile libero');
@@ -200,7 +205,7 @@
       id: a.id, titolo: a.titolo, categoria: a.categoria, tipo: a.tipo, regione: a.regione, provincia: a.provincia, comune: a.comune,
       tribunale: a.tribunale, rge: a.rge, prezzoBase: a.prezzoBase, offertaMinima: a.offertaMinima, dataAsta: a.dataAsta, ora: a.ora,
       termineOfferte: a.termineOfferte, stato: a.stato, linkAvviso: a.linkAvviso, nFoto: a.nFoto, lat: a.lat, lng: a.lng,
-      tentativo: a.tentativo, rischi: a.rischi, motivo: x.motivo, punteggio: x.punteggio, sconto: x.sconto, costoTotale: x.costoTotale,
+      tentativo: a.tentativo, tentativoMinimo: x.tentativoMinimo, rischi: a.rischi, motivo: x.motivo, punteggio: x.punteggio, sconto: x.sconto, costoTotale: x.costoTotale,
       offertaMax: x.offertaMax, affidabilita: x.affidabilita, valore: x.valore, rango: Math.round(x.rango * 10) / 10, scarto: x.scarto || undefined
     };
     if (conRiassunto) o.riassunto = riassunto(x);

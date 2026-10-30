@@ -249,3 +249,47 @@ test('caso del 29/10/2026, lotto uno di Sant\'Elpidio a Mare (FM): laboratorio, 
   assert.deepEqual(Omi.tipologia(a, testo), [Omi.TIP.laboratorio]);
   assert.equal(Omi.cercaComune({ comuni: { 'SANTELPIDIOAMARE|AP': comune } }, 'Sant\'Elpidio a Mare', 'FM').comune, comune);
 });
+
+// --- controllo dei dati del 30/10/2026 (casi reali dei dati locali del 30/10) ---
+
+test('tipologia: capannoni, opifici e stabilimenti prima di uffici e negozi (144 casi reali del 30/10/2026)', () => {
+  const cap = [Omi.TIP.capannone, Omi.TIP.capannoneTipico];
+  // pvp-4631006, Treia: stimato come Uffici (1.379.638 €) contro 385.410 € della prima asta
+  assert.deepEqual(Omi.tipologia({ tipo: 'Immobile commerciale', comune: 'Treia', titolo: 'Diritti di piena proprieta\' su capannone artigianale della superficie commerciale di 1452,25 mq con ufficio…' },
+    'DIRITTI DI PIENA PROPRIETA\' SU CAPANNONE ARTIGIANALE DELLA SUPERFICIE COMMERCIALE DI 1452,25 MQ CON UFFICIO DELLA SUPERFICIE COMMERCIALE DI 242,90 MQ.'), cap);
+  // pvp-4636019, Siracusa: opificio D/10 stimato come Uffici nella zona D6 (1.990.000 €)
+  assert.deepEqual(Omi.tipologia({ tipo: 'Immobile industriale', comune: 'Siracusa', titolo: 'Opificio industriale in Siracusa, c.da Cozzo Villa, via Elorina n. 117, formato da locale laboratorio…' },
+    'Opificio industriale in Siracusa, c.da Cozzo Villa, via Elorina n. 117, formato da locale laboratorio, deposito, ufficio, archivio ed accessori e piazzale carrabile esteso mq. 2370 circa, identificato al C.F. al fg. 118, p.lla 424, sub. 4, cat. D/10'), cap);
+  // pvp-4640947, Ottaviano: capannone adibito a locale commerciale, prima stimato come Negozi
+  assert.deepEqual(Omi.tipologia({ tipo: 'Immobile commerciale', comune: 'Ottaviano', titolo: 'Piena e perfetta proprietà per una quota pari all’intero del capannone adibito a locale commerciale della…' },
+    'Piena e perfetta proprietà per una quota pari all’intero del capannone adibito a locale commerciale della superficie di mq 660 circa'), cap);
+  // senza capannone, uffici e negozi restano quello che sono
+  assert.deepEqual(Omi.tipologia({ tipo: 'Immobile commerciale', titolo: 'Ufficio al primo piano di edificio direzionale' }), [Omi.TIP.ufficio]);
+  assert.deepEqual(Omi.tipologia({ tipo: 'Immobile commerciale', titolo: 'Negozio con retro e bagno' }), [Omi.TIP.negozio]);
+});
+
+test('più unità: "porzioni di fabbricato" con un solo appartamento e le sue pertinenze non è un lotto con più unità (pvp-4647812)', () => {
+  // caso reale pvp-4647812, Bertinoro (FC): portato ad affidabilità bassa dalla revisione del 29/10/2026
+  const lara = '1/1 di porzioni di fabbricato denomin. “Condominio Lara” - dotato di ascensore - costituite da un appartamento al secondo piano (vano soggiorno con ang.cottura, 2 camere da letto, un grande ripostiglio, 2 bagni e 2 balconi), con cantina e garage pertinenziali al piano terra, oltre la proporzionale comproprietà delle parti comuni come per legge. Superficie convenzionale tot. mq.114,69.';
+  assert.equal(Omi.piuUnita(lara), null);
+  // restano lotti con più unità: porzioni di un complesso (Perugia, sopra) e porzioni contate (pvp-4633231, Lurago Marinone)
+  assert.match(Omi.piuUnita(PERUGIA.titolo + ' ' + PERUGIA.descrizione), /più unità/);
+  assert.match(Omi.piuUnita('Piena proprietà di 3 porzioni di fabbricato: A - 103,93 mq composto da al PT soggiorno, cucina e bagno, al P1 camera, ripostiglio e balcone, al P2 camera e balcone. B - 54,79 mq composto da al PT lavanderia e ripostiglio, al P1 ripostiglio, camera e balcone. C - 116,96 mq composto da al PS1 cantina'), /più unità/);
+  // nella stima: zona riconosciuta e affidabilità media (zona di prova di Melilli, testo vero di Bertinoro)
+  const a = { categoria: 'immobile', tipo: 'Immobile residenziale', comune: 'Melilli', provincia: 'SR', indirizzo: 'frazione Villasmundo', superficieMq: 114.69, titolo: lara.slice(0, 100) };
+  const s = Omi.stima(a, ind, { testo: lara });
+  assert.equal(s.affidabilita, 'media');
+  assert.equal(s.note.some((n) => /più unità/.test(n)), false);
+});
+
+test('tipologia: ville, villette e villini con il posto auto restano ville (casi reali del 30/10/2026)', () => {
+  // pvp-4627829, Castello dell'Acqua (SO): stimata con la quotazione dei "Box", 59.772 €
+  assert.deepEqual(Omi.tipologia({ tipo: 'Immobile residenziale', comune: 'Castello Dell\'Acqua', titolo: 'Villetta a schiera centrale su tre piani con corti annesse della superficie commerciale di 103,95 mq…' },
+    'Villetta a schiera centrale su tre piani con corti annesse della superficie commerciale di 103,95 mq, composta da: area esterna, soggiorno-cucina, anti servizio, servizio a piano terra, bagno, due camere, disimpegno e balcone a piano primo e soppalco a piano sottotetto, oltre a box singolo e posto auto.'),
+  [Omi.TIP.villa, Omi.TIP.civile]);
+  // pvp-4651280, Roma: villino quadrifamiliare con posto auto coperto
+  assert.equal(Omi.tipologia({ tipo: 'Immobile residenziale', comune: 'Roma', titolo: 'Villino quadrifamiliare con posto auto coperto in Roma, Viale di Castel Porziano 414C e 414D, Edificio B…' })[0], Omi.TIP.villa);
+  // i posti auto restano posti auto (caso reale pvp-4649281, Modena), anche in una via con "Villa" nel nome (testo di prova)
+  assert.deepEqual(Omi.tipologia({ tipo: 'Altra categoria', comune: 'Modena', titolo: 'Posto auto interrato, categoria C/6, metri quadrati 17, sito in Modena, alla Via Pier Paolo Pasolini' }), [Omi.TIP.postoCoperto, Omi.TIP.box]);
+  assert.deepEqual(Omi.tipologia({ tipo: 'Altra categoria', comune: 'Modena', titolo: 'Posto auto scoperto in via Villanova 861' }), [Omi.TIP.postoScoperto, Omi.TIP.box]);
+});

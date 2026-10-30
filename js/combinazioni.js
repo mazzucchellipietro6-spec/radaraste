@@ -34,9 +34,16 @@
     var t = testo(a);
     var casa = /\b(APPARTAMENT|ABITAZION|ALLOGGI|VILLA|VILLIN|VILLETT|CASA |CASE |BILOCAL|TRILOCAL|MONOLOCAL|ATTICO|MANSARD|A\/[1-9]\b|(?:USO|DESTINAZIONE|UNITA) ABITATIV|(?:USO|DESTINAZIONE|UNITA|FABBRICATO) RESIDENZIAL)/.test(t);
     var pert = /\b(BOX|GARAGE|AUTORIMESS|POSTO AUTO|POSTI AUTO|CANTIN|SOFFITT|C\/2\b|C\/6\b|C\/7\b)/.test(t);
-    var attivita = /\b(NEGOZI|UFFICI|CAPANNON|LABORATORI|OPIFICI|OFFICIN|ALBERG|HOTEL|DIREZIONAL|ARTIGIANAL|PRODUTTIV|INDUSTRIAL|(?:LOCALE|LOCALI|USO|DESTINAZIONE|ATTIVITA) COMMERCIAL|C\/1\b|C\/3\b|A\/10\b|D\/[1-9]\b)/.test(t);
+    // anche bar, ristoranti e pizzerie (caso reale pvp-4652065, Pontevico: "Bar ... con annessa autorimessa", preso per un box
+    // con 5.325 € di risparmio "prima casa" nelle Combinazioni d'oro del 30/10/2026)
+    var attivita = /\b(NEGOZI|UFFICI|CAPANNON|LABORATORI|OPIFICI|OFFICIN|ALBERG|HOTEL|BAR\b|RISTORANT|PIZZERI|TRATTORI[AE]\b|DISCOTEC|DIREZIONAL|ARTIGIANAL|PRODUTTIV|INDUSTRIAL|(?:LOCALE|LOCALI|USO|DESTINAZIONE|ATTIVITA) COMMERCIAL|C\/1\b|C\/3\b|A\/10\b|D\/[1-9]\b)/.test(t);
     var edificio = /\b(INTERO EDIFICIO|INTERO FABBRICATO|INTERO STABILE|CIELO A TERRA|(?:DUE|TRE|QUATTRO|CINQUE|SEI|SETTE|OTTO|NOVE|DIECI|\d+) FABBRICATI)\b/.test(t);
-    if (pert && !casa && !attivita && !edificio) return 'pertinenza';
+    // "unità immobiliare ... con garage": il garage è annesso a un'altra unità, il lotto non è una pertinenza (caso reale
+    // pvp-4651260, Messina: "Unità immobiliare posta al piano quarto con garage coperto", 150.910 €, preso per un box con
+    // 10.564 € di risparmio). Restano pertinenze "Box con cantina" e simili, dove prima del "con" c'è già la pertinenza
+    var annessa = /\bCON\s+(?:ANNESS\w*\s+|RELATIV\w*\s+|PERTINENZIAL\w*\s+)?(?:UN\s+|UNA\s+|IL\s+|LA\s+)?(?:BOX|GARAGE|AUTORIMESS|POSTO AUTO|POSTI AUTO|CANTIN|SOFFITT)/.exec(t);
+    var soloAnnessa = annessa && !/\b(BOX|GARAGE|AUTORIMESS|POSTO AUTO|POSTI AUTO|CANTIN|SOFFITT)/.test(t.slice(0, annessa.index));
+    if (pert && !casa && !attivita && !edificio && !soloAnnessa) return 'pertinenza';
     if (casa) return 'abitazione';
     if (attivita) return 'commerciale';
     if (/\b(TERRENO|TERRENI|FONDO RUSTICO|APPEZZAMENT|AGRICOL)/.test(t)) return 'terreno';

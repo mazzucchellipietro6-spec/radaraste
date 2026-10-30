@@ -241,3 +241,22 @@ test('caso del 29/10/2026, lotto uno di Sant\'Elpidio a Mare (pvp-4566904): valo
     omiMin: 111600, omiMax: 155000, omiAffMin: 446, omiAffMax: 632 }, { T });
   assert.equal(lotto3.sconto, -0.084);
 });
+
+test('tentativo minimo dai prezzi quando nell\'indice del Portale mancano aste intermedie (stima dichiarata, 30/10/2026)', () => {
+  // pvp-4566904, Sant'Elpidio a Mare: indice con 534.800 € (06/11/2024) e 225.618,75 € (29/07/2026), oggi 169.214,06 €:
+  // 534.800 × 0,75⁴ = 169.214,06 → almeno il 5° tentativo, il sito diceva 3°
+  const base = { categoria: 'immobile', tentativo: 3, primoPrezzo: 534800, prezzoBase: 169214.06 };
+  assert.deepEqual(P.tentativoMinimo(base), { tentativo: 5, ribassi: 4 });
+  // pvp-4381614, Melilli: 78.000 → 58.500 → 43.875 → 24.679,69 (l'ultimo salto è di due ribassi): almeno il 5°, l'indice dice 4°
+  assert.deepEqual(P.tentativoMinimo({ categoria: 'immobile', tentativo: 4, primoPrezzo: 78000, prezzoBase: 24679.69 }), { tentativo: 5, ribassi: 4 });
+  // nessuna stima quando l'indice è già completo (Treia, pvp-4636073: 107.239 → 80.430 → 60.323, 3° tentativo)...
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 107239, prezzoBase: 60323 }), null);
+  // ...quando un ribasso non è del 25% (pvp-4622646, Montegranaro: 267.200 × 0,75⁴ = 84.543,75 ma il prezzo è 83.543,75)...
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 267200, prezzoBase: 83543.75 }), null);
+  // ...quando i ribassi sono del 20% (pvp-4647168, Roma: 590.000 → 472.000 → 377.600) e per i beni mobili
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 590000, prezzoBase: 377600 }), null);
+  assert.equal(P.tentativoMinimo({ ...base, categoria: 'beni' }), null);
+  // il punteggio non cambia: la stima si dice, non entra nei calcoli
+  const a = { provincia: 'FM', tipo: 'Immobile industriale', stato: 'nd', rischi: [], superficieMq: 828, omiMin: 422280, omiMax: 546480, omiMetodo: 'indirizzo', ...base };
+  assert.equal(P.valuta(a, { T }).parti.tentativo, 9);
+});

@@ -21,8 +21,10 @@
   var ACCESSORIE = /(giardin|cortil|corte\b|terren|area\b|aree\b|terrazz|balcon|lastric|scopert|cantin|box\b|garage|autorimess|posto auto|soffitt|magazzin|deposit|piazzal|pertinenz|lotto di terreno|fondo\b|particella)/i;
   var MQ = /(\d{1,3}(?:[.\s]\d{3})+(?:,\d{1,2})?|\d{1,5}(?:[.,]\d{1,2})?)\s*(?:mq\b|m\.q\.?|m2\b|m²|metri\s+quadr[ia]?|mt\.?\s?q\.?)/gi;
   // unità prima del numero: "mq. 145", "MQ 208 CATASTALI", "m.q. 95,50"
-  var MQ_PRIMA = /(?:\bmq\b|\bm\.q\.|\bm2\b|m²|\bmetri\s+quadr[ia]?\b|\bmt\.?\s?q\.)\.?\s*(?:di\s+|circa\s+|:\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d{1,5}(?:,\d{1,2})?)(?![\d.,]*\s*(?:%|\/|mq\b|m2\b))/gi;
+  // anche "metri quadrati 17" (pvp-4649281), "mq lordi 210" (pvp-4653123), "mq. convenzionali di 126,48" (pvp-4653660)
+  var MQ_PRIMA = /(?:\bmq\b|\bm\.q\.|\bm2\b|m²|\bmetri\s+quadr\w*|\bmt\.?\s?q\.)\.?\s*(?:(?:lord[ie]|commercial[ie]|convenzional[ie]|catastal[ie]|complessiv[ie])\s+)?(?:di\s+|circa\s+|:\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d{1,5}(?:,\d{1,2})?)(?![\d.,]*\s*(?:%|\/|mq\b|m2\b))/gi;
   var SUP_ETICHETTA = /superficie\s+(?:commerciale|lorda|complessiva|convenzionale|catastale|utile|netta|calpestabile)?[^.;\d]{0,40}?(\d{1,3}(?:[.\s]\d{3})+(?:,\d{1,2})?|\d{1,5}(?:[.,]\d{1,2})?)\s*(?:mq|m\.q\.?|m2|m²|metri\s+quadr)/i;
+  var PERTINENZA_ETICHETTA = /(giardin|cortil|corte\b|terrazz|balcon|lastric|cantin|box\b|garage|autorimess|posto auto|soffitt|portico|loggia|veranda)/i;
   // dopo la misura: "1.000 mq di terreno", "mq 300 di giardino"
   var ACCESSORIA_DOPO = /^\s*(?:circa\s+)?(?:di|ad?|adibit\w*\s+a|destinat\w*\s+a)\s+(?:uso\s+)?(giardin|cortil|corte\b|terren|area\b|aree\b|terrazz|balcon|lastric|scopert|cantin|box\b|garage|autorimess|posto auto|soffitt|magazzin|deposit|piazzal|pertinenz)/i;
 
@@ -52,8 +54,10 @@
   var ACCESSORIO_UNITA = /\b(garage|box\b|autorimess\w*|posto auto|posti auto|cantin\w*|magazzin\w*|deposit\w*|soffitt\w*|C\s*\/\s*[2367]\b)/i;
 
   // la misura appartiene a una pertinenza? (frase vicina o unità catastale descritta come garage, cantina, C/6...)
+  // (la frase prima della misura finisce al punto: "... e balcone / terrazzo. Superficie commerciale totale 72,35 mq" è la
+  // superficie dell'appartamento, caso reale pvp-4653789, Ardea)
   function diPertinenza(t, inizio, fine) {
-    var prima = t.slice(Math.max(0, inizio - 60), inizio).split(/[,;:]|\s(?:e|ed|con|oltre a|oltre|più)\s/i).pop();
+    var prima = t.slice(Math.max(0, inizio - 60), inizio).split(/[a-zà-ÿ]{3}\.\s+(?=[A-ZÀ-Ý]|$)/).pop().split(/[,;:]|\s(?:e|ed|con|oltre a|oltre|più)\s/i).pop();
     if (ACCESSORIE.test(prima) || /\b(portico|loggia|veranda|lavanderia|tettoia)\b/i.test(prima) || ACCESSORIA_DOPO.test(t.slice(fine, fine + 40))) return true;
     var unita = t.slice(0, inizio).split(/[;•]|\s-\s|\bbene\s+n?\.?\s*\d+\b/i).pop();
     return ACCESSORIO_UNITA.test(unita) && !ABITAZIONE.test(unita) && !/\bA\s*\/\s*\d\b/.test(unita);
@@ -71,11 +75,14 @@
     var m = t.match(SUP_ETICHETTA);
     if (m) {
       var v = numero(m[1]);
-      if (v >= 10 && v <= 20000 && !diPertinenza(t, m.index, m.index + m[0].length) && !troppoPiccola(t, v)) return { mq: v, metodo: 'superficie indicata', prova: prova(t, m.index, m.index + m[0].length) };
+      // la pertinenza può essere anche tra l'etichetta e il numero: "Superficie del giardino 300 mq" (non "escluse aree
+      // scoperte", che è la superficie catastale dell'unità, né i terreni e le aree, che sono il lotto stesso)
+      if (v >= 10 && v <= 20000 && !PERTINENZA_ETICHETTA.test(m[0]) && !diPertinenza(t, m.index, m.index + m[0].length) && !troppoPiccola(t, v)) return { mq: v, metodo: 'superficie indicata', prova: prova(t, m.index, m.index + m[0].length) };
     }
     var accessoria = null;
     // se il lotto stesso è un terreno (o un box, una cantina, un magazzino...), la sua superficie è quella giusta
-    var eTerreno = /^(?:\W*(?:lotto\s*\w*\W*)?)(?:piena propriet\w*\s*(?:di|del|su)?\s*)?(?:un\s+|una\s+)?(terren|appezzament|fondo|area|lotto di terreno|box|garage|autorimess|posto auto|cantin|magazzin|deposit)/i.test(t);
+    // "proprietà" con la à (che \w non comprende): prima "Piena proprietà di box..." non era riconosciuto (pvp-4653557, Modica)
+    var eTerreno = /^(?:\W*(?:lotto\s*\w*\W*)?)(?:piena propriet(?:à|a'|\w*)\s*(?:di|del|su)?\s*)?(?:un\s+|una\s+)?(terren|appezzament|fondo|area|lotto di terreno|box|garage|autorimess|posto auto|cantin|magazzin|deposit)/i.test(t);
     var lista = misure(t);
     for (var k = 0; k < lista.length; k++) {
       var x = lista[k];
@@ -239,7 +246,9 @@
         || nonNegato(t, /\bchiav[ei]\s+(?:del veicolo\s+|dell'auto\s+)?(?:non\s+(?:sono\s+|è\s+)?(?:disponibil|present|reperit|consegnat|rinvenut|fornit)\w*|assent\w*|mancant\w*|smarrit\w*)/gi, /\bcon\s*$/i);
     } },
     { chiave: 'documenti', etichetta: 'Veicolo senza documenti (libretto o certificato di proprietà)', test: function (t) {
-      var DOC = '(?:libretto(?: di circolazione)?|carta di circolazione|certificato di propriet\\w*|c\\.?d\\.?p\\.?|documenti(?: di circolazione)?|documentazione(?: del veicolo)?)';
+      // anche il documento unico (DU, dal 2020 al posto di libretto e certificato di proprietà): caso reale pvp-4652799,
+      // Peugeot Bipper "All'atto della vendita sprovvisto di documento unico", segnalato tra gli affari del 29/10/2026 senza rischi
+      var DOC = '(?:libretto(?: di circolazione)?|carta di circolazione|certificato di propriet\\w*|c\\.?d\\.?p\\.?|documento unico(?: di circolazione)?|documenti(?: di circolazione)?|documentazione(?: del veicolo)?)';
       return t.match(new RegExp('\\b(?:senza|priv[oaie] d(?:el|ella|ei|i|elle)|sprovvist\\w* d(?:el|ella|ei|i|elle)|mancan\\w* (?:del |della |dei |di )?|in assenza d(?:el|ella|ei|i))\\s*(?:il |la |i |le )?' + DOC + '(?![a-z])', 'i'))
         || nonNegato(t, new RegExp('\\b' + DOC + '\\s+(?:non\\s+(?:sono\\s+|è\\s+)?(?:disponibil|present|reperit|consegnat|rinvenut|fornit)\\w*|assent\\w*|mancant\\w*|smarrit\\w*)', 'gi'), /\bcon\s*$/i);
     } },

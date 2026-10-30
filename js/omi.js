@@ -158,7 +158,11 @@
    *    (cat. A/6), ufficio di mq 155,84 (cat. F/3) e terreni", valutato sui soli 214,25 mq con affidabilità alta. */
   function piuUnita(testo) {
     var tt = norm(testo);
-    if (/\b(COMPENDIO|TENUTA|COMPLESSO IMMOBILIARE|PIU UNITA|SEGUENTI UNITA|UNITA IMMOBILIARI|PORZIONI|N\.?\s?[2-9]\s+(?:FABBRICATI|UNITA|APPARTAMENTI|IMMOBILI)|BENE\s+N?\.?\s*[2-9])\b/.test(tt)) {
+    // "porzioni" solo di un complesso o in numero ("Porzioni di complesso polifunzionale", "3 porzioni di fabbricato"): "porzioni
+    // di fabbricato" e "porzioni immobiliari" sono il modo solito di dire un appartamento con le sue pertinenze (caso reale
+    // pvp-4647812, Condominio Lara: "porzioni di fabbricato ... costituite da un appartamento ... con cantina e garage
+    // pertinenziali", superficie convenzionale 114,69 mq, portato ad affidabilità bassa dalla revisione del 29/10/2026)
+    if (/\b(COMPENDIO|TENUTA|COMPLESSO IMMOBILIARE|PIU UNITA|SEGUENTI UNITA|UNITA IMMOBILIARI|PORZIONI\s+DI\s+(?:UN\s+)?COMPLESSO|(?:[2-9]|DUE|TRE|QUATTRO|CINQUE|PIU)\s+PORZIONI|N\.?\s?[2-9]\s+(?:FABBRICATI|UNITA|APPARTAMENTI|IMMOBILI)|BENE\s+N?\.?\s*[2-9])\b/.test(tt)) {
       return 'Il lotto comprende più unità: il valore OMI riguarda solo la superficie indicata';
     }
     var sup = {}, m, reSup = /SUPERFICIE\s+COMMERCIALE\s+(?:COMPLESSIVA\s+)?(?:DI\s+)?(?:CIRCA\s+)?(?:MQ\.?\s*)?(\d+(?:[.,]\d+)?)/g;
@@ -172,16 +176,24 @@
   function tipologia(a, testo) {
     var t = senzaLuoghi(norm((a.titolo || '') + ' ' + (testo || '')), a.comune);
     if (/\b(BOX|GARAGE|AUTORIMESSA)\b/.test(t) && !/\b(APPARTAMENT|ABITAZION|VILL|NEGOZI|FABBRICAT|TENUTA|CASA)/.test(t)) return /AUTORIMESSA/.test(t) ? [TIP.autorimessa, TIP.box] : [TIP.box];
-    if (/POSTO AUTO/.test(t) && !/\b(APPARTAMENT|ABITAZION|VILLA)/.test(t)) return [/SCOPERT/.test(t) ? TIP.postoScoperto : TIP.postoCoperto, TIP.box];
+    // ville, villette e villini con il posto auto restano ville (casi reali del 30/10/2026: pvp-4627829 "Villetta a schiera
+    // centrale su tre piani", pvp-4599812 "villino a schiera", pvp-4649081 "villetta a schiera ... di circa mq 245" stimate
+    // come "Posti auto coperti")
+    if (/POSTO AUTO/.test(t) && !/\b(APPARTAMENT|ABITAZION|VILL(?:A|INO|INI|ETTA|ETTE)\b)/.test(t)) return [/SCOPERT/.test(t) ? TIP.postoScoperto : TIP.postoCoperto, TIP.box];
     if (/residenzial/i.test(a.tipo || '') || /\b(APPARTAMENT|ABITAZION|ALLOGGI|VILLA|VILLINO|BILOCALE|TRILOCALE|MONOLOCALE|ATTICO|MANSARDA|CASA)\b/.test(t)) {
       if (/\b(VILLA|VILLINO|VILLETTA|UNIFAMILIARE|BIFAMILIARE|SCHIERA)\b/.test(t)) return [TIP.villa, TIP.civile];
       if (/\b(SIGNORIL|PREGIO|LUSSO)\b/.test(t)) return [TIP.signorile, TIP.civile];
       if (/\b(ECONOMIC|POPOLARE)\b/.test(t)) return [TIP.economica, TIP.civile];
       return [TIP.civile, TIP.economica];
     }
+    // capannoni prima di uffici e negozi: "capannone con uffici", "opificio formato da laboratorio, deposito, ufficio" sono
+    // capannoni, e la quotazione dei capannoni è la più bassa delle tre (per prudenza). Casi reali del 30/10/2026: 144
+    // immobili con capannone, opificio o stabilimento nel testo stimati come Uffici o Negozi, per esempio pvp-4636019
+    // (opificio a Siracusa, Uffici nella zona D6: 1.990.000 €) e pvp-4631006 (capannone di 1452,25 mq con ufficio di
+    // 242,90 mq a Treia, Uffici: 1.379.638 € contro 385.410 € della prima asta)
+    if (/\b(CAPANNONE|CAPANNONI|OPIFICIO|STABILIMENTO)\b/.test(t)) return [TIP.capannone, TIP.capannoneTipico];
     if (/\b(NEGOZI|NEGOZIO|BOTTEGA|LOCALE COMMERCIALE|ESERCIZIO COMMERCIALE)/.test(t)) return [TIP.negozio];
     if (/\bUFFICI/.test(t)) return [TIP.ufficio];
-    if (/\b(CAPANNONE|CAPANNONI|OPIFICIO|STABILIMENTO)\b/.test(t)) return [TIP.capannone, TIP.capannoneTipico];
     if (/\bLABORATORI/.test(t)) return [TIP.laboratorio];
     if (/\b(MAGAZZIN|DEPOSITO)/.test(t)) return [TIP.magazzino];
     if (/commercial/i.test(a.tipo || '')) return [TIP.negozio];

@@ -125,3 +125,15 @@ test('frasi: con zero affari "nessuna asta", con uno il singolare (data/affari.j
   const uno = K.esegui({ aste: [asta({})], oggi: OGGI, T });
   assert.match(uno.telegram, /^1 asta nuova o ribassata analizzata, 1 supera i criteri\.$/m);
 });
+
+test('tentativo stimato dai prezzi nei segnali d\'affare, dichiarato come stima (caso reale pvp-4566904, Sant\'Elpidio a Mare)', () => {
+  const x = K.analizza({ asta: asta({ categoria: 'immobile', tentativo: 3, deserte: 2, primoPrezzo: 534800, prezzoBase: 169214.06, offertaMinima: 126910.54, stima: 484380 }), motivo: 'nuovo-tentativo' }, { T });
+  assert.equal(x.tentativoMinimo, 5);
+  const s = x.segnaliAffare.find((f) => /tentativo/.test(f));
+  assert.match(s, /^È almeno il 5° tentativo \(stima: il prezzo base è quello della prima asta, 534\.800 €, ridotto 4 volte del 25%; l'indice del Portale ne mostra 3\)/);
+  assert.equal(K.compatta(x).tentativoMinimo, 5);
+  // senza aste mancanti la frase resta quella di prima
+  const y = K.analizza({ asta: asta({}), motivo: 'nuova' }, { T });
+  assert.equal(y.tentativoMinimo, undefined);
+  assert.ok(y.segnaliAffare.some((f) => /^È il 3° tentativo \(2 aste andate deserte\)/.test(f)));
+});
