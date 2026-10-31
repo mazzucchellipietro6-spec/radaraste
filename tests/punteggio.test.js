@@ -256,6 +256,11 @@ test('tentativo minimo dai prezzi quando nell\'indice del Portale mancano aste i
   // ...quando i ribassi sono del 20% (pvp-4647168, Roma: 590.000 → 472.000 → 377.600) e per i beni mobili
   assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 590000, prezzoBase: 377600 }), null);
   assert.equal(P.tentativoMinimo({ ...base, categoria: 'beni' }), null);
+  // dopo il quarto tentativo deserto il ribasso può arrivare alla metà (art. 591 c.p.c.): cinque quarti possono essere quattro
+  // ribassi (revisione del 30/10/2026). pvp-4480064, Augusta: 62.850 → 47.137,50 → 35.353,13 → 14.914,61, indice 4°: almeno il
+  // 5° (prima diceva 6°); pvp-4650858: 398.872,12 × 0,75⁶ = 70.990,66 al 6° tentativo dell'indice: nessuna stima (prima 7°)
+  assert.deepEqual(P.tentativoMinimo({ categoria: 'immobile', tentativo: 4, primoPrezzo: 62850, prezzoBase: 14914.61 }), { tentativo: 5, ribassi: 5 });
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 6, primoPrezzo: 398872.12, prezzoBase: 70990.66 }), null);
   // il punteggio non cambia: la stima si dice, non entra nei calcoli
   const a = { provincia: 'FM', tipo: 'Immobile industriale', stato: 'nd', rischi: [], superficieMq: 828, omiMin: 422280, omiMax: 546480, omiMetodo: 'indirizzo', ...base };
   assert.equal(P.valuta(a, { T }).parti.tentativo, 9);

@@ -58,19 +58,36 @@
   // superficie dell'appartamento, caso reale pvp-4653789, Ardea)
   function diPertinenza(t, inizio, fine) {
     var prima = t.slice(Math.max(0, inizio - 60), inizio).split(/[a-zà-ÿ]{3}\.\s+(?=[A-ZÀ-Ý]|$)/).pop().split(/[,;:]|\s(?:e|ed|con|oltre a|oltre|più)\s/i).pop();
-    if (ACCESSORIE.test(prima) || /\b(portico|loggia|veranda|lavanderia|tettoia)\b/i.test(prima) || ACCESSORIA_DOPO.test(t.slice(fine, fine + 40))) return true;
+    if (ACCESSORIE.test(prima) || /\b(portico|loggia|veranda|lavanderia|tettoia|pensilina)\b/i.test(prima) || ACCESSORIA_DOPO.test(t.slice(fine, fine + 40))) return true;
     var unita = t.slice(0, inizio).split(/[;•]|\s-\s|\bbene\s+n?\.?\s*\d+\b/i).pop();
     return ACCESSORIO_UNITA.test(unita) && !ABITAZIONE.test(unita) && !/\bA\s*\/\s*\d\b/.test(unita);
   }
   // per un'abitazione meno di 30 mq quasi sempre è una pertinenza (box, cantina, balcone) e non l'alloggio
   function troppoPiccola(t, n) { return n < 30 && ABITAZIONE.test(t) && !/monolocal/i.test(t); }
+  // il totale dichiarato è quello dell'area esterna di un fabbricato, non del fabbricato: "a) capannone ... c) Area di
+  // complessivi mq.10.333 destinata a parcheggio" (caso reale pvp-4641116, Mozzecane, deposito di carburanti stimato come
+  // capannone di 10.333 mq dal 30/10/2026). Solo se il testo parla di un fabbricato: per i terreni il totale resta quello giusto
+  var FABBRICATO = /\b(fabbricat[oi]|capannon\w*|opifici\w*|edificio|stabilimento|deposito|magazzin\w*|appartament\w*|abitazion\w*|villa|villin\w*|casa)\b/i;
+  function totaleEsterno(t, inizio, fine) {
+    var prima = t.slice(Math.max(0, inizio - 30), inizio).split(/[,;:()]|\s-\s|\.\s|\s(?:e|ed|con|oltre a|oltre)\s/i).pop();
+    return FABBRICATO.test(t) && (/\b(area|aree|corte|cortil\w*|giardin\w*|piazzal\w*|scopert\w*|parchegg\w*)\b/i.test(prima) ||
+      /^\s*(?:circa\s+)?(?:di|ad?|adibit\w*\s+a|destinat\w*\s+a)\s+(?:uso\s+)?(?:giardin|cortil|corte\b|area\b|aree\b|scopert|piazzal|parchegg)/i.test(t.slice(fine, fine + 40)));
+  }
+
+  var COSTRUITO = /\b(?:(?:sovrastant|soprastant|entrostant|insistent)\w*|annesso|annessi|con)\s+(?:\w+\s+){0,2}?(?:fabbricat\w*|capannon\w*|abitazion\w*|casa|casolare|villa|villino|edificio|opifici\w*|stall[ae]|rustico|manufatt\w*)\b|\be\s+(?:un\s+|di\s+)?(?:fabbricat\w*|capannon\w*|abitazion\w*|casa|casolare|edificio)\b/i;
 
   function superficie(s) {
     var t = testo(s);
     if (!t) return null;
     for (var j = 0; j < TOTALE.length; j++) {
       var mt = t.match(TOTALE[j]);
-      if (mt) { var vt = numero(mt[1]); if (vt >= 10 && vt <= 20000 && !troppoPiccola(t, vt)) return { mq: vt, metodo: 'superficie complessiva indicata', prova: prova(t, mt.index, mt.index + mt[0].length) }; }
+      if (!mt) continue;
+      // totale dell'area esterna: le altre misure del testo non sono più affidabili (pvp-4629650, Cremosano: "Superficie totale
+      // 3.581 mq, con una superficie coperta di 2.350 mq e una superficie scoperta di 1.231 mq"), meglio nessuna superficie
+      var vt = numero(mt[1]);
+      if (!(vt >= 10 && vt <= 20000) || troppoPiccola(t, vt)) continue;
+      if (totaleEsterno(t, mt.index, mt.index + mt[0].length)) return null;
+      return { mq: vt, metodo: 'superficie complessiva indicata', prova: prova(t, mt.index, mt.index + mt[0].length) };
     }
     var m = t.match(SUP_ETICHETTA);
     if (m) {
@@ -82,7 +99,12 @@
     var accessoria = null;
     // se il lotto stesso è un terreno (o un box, una cantina, un magazzino...), la sua superficie è quella giusta
     // "proprietà" con la à (che \w non comprende): prima "Piena proprietà di box..." non era riconosciuto (pvp-4653557, Modica)
-    var eTerreno = /^(?:\W*(?:lotto\s*\w*\W*)?)(?:piena propriet(?:à|a'|\w*)\s*(?:di|del|su)?\s*)?(?:un\s+|una\s+)?(terren|appezzament|fondo|area|lotto di terreno|box|garage|autorimess|posto auto|cantin|magazzin|deposit)/i.test(t);
+    var lotto = t.match(/^(?:\W*(?:lotto\s*\w*\W*)?)(?:piena propriet(?:à|a'|\w*)\s*(?:di|del|su)?\s*)?(?:un\s+|una\s+)?(terren|appezzament|fondo|area|lotto di terreno|box|garage|autorimess|posto auto|cantin|magazzin|deposit)/i);
+    // ma non un terreno con sopra un fabbricato: la superficie del terreno non è quella del fabbricato (casi reali del
+    // 30/10/2026: pvp-4541059, Buddusò, "appezzamento di terreno della superficie di 14.168 metri quadri circa, con sovrastante
+    // capannone industriale", stimato come capannone di 14.168 mq; pvp-4636793, Aidone, "appezzamenti di terreno e fabbricato
+    // destinato a civile abitazione ... oltre a terrazzo e portico di superficie circa mq.100,00", letto come lotto di 100 mq)
+    var eTerreno = !!lotto && !(/^(?:terren|appezzament|fondo|area|lotto di terreno)/i.test(lotto[1]) && COSTRUITO.test(t));
     var lista = misure(t);
     for (var k = 0; k < lista.length; k++) {
       var x = lista[k];

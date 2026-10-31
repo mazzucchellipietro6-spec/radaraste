@@ -106,6 +106,7 @@ Le piattaforme private sono state verificate solo per documentarle, come richies
     >
     > *Richiesta non riuscita.*
   - `www.copart.com`, `robots.txt` da Node: **HTTP 200**.
+  - ricontrollo del Revisore alle 10:06 ora italiana dello stesso giorno (09:06 UTC): `robots.txt` da curl ha risposto **HTTP 200**, con le stesse righe qui sotto. Il blocco Incapsula su curl quindi non è costante; la home page risponde ancora solo con la verifica di Incapsula.
   - home page: risponde solo con la verifica JavaScript di Incapsula (`<script src="/_Incapsula_Resource?…">`), con `<META NAME="robots" CONTENT="noindex,nofollow">` e nessun contenuto.
 - **robots.txt di www.copart.com**, righe rilevanti:
   - `Allow: /lotSearchResults$`;
@@ -173,7 +174,7 @@ Le piattaforme private sono state verificate solo per documentarle, come richies
   - `Disallow: /lots/*?*`: gli elenchi dei lotti con filtri o pagine;
   - `Disallow: */sign-up/*`;
   - molte versioni per paese (`/en-IT`, `/en-FR`, `/en-DE` …).
-- **Condizioni:** "TERMS AND CONDITIONS" di AYVENS SA (Rueil-Malmaison, legge francese), in un PDF del 13/05/2024. Il PDF è lo stesso a https://carmarket.ayvens.com/en-fr/gdprlegalnotice e a https://carmarket.ayvens.com/it-it/gdprlegalnotice.
+- **Condizioni:** "TERMS AND CONDITIONS" di AYVENS SA (Rueil-Malmaison, legge francese), in un PDF creato il 13/05/2024 (data dei metadati del file: il testo non riporta una data). Il PDF è lo stesso a https://carmarket.ayvens.com/en-fr/gdprlegalnotice e a https://carmarket.ayvens.com/it-it/gdprlegalnotice.
   - Sezione "Intellectual Property":
     > "This entire website is governed by French and international legislation on copyright, trademark and database law and intellectual property in general […]. Any reproduction, representation, diffusion or re-diffusion, in whole or in part, of the contents of this website on any medium or by any means whatsoever (including, but not limited to, caching, framing), as well as any sale, resale, retransmission or any other act tending to make such contents available to any third party in any manner whatsoever shall be prohibited, except preliminary written authorization of the publication manager."
     >

@@ -107,3 +107,17 @@ test('rischi: veicolo sprovvisto del documento unico (caso reale pvp-4652799, Pe
   assert.ok(!chiavi('dichiarata marciante, provvista di documento unico e n. 2 copie di chiavi.').includes('documenti'));
   assert.ok(!chiavi('classe ambientale EURO 6B, scadenza revisione 12/2026, con documento unico di circolazione e n.1 chiave.').includes('documenti'));
 });
+
+test('superficie: niente superficie del terreno o dell\'area esterna per un fabbricato (revisione del 30/10/2026)', () => {
+  // pvp-4641116, Mozzecane: "c) Area di complessivi mq.10.333 destinata a parcheggio", stimato come capannone di 10.333 mq
+  assert.equal(E.superficie('a) capannone destinato a deposito oli minerali e carburanti ad uso commerciale, sviluppantesi su tre livelli, b) deposito oli minerali e carburanti con pensilina di mq. 236,00 con bracci di carico ATB e da un ufficio; nel sottosuolo n. 6 serbatoi da 80 mc. e un serbatoio da 50 mc. c) Area di complessivi mq.10.333 destinata a parcheggio sulla quale è in opera una pesa per autobotti.'), null);
+  // pvp-4629650, Cremosano: il totale letto era la superficie scoperta (1.231 mq); il primo "Superficie totale" comprende lo scoperto
+  assert.equal(E.superficie('Capannone artigianale adibito alla produzione e al commercio, a Cremosano (CR), in via Via Dei Tigli n. 5-7. Superficie totale 3.581 mq, con una superficie coperta di 2.350 mq e una superficie scoperta di 1.231 mq. Superficie commerciale totale indicativa: 1815 mq'), null);
+  // pvp-4541059, Buddusò, e pvp-4636793, Aidone: terreno con un fabbricato sopra (con la "à" di "proprietà" letta dal 30/10)
+  assert.equal(E.superficie('Piena proprietà su appezzamento di terreno della superficie di 14.168 metri quadraticirca, con sovrastante capannone industriale che occupa una superficie di 2.372 metriquadrati circa, siti nel Comune di Buddusò, località “Sa Matta”.'), null);
+  assert.equal(E.superficie('Piena proprietà di appezzamenti di terreno e fabbricato destinato a civile abitazione, c.da Giardinazzi - Aidone (EN). Il fabbricato, nel comune di Aidone Fg 63: - part. 287 sub 6, cat. A/7, oltre a terrazzo e portico di superficie circa mq.100,00.'), null);
+  // invariati: terreni senza fabbricati (pvp-4619973, pvp-4613565), totale di un appartamento con l'area citata prima (pvp-4611021)
+  assert.equal(E.superficie('Piena proprietà di terreno edificabile pianeggiante di 1488 metri quadrati.').mq, 1488);
+  assert.equal(E.superficie('Tre terreni formanti un sol corpo di circa complessivi mq. 7.425 catastali e attualmente piantumati.').mq, 7425);
+  assert.equal(E.superficie('appartamento posto al 2° piano, dotato di garage e scoperto comune - La superficie lorda dell’appartamento è di mq. 90, costituita da ingresso').mq, 90);
+});

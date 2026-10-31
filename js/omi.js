@@ -158,12 +158,27 @@
    *    (cat. A/6), ufficio di mq 155,84 (cat. F/3) e terreni", valutato sui soli 214,25 mq con affidabilità alta. */
   function piuUnita(testo) {
     var tt = norm(testo);
-    // "porzioni" solo di un complesso o in numero ("Porzioni di complesso polifunzionale", "3 porzioni di fabbricato"): "porzioni
-    // di fabbricato" e "porzioni immobiliari" sono il modo solito di dire un appartamento con le sue pertinenze (caso reale
-    // pvp-4647812, Condominio Lara: "porzioni di fabbricato ... costituite da un appartamento ... con cantina e garage
-    // pertinenziali", superficie convenzionale 114,69 mq, portato ad affidabilità bassa dalla revisione del 29/10/2026)
-    if (/\b(COMPENDIO|TENUTA|COMPLESSO IMMOBILIARE|PIU UNITA|SEGUENTI UNITA|UNITA IMMOBILIARI|PORZIONI\s+DI\s+(?:UN\s+)?COMPLESSO|(?:[2-9]|DUE|TRE|QUATTRO|CINQUE|PIU)\s+PORZIONI|N\.?\s?[2-9]\s+(?:FABBRICATI|UNITA|APPARTAMENTI|IMMOBILI)|BENE\s+N?\.?\s*[2-9])\b/.test(tt)) {
+    // "porzioni" (di fabbricato, immobiliari...) di solito sono più unità: casi reali del 30/10/2026 "Varie porzioni immobiliari
+    // costituite da appartamenti, rimesse agricole, capannone e terreni" (pvp-4616083), "porzioni di fabbricato ... costituite
+    // da due appartamenti" (pvp-4633414), "porzioni del fabbricato costituite da: laboratorio artigianale e due uffici"
+    // (pvp-4625477). Non lo sono quando il testo dice che sono un solo appartamento (con le sue pertinenze): caso reale
+    // pvp-4647812, Condominio Lara, "porzioni di fabbricato ... costituite da un appartamento ... con cantina e garage
+    // pertinenziali", superficie convenzionale 114,69 mq
+    var porzioni = /\bPORZIONI\b/.test(tt) && !(/\bPORZIONI\b[\s\S]{0,160}?\bCOSTITUIT\w*\s+DA\s+UNA?\s*(?:APPARTAMENTO|ABITAZIONE|ALLOGGIO)\b/.test(tt) &&
+      !/\b(APPARTAMENTI|ABITAZIONI|ALLOGGI|(?:DUE|TRE|QUATTRO|CINQUE|[2-9])\s+(?:APPARTAMENT|ABITAZION|ALLOGG|NEGOZI|UFFICI|LABORATORI|FABBRICATI|UNITA))\b/.test(tt));
+    if (porzioni || /\b(COMPENDIO|TENUTA|COMPLESSO IMMOBILIARE|PIU UNITA|SEGUENTI UNITA|UNITA IMMOBILIARI|N\.?\s?[2-9]\s+(?:FABBRICATI|UNITA|APPARTAMENTI|IMMOBILI)|BENE\s+N?\.?\s*[2-9])\b/.test(tt)) {
       return 'Il lotto comprende più unità: il valore OMI riguarda solo la superficie indicata';
+    }
+    // azienda o beni mobili venduti insieme all'immobile, ed elenchi "a) ... b) ..." o "1) ... 2) ...": caso reale pvp-4638848,
+    // Castellalto, "complesso aziendale composto da: opificio ... di complessivi 2.976,60 mq; macchinari ed attrezzature;
+    // autovettura..., autocarro...; magazzino", valutato sul solo opificio con affidabilità alta perché il valore OMI
+    // dell'opificio coincideva per caso con il prezzo della prima asta di tutto il complesso (revisione del 30/10/2026)
+    // (non i macchinari esclusi dalla vendita, "Non sono compresi nel pignoramento i macchinari", pvp-4623555, né il "locale
+    // attrezzature" di un opificio, pvp-4629497)
+    var mobili = false, mm, reMobili = /\b(?:MACCHINARI|ATTREZZATURE)\b/g;
+    while (!mobili && (mm = reMobili.exec(tt))) mobili = !/\b(NON|ESCLUS\w*|LOCALE|LOCALI|VANO|VANI|RIPOSTIGLIO|DEPOSITO)\b[^.;]*$/.test(tt.slice(Math.max(0, mm.index - 80), mm.index));
+    if (mobili || /\b(COMPLESSO AZIENDALE|RAMO D\s?AZIENDA|AZIENDA AGRICOLA)\b/.test(tt) || /(?:^|[\s:;,.(])(?:A|1)\)\s[\s\S]*?[\s:;,.](?:B|2)\)\s/.test(tt)) {
+      return 'Il lotto comprende più beni (altre unità, un\'azienda, macchinari o attrezzature): il valore OMI riguarda solo la superficie indicata';
     }
     var sup = {}, m, reSup = /SUPERFICIE\s+COMMERCIALE\s+(?:COMPLESSIVA\s+)?(?:DI\s+)?(?:CIRCA\s+)?(?:MQ\.?\s*)?(\d+(?:[.,]\d+)?)/g;
     while ((m = reSup.exec(tt))) sup[m[1].replace(',', '.')] = 1;

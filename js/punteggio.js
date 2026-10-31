@@ -139,6 +139,10 @@
    * centesimo, o all'euro se il prezzo è arrotondato all'euro), prima di questa ci sono state almeno k aste. Solo immobili:
    * nelle esecuzioni il ribasso massimo è di un quarto fino al quarto tentativo deserto (art. 591 c.p.c.). Caso reale
    * pvp-4566904, Sant'Elpidio a Mare: 534.800 € × 0,75⁴ = 169.214,06 €, almeno il 5° tentativo, l'indice ne mostra 3.
+   * Dopo il quarto tentativo deserto il ribasso può arrivare alla metà: due quarti (0,5625) possono essere un solo ribasso
+   * del 43,75%, quindi oltre il quarto ribasso il tentativo minimo è quello dei ribassi massimi di legge, non k + 1
+   * (revisione del 30/10/2026: pvp-4480064, Augusta, 62.850 € × 0,75⁵ = 14.914,61 €, si diceva "almeno il 6°" ma con un
+   * ribasso della metà dopo il quarto tentativo può essere il 5°).
    * → { tentativo, ribassi } se è più alto del tentativo dell'indice, altrimenti null (nessuna stima). */
   function tentativoMinimo(a) {
     var t = num(a.tentativo), primo = num(a.primoPrezzo), base = num(a.prezzoBase);
@@ -146,7 +150,11 @@
     for (var k = 1; k <= 10; k++) {
       var atteso = primo * Math.pow(0.75, k);
       if (Math.abs(Math.round(atteso * 100) / 100 - base) <= 0.011 || (base === Math.round(base) && Math.abs(atteso - base) < 1)) {
-        return k + 1 > t ? { tentativo: k + 1, ribassi: k } : null;
+        // primo tentativo a cui si arriva a questo prezzo con i ribassi massimi: un quarto per volta fino al 4° tentativo,
+        // poi fino alla metà
+        var n = 1, f = 1, quota = Math.pow(0.75, k) * 1.0001;
+        while (f > quota) { n++; f *= n <= 4 ? 0.75 : 0.5; }
+        return n > t ? { tentativo: n, ribassi: k } : null;
       }
       if (atteso < base - 1) return null;
     }

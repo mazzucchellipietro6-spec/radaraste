@@ -293,3 +293,28 @@ test('tipologia: ville, villette e villini con il posto auto restano ville (casi
   assert.deepEqual(Omi.tipologia({ tipo: 'Altra categoria', comune: 'Modena', titolo: 'Posto auto interrato, categoria C/6, metri quadrati 17, sito in Modena, alla Via Pier Paolo Pasolini' }), [Omi.TIP.postoCoperto, Omi.TIP.box]);
   assert.deepEqual(Omi.tipologia({ tipo: 'Altra categoria', comune: 'Modena', titolo: 'Posto auto scoperto in via Villanova 861' }), [Omi.TIP.postoScoperto, Omi.TIP.box]);
 });
+
+// --- revisione del 30/10/2026 (casi reali dei dati locali del 30/10) ---
+
+test('più unità: "porzioni" restano più unità, tranne quando il testo dice un solo appartamento (revisione del 30/10/2026)', () => {
+  // pvp-4616083 (Chiusdino), pvp-4633414 (Montefiore Conca), pvp-4625477 (Osimo): con la regola del 30/10 non erano più "più unità"
+  assert.match(Omi.piuUnita('Varie porzioni immobiliari costituite da appartamenti, rimesse agricole, capannone e terreni per la gran parte seminativi.'), /più unità/);
+  assert.match(Omi.piuUnita('Piena proprietà di porzioni di fabbricato urbano ad uso civile abitazione costituite da due appartamenti con corte e locale allo stato grezzo.'), /più unità/);
+  assert.match(Omi.piuUnita('Piena proprietà di porzioni del fabbricato costituite da: laboratorio artigianale e due uffici al piano terra.'), /più unità/);
+  // resta un solo appartamento il Condominio Lara (pvp-4647812, test sopra)
+  assert.equal(Omi.piuUnita('1/1 di porzioni di fabbricato denomin. “Condominio Lara” - dotato di ascensore - costituite da un appartamento al secondo piano (vano soggiorno con ang.cottura, 2 camere da letto, un grande ripostiglio, 2 bagni e 2 balconi), con cantina e garage pertinenziali al piano terra, oltre la proporzionale comproprietà delle parti comuni come per legge. Superficie convenzionale tot. mq.114,69.'), null);
+});
+
+test('più beni: azienda, macchinari e attrezzature, elenchi a) b) e 1) 2) (revisione del 30/10/2026)', () => {
+  // pvp-4638848, Castellalto: il valore OMI del solo opificio coincideva per caso con la prima asta di tutto il complesso
+  // aziendale (affidabilità alta, punteggio 63)
+  assert.match(Omi.piuUnita('Vendita di complesso aziendale composto da: diritti pari a 1/1 su opificio industriale sito in Comune di Castellato (TE), via Tevere, Z.I. di complessivi 2.976,60 mq circa; macchinari ed attrezzature del settore calzaturiero; autovettura Mercedes E350, autocarro FIAT Ducato H2, autovettura Jeep Grand Cherokee; impianti di stabilimento speciali; arredi e macchine per ufficio; magazzino composto prevalentemente da valigeria ed accessori.'), /più beni/);
+  // pvp-4644166, Acquasparta, e pvp-4641116, Mozzecane
+  assert.match(Omi.piuUnita('Piena proprietà 1/1 su: 1) capannone artigianale di mq 808, con uffici e magazzino al piano T e abitazione allo stato grezzo al piano 1°. E\' presente un box prefabbricato di mq 10,40 e altezza media m 2,60. 2) Attrezzature e ricambi officina riparazione autoveicoli.'), /più beni/);
+  assert.match(Omi.piuUnita('a) capannone destinato a deposito oli minerali e carburanti ad uso commerciale, sviluppantesi su tre livelli, b) deposito oli minerali e carburanti con pensilina di mq. 236,00 con bracci di carico ATB e da un ufficio; nel sottosuolo n. 6 serbatoi da 80 mc. e un serbatoio da 50 mc. c) Area di complessivi mq.10.333 destinata a parcheggio sulla quale è in opera una pesa per autobotti.'), /più beni/);
+  // non i macchinari esclusi dalla vendita (pvp-4623555, Rieti) né il "locale attrezzature" di un opificio (pvp-4629497, Cicala)
+  assert.equal(Omi.piuUnita('Piena proprietà per la quota 1000/1000 di un locale ad uso negozio, piano terra. La superficie netta è di circa 35 mq. Non sono compresi nel pignoramento i macchinari rinvenuti all\'interno del locale in sede di accesso e stima.'), null);
+  assert.equal(Omi.piuUnita('Opificio su 2 livelli, mq 1.305, composto da: disimpegno/ingresso, 2 uffici amministrativi con vano, servizi igienici, 2 locali deposito, locale attrezzature, sala mensa.'), null);
+  // né "LOTTO UNO (A in perizia)" (pvp-4566904, test sopra)
+  assert.equal(Omi.piuUnita('LOTTO UNO (A in perizia). Diritti di piena proprietà su Unità immobiliare destinata ad uso laboratorio, superficie pari a mq. 828'), null);
+});
