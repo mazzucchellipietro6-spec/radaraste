@@ -1,6 +1,7 @@
 /* Dati della scheda dell'asta in funzioni pure (testate in tests/scheda.test.js):
  *   SchedaDati.lineaTempo(a, opz)     → eventi in ordine di data: pubblicazione, tentativi precedenti, ribasso,
  *                                        termine per le offerte, asta, saldo (stimato) e note sullo storico;
+ *   SchedaDati.tentativo(a)           → numero del tentativo: quello dell'indice o la stima "almeno il N°" dai prezzi;
  *   SchedaDati.zona(a)                → zona OMI spiegata in parole semplici, compravendite del comune, perizie della zona;
  *   SchedaDati.probabilita(a, stat, q) → testi sulla probabilità che ci siano altri offerenti e di vincere (js/stratega.js).
  * Regola: nessun dato inventato. Quello che manca resta mancante e viene detto; le date stimate sono segnate come stime.
@@ -54,13 +55,32 @@
     sospesa: 'sospesa: non conta come tentativo'
   };
 
+  /* Numero del tentativo di questa asta: quello dell'indice del Portale oppure, se dai prezzi risulta più alto, la stima
+   * "almeno il N°" di js/punteggio.js (Punteggio.tentativoMinimo, la stessa del Cacciatore), dichiarata come stima.
+   * → { numero, indice, stima: bool, ribassi?, perche?, spiegazione? } oppure null se il tentativo non è noto */
+  function tentativoDi(a) {
+    a = a || {};
+    var t = num(a.tentativo);
+    if (!t) return null;
+    var P = modulo('Punteggio', './punteggio.js'), tm = P && P.tentativoMinimo ? P.tentativoMinimo(a) : null;
+    if (!tm || !(tm.tentativo > t)) return { numero: t, indice: t, stima: false };
+    var perche = 'Numero del tentativo stimato dai prezzi: il prezzo base di questa asta (' + eur(a.prezzoBase) + ') è quello della prima asta (' +
+      eur(a.primoPrezzo) + ') ridotto ' + tm.ribassi + ' volte del 25%' +
+      (tm.tentativo < tm.ribassi + 1 ? ', e dopo il quarto tentativo deserto un ribasso può arrivare alla metà' : '') +
+      ', quindi è almeno il ' + tm.tentativo + '° tentativo. L\'indice del Portale delle Vendite Pubbliche dice ' + t + '°: alcuni tentativi intermedi non ci sono.';
+    return { numero: tm.tentativo, indice: t, stima: true, ribassi: tm.ribassi, perche: perche, spiegazione: perche + ' ' + VERIFICA };
+  }
+  var VERIFICA = 'È una stima, da verificare nell\'avviso.';
+
   /* a: asta (scheda a pezzi). opz.adesso: 'AAAA-MM-GGTHH:MM' (ora di Roma) per dire cosa è già passato.
-   * → { eventi: [{ chiave, data|null, ora, titolo, nota, stima, qui, stato: 'fatto'|'prossimo'|'futuro'|'senza-data' }], note: [] } */
+   * → { eventi: [{ chiave, data|null, ora, titolo, nota, stima, qui, stato: 'fatto'|'prossimo'|'futuro'|'senza-data', stimaTentativo? }],
+   *     note: [], tentativo: (vedi tentativoDi) } */
   function lineaTempo(a, opz) {
     opz = opz || {};
     a = a || {};
     var adesso = String(opz.adesso || ''), dem = a.fonte === DEMANIO, ev = [], note = [];
     var base = num(a.prezzoBase), tentativo = num(a.tentativo);
+    var T = tentativoDi(a), stimato = !!(T && T.stima);
 
     if (a.pubblicata) ev.push({ chiave: 'pubblicazione', data: dataOra(a.pubblicata).data, ora: '', titolo: 'Pubblicazione dell\'avviso',
       nota: a.fonte === PVP ? 'Sul Portale delle Vendite Pubbliche' : dem ? 'Sul sito dell\'Agenzia del Demanio' : a.fonte ? 'Fonte: ' + a.fonte : '' });
@@ -70,15 +90,32 @@
     var contati = storico.filter(function (s) { return s[2] !== 'sospesa'; }).length;
     // lo storico conserva gli ultimi 10: se il tentativo è più alto, i primi mancano
     var salto = tentativo > contati + 1 ? tentativo - 1 - contati : 0;
-    var n = salto, prezzoPrima = 0;
+    var n = salto, prezzoPrima = 0, i = 0, numero = 0, P = stimato ? modulo('Punteggio', './punteggio.js') : null;
     storico.forEach(function (s) {
       var d = dataOra(s[0]), prezzo = num(s[1]), sosp = s[2] === 'sospesa';
       var esito = s[2] ? ESITI[s[2]] || String(s[2]) : (d.data && (!adesso || d.data < adesso.slice(0, 10)) ? 'esito non pubblicato; il lotto è poi tornato in vendita' : 'esito non ancora pubblicato');
       var parti = [prezzo > 0 ? 'Prezzo base ' + eur(prezzo) : 'prezzo non indicato'];
       if (!sosp && prezzo > 0 && prezzoPrima > 0 && prezzo < prezzoPrima) parti[0] += ' (−' + pct(1 - prezzo / prezzoPrima, 0) + ')';
       parti.push(esito);
-      if (!sosp) { n++; if (prezzo > 0) prezzoPrima = prezzo; }
-      ev.push({ chiave: sosp ? 'sospesa' : 'tentativo', data: d.data, ora: '', titolo: sosp ? 'Vendita sospesa' : n + '° tentativo', nota: parti.join(' · '), esito: s[2] || null, prezzo: prezzo || null });
+      var stimaQui = false;
+      if (!sosp) {
+        n++; i++; if (prezzo > 0) prezzoPrima = prezzo;
+        // numero dell'indice; se questa asta ha la stima "almeno il N°", anche i tentativi precedenti possono averne una dai
+        // loro prezzi (stessa regola), mai oltre quello che lascia posto ai tentativi successivi fino a N: restano minimi veri
+        var min = n;
+        if (stimato && P && P.tentativoMinimo && prezzo > 0) {
+          var tm = P.tentativoMinimo({ categoria: a.categoria, tentativo: n, primoPrezzo: a.primoPrezzo, prezzoBase: prezzo });
+          if (tm) min = Math.max(n, Math.min(tm.tentativo, T.numero - (contati - i) - 1));
+        }
+        min = Math.max(min, numero + 1);
+        if (stimato) min = Math.min(min, Math.max(n, T.numero - (contati - i) - 1));
+        stimaQui = min > n;
+        numero = min;
+      }
+      var e = { chiave: sosp ? 'sospesa' : 'tentativo', data: d.data, ora: '', titolo: sosp ? 'Vendita sospesa' : stimaQui ? 'Almeno il ' + numero + '° tentativo (stima)' : numero + '° tentativo',
+        nota: parti.join(' · '), esito: s[2] || null, prezzo: prezzo || null };
+      if (stimaQui) e.stimaTentativo = true;
+      ev.push(e);
     });
 
     // prezzo sceso rispetto alla raccolta precedente (stesso avviso)
@@ -106,9 +143,12 @@
     var astaEv = null;
     if (!dem) {
       var notaAsta = base > 0 ? 'Prezzo base ' + eur(base) : 'Prezzo base non indicato';
-      if (base > 0 && num(a.ribasso) > 0) notaAsta += ' (−' + pct(a.ribasso, 0) + ' rispetto al tentativo precedente)';
+      // con la stima del tentativo il precedente nell'indice non è per forza quello subito prima
+      if (base > 0 && num(a.ribasso) > 0) notaAsta += ' (−' + pct(a.ribasso, 0) + (stimato ? ' rispetto all\'ultimo tentativo nell\'indice)' : ' rispetto al tentativo precedente)');
       if (num(a.offertaMinima) > 0) notaAsta += ' · offerta minima ' + eur(a.offertaMinima);
-      astaEv = { chiave: 'asta', data: asta.data, ora: asta.ora, titolo: tentativo ? tentativo + '° tentativo: questa asta' : 'Questa asta', nota: asta.data ? notaAsta : 'Data non indicata nei dati raccolti', qui: true };
+      astaEv = { chiave: 'asta', data: asta.data, ora: asta.ora, titolo: stimato ? 'Almeno il ' + T.numero + '° tentativo (stima): questa asta' : tentativo ? tentativo + '° tentativo: questa asta' : 'Questa asta',
+        nota: asta.data ? notaAsta : 'Data non indicata nei dati raccolti', qui: true };
+      if (stimato) astaEv.stimaTentativo = true;
     } else if (D.asta) {
       // giorno della gara scritto nell'avviso del Demanio; prezzo base e ora sono nel PDF
       astaEv = { chiave: 'asta', data: asta.data, ora: asta.ora, titolo: 'Giorno dell\'asta', qui: true,
@@ -153,8 +193,11 @@
       else e.stato = 'futuro';
     });
 
+    if (stimato) note.push(T.perche + (ev.some(function (e) { return e.chiave === 'tentativo' && e.stimaTentativo; }) ?
+      ' Con la stessa regola sono stimati, dai loro prezzi, i tentativi precedenti segnati «almeno».' : '') + ' ' + VERIFICA);
     if (!storico.length) {
-      if (tentativo > 1) note.push('Prima di questa asta ci sono stati ' + (tentativo - 1) + (tentativo - 1 === 1 ? ' tentativo' : ' tentativi') +
+      if (stimato) note.push('Prima di questa asta ci sono stati almeno ' + (T.numero - 1) + ' tentativi (stima): date non disponibili.');
+      else if (tentativo > 1) note.push('Prima di questa asta ci sono stati ' + (tentativo - 1) + (tentativo - 1 === 1 ? ' tentativo' : ' tentativi') +
         (num(a.deserte) ? ' (' + a.deserte + (a.deserte === 1 ? ' andato deserto' : ' andati deserti') + ')' : '') + ': date non disponibili.');
       else if (tentativo === 1) note.push('È il primo tentativo di vendita trovato nello storico del portale.');
       // con storicoNota la raccolta dice già perché i tentativi precedenti mancano
@@ -166,7 +209,7 @@
       note.push('Dalla prima asta (' + eur(a.primoPrezzo) + ') il prezzo base è sceso del ' + pct(1 - base / a.primoPrezzo, 0) + '.');
     }
     if (a.storicoNota) note.push(String(a.storicoNota));
-    return { eventi: ev, note: note };
+    return { eventi: ev, note: note, tentativo: T };
   }
 
   /* ---------- zona ---------- */
@@ -303,7 +346,7 @@
     return out;
   }
 
-  var SchedaDati = { lineaTempo: lineaTempo, zona: zona, probabilita: probabilita, FASCE_SEMPLICI: FASCE_SEMPLICI, GIORNI_SALDO: GIORNI_SALDO, _: { eur: eur, pct: pct, dataIt: dataIt, nome: nome } };
+  var SchedaDati = { lineaTempo: lineaTempo, tentativo: tentativoDi, zona: zona, probabilita: probabilita, FASCE_SEMPLICI: FASCE_SEMPLICI, GIORNI_SALDO: GIORNI_SALDO, _: { eur: eur, pct: pct, dataIt: dataIt, nome: nome } };
   if (NODE) module.exports = SchedaDati;
   else root.SchedaDati = SchedaDati;
 })(typeof window !== 'undefined' ? window : globalThis);

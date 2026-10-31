@@ -243,7 +243,12 @@
     var ch = Array.isArray(a.rischi) ? a.rischi.length : null;
     switch (k) {
       case 'sconto': return r.sconto != null ? 'Costo totale ' + U.pct(Math.abs(r.sconto), 0) + (r.sconto >= 0 ? ' sotto' : ' sopra') + ' il valore' : 'serve il valore';
-      case 'tentativo': return a.tentativo ? a.tentativo + '° tentativo' + (a.deserte ? ', ' + a.deserte + (a.deserte === 1 ? ' deserta' : ' deserte') : '') : 'non noto';
+      case 'tentativo':
+        if (!a.tentativo) return 'non noto';
+        // il punteggio usa il numero dell'indice; la stima dai prezzi (linea del tempo) si dice accanto, come stima
+        var tq = SD && SD.tentativo ? SD.tentativo(a) : null;
+        return a.tentativo + '° tentativo' + (a.deserte ? ', ' + a.deserte + (a.deserte === 1 ? ' deserta' : ' deserte') : '') +
+          (tq && tq.stima ? ' secondo l\'indice del Portale (stima dai prezzi: almeno il ' + tq.numero + '°, vedi la linea del tempo)' : '');
       case 'occupazione': return a.categoria !== 'immobile' ? 'non si applica: punteggio neutro' : a.stato === 'libero' ? 'libero' : a.stato === 'occupato' ? 'occupato' : 'non indicato: punteggio neutro';
       case 'rischi': return ch === null ? 'testo non controllato: punteggio neutro' : ch ? ch + (ch === 1 ? ' rischio trovato' : ' rischi trovati') : 'nessuno nel testo';
       case 'zona':
@@ -634,7 +639,8 @@
     }).join('');
     var note = lt.note.map(function (t) { return '<p class="note">' + esc(t) + '</p>'; }).join('');
     return '<section class="panel sc-sez" id="sez-tempi" aria-labelledby="h-tempi"><div class="sc-sez-testa"><h2 id="h-tempi">Linea del tempo</h2>' +
-      (a.tentativo ? '<span class="pill p-info">' + a.tentativo + '° tentativo</span>' : '') + '</div><ol class="tempi">' + li + '</ol>' + note +
+      (lt.tentativo && lt.tentativo.stima ? '<span class="pill p-info">Almeno il ' + lt.tentativo.numero + '° tentativo (stima)</span>' :
+        a.tentativo ? '<span class="pill p-info">' + a.tentativo + '° tentativo</span>' : '') + '</div><ol class="tempi">' + li + '</ol>' + note +
       '<p class="note">Pallino pieno: già avvenuto' + (lt.eventi.some(function (e) { return e.qui && e.stato !== 'fatto'; }) ? '; con il punto al centro: questa asta' : '') +
       (lt.eventi.some(function (e) { return e.stima; }) ? '; tratteggiato: data stimata, da verificare nell\'avviso' : '') + '.' +
       (lt.eventi.some(function (e) { return e.chiave === 'tentativo' || e.chiave === 'sospesa'; }) ? ' Date e prezzi dei tentativi precedenti vengono dallo storico delle vendite del Portale delle Vendite Pubbliche.' : '') + '</p></section>';

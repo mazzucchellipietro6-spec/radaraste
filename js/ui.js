@@ -224,7 +224,7 @@
             p.voci.map(function (v) { return voceElenco(v, qui); }).join('') +
             '<a class="tutte" href="' + p.href + '">Tutti gli ' + p.nome.toLowerCase() + ' →</a></div></div></div>';
         }).join('') + '</nav>' +
-        '<button class="cerca-btn" type="button" data-cerca aria-label="Cerca aste, comuni, tribunali">' + icona('cerca') + '<span class="testo">Cerca comune, tribunale, asta…</span><kbd>/</kbd></button>' +
+        '<button class="cerca-btn" type="button" data-cerca aria-label="Cerca comune, tribunale, asta">' + icona('cerca') + '<span class="testo">Cerca comune, tribunale, asta…</span><kbd>/</kbd></button>' +
         '<button class="theme-btn" type="button"></button></div>';
     }
     // barra in basso (visibile su telefono)

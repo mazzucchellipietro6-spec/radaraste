@@ -227,3 +227,21 @@ test('card: il luogo va su due righe al massimo invece di perdere la provincia (
   const mappa = await readFile(path.join(RADICE, 'assets/css/mappa.css'), 'utf8');
   assert.doesNotMatch(mappa.match(/\.m-voce-t small \{([^}]*)\}/)[1], /nowrap|ellipsis/);
 });
+
+test('card: una sola colonna larga quanto la card, e i nomi lunghi dei comuni vanno a capo invece di allargarla', async () => {
+  // collaudo del 31/10/2026: nel nastro della home (card da 270 px) "Sommacampagna (VR)" accanto a "Poco interessante"
+  // allargava la colonna a 291 px e la card tagliava a destra offerta minima e prezzi
+  const css = await readFile(path.join(RADICE, 'assets/css/style.css'), 'utf8');
+  const card = css.match(/^\.card \{([^}]*)\}/m)[1];
+  assert.match(card, /grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(css.match(/\.card \.copertina \.luogo span \{([^}]*)\}/)[1], /overflow-wrap: anywhere/);
+});
+
+test('nome accessibile che comincia con il testo visibile (WCAG 2.5.3): ricerca nell\'intestazione e pillola della mappa', async () => {
+  const ui = await readFile(path.join(RADICE, 'js/ui.js'), 'utf8');
+  const btn = ui.match(/<button class="cerca-btn"[^>]*aria-label="([^"]+)">[\s\S]*?<span class="testo">([^<]+)<\/span>/);
+  assert.ok(btn, 'pulsante di ricerca');
+  assert.ok(btn[2].startsWith(btn[1]), btn[1] + ' ≠ ' + btn[2]);
+  const mappa = await readFile(path.join(RADICE, 'js/pages/mappa.js'), 'utf8');
+  assert.match(mappa, /\$\('#mApriZona'\)\.setAttribute\('aria-label', breve\(conta\) \+ ' ' \+ \(conta === 1 \? 'asta' : 'aste'\) \+ ' qui · le migliori/);
+});

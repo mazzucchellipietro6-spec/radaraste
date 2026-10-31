@@ -375,7 +375,8 @@
     $('#mMigliori').innerHTML = lista.map(voce).join('');
     if (idFuoco) { var el = $$('#mMigliori .m-voce').filter(function (x) { return x.getAttribute('data-id') === idFuoco; })[0]; fuoco(el || $('#mMigliori .m-voce') || $('#mCercaZona')); }
     $('#mPillTesto').innerHTML = '<b>' + breve(conta) + '</b> ' + (conta === 1 ? 'asta' : 'aste') + ' qui · le migliori';
-    $('#mApriZona').setAttribute('aria-label', 'In questa zona: ' + aste(conta) + ' con posizione. Apri le migliori');
+    // il nome per i lettori di schermo comincia con il testo visibile (chi usa i comandi vocali dice quello che vede)
+    $('#mApriZona').setAttribute('aria-label', breve(conta) + ' ' + (conta === 1 ? 'asta' : 'aste') + ' qui · le migliori: ' + aste(conta) + ' con posizione in questa zona');
   }
 
   /* ---------- anteprima ---------- */

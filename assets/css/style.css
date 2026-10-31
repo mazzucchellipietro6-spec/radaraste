@@ -220,7 +220,9 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 6px va
 
 /* ---------- schede asta ---------- */
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
-.card { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); display: grid; grid-template-rows: auto 1fr; overflow: hidden; box-shadow: var(--ombra-1); transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), border-color var(--dur-2); isolation: isolate; min-width: 0; }
+/* una sola colonna che non supera la card: senza minmax(0, 1fr) un luogo lungo ("Sommacampagna (VR)" accanto a "Poco interessante")
+   allargava la colonna oltre la card stretta del nastro e tagliava prezzi e offerta minima a destra (collaudo del 31/10/2026) */
+.card { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; overflow: hidden; box-shadow: var(--ombra-1); transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), border-color var(--dur-2); isolation: isolate; min-width: 0; }
 @media (hover: hover) { .card:hover { box-shadow: var(--ombra-2); border-color: var(--line-2); } }
 .card.cat-immobile { --cop: var(--cop-immobile); } .card.cat-auto { --cop: var(--cop-auto); } .card.cat-moto { --cop: var(--cop-moto); } .card.cat-beni { --cop: var(--cop-beni); }
 /* testata della scheda: punteggio a sinistra, luogo a destra, su fondo neutro (nessuna sfumatura né motivo) */
@@ -229,7 +231,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 6px va
 .card .copertina .luogo { margin-left: auto; font-weight: 550; font-size: 13px; display: flex; gap: 6px; align-items: center; justify-content: flex-end; min-width: 0; max-width: 55%; color: var(--fg-2); }
 .card .copertina .luogo .icona { display: none; }
 /* luogo su due righe al massimo: su una riga sola, nelle card strette, la provincia spariva ("Aosta (…") */
-.card .copertina .luogo span { overflow: hidden; text-align: right; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.card .copertina .luogo span { overflow: hidden; text-align: right; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; hyphens: auto; }
 .card .anello-box { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
 .card .anello-box .fascia { font-size: 13px; font-weight: 600; line-height: 1.25; color: var(--fg); }
 .card .anello-box .fascia small { display: block; font-weight: 500; font-size: 11.5px; color: var(--muted); }

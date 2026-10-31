@@ -249,6 +249,89 @@ test('linea del tempo: storico incompleto, catena non collegata, primo tentativo
   assert.match(evento(ri, 'saldo').nota, /indicato nell'avviso/);
 });
 
+/* tentativi intermedi mancanti nell'indice: la stima "almeno il N°" di js/punteggio.js (la stessa del Cacciatore) dichiarata
+ * come stima. Schede vere di data/dettagli/ (raccolta del 31/10/2026), solo i campi che servono. */
+const P = require('../js/punteggio.js');
+// Latina (LT): l'indice dice 3°, ma 139.165 € × 0,75⁴ = 44.033 €: almeno il 5°
+const LATINA = {
+  id: 'pvp-4628098', categoria: 'immobile', tipo: 'Immobile residenziale', provincia: 'LT', comune: 'Latina', tribunale: 'Latina',
+  fonte: 'Portale Vendite Pubbliche', prezzoBase: 44033, offertaMinima: 33024, dataAsta: '2026-11-05', ora: '12:00', pubblicata: '2026-09-09',
+  tentativo: 3, deserte: 2, primoPrezzo: 139165, ribasso: 0.578, storico: [['2024-04-30', 139165, null], ['2025-01-16', 104374, null]]
+};
+// Lentini (SR): il 2° dell'indice costa 13.462,50 € × 0,75³ = 5.679,50 €, quindi è già almeno il 4°
+const LENTINI = {
+  id: 'pvp-4625340', categoria: 'immobile', tipo: 'Immobile commerciale', provincia: 'SR', comune: 'Lentini', tribunale: 'Siracusa',
+  fonte: 'Portale Vendite Pubbliche', prezzoBase: 4260, offertaMinima: 3195, dataAsta: '2026-11-17', ora: '11:00', pubblicata: '2026-09-02',
+  tentativo: 3, deserte: 2, primoPrezzo: 13462.5, ribasso: 0.25, storico: [['2024-02-16', 13462.5, null], ['2026-05-20', 5679.5, 'deserta']]
+};
+// Porto Recanati (MC): 400.000 € × 0,75⁵ = 94.921,88 €, almeno il 5° (dopo il quarto deserto il ribasso può arrivare alla metà)
+const PORTO_RECANATI = {
+  id: 'pvp-4635605', categoria: 'immobile', tipo: 'Altra categoria', provincia: 'MC', comune: 'Porto Recanati', tribunale: 'Ancona',
+  fonte: 'Portale Vendite Pubbliche', prezzoBase: 94921.88, offertaMinima: 71191.41, dataAsta: '2026-11-18', ora: '10:00', pubblicata: '2026-09-24',
+  tentativo: 4, deserte: 3, primoPrezzo: 400000, ribasso: 0.25,
+  storico: [['2024-04-18', 400000, 'deserta'], ['2026-01-15', 168750, 'deserta'], ['2026-07-15', 126562.5, 'deserta']]
+};
+const titoliTentativi = (lt) => lt.eventi.filter((e) => e.chiave === 'tentativo').map((e) => e.titolo);
+
+test('linea del tempo: tentativo stimato dai prezzi («almeno il N°», come il Cacciatore), dichiarato come stima e spiegato', () => {
+  const lt = SD.lineaTempo(LATINA, { adesso: '2026-10-31T10:00' });
+  assert.equal(P.tentativoMinimo(LATINA).tentativo, 5);
+  assert.deepEqual(lt.tentativo, SD.tentativo(LATINA));
+  assert.equal(lt.tentativo.numero, 5);
+  assert.equal(lt.tentativo.indice, 3);
+  assert.equal(lt.tentativo.stima, true);
+  const asta = evento(lt, 'asta');
+  assert.equal(asta.titolo, 'Almeno il 5° tentativo (stima): questa asta');
+  assert.equal(asta.stimaTentativo, true);
+  // la data dell'asta non è stimata: niente tratteggio
+  assert.equal(asta.stima, false);
+  // il ribasso è rispetto all'ultimo tentativo dell'indice, non per forza quello subito prima
+  assert.match(asta.nota, /^Prezzo base 44\.033\s€ \(−58% rispetto all'ultimo tentativo nell'indice\)/);
+  // i tentativi dell'indice compatibili con i loro prezzi restano come sono
+  assert.deepEqual(titoliTentativi(lt), ['1° tentativo', '2° tentativo']);
+  assert.equal(lt.note[0], 'Numero del tentativo stimato dai prezzi: il prezzo base di questa asta (44.033' + NBSP + '€) è quello della prima asta (139.165' + NBSP +
+    '€) ridotto 4 volte del 25%, quindi è almeno il 5° tentativo. L\'indice del Portale delle Vendite Pubbliche dice 3°: alcuni tentativi intermedi non ci sono. ' +
+    'È una stima, da verificare nell\'avviso.');
+  assert.equal(lt.note[1], 'Dalla prima asta (139.165' + NBSP + '€) il prezzo base è sceso del 68%.');
+
+  // anche un tentativo precedente può essere più avanti di quanto dice l'indice: stimato dal suo prezzo e detto
+  const le = SD.lineaTempo(LENTINI, { adesso: '2026-10-31T10:00' });
+  assert.deepEqual(titoliTentativi(le), ['1° tentativo', 'Almeno il 4° tentativo (stima)']);
+  assert.equal(evento(le, 'asta').titolo, 'Almeno il 5° tentativo (stima): questa asta');
+  assert.match(le.note[0], /Con la stessa regola sono stimati, dai loro prezzi, i tentativi precedenti segnati «almeno»\. È una stima, da verificare nell'avviso\.$/);
+
+  // mai oltre la stima di questa asta (la stessa del Cacciatore): i precedenti lasciano posto ai successivi e restano minimi veri
+  const pr = SD.lineaTempo(PORTO_RECANATI, { adesso: '2026-10-31T10:00' });
+  assert.equal(P.tentativoMinimo(PORTO_RECANATI).tentativo, 5);
+  assert.deepEqual(titoliTentativi(pr), ['1° tentativo', 'Almeno il 3° tentativo (stima)', 'Almeno il 4° tentativo (stima)']);
+  assert.equal(evento(pr, 'asta').titolo, 'Almeno il 5° tentativo (stima): questa asta');
+  assert.match(pr.note[0], /ridotto 5 volte del 25%, e dopo il quarto tentativo deserto un ribasso può arrivare alla metà, quindi è almeno il 5° tentativo\. L'indice del Portale delle Vendite Pubbliche dice 4°/);
+
+  // Ravanusa: i tre tentativi dell'indice tornano con i prezzi, ne manca uno prima di questa asta
+  const ra = SD.lineaTempo(RAVANUSA, { adesso: ADESSO });
+  assert.deepEqual(titoliTentativi(ra), ['1° tentativo', '2° tentativo', '3° tentativo']);
+  assert.equal(evento(ra, 'asta').titolo, 'Almeno il 5° tentativo (stima): questa asta');
+
+  // senza stima nulla cambia: numero dell'indice, nessuna nota in più
+  const av = SD.lineaTempo(AVIGLIANO, { adesso: ADESSO });
+  assert.deepEqual(av.tentativo, { numero: 3, indice: 3, stima: false });
+  assert.equal(evento(av, 'asta').stimaTentativo, undefined);
+  assert.ok(!av.note.some((t) => /stimato dai prezzi/.test(t)));
+  // tentativo non noto, Demanio, beni mobili: nessuna stima
+  assert.equal(SD.lineaTempo(SANTA_CROCE).tentativo, null);
+  assert.equal(SD.lineaTempo(DEMANIO).tentativo, null);
+  assert.equal(SD.tentativo({ ...LATINA, categoria: 'beni' }).stima, false);
+  // senza storico (non succede nei dati: il primo prezzo viene dallo storico) il conto dei tentativi prima resta un minimo
+  const solo = SD.lineaTempo({ ...LATINA, storico: [] }, { adesso: '2026-10-31T10:00' });
+  assert.ok(solo.note.includes('Prima di questa asta ci sono stati almeno 4 tentativi (stima): date non disponibili.'));
+});
+
+test('scheda: la pillola della linea del tempo e il punteggio dicono la stima del tentativo come stima', () => {
+  const js = fs.readFileSync(path.join(RADICE, 'js/pages/scheda.js'), 'utf8');
+  assert.match(js, /lt\.tentativo && lt\.tentativo\.stima \? '<span class="pill p-info">Almeno il ' \+ lt\.tentativo\.numero \+ '° tentativo \(stima\)<\/span>'/);
+  assert.match(js, /secondo l\\'indice del Portale \(stima dai prezzi: almeno il ' \+ tq\.numero \+ '°/);
+});
+
 test('linea del tempo: Agenzia del Demanio (termine per le offerte, nessuna data d\'asta inventata)', () => {
   const lt = SD.lineaTempo(DEMANIO, { adesso: ADESSO });
   assert.deepEqual(chiavi(lt), ['pubblicazione', 'termine', 'saldo']);
