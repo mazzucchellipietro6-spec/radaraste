@@ -318,3 +318,77 @@ test('più beni: azienda, macchinari e attrezzature, elenchi a) b) e 1) 2) (revi
   // né "LOTTO UNO (A in perizia)" (pvp-4566904, test sopra)
   assert.equal(Omi.piuUnita('LOTTO UNO (A in perizia). Diritti di piena proprietà su Unità immobiliare destinata ad uso laboratorio, superficie pari a mq. 828'), null);
 });
+
+// --- 31/10/2026: terreni valutati come fabbricati (casi reali dei dati locali del 31/10) ---
+
+// testi e comuni veri delle aste; il comune serve a togliere il suo nome dal testo (Palazzolo dello Stella)
+const TERRENI = [
+  // stimato come "Abitazioni civili" su 3888 mq: valore centrale 3.382.560 €
+  ['pvp-4641187', 'Altissimo', 'Terreno parzialmente edificabile di mq. 3888.'],
+  // stimato come "Negozi" su 46.752 mq: valore centrale 46.635.120 € ("Palazzolo" e "via Casali" sono nomi di luogo)
+  ['pvp-4623003', 'Palazzolo Dello Stella', 'Terreno agricolo della superficie commerciale di 46.752,00 mq, in Palazzolo dello Stella, via Casali Giambreaz n. 1.'],
+  // stimato come "Magazzini": il deposito è di materiale edile, sul piazzale
+  ['pvp-4631197', 'Collesalvetti', 'Appezzamento di terreno attualmente utilizzato come piazzale di deposito di materiale edile, costituito da sei particelle della superficie catastale complessiva di 5.850 mq.'],
+  ['pvp-4626788', 'Finale Ligure', 'Piena proprietà di terreni cantierizzati per intervento residenziale della superficie commerciale di mq. 9.218,84.'],
+  // i fabbricati citati sono assenti o vicini, non nel lotto
+  ['pvp-4653985', 'Gualdo Tadino', 'Vendesi terreno agricolo di 520 mq, sito in Gualdo Tadino (PG), in Località Fontivole. Trattasi di terreno isolato e marginale, adiacente ad un corso d’acqua ed ad un’area utilizzata come deposito di materiale edile. Sul terreno in oggetto non vi sono fabbricati ed è libero. Superficie commerciale: 520 mq'],
+  ['pvp-4643828', 'San Giovanni La Punta', 'Area urbana edificabile a San Giovanni La Punta (CT), tra via Teano e via della Regione. Superficie catastale di 6730 mq. Area parte di programma costruttivo convenzionato nel 2005 per realizzazione di 96 alloggi sociali (30 già realizzati). Lavori interrotti. Terreno incolto. Stato di abbandono'],
+  ['pvp-4642425', 'Osimo', 'Per la piena ed intera proprietà Area edificabile a destinazione industriale/artigianale, di circa 5.597 mq, pressoché pianeggiante ed incolta, ubicata nella frazione Osimo Stazione, via Crispi. L’area è inserita in un contesto prettamente industriale che si contraddistingue per la presenza di numerosi capannoni a destinazione produttiva, di media e grande metratura.'],
+  ['pvp-4624421', 'Corridonia', 'Area urbana a Corridonia (MC), località Passo del Bidollo, via Passo del Bidollo snc. Periferia urbanizzata con abitazioni e negozi. Ben collegata a Macerata e litorale. Superficie commerciale di 105 mq. Area adibita a giardino sul retro di palazzina residenziale. Condizioni buone'],
+  // aree urbane (cat. F/1): "piano terra", "corte", "Catasto Fabbricati" e "immobile" qui non dicono un fabbricato
+  ['pvp-4618296', 'Tivoli', 'Bene posto in vendita per il diritto della piena proprietà e costituito da: Area urbana ubicata a Tivoli (prov. Roma) - Via Luigi Pirandello, 38, piano T. Trattasi di una area urbana di mq. 58 posta al piano terra, l\'area urbana risulta pavimentate e in pare recintata su tre lati. Identificato al catasto Fabbricati - Fg. 49, Part. 1738, Sub. 501, Categoria F/1, della consistenza di 58 mq., superficie catastale 58 mq.'],
+  ['pvp-4648176', 'San Pietro in Guarano', 'Corte esclusiva, categoria F/1, consistenza 70 mq, piano T.'],
+  ['pvp-4649362', 'Luzzi', 'Immobile di mq 860 circa (corte) con servitù di passaggio, categoria area urbana. Tale area ricade in zona ATUC (Ambito Territoriale Urbano Consolidato) con indice di edificabilità pari a 0,4 mq/mq.']
+];
+// case con "piano terreno", corte, giardino o terreno di pertinenza: restano fabbricati
+const CASE = [
+  ['pvp-4630170', 'Torino', 'alloggio al piano terreno rialzato composto da ingresso su disimpegno, una camera, tinello con cucinino, ripostiglio e bagno, superficie commerciali mq 52.'],
+  ['pvp-4653927', 'Biella', 'Alloggio su due piani (terreno e primo) posto in contesto di case “di corte”, così composto: al p.t. - ingresso e vano scala, cucina/soggiorno attualmente adibito a deposito, bagno di servizio; al p.1 - locale soggiorno/cucina, camera da letto, disimpegno, bagno, balcone con piccolo wc esterno. Autorimessa.'],
+  ['pvp-4630302', 'Roma', 'Lotto Unico: Trattasi di abitazione con corte esterna di pertinenza esclusiva, sita nel Comune di Roma, Vicolo di Vigna Mangani n. 20 (quartiere Pietralata Q.XXI) – Municipio IV (ex V), piano terreno e piano primo. Foglio 580, part. 118, sub. 501, piano T-1, zona censuaria 4, categoria A/4, classe 2, consistenza 6 vani, superficie catastale 143 mq (totale escluse aree scoperte: 129 mq), rendita euro 743,70.'],
+  ['pvp-4599116', 'Zagarolo', 'Abitazione unifamiliare con giardino in ZAGAROLO (Rm),loc. Valle Martella, Via Ludwig VAN BEETHOVEN, civico 7, Piano T,composto tinello con cucina zona pranzo, soggiorno con camino, 2 camere bagno, ripostiglio/lavanderia 80 mq lordi portico 4,00 ml x 7,50,portico laterale 3,50 ml x 2,00 ml, giardino piccola piscina deposito 20 mq; terreno di pertinenza 580 mq .NCEU(Codice:M141) F. 4 Part. 794 Sub: 1 e Part. 794 Sub: 2 graffati; cat. A/4, cl 5, 3,5 vani, catastale 49 mq,RC €162,68, Lotto 1217, Piano T.'],
+  ['pvp-4611225', 'Gubbio', 'Diritto di intera piena proprietà su unità immobiliare ad uso abitativo posta al piano terreno di un fabbricato sito in Comune di Gubbio, frazione Casamorcia, della superficie complessiva di circa mq 96,00, suddivisa in ingresso, cucina, soggiorno, due camere, due bagni e piccolo locale adibito a c.t. con accesso dalla corte pertinenziale del fabbricato; corte comune con cancello carrabile, come da relazione di stima.'],
+  ['pvp-4618822', 'Roccella Ionica', 'Unità immobiliare al piano terzo, oltre porzione millesimale dei terreni di cui alle particelle 346 - 347 adibite a corte, Cat. A/3, Vani 6, superficie commerciale mq. 146.'],
+  ['pvp-4630599', 'Carbonia', '3/5 piena proprietà immobile su due livelli mq 111 a piano con annesso terreno mq 2.535.'],
+  ['pvp-4653092', 'Polistena', 'Locale al pian terreno di un fabbricato in cemento armato, a quattro elevazioni fuori terra, identificato al Catasto Fabbricati del medesimo Comune al foglio di mappa n° 7, particella 21, sub. 16, categoria C/1, classe 3, piano T, consistenza 94 mq, superficie catastale 106 mq, rendita euro 854,43.']
+];
+// fabbricati con terreno: restano come oggi (la regola dei lotti con più unità ne abbassa già l'affidabilità)
+const CON_TERRENO = [
+  ['pvp-4624309', 'Perugia', 'Villa monofamiliare con terreno, sita in Perugia (PG), località San Marco, Strada Ponte d’Oddi n°267/B e 267/A. Superficie commerciale villa 481,75 mq; terreno 30.121 mq'],
+  ['pvp-4613852', 'Castelfranco Emilia', 'Piena e intera proprietà di lotto di terreno di 3370 mq su cui sorge un capannone ad uso industriale/artigianale/commerciale di 472 mq lordi, a circa 1.600 metri dal centro di Castelfranco Emilia, edificato a metà degli anni \'60.'],
+  ['pvp-4624063', 'Marianopoli', 'Fondo agricolo con annesso fabbricato. Il fabbricato è suddiviso in tre locali con annessa veranda della superficie lorda di ca mq 54,98 più mq 12,00 di veranda. Inagibile. Libero al decreto di trasferimento.'],
+  ['pvp-4653770', 'Rignano Sull\'Arno', 'compendio immobiliare ubicato in Rignano Sull’Arno, località Le Valli, Strada Vicinale delle Lame, 23, già costituente azienda agricola denominata “LE LAME” formata da corpi di fabbrica di tipologia rurale alcuni di vetusta edificazione (risalenti al XVII° secolo) ed altri di più recente costruzione, oltre a resede e terreni agricoli; il corpo di fabbrica principale ha una forma ad “L” ed una superficie di circa mq. 800'],
+  // area urbana con un fabbricato in costruzione (cat. F/1) e area urbana con un posto auto: non sono solo terreno
+  ['pvp-4629376', 'Lumezzane', 'LOTTO D:Unità in costruzione in stato di abbandono su più piani, censito al catasto fabbricati, sez. NCT fg. 7 mapp. 97 sub 16 – p. t - cat. F/1 – 105 mq.'],
+  ['pvp-4606874', 'Potenza Picena', 'Diritto di piena proprietà su di un compendio immobiliare ubicato in Potenza Picena (Mc), Contrada Casette Antonelli, n. 20, costituito da un’area urbana della superficie di mq. 5 e un adiacente posto auto scoperto della superficie di mq. 13.']
+];
+
+test('terreni: solo terreno, anche con fabbricati vicini, assenti o da costruire e con le aree urbane (11 casi reali del 31/10/2026)', () => {
+  for (const [id, comune, testo] of TERRENI) assert.equal(Omi.soloTerreno(testo, comune), true, id);
+});
+
+test('terreni: le case con "piano terreno", corte, giardino o terreno di pertinenza restano fabbricati (8 casi reali)', () => {
+  for (const [id, comune, testo] of CASE) assert.equal(Omi.soloTerreno(testo, comune), false, id);
+});
+
+test('terreni: un fabbricato con il suo terreno resta un fabbricato (6 casi reali)', () => {
+  for (const [id, comune, testo] of CON_TERRENO) assert.equal(Omi.soloTerreno(testo, comune), false, id);
+});
+
+test('stima: un terreno non ha valore OMI e lo dice; la casa con piano terreno e la villa con terreno lo tengono', () => {
+  // zona di prova di Melilli con i testi veri: prima il terreno di 3888 mq (tipo "Immobile residenziale") era stimato come
+  // "Abitazioni civili", da 2.488.320 a 2.760.480 €
+  const zona = { categoria: 'immobile', comune: 'Melilli', provincia: 'SR', indirizzo: 'frazione Villasmundo' };
+  const terreno = Omi.stima({ ...zona, tipo: 'Immobile residenziale', superficieMq: 3888, titolo: 'Terreno parzialmente edificabile di mq. 3888' }, ind, { testo: TERRENI[0][2] });
+  assert.equal(terreno.valore, undefined);
+  assert.equal(terreno.affitto, undefined);
+  assert.equal(terreno.mancante, 'il lotto è solo terreno e le quotazioni OMI valgono per i fabbricati, non per i terreni');
+  assert.equal(terreno.comune, 'MELILLI');
+  // anche la corte in cat. F/1 stimata come negozio, e un terreno di un comune che non c'è nelle quotazioni (il motivo è il terreno)
+  assert.match(Omi.stima({ ...zona, tipo: 'Immobile commerciale', superficieMq: 70, titolo: 'Corte esclusiva, categoria F/1' }, ind, { testo: TERRENI[9][2] }).mancante, /solo terreno/);
+  assert.match(Omi.stima({ ...zona, comune: 'Inesistente', tipo: 'Altra categoria', titolo: 'Terreno agricolo' }, ind, {}).mancante, /solo terreno/);
+  // la casa al piano terreno e la villa con terreno restano stimate
+  const casa = Omi.stima({ ...zona, tipo: 'Immobile residenziale', superficieMq: 52, titolo: 'Alloggio al piano terreno rialzato' }, ind, { testo: CASE[0][2] });
+  assert.deepEqual(casa.valore, { min: 33280, max: 36920, centrale: 35100 });
+  const villa = Omi.stima({ ...zona, tipo: 'Immobile residenziale', superficieMq: 481.75, titolo: 'Villa monofamiliare con terreno' }, ind, { testo: CON_TERRENO[0][2] });
+  assert.ok(villa.valore && villa.valore.min > 0);
+});

@@ -187,6 +187,80 @@
     return null;
   }
 
+  /* Lotto di solo terreno → nessun valore OMI: le quotazioni OMI riguardano i fabbricati, non i terreni. Casi reali del
+   * 31/10/2026 (22 lotti con un valore OMI): pvp-4641187 "Terreno parzialmente edificabile di mq. 3888" stimato come
+   * abitazione civile (valore centrale 3.382.560 €), pvp-4623003 "Terreno agricolo della superficie commerciale di 46.752,00 mq"
+   * come negozio (46.635.120 €), pvp-4648176 "Corte esclusiva, categoria F/1, consistenza 70 mq" come negozio.
+   * Solo terreno = il testo parla di un terreno (o di un'area urbana, cat. F/1) e di nessun fabbricato. Un fabbricato con il
+   * suo terreno resta com'è (il valore riguarda la superficie letta; la regola dei lotti con più unità ne abbassa
+   * l'affidabilità quando le riconosce): nel dubbio il lotto resta un fabbricato, e "piano terreno", "corte" o "giardino"
+   * non fanno di una casa un terreno. */
+  var TERRA = /\b(?:TERREN[OI]|APPEZZAMENT[OI]|FOND[OI]\s+(?:RUSTIC[OI]|AGRICOL[OI])|ARE[AE]\s+(?:URBAN[AE]|EDIFICABIL[EI]|FABBRICABIL[EI]|AGRICOL[AE]|DI\s+TERRENO)|LOTT[OI]\s+(?:EDIFICABIL[EI]|DI\s+TERREN[OI])|ULIVET[OI]|OLIVET[OI]|BOSC(?:O|HI|HIV[OAIE])|SEMINATIV[OI]|VIGNET[OI]|PASCOL[OI]|FRUTTET[OI]|AGRUMET[OI]|CASTAGNET[OI]|NOCCIOLET[OI]|MANDORLET[OI]|INCOLT[OAIE]|(?:CAT\.?|CATEGORIA)\s*(?:CATASTALE\s*)?F\s*\/\s*1)\b/;
+  // area urbana (cat. F/1): un'area del Catasto Fabbricati senza fabbricato
+  var URBANA = /\b(?:ARE[AE]\s+URBAN[AE]|(?:CAT\.?|CATEGORIA)\s*(?:CATASTALE\s*)?F\s*\/\s*1)\b/;
+  var CAT_F1 = /\b(?:CAT\.?|CATEGORIA)\s*(?:CATASTALE\s*)?(?:F\s*\/\s*1|AREA\s+URBANA)\b/;
+  // parole che dicono un fabbricato nel lotto
+  var EDIFICIO = new RegExp('\\b(?:APPARTAMENT[OI]|ABITAZION[EI]|ABITATIV[OAIE]|ALLOGG(?:IO|I)|VILL[AE]|VILLIN[OI]|VILLETT[AE]|CAS[AE]|CASETT[AE]|CASAL[EI]|(?:MONO|BI|TRI|QUADRI)LOCAL[EI]|' +
+    'CASOLAR[EI]|CASCIN[AE]|MASSERI[AE]|BAIT[AE]|RUSTIC[OI]|RUDER[EI]|COLLABENT[EI]|DIRUT[OAIE]|FABBRICAT[OI]|FABBRIC(?:A|HE)|EDIFICI|EDIFICIO|EDIFICAT[OAIE]|CAPANNON[EI]|CAPANN[OI]|' +
+    'OPIFICI|OPIFICIO|STABILIMENT[OI]|MAGAZZIN[OI]|DEPOSIT[OI]|NEGOZI|NEGOZIO|BOTTEG[AH]E?|OFFICIN[AE]|UFFICI|UFFICIO|LABORATORI|LABORATORIO|BOX|GARAGE|AUTORIMESS[AE]|POST[OI]\\s+AUTO|' +
+    'RIMESS[AE]|TETTOI[AE]|PENSILIN[AE]|PORTIC[OI]|PORTICAT[OI]|STALL[AE]|SCUDERI[AE]|FIENIL[EI]|PORCILAI[AE]?|BARACC[AH]\\w*|PREFABBRICAT[OI]|MANUFATT[OI]|' +
+    'ANNESS[OI]\\s+(?:AGRICOL\\w*|RURAL\\w*|PER|DI\\s+SERVIZIO|ADIBIT\\w*|IN\\s+(?:LEGNO|MURATURA|LAMIERA))|\\d+\\s+ANNESSI|RICOVER[OI]\\s+(?:PER\\s+)?(?:ATTREZZ\\w*|ANIMAL\\w*|MEZZI|BESTIAME)|' +
+    'LOCALE|LOCALI|VAN[OI]|CANTIN[AE]|SOFFITT[AE]|MANSARD[AE]|ATTIC[OI]|UNITA(?!\\s+(?:COLTURAL|PODERAL|DI\\s+MISURA))|PALAZZ(?:O|I|INA|INE|ETTO|ETTA)|CASTELL[OI]|' +
+    'CONDOMINI[OI]?|ALBERG[OHI]\\w*|HOTEL|AGRITURISM[OI]|RISTORANT[EI]|PIZZERI[AE]|DISCOTEC[AH]E?|PALESTR[AE]|MULIN[OI]|MOLIN[OI]|FRANTOI[OI]?|OLEIFICI[OI]?|CASEIFICI[OI]?|' +
+    'CHIES[AE]|CONVENT[OI]|SERR[AE]|SILOS|DISTRIBUTOR[EI]|SOGGIORN[OI]|CUCIN[AE]|CUCININO|TINELLO|SALONE|CAMER[AE]|BAGN[OI]|WC|DISIMPEGN[OI]|RIPOSTIGL(?:IO|I)|LAVANDERIA|' +
+    'BALCON[EI]|TERRAZZ[AEOI]|VERAND[AE]|LASTRIC[OI]\\s+SOLAR[EI]|CIELO\\s+TERRA|DA\\s+TERRA\\s+A\\s+TETTO|FUORI\\s+TERRA|ELEVAZION[EI]|' +
+    'PIAN[OI]\\s+(?:PRIMO|SECONDO|TERZO|QUARTO|QUINTO|RIALZATO|SEMINTERRATO|INTERRATO|SOTTOSTRADA|AMMEZZATO|SOTTOTETTO|S\\d|\\d)|(?:PRIMO|SECONDO|TERZO|QUARTO|QUINTO)\\s+PIANO|' +
+    'SU\\s+(?:\\w+\\s+){0,2}(?:LIVELL[OI]|PIANI)|IN\\s+(?:CORSO\\s+DI\\s+)?COSTRUZIONE|(?:DI|DA)\\s+(?:PIU\\s+)?(?:RECENTE|NUOVA|VECCHIA|ANTICA|VETUSTA)\\s+(?:COSTRUZIONE|EDIFICAZIONE)|' +
+    'COSTRUZION[EI]\\s+(?:ABUSIV|RURAL|ESISTENT|PRECARI|IN\\s+(?:LEGNO|MURATURA|CEMENTO|LAMIERA))\\w*|STRUTTUR[AE]\\s+(?:IN|RICETTIV\\w*|ALBERGHIER\\w*|PORTANT\\w*|PREFABBRICAT\\w*|METALLIC\\w*|PRODUTTIV\\w*)|' +
+    'IMPIANT[OI]\\s+(?:PRODUTTIV\\w*|INDUSTRIAL\\w*|SPORTIV\\w*|ZOOTECNIC\\w*|DI\\s+DISTRIBUZIONE)|SOVRASTANT[EI]|SOPRASTANT[EI]|ENTROSTANT[EI]|INSISTENT[EI]|INSIST(?:E|ONO)|SORG(?:E|ONO)|' +
+    'IMMOBIL[EI]|COMPENDIO|COMPLESSO\\s+(?:IMMOBILIARE|EDILIZIO|INDUSTRIALE|ARTIGIANALE|COMMERCIALE|PRODUTTIVO|AZIENDALE|ALBERGHIERO|RESIDENZIALE|TURISTICO|RURALE|COLONICO)|' +
+    '(?:CAT\\.?|CATEGORIA)\\s*(?:CATASTALE\\s*)?(?:[A-E]\\s*\\/?\\s*\\d{1,2}|F\\s*\\/\\s*[2-6]))\\b');
+  // parole che di solito accompagnano un fabbricato ma che un'area urbana può avere da sola: "area urbana di mq. 58 posta al
+  // piano terra ... Catasto Fabbricati ... Sub. 501, Categoria F/1" (pvp-4618296), "Corte esclusiva, categoria F/1" (pvp-4648176)
+  var ACCESSORI = /\b(?:CORTE|CORTIL[EI]|GIARDIN[OI]|PIAN[OI]\s+(?:TERRA|T)\b|SUB(?:ALTERNO)?\.?\s*\d|CATASTO\s+URBANO|N\.?\s?C\.?\s?E\.?\s?U\b|ENT[EI]\s+URBAN[OI])/;
+
+  // prima del controllo si tolgono le parole che non parlano del lotto: nomi di luogo ("via Casali Giambreaz", pvp-4623003;
+  // "contrada Bosco"), piani di un fabbricato ("piano terreno", "piani terreno e primo"), nomi dei registri ("Catasto Terreni",
+  // "Catasto Fabbricati", che resta un indizio debole come NCEU)
+  var LUOGO = new RegExp('\\b(VIA|VIALE|VICOLO|PIAZZA|CORSO|STRADA|CONTRADA|C\\.\\s?DA|C\\/DA|LOCALITA|LOC\\.|FRAZIONE|FRAZ\\.|BORGO|RIONE|QUARTIERE)\\s+(?:[A-Z]+\\s+){0,2}?' +
+    '(?:BOSC\\w*|ULIVET\\w*|OLIVET\\w*|VIGNET\\w*|PASCOL\\w*|CASTAGNET\\w*|FRUTTET\\w*|CAS[AE]|CASAL[EI]|CASETT[AE]|CASCIN[AE]|PALAZZ\\w*|CHIES[AE]|CONVENT[OI]|MULIN[OI]|MOLIN[OI]|' +
+    'FABBRIC\\w*|SERR[AE]|STALL[AE]|MASSERI[AE]|FRANTOI[OI]?|VILL[AE]|CASTELL[OI])\\b', 'g');
+  var PIANO_TERRENO = /\bPIAN[OI]?\s+(?:DI\s+)?TERREN[OI]\b|\bTERRENO\s+(?:E|ED)\s+(?:PRIMO|SECONDO|TERZO|SEMINTERRATO|INTERRATO|SOTTOTETTO)\b/g;
+  var CATASTO_TERRENI = /\bCATASTO\W{0,3}(?:DEI\s+)?TERRENI\b/g, CATASTO_FABBRICATI = /\bCATASTO\W{0,3}(?:DEI\s+)?FABBRICATI\b/g;
+  // ... e i fabbricati che non sono nel lotto: vicini ("confina con fabbricato", "sul retro di palazzina residenziale",
+  // pvp-4624421), assenti ("non vi sono fabbricati", pvp-4653985), da costruire ("per realizzazione di 96 alloggi",
+  // pvp-4643828), nei dintorni ("periferia urbanizzata con abitazioni e negozi", "contesto ... numerosi capannoni", pvp-4642425),
+  // parole che non sono fabbricati ("Ufficio Provinciale", "deposito di materiale edile", pvp-4631197, "fondo rustico") e
+  // parole generiche che qui indicano il terreno ("immobile costituito dai terreni", "Immobile di mq 860 (corte) ...,
+  // categoria area urbana", pvp-4649362)
+  var EDIF = EDIFICIO.source.slice(2, -2);
+  var PREP = 'A|AD|AL|ALLO|ALLA|ALL|AI|AGLI|ALLE|DI|DEL|DELLO|DELLA|DELL|DEI|DEGLI|DELLE|CON|COL|DA|DAL|DALLA|DALL|DAI|DALLE|DAGLI|IL|LO|LA|L|I|GLI|LE';
+  var VICINO = new RegExp('\\b(?:CONFIN\\w*|ADIACENT[EI]|ATTIGU[OAIE]|ACCANTO|VICIN[OAIE]|VICINANZE|PRESSI|PROSSIMITA|RIDOSSO|RETRO|LIMITROF[OAIE]|FRONTISTANT[EI]|DI\\s+FRONTE)\\s+(?:' + PREP + ')' +
+    '(?:\\s+(?:' + PREP + '|UN|UNA|UNO|ALTRUI|ALTR[OAIE]|ESISTENT[EI]|NUMEROS[IE]|VARI[EO]?|DIVERS[IE]|PICCOL[OAIE]|AMPI[OAE]?)){0,3}\\s+' + EDIF + '\\b', 'g');
+  var ASSENTE = new RegExp('\\b(?:NON\\s+(?:VI\\s+|CI\\s+)?(?:SONO|E|ESISTONO|INSISTONO|SORGONO|RISULTANO|PRESENTA)|NON\\s+(?:ANCORA\\s+)?EDIFICAT\\w*|PRIV[OAIE]\\s+DI|SENZA|NESSUN[OA]?|ASSENZA\\s+DI)(?:\\s+\\S+){0,2}?\\s+' + EDIF + '\\b', 'g');
+  var FUTURO = new RegExp('\\b(?:PER\\s+(?:LA\\s+|L\\s+)?(?:REALIZZAZIONE|COSTRUZIONE|EDIFICAZIONE)|(?:DA|PER|POTRA|POTRANNO|POSSIBILE|CONSENTE\\s+DI)\\s+(?:REALIZZARE|COSTRUIRE|EDIFICARE))(?:\\s+\\S+){0,4}?\\s+' + EDIF + '\\b', 'g');
+  var DINTORNI = /\b(?:PERIFERIA|CONTESTO)\b[^.;:]*/g, PLURALI = /\b(?:ABITAZIONI|NEGOZI|CAPANNONI|FABBRICATI|EDIFICI|VILLE|VILLETTE|VILLINI|PALAZZINE|PALAZZI|CASE|UFFICI|ALBERGHI|CONDOMINI)\b/g;
+  var NON_EDIFICI = new RegExp('\\bUFFICI(?:O)?\\s+(?:TECNIC\\w*|PROVINCIAL\\w*|COMUNAL\\w*|ANAGRAF\\w*|GIUDIZIAR\\w*|ESECUZION\\w*|VENDITE|PUBBLIC\\w*|URBANISTIC\\w*|DEL\\s+(?:TERRITORIO|REGISTRO|CATASTO|GIUDICE|GENIO|COMUNE)|DELL\\s+AGENZIA)|' +
+    '\\bDEPOSIT[OI]\\s+(?:DI\\s+MATERIAL\\w*|CAUZIONAL\\w*|DELLA\\s+(?:CAUZIONE|PERIZIA|OFFERTA))|\\bFOND[OI]\\s+RUSTIC[OI]\\b|\\bCASE\\s+SPARSE\\b|\\bBENI\\s+IMMOBILI\\b|' +
+    '\\b(?:COMPENDIO|IMMOBIL[EI])\\b(?=[^;]{0,120}?\\b(?:COMPOST|COSTITUIT|FORMAT)\\w*\\s+(?:DA|DAI|DAL|DALLA|DALLE|DAGLI|DI)\\s+(?:\\S+\\s+){0,2}?(?:TERREN|APPEZZ|ARE[AE]\\b|PARTICELL|FOND[OI]\\b))|' +
+    '\\bIMMOBIL[EI]\\s*(?:N\\.?\\s*)?\\d+\\s*[-:–]\\s*(?=TERREN|APPEZZ|ARE[AE]\\b)', 'g');
+  function soloTerreno(testo, comune) {
+    // anche il nome del comune (Palazzolo dello Stella, Oliveto Citra, Casale Monferrato...) non dice nulla del lotto
+    var c = norm(comune).replace(/\s+/g, ' ').trim(), t = senzaLuoghi(norm(testo), comune), prima;
+    if (c.length >= 4) t = t.replace(new RegExp('\\b' + c.replace(/[^A-Z ]/g, '.') + '\\b', 'g'), ' ');
+    // "Loc. Casa al Bosco": più parole da togliere dopo lo stesso nome di luogo
+    for (var i = 0; i < 3 && prima !== t; i++) { prima = t; t = t.replace(LUOGO, '$1 '); }
+    t = t.replace(PIANO_TERRENO, ' PIANO TERRA ').replace(CATASTO_TERRENI, ' ').replace(CATASTO_FABBRICATI, ' NCEU ');
+    if (!TERRA.test(t)) return false;
+    t = t.replace(NON_EDIFICI, ' ').replace(VICINO, ' ').replace(ASSENTE, ' ').replace(FUTURO, ' ')
+      .replace(DINTORNI, function (s) { return s.replace(PLURALI, ' '); });
+    // con la categoria F/1 scritta, "immobile" è l'area stessa
+    if (CAT_F1.test(t)) t = t.replace(/\bIMMOBIL[EI]\b/g, ' ');
+    if (EDIFICIO.test(t)) return false;
+    return !ACCESSORI.test(t) || URBANA.test(t);
+  }
+  var SOLO_TERRENO = 'il lotto è solo terreno e le quotazioni OMI valgono per i fabbricati, non per i terreni';
+
   // tipologia OMI dall'asta (tipo del PVP + parole del testo, senza i nomi di luogo con "Villa")
   function tipologia(a, testo) {
     var t = senzaLuoghi(norm((a.titolo || '') + ' ' + (testo || '')), a.comune);
@@ -274,6 +348,8 @@
     if (!ind || a.categoria !== 'immobile') return null;
     var mq = num(a.superficieMq);
     var cerca = cercaComune(ind, a.comune, a.provincia), comune = cerca.comune;
+    // terreni: nessun valore, qualunque sia il tipo indicato dalla fonte ("Immobile residenziale" per un terreno edificabile)
+    if (soloTerreno((a.titolo || '') + ' ' + (opz.testo || ''), a.comune)) return comune ? { mancante: SOLO_TERRENO, comune: comune.nome } : { mancante: SOLO_TERRENO };
     if (!comune) return { mancante: cerca.motivo };
     var tipi = tipologia(a, opz.testo);
     if (!tipi) return { mancante: 'tipologia non quotata dall\'OMI (es. terreni)', comune: comune.nome };
@@ -351,7 +427,7 @@
   }
 
   var Omi = { TIP: TIP, NOMI_TIP: NOMI_TIP, FASCE: FASCE, chiaveComune: chiaveComune, leggiCsv: leggiCsv, costruisciIndice: costruisciIndice,
-    trovaComune: trovaComune, cercaComune: cercaComune, tipologia: tipologia, piuUnita: piuUnita, statoOmi: statoOmi, trovaZona: trovaZona, stima: stima };
+    trovaComune: trovaComune, cercaComune: cercaComune, tipologia: tipologia, piuUnita: piuUnita, soloTerreno: soloTerreno, statoOmi: statoOmi, trovaZona: trovaZona, stima: stima };
   if (typeof module !== 'undefined' && module.exports) module.exports = Omi;
   else root.Omi = Omi;
 })(typeof window !== 'undefined' ? window : globalThis);
