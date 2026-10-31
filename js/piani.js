@@ -8,7 +8,9 @@
  * tabella abbonamenti: { piano, periodo, stato, fineProva, finePeriodo, cancellaAllaFine }). Il piano lo decide
  * lo stato di Stripe:
  *   active, trialing     → il suo piano, finché non è passata la fine del periodo (della prova, se c'è)
- *   past_due             → il suo piano ancora per 7 giorni dalla fine del periodo (pagamento in ritardo)
+ *   past_due             → il suo piano ancora per 7 giorni dalla fine del periodo PAGATO (pagamento in ritardo).
+ *                          Attenzione: al rinnovo Stripe sposta subito finePeriodo alla fine del periodo nuovo, anche
+ *                          se il pagamento non riesce; il periodo pagato è quindi finito un mese (o un anno) prima.
  *   tutti gli altri      → gratis (canceled, incomplete, incomplete_expired, unpaid, paused…)
  * Il controllo vero lo fanno le funzioni del server: qui si decide solo cosa mostrare. */
 (function (root) {
@@ -16,7 +18,11 @@
 
   var NODE = typeof module !== 'undefined' && module.exports;
   var GIORNO = 86400000;
-  var GIORNI_RITARDO = 7;            // pagamento non riuscito: il piano resta per una settimana dalla fine del periodo
+  var GIORNI_RITARDO = 7;            // pagamento non riuscito: il piano resta per una settimana dalla fine del periodo pagato
+  // durata più corta di un periodo di Stripe (febbraio, anno non bisestile): la tolleranza non è mai sotto i 7 giorni
+  var GIORNI_PERIODO = { mensile: 28, annuale: 365 };
+  // stati di Stripe: chi ne ha uno nella tabella abbonamenti ha già avuto un abbonamento (niente nuova prova gratuita)
+  var STATI_STRIPE = ['incomplete', 'incomplete_expired', 'trialing', 'active', 'past_due', 'canceled', 'unpaid', 'paused'];
   var CHIAVE_ANTEPRIMA = 'radaraste.anteprima-abbonamenti';
   // senza config/abbonamenti.js: tutto spento
   var SPENTI = { attivi: false, modalita: 'test', piani: [], funzioni: {}, nomiFunzioni: {}, limitiGratis: {}, prova: null, supabase: {} };
@@ -29,6 +35,8 @@
   }
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  // solo le voci scritte nella configurazione ("constructor", "toString"… non sono funzioni del sito)
+  function voce(o, k) { return o && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, k) ? o[k] : undefined; }
 
   // istante in millisecondi da Date, numero (secondi Unix come in Stripe, o millisecondi) o testo ISO; null se manca
   function ms(v) {
@@ -86,11 +94,27 @@
     return -1;
   }
 
+  /* Pagamento non riuscito (past_due): fino a quando vale ancora il piano, in millisecondi (null senza data).
+   * finePeriodo è già la fine del periodo NON pagato; il periodo pagato è finito una durata prima (28 giorni per il
+   * mensile, 365 per l'annuale, il mensile se il periodo non è noto). Con i mesi più lunghi la tolleranza arriva a
+   * 10 giorni, mai meno di 7. */
+  function msRitardo(ab) {
+    var fine = ms(ab && ab.finePeriodo);
+    if (fine == null) return null;
+    var durata = voce(GIORNI_PERIODO, ab.periodo) || GIORNI_PERIODO.mensile;
+    return fine - durata * GIORNO + GIORNI_RITARDO * GIORNO;
+  }
+  // la stessa data come ISO, per scriverla all'utente ("resta attivo fino al…"); null senza data
+  function fineRitardo(abbonamento) {
+    var t = msRitardo(abbonamentoDi(abbonamento));
+    return t == null ? null : new Date(t).toISOString();
+  }
+
   // s: stato dell'account (assente = quello corrente, null = nessun account); adesso: per i test (Date, ms o ISO)
   function piano(s, adesso) {
     if (s === undefined) s = stato();
     var ab = abbonamentoDi(s);
-    var id = ab && ab.piano ? String(ab.piano).toLowerCase() : 'gratis';
+    var id = ab && typeof ab.piano === 'string' ? ab.piano.toLowerCase() : 'gratis';
     if (id === 'gratis' || livello(id) < 1) return 'gratis';
     var ora = ms(adesso); if (ora == null) ora = Date.now();
     var fine = ms(ab.finePeriodo);
@@ -98,11 +122,11 @@
       if (ab.stato === 'trialing' && ms(ab.fineProva) != null) fine = ms(ab.fineProva);
       return fine == null || ora <= fine ? id : 'gratis';
     }
-    if (ab.stato === 'past_due') return fine != null && ora <= fine + GIORNI_RITARDO * GIORNO ? id : 'gratis';
+    if (ab.stato === 'past_due') { var r = msRitardo(ab); return r != null && ora <= r ? id : 'gratis'; }
     return 'gratis';
   }
 
-  function pianoMinimo(funzione) { return (cfg().funzioni || {})[funzione] || 'gratis'; }
+  function pianoMinimo(funzione) { var p = voce(cfg().funzioni, funzione); return typeof p === 'string' && p ? p : 'gratis'; }
 
   function puo(funzione, s, adesso) {
     if (!attivo()) return true;
@@ -114,7 +138,7 @@
   // quante voci si vedono (affari, combinazioni, seguite): Infinity se gli abbonamenti sono spenti o il piano è a pagamento
   function limite(nomeLimite, s, adesso) {
     if (!attivo() || piano(s, adesso) !== 'gratis') return Infinity;
-    var n = (cfg().limitiGratis || {})[nomeLimite];
+    var n = voce(cfg().limitiGratis, nomeLimite);
     return typeof n === 'number' && isFinite(n) && n >= 0 ? n : Infinity;
   }
 
@@ -147,10 +171,10 @@
     return Math.max(0, Math.round((m * 12 - a) * 100) / 100);
   }
 
-  // giorni di prova rimasti (0 se non è in prova); oggiISO: AAAA-MM-GG (giorni di calendario) o istante ISO
+  // giorni di prova rimasti (0 se lo stato non è trialing); oggiISO: AAAA-MM-GG (giorni di calendario) o istante ISO
   function giorniProva(abbonamento, oggiISO) {
     var ab = abbonamentoDi(abbonamento) || abbonamento;
-    if (!ab || typeof ab !== 'object' || (ab.stato && ab.stato !== 'trialing')) return 0;
+    if (!ab || typeof ab !== 'object' || ab.stato !== 'trialing') return 0;
     var fine = ms(ab.fineProva);
     if (fine == null) return 0;
     var oggi = oggiISO || dataLocale(new Date());
@@ -168,14 +192,28 @@
     for (var i = 0; i < l.length; i++) if (l[i].prezzi && Number(l[i].prezzi.mensile) > 0) return l[i].id;
     return 'base';
   }
+  // la prova gratuita spetta solo al primo abbonamento (functions/api/stripe/checkout.js): non la promettiamo a chi
+  // ne ha già avuto uno, cioè con uno stato di Stripe o una prova nella tabella abbonamenti
+  function provaGiaUsata(s) {
+    var ab = abbonamentoDi(s);
+    return !!(ab && (ab.fineProva || STATI_STRIPE.indexOf(ab.stato) >= 0));
+  }
+  // abbonamento a pagamento fermo per un pagamento non riuscito: si sistema dal portale (account.html), non con un
+  // nuovo pagamento dalla pagina Prezzi (il server lo rifiuta finché l'abbonamento è in corso)
+  function pagamentoDaSistemare(s) {
+    var ab = abbonamentoDi(s);
+    return !!(ab && livello(typeof ab.piano === 'string' ? ab.piano.toLowerCase() : '') >= 1 &&
+      ['past_due', 'unpaid', 'paused', 'incomplete'].indexOf(ab.stato) >= 0);
+  }
 
   /* Riquadro al posto di una funzione bloccata. opz: { funzione, titolo?, testo?, livello? (titolo h2…h4, predefinito h2) }
    * Tutti i testi sono protetti: niente HTML dai parametri. */
   function blocco(opz) {
     opz = opz || {};
-    var c = cfg(), id = pianoMinimo(opz.funzione);
+    var c = cfg(), id = pianoMinimo(opz.funzione), s = stato();
     if (livello(id) < 1) id = primoAPagamento();
-    var nomePiano = nome(id) || id, nomeF = (c.nomiFunzioni || {})[opz.funzione] || '';
+    var nomePiano = nome(id) || id, nomeF = voce(c.nomiFunzioni, opz.funzione);
+    if (typeof nomeF !== 'string') nomeF = '';
     var h = Math.min(4, Math.max(2, parseInt(opz.livello, 10) || 2));
     var idTitolo = 'blocco-piano-' + (++contatore);
     var titolo = opz.titolo || 'Disponibile con il piano ' + nomePiano;
@@ -187,18 +225,19 @@
       info = nomePiano + ': ' + prezzo(id, 'mensile') + ' oppure ' + prezzo(id, 'annuale') + (r > 0 ? ' (risparmi ' + cifra(r) + ' €)' : '') + (c.ivaInclusa ? ', IVA inclusa.' : '.');
     }
     var pr = c.prova;
-    if (pr && pr.giorni > 0 && livello(pr.piano) >= livello(id)) {
-      info += (info ? ' ' : '') + (pr.piano === id ? 'Puoi provarlo gratis per ' + pr.giorni + ' giorni.'
-        : 'Il piano ' + (nome(pr.piano) || pr.piano) + ', che comprende anche questa funzione, si può provare gratis per ' + pr.giorni + ' giorni.');
+    if (pr && pr.giorni > 0 && livello(pr.piano) >= livello(id) && !provaGiaUsata(s)) {
+      info += (info ? ' ' : '') + (pr.piano === id ? 'Al primo abbonamento puoi provarlo gratis per ' + pr.giorni + ' giorni.'
+        : 'Al primo abbonamento puoi provare gratis per ' + pr.giorni + ' giorni il piano ' + (nome(pr.piano) || pr.piano) + ', che comprende anche questa funzione.');
     }
-    var s = stato();
     return '<section class="blocco-piano" aria-labelledby="' + idTitolo + '" data-funzione="' + esc(opz.funzione || '') + '" data-piano="' + esc(id) + '">' +
       '<h' + h + ' class="blocco-piano-titolo" id="' + idTitolo + '">' + icona('occupato') + '<span>' + esc(titolo) + '</span></h' + h + '>' +
       '<p class="blocco-piano-testo">' + esc(testo) + '</p>' +
       (info ? '<p class="blocco-piano-testo note">' + esc(info) + '</p>' : '') +
       '<div class="row-actions"><a class="btn" href="prezzi.html#' + esc(id) + '">Sblocca con ' + esc(nomePiano) + '</a>' +
         '<a class="btn ghost" href="prezzi.html">Confronta i piani</a></div>' +
-      (s && s.utente ? '' : '<p class="blocco-piano-testo note"><a href="accedi.html">Hai già un abbonamento? Accedi</a></p>') +
+      (!(s && s.utente) ? '<p class="blocco-piano-testo note"><a href="accedi.html">Hai già un abbonamento? Accedi</a></p>'
+        : pagamentoDaSistemare(s) ? '<p class="blocco-piano-testo note">L\'ultimo pagamento del tuo abbonamento non è riuscito: ' +
+          '<a href="account.html">aggiorna il metodo di pagamento</a> per riattivarlo.</p>' : '') +
       '</section>';
   }
 
@@ -218,7 +257,7 @@
     attivo: attivo, anteprima: anteprima, stato: stato, piano: piano, puo: puo, limite: limite, pianoMinimo: pianoMinimo,
     prezzo: prezzo, risparmioAnnuale: risparmioAnnuale, giorniProva: giorniProva, blocco: blocco, avvisoAnteprima: avvisoAnteprima,
     // di supporto per le pagine
-    dati: dati, nome: nome, livello: livello, config: cfg,
+    dati: dati, nome: nome, livello: livello, config: cfg, fineRitardo: fineRitardo, provaGiaUsata: provaGiaUsata,
     CHIAVE_ANTEPRIMA: CHIAVE_ANTEPRIMA, GIORNI_RITARDO: GIORNI_RITARDO
   };
 

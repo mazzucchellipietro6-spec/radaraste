@@ -10,7 +10,7 @@ import { readFile, writeFile, mkdir, readdir, rename, rm } from 'node:fs/promise
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { aggiornaIndice, leggiIndice, riga, daRiga, raggruppa, catena } from './storico.mjs';
-import { estrai, descrizione, scarica, ordina, pulisci } from './dettaglio-pvp.mjs';
+import { estrai, descrizione, scarica, ordina, pulisci, segnaposto } from './dettaglio-pvp.mjs';
 import { prezzo } from './correzioni.mjs';
 
 const require = createRequire(import.meta.url);
@@ -85,7 +85,11 @@ export async function scriviSchede(cartella, records) {
 const pulito = (o) => { for (const k of Object.keys(o)) if (o[k] === null || o[k] === undefined || o[k] === '' || (Array.isArray(o[k]) && !o[k].length && k !== 'rischi')) delete o[k]; return o; };
 
 const TESTI = ['descrizione', 'cauzione', 'contoSpese'];
-export function ripulisci(o) { for (const k of TESTI) if (typeof o[k] === 'string') o[k] = pulisci(o[k]) || undefined; return o; }
+// anche i testi conservati: "NESSUNA." salvato prima della correzione del 22/10/2026 non è una descrizione
+export function ripulisci(o) {
+  for (const k of TESTI) if (typeof o[k] === 'string') o[k] = (k === 'descrizione' && segnaposto(o[k])) ? undefined : pulisci(o[k]) || undefined;
+  return o;
+}
 
 // dati del dettaglio già letti in una raccolta precedente (dal record del pezzo)
 export function daVecchia(v) {

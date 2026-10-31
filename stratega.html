@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stratega d'asta – Radar Aste Italia</title>
-<meta name="description" content="Su quali aste puntare con il tuo capitale, quanto offrire e quando: piano con vincolo di cassa e simulazione Monte Carlo sugli esiti reali delle vendite passate.">
+<meta name="description" content="Su quali aste puntare con il tuo capitale, quanto offrire e quando: piano con vincolo di cassa, simulazione Monte Carlo sugli esiti reali delle vendite passate e patrimonio nel tempo fino a 5 anni.">
 <link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/style.css">
@@ -45,12 +45,34 @@
         <div class="estremi"><span>5%</span><span>80%</span></div>
       </div>
       <p class="note">Nessuno sa quanto offriranno gli altri: è l'unico numero del piano che non viene dai dati, e per questo lo scegli tu.</p>
+
+      <h2 class="st-sotto" id="h-anni">Su più anni</h2>
+      <p class="note">Servono al grafico «Il patrimonio nel tempo». I valori proposti sono prudenti: cambiali solo se hai un motivo. Il calcolo si aggiorna da solo.</p>
+      <div class="fields">
+        <label>Anni da simulare<select name="anni" aria-describedby="aiAnni"><option value="1">1 anno</option><option value="2">2 anni</option><option value="3" selected>3 anni</option><option value="4">4 anni</option><option value="5">5 anni</option></select>
+          <span class="st-aiuto" id="aiAnni">Per quanti anni, da oggi, seguire cassa, immobili e mutuo.</span></label>
+        <label>Rivalutazione degli immobili (% all'anno)<input type="number" inputmode="decimal" name="rivalutazione" min="-10" max="10" step="0.5" value="0" aria-describedby="aiRival">
+          <span class="st-aiuto" id="aiRival">Di quanto salgono (o scendono, con il segno meno) i prezzi delle case ogni anno. 0 vuol dire prezzi fermi: è la scelta prudente. Nessuno conosce i prezzi futuri: è un'ipotesi tua.</span></label>
+        <label data-solo="affittare">Costi e sfitto dell'affitto (% del canone)<input type="number" inputmode="decimal" name="costiAffitto" min="0" max="90" step="1" value="38" aria-describedby="aiCosti">
+          <span class="st-aiuto" id="aiCosti">La parte dell'affitto che non resta a te: tasse, spese e mesi senza inquilino. Il valore proposto, <span id="stCostiBase">38%</span>, somma cedolare secca del 21%, un mese sfitto all'anno e spese pari al 10% del canone. L'IMU non è compresa.</span></label>
+        <label data-solo="rivendere">Mesi dal saldo alla rivendita<input type="number" inputmode="numeric" name="mesiRivendita" min="1" max="60" step="1" value="12" aria-describedby="aiMesi">
+          <span class="st-aiuto" id="aiMesi">Quanto tempo passa da quando paghi il saldo a quando vendi. Se vendi entro 5 anni dall'acquisto paghi l'imposta sulla plusvalenza.</span></label>
+        <label data-solo="rivendere">Costi di vendita (% del prezzo)<input type="number" inputmode="decimal" name="costiVendita" min="0" max="30" step="0.5" value="4" aria-describedby="aiVendita">
+          <span class="st-aiuto" id="aiVendita">Agenzia e spese a carico di chi vende. Per confronto: una provvigione del 3% più IVA vale il 3,66% del prezzo.</span></label>
+        <label data-mutuo hidden>Tasso del mutuo (TAN, % all'anno)<input type="number" inputmode="decimal" name="tassoMutuo" min="0" max="20" step="0.1" placeholder="es. 3,5" aria-describedby="aiTasso">
+          <span class="st-aiuto" id="aiTasso">Il tasso scritto nell'offerta della banca. Senza tasso gli interessi non si contano e il patrimonio risulta più alto del vero.</span></label>
+      </div>
+      <div class="st-reinvesti" data-non="vivere">
+        <label class="check"><input type="checkbox" name="reinvesti" value="si" aria-describedby="aiReinv"> Reinvesti i guadagni</label>
+        <span class="st-aiuto" id="aiReinv">Con i guadagni già incassati offri ad altre aste simili a quelle del piano. È un'ipotesi ottimista: non è detto che aste così ci siano davvero.</span>
+      </div>
       <div class="row-actions"><button class="btn" type="submit">Costruisci il piano</button></div>
     </form>
 
-    <div class="stack st-esito" id="stEsito" aria-live="polite">
+    <div class="stack st-esito" id="stEsito">
       <div class="panel st-vuoto"><p class="muted">Inserisci il capitale e premi "Costruisci il piano".</p></div>
     </div>
+    <p class="sr-only" id="stStato" role="status" aria-live="polite"></p>
   </div>
 
   <section class="callout warn" aria-labelledby="h-avviso">

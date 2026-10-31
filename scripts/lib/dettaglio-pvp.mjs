@@ -88,6 +88,9 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9à-ÿ]/g, '')
 // ("S.p.A.", "Fg.19", "mq.208") restano come sono
 export const spazi = (t) => String(t || '').replace(/([A-Za-zÀ-ÿ\d][a-zà-ÿ\d])\.([A-ZÀ-Ý][a-zà-ÿ]{2})/g, '$1. $2');
 
+// parola messa dalla fonte al posto della descrizione: "NESSUNA" (pvp-4649172, 21/10/2026, nel lotto e nel bene)
+export const segnaposto = (t) => /^\s*nessun[ao]?\s*\.?\s*$/i.test(String(t || ''));
+
 // descLotto + descrizioni dei beni, senza ripetizioni, ripulite, al massimo 1500 caratteri
 export function descrizione(descLotto, beni = []) {
   const parti = [];
@@ -95,7 +98,7 @@ export function descrizione(descLotto, beni = []) {
   for (const p of [descLotto, ...beni.map((b) => b && b.descrizione)]) {
     const t = String(p || '').replace(/\s+/g, ' ').trim();
     const n = norm(t);
-    if (n.length < 3) continue;
+    if (n.length < 3 || segnaposto(t)) continue;
     // salta i testi già contenuti in uno precedente; se un testo contiene uno precedente, lo sostituisce
     if (visti.some((v) => v.includes(n))) continue;
     const i = visti.findIndex((v) => n.includes(v));

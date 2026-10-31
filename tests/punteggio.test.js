@@ -179,3 +179,89 @@ test('OMI oltre 3 volte il prezzo base senza perizia né prima asta: affidabilit
   const b = P.valuta({ ...a, tentativo: 5, primoPrezzo: 280000 }, { T });
   assert.notEqual(b.valore.affidabilita, 'bassa');
 });
+
+test('OMI molto più alto del prezzo della prima asta (+50%) non "concorda": si usa il valore più basso (caso reale pvp-4623595, box a Lerici)', () => {
+  // box di 22 mq, prima asta 33.000 € andata deserta, oggi 24.750 €; OMI della zona 39.600–59.400 €
+  const a = { ...base, tipo: 'Immobile commerciale', prezzoBase: 24750, superficieMq: 22, tentativo: 2, primoPrezzo: 33000,
+    omiMin: 39600, omiMax: 59400, omiMetodo: 'indirizzo', stato: 'libero', rischi: ['vincoli'] };
+  const r = P.valuta(a, { T });
+  assert.equal(r.valore.fonte, 'primo-prezzo');
+  assert.equal(r.valore.centrale, 33000);
+  assert.notEqual(r.valore.affidabilita, 'alta');
+  assert.match(r.valore.controlli.join(), /sono diversi: uso il più basso/);
+  assert.ok(r.punteggio <= P.TETTO_INCERTO, String(r.punteggio));   // prima: 80, "Ottimo affare"
+  // entro il 35% nei due sensi resta "alta"
+  const vicino = P.valuta({ ...a, primoPrezzo: 40000 }, { T });     // 49.500 / 40.000 = 1,24
+  assert.equal(vicino.valore.fonte, 'omi');
+  assert.equal(vicino.valore.affidabilita, 'alta');
+});
+
+test('beni mobili: la sola stima del perito dà affidabilità bassa e il punteggio si ferma al tetto (casi reali di Nuoro del 13/10)', () => {
+  // pvp-4595365 "Merci in giacenza" e pvp-4594979 "Mobili da ufficio" (Tribunale di Nuoro, R.G.E. 19/2017, secondo tentativo):
+  // prima del controllo punteggio 77 ("Ottimo affare") con affidabilità media
+  const merci = { id: 'pvp-4595365', titolo: 'Merci in giacenza', categoria: 'beni', tipo: 'Altra categoria m', provincia: 'NU', comune: 'Nuoro',
+    prezzoBase: 114393.6, offertaMinima: 114393.6, stato: 'nd', rischi: [], tentativo: 2, deserte: 1, primoPrezzo: 142992, stima: 238320.07 };
+  const mobili = { id: 'pvp-4594979', titolo: 'Mobili da ufficio', categoria: 'beni', tipo: 'Altra categoria m', provincia: 'NU', comune: 'Nuoro',
+    prezzoBase: 3060, offertaMinima: 3060, stato: 'nd', rischi: [], tentativo: 2, deserte: 1, primoPrezzo: 3825, stima: 6375 };
+  for (const a of [merci, mobili]) {
+    const r = P.valuta(a, { T });
+    assert.equal(r.valore.fonte, 'perizia', a.id);
+    assert.equal(r.valore.affidabilita, 'bassa', a.id);
+    assert.equal(r.punteggio, P.TETTO_INCERTO, a.id);
+    assert.equal(r.limitato, true, a.id);
+    assert.notEqual(P.fascia(r.punteggio).chiave, 'ottimo', a.id);
+    assert.equal(r.completo, false, a.id);
+    assert.match(r.valore.controlli.join(' '), /^Bene mobile: il valore viene solo dalla stima del perito, senza una seconda fonte che lo confermi/, a.id);
+    assert.match(r.valore.controlli.join(' '), /al massimo 54 \("Da valutare"\)/, a.id);
+  }
+  // veicoli e immobili non cambiano: un'auto con la stima del perito resta ad affidabilità media
+  assert.equal(P.valuta({ categoria: 'auto', provincia: 'MI', prezzoBase: 5000, stima: 9000, tentativo: 2, rischi: [] }, { T }).valore.affidabilita, 'media');
+});
+
+test('caso del 29/10/2026, lotto uno di Sant\'Elpidio a Mare (pvp-4566904): valore OMI confermato dal perito, non gonfiato', () => {
+  // campi pubblicati in data/aste.js (raccolta del 29/10/2026): laboratorio C/3 di 828 mq, zona OMI E1 "Casette d'Ete -
+  // Cascinare" dall'indirizzo, Laboratori 510–660 €/mq (semestre 2025/2) → 422.280–546.480 €; prima asta 534.800 € (06/11/2024)
+  const a = { categoria: 'immobile', tipo: 'Immobile industriale', comune: 'Sant\'Elpidio a Mare', provincia: 'FM', stato: 'nd', rischi: [],
+    prezzoBase: 169214.06, superficieMq: 828, tentativo: 3, primoPrezzo: 534800,
+    omiMin: 422280, omiMax: 546480, omiAffMin: 2153, omiAffMax: 2732, omiMetodo: 'indirizzo' };
+  const r = P.valuta(a, { T });
+  // OMI e prima asta concordano (534.800 / 484.380 = 1,10): valore OMI con affidabilità alta
+  assert.equal(r.valore.fonte, 'omi');
+  assert.equal(r.valore.centrale, 484380);
+  assert.equal(r.valore.affidabilita, 'alta');
+  assert.equal(r.sconto, 0.616);
+  assert.equal(r.offertaMax, 308400);
+  assert.equal(r.punteggio, 90);
+  // lo sconto viene dai ribassi, non dal valore: il prezzo base è la prima asta con quattro ribassi del 25%
+  // (534.800 × 0,75⁴ = 169.214,06), anche se l'indice del portale ha solo due tentativi precedenti (tentativo 3)
+  assert.equal(Math.round(534800 * Math.pow(0.75, 4) * 100) / 100, a.prezzoBase);
+  // i lotti due e tre nello stesso punto (pvp-4620343 e pvp-4620348) sono altre unità di 124 mq al secondo tentativo:
+  // costo oltre il valore, sconto -8%
+  const lotto3 = P.valuta({ ...a, tipo: 'Immobile residenziale', prezzoBase: 131100, superficieMq: 124, tentativo: 2, primoPrezzo: 174800,
+    omiMin: 111600, omiMax: 155000, omiAffMin: 446, omiAffMax: 632 }, { T });
+  assert.equal(lotto3.sconto, -0.084);
+});
+
+test('tentativo minimo dai prezzi quando nell\'indice del Portale mancano aste intermedie (stima dichiarata, 30/10/2026)', () => {
+  // pvp-4566904, Sant'Elpidio a Mare: indice con 534.800 € (06/11/2024) e 225.618,75 € (29/07/2026), oggi 169.214,06 €:
+  // 534.800 × 0,75⁴ = 169.214,06 → almeno il 5° tentativo, il sito diceva 3°
+  const base = { categoria: 'immobile', tentativo: 3, primoPrezzo: 534800, prezzoBase: 169214.06 };
+  assert.deepEqual(P.tentativoMinimo(base), { tentativo: 5, ribassi: 4 });
+  // pvp-4381614, Melilli: 78.000 → 58.500 → 43.875 → 24.679,69 (l'ultimo salto è di due ribassi): almeno il 5°, l'indice dice 4°
+  assert.deepEqual(P.tentativoMinimo({ categoria: 'immobile', tentativo: 4, primoPrezzo: 78000, prezzoBase: 24679.69 }), { tentativo: 5, ribassi: 4 });
+  // nessuna stima quando l'indice è già completo (Treia, pvp-4636073: 107.239 → 80.430 → 60.323, 3° tentativo)...
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 107239, prezzoBase: 60323 }), null);
+  // ...quando un ribasso non è del 25% (pvp-4622646, Montegranaro: 267.200 × 0,75⁴ = 84.543,75 ma il prezzo è 83.543,75)...
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 267200, prezzoBase: 83543.75 }), null);
+  // ...quando i ribassi sono del 20% (pvp-4647168, Roma: 590.000 → 472.000 → 377.600) e per i beni mobili
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 590000, prezzoBase: 377600 }), null);
+  assert.equal(P.tentativoMinimo({ ...base, categoria: 'beni' }), null);
+  // dopo il quarto tentativo deserto il ribasso può arrivare alla metà (art. 591 c.p.c.): cinque quarti possono essere quattro
+  // ribassi (revisione del 30/10/2026). pvp-4480064, Augusta: 62.850 → 47.137,50 → 35.353,13 → 14.914,61, indice 4°: almeno il
+  // 5° (prima diceva 6°); pvp-4650858: 398.872,12 × 0,75⁶ = 70.990,66 al 6° tentativo dell'indice: nessuna stima (prima 7°)
+  assert.deepEqual(P.tentativoMinimo({ categoria: 'immobile', tentativo: 4, primoPrezzo: 62850, prezzoBase: 14914.61 }), { tentativo: 5, ribassi: 5 });
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 6, primoPrezzo: 398872.12, prezzoBase: 70990.66 }), null);
+  // il punteggio non cambia: la stima si dice, non entra nei calcoli
+  const a = { provincia: 'FM', tipo: 'Immobile industriale', stato: 'nd', rischi: [], superficieMq: 828, omiMin: 422280, omiMax: 546480, omiMetodo: 'indirizzo', ...base };
+  assert.equal(P.valuta(a, { T }).parti.tentativo, 9);
+});

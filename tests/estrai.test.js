@@ -62,3 +62,62 @@ test('superficie: totale dichiarato prima delle misure parziali, pertinenze escl
   assert.equal(E.superficie('Appartamento a PORTO RECANATI, della superficie commerciale di 66,6 mq').mq, 66.6);
   assert.equal(E.superficie('appartamento di 76 mq di 5 vani catastali e terrazzo di 20 mq').mq, 76);
 });
+
+test('degrado e stato di conservazione: "allo stato grezzo", "al rustico avanzato", "diruto", "collabenti" (casi reali del PVP, 22/10/2026)', () => {
+  const casi = [
+    // pvp-4644746 (Sora)
+    ['appartamento ubicato a Sora (Fr) via dei Passionisti snc, primo piano posto al primo piano, adibito a civile abitazione attualmente allo stato grezzo, inserito in un fabbricato privo di ascensore', 'grezzo'],
+    // pvp-4619319 (Castegnato)
+    ['Piena proprietà di appartamento al rustico avanzato posto al piano secondo con cantina esclusiva', 'grezzo'],
+    // pvp-4631333 (Camerino)
+    ['Diritti di piena proprietà su fabbricati diruti a CAMERINO Frazione Tuseggia', 'rudere'],
+    // pvp-4623490 (Luni)
+    ['Quota di 12/42 della piena proprietà di due unità collabenti site nel Comune di Luni (SP).', 'rudere']
+  ];
+  for (const [t, stato] of casi) {
+    assert.ok(E.rischi(t).some((r) => r.chiave === 'degrado'), t);
+    assert.equal(E.conservazione(t).stato, stato, t);
+  }
+  // pvp-4638150 (Cerreto Guidi): il fabbricato accessorio "in parte diruto" è un rischio da verificare
+  assert.ok(E.rischi('altro fabbricato accessorio di circa mq 34, in pessimo stato di conservazione ed in parte diruto, e corte esterna esclusiva').some((r) => r.chiave === 'degrado'));
+  // fabbricato "rustico" (rurale) o in buono stato: nessun degrado
+  assert.ok(!E.rischi('Fabbricato rustico in pietra ristrutturato, in buono stato').some((r) => r.chiave === 'degrado'));
+});
+
+test('superficie: casi reali del 30/10/2026 che prima restavano senza metri quadri', () => {
+  // pvp-4653789, Ardea: "balcone / terrazzo." finisce la frase prima, non è la pertinenza della superficie che segue
+  assert.equal(E.superficie('piena proprietà di appartamento in Ardea (RM) Via dell’Orsa Maggiore n. 28 piano primo e composto da soggiorno, cucina, disimpegno, bagno, ripostiglio, camera da letto e balcone / terrazzo. Superficie commerciale totale 72,35 mq. Identificato al catasto fabbricati Fg. 56 Part. 1177 Sub. 502 cat. A7 r.c. € 787,60.').mq, 72.35);
+  // pvp-4649281, Modena: "metri quadrati 17"
+  assert.equal(E.superficie('Posto auto interrato, categoria C/6, metri quadrati 17, sito in Modena, alla Via Pier Paolo Pasolini.').mq, 17);
+  // pvp-4653557, Modica: "Piena proprietà deposito" (la à di "proprietà" impediva di riconoscere il lotto)
+  assert.equal(E.superficie('Piena proprietà deposito distinto al N.C.E.U. del Comune di Modica al (RG) Foglio 62 P.lla 1234 sub. 1 Sezione A, Zona Cens. 1, Cat. C/2, Classe 4, Consistenza 265 mq.').mq, 265);
+  // pvp-4653660, Albano Laziale: "mq. convenzionali di 126,48" (il giardino di 33,81 mq resta fuori)
+  assert.equal(E.superficie('Appartamento ubicato a Albano Laziale (RM) - Via del Mare n.3 (ex 4) Località Pavona: In particolare appartamento posto al piano rialzato e al piano primo del fabbricato "A", distinto con il numero interno 30 (trenta), composto da quattro camere e accessori per un totale di mq. convenzionali di 126,48 e giardino di mq. 33,81.').mq, 126.48);
+  // invariati: superficie catastale "escluse aree scoperte" (pvp-4629380) e terreni (pvp-4639263, Bevagna)
+  assert.equal(E.superficie('appartamento ad uso abitativo posto al piano secondo di un palazzo pluripiano, superficie totale escluse aree scoperte 60 mq.').mq, 60);
+  assert.equal(E.superficie('Quote di terreni agricoli a Bevagna (PG), località Cantalupo. La superficie catastale complessiva dei terreni è pari a circa 14.181 mq.').mq, 14181);
+  // la pertinenza nell'etichetta resta fuori anche dopo un punto (frase di prova)
+  assert.equal(E.superficie('Appartamento al primo piano. Superficie del giardino 300 mq.'), null);
+});
+
+test('rischi: veicolo sprovvisto del documento unico (caso reale pvp-4652799, Peugeot Bipper, tra gli affari del 29/10/2026)', () => {
+  const chiavi = (t) => E.rischi(t).map((r) => r.chiave);
+  assert.ok(chiavi('Autocarro/Furgone PEUGEOT Bipper targato GA529JT, anno di prima immatricolazione in Italia 2020, alimentazione a gasolio, cilindrata 1.248 cmc, portata 585kg, chilometraggio rilevato da cruscotto 147.024 km circa, provvisto di una chiave. All’atto della vendita sprovvisto di documento unico. Revisione in scadenza a giugno 2027.').includes('documenti'));
+  // con il documento unico nessun rischio (casi reali pvp-4636035 e pvp-4651171)
+  assert.ok(!chiavi('dichiarata marciante, provvista di documento unico e n. 2 copie di chiavi.').includes('documenti'));
+  assert.ok(!chiavi('classe ambientale EURO 6B, scadenza revisione 12/2026, con documento unico di circolazione e n.1 chiave.').includes('documenti'));
+});
+
+test('superficie: niente superficie del terreno o dell\'area esterna per un fabbricato (revisione del 30/10/2026)', () => {
+  // pvp-4641116, Mozzecane: "c) Area di complessivi mq.10.333 destinata a parcheggio", stimato come capannone di 10.333 mq
+  assert.equal(E.superficie('a) capannone destinato a deposito oli minerali e carburanti ad uso commerciale, sviluppantesi su tre livelli, b) deposito oli minerali e carburanti con pensilina di mq. 236,00 con bracci di carico ATB e da un ufficio; nel sottosuolo n. 6 serbatoi da 80 mc. e un serbatoio da 50 mc. c) Area di complessivi mq.10.333 destinata a parcheggio sulla quale è in opera una pesa per autobotti.'), null);
+  // pvp-4629650, Cremosano: il totale letto era la superficie scoperta (1.231 mq); il primo "Superficie totale" comprende lo scoperto
+  assert.equal(E.superficie('Capannone artigianale adibito alla produzione e al commercio, a Cremosano (CR), in via Via Dei Tigli n. 5-7. Superficie totale 3.581 mq, con una superficie coperta di 2.350 mq e una superficie scoperta di 1.231 mq. Superficie commerciale totale indicativa: 1815 mq'), null);
+  // pvp-4541059, Buddusò, e pvp-4636793, Aidone: terreno con un fabbricato sopra (con la "à" di "proprietà" letta dal 30/10)
+  assert.equal(E.superficie('Piena proprietà su appezzamento di terreno della superficie di 14.168 metri quadraticirca, con sovrastante capannone industriale che occupa una superficie di 2.372 metriquadrati circa, siti nel Comune di Buddusò, località “Sa Matta”.'), null);
+  assert.equal(E.superficie('Piena proprietà di appezzamenti di terreno e fabbricato destinato a civile abitazione, c.da Giardinazzi - Aidone (EN). Il fabbricato, nel comune di Aidone Fg 63: - part. 287 sub 6, cat. A/7, oltre a terrazzo e portico di superficie circa mq.100,00.'), null);
+  // invariati: terreni senza fabbricati (pvp-4619973, pvp-4613565), totale di un appartamento con l'area citata prima (pvp-4611021)
+  assert.equal(E.superficie('Piena proprietà di terreno edificabile pianeggiante di 1488 metri quadrati.').mq, 1488);
+  assert.equal(E.superficie('Tre terreni formanti un sol corpo di circa complessivi mq. 7.425 catastali e attualmente piantumati.').mq, 7425);
+  assert.equal(E.superficie('appartamento posto al 2° piano, dotato di garage e scoperto comune - La superficie lorda dell’appartamento è di mq. 90, costituita da ingresso').mq, 90);
+});

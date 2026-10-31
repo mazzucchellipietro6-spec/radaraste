@@ -11,7 +11,7 @@
   var SMIN = -0.10, SMAX = 0.50; // scala del tachimetro (sconto sul valore)
   var SD = window.SchedaDati;
   var K_IPOTESI = 'radaraste.scheda.ipotesi'; // ipotesi "vinci se ci sono altri offerenti" (solo comodità di questo browser)
-  var stato = { a: null, r: null, offerta: null, q: null };
+  var stato = { a: null, r: null, offerta: null, toccata: false, q: null }; // toccata: offerta scelta dall'utente (non quella iniziale)
 
   /* ---------- utilità ---------- */
 
@@ -21,7 +21,7 @@
     return '<span class="sc-nd">' + (cosa || (letto(a) ? 'non indicato nell\'avviso' : 'non ancora disponibile')) + '</span>';
   }
   function maiuscola(t) { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); }
-  function mq(n) { return Number(n).toLocaleString('it-IT', { maximumFractionDigits: 1 }) + ' m²'; }
+  function mq(n) { return Number(n).toLocaleString('it-IT', { maximumFractionDigits: 1 }) + '\u00a0m²'; }
   function cat(a) { return ICONE[a.categoria] ? a.categoria : 'beni'; }
   function esterno(url, testo, cls) {
     var u = U.linkSicuro(url);
@@ -137,16 +137,22 @@
       '</ul>';
   }
 
+  // giorno dell'asta e termine per le offerte (js/formato.js): del Demanio a volte si conosce solo il termine
+  function dateAsta(a) { return window.Formato.date(a); }
+
   function bloccoPrezzo(a, r) {
-    var dem = a.fonte === DEMANIO, t = istante(a.dataAsta, a.ora), futura = t && t > Date.now();
+    // conto alla rovescia: all'asta; per il Demanio al termine per le offerte (l'avviso spesso non dà l'ora della gara)
+    var dem = a.fonte === DEMANIO, D = dateAsta(a), x = dem && D.termine ? D.termine : D.asta || D.termine, soloTermine = !!x && x === D.termine;
+    var t = x && istante(x.data, x.ora), futura = t && t > Date.now();
     var base = r.prezzoBase ? '<b class="sc-grande">' + U.eur(r.prezzoBase) + '</b>'
       : '<b class="sc-grande sc-grande-nd">' + (dem ? 'Nel PDF dell\'avviso' : 'Non indicato') + '</b>';
     return '<div class="sc-prezzo">' +
       '<div class="sc-prezzi"><div><span class="sc-et">Prezzo base</span>' + base + '</div>' +
       '<div><span class="sc-et">Offerta minima</span><b class="sc-medio">' + (r.offertaMinima ? U.eur(r.offertaMinima) : '—') + '</b></div></div>' +
-      (futura ? '<div class="sc-conto-box"><span class="sc-et">' + (dem ? 'Mancano al termine per le offerte' : 'Mancano all\'asta') + '</span><div class="sc-conto" data-conto="' + t + '" data-blocchi="1" aria-hidden="true">' + blocchiConto(t) + '</div>' +
-        '<span class="sr-only">' + esc(conto(t, a.ora)) + '</span></div>' : '') +
-      '<p class="sc-quando">' + U.icona('calendario') + '<span>' + (a.dataAsta ? (dem ? 'Offerte entro ' : 'Asta ') + esc(quandoEsteso(a.dataAsta, a.ora)) : 'Data ' + nd(a)) + '</span></p>' +
+      (futura ? '<div class="sc-conto-box"><span class="sc-et">' + (soloTermine ? 'Mancano al termine per le offerte' : 'Mancano all\'asta') + '</span><div class="sc-conto" data-conto="' + t + '" data-blocchi="1" aria-hidden="true">' + blocchiConto(t) + '</div>' +
+        '<span class="sr-only">' + esc(conto(t, x.ora)) + '</span></div>' : '') +
+      '<p class="sc-quando">' + U.icona('calendario') + '<span>' + (D.asta ? 'Asta ' + esc(quandoEsteso(D.asta.data, D.asta.ora)) + (dem && D.termine ? ' · offerte entro ' + esc(quandoEsteso(D.termine.data, D.termine.ora)) : '')
+        : D.termine ? 'Offerte entro ' + esc(quandoEsteso(D.termine.data, D.termine.ora)) : 'Data ' + nd(a)) + '</span></p>' +
       '</div>';
   }
 
@@ -206,14 +212,17 @@
       notaC = r.offertaMinima ? U.eur(r.offertaMinima * a.cauzionePerc / 100) + ' con l\'offerta minima' : '';
     } else if (a.cauzione) cauz = esc(a.cauzione);
     h += tile('Cauzione', cauz || nd(a), cauz ? notaC : 'Di norma il ' + U.pct(T.asta.cauzione.quota, 0) + ' dell\'offerta: l\'importo esatto è nell\'avviso', cauz && a.cauzionePerc > 0 ? 't-testo t-medio' : 't-testo');
-    var t = istante(a.dataAsta, a.ora);
-    if (dem) {
-      h += tile('Termine per le offerte', a.dataAsta ? esc(quandoEsteso(a.dataAsta, a.ora)) : nd(a), t ? '<span data-conto="' + t + '" data-ora="' + esc(a.ora || '') + '">' + conto(t, a.ora) + '</span>' : '', 't-testo t-medio');
+    // Demanio: dataAsta è il giorno dell'asta solo se l'avviso lo scrive; altrimenti (e nei dati raccolti prima del 26/10/2026)
+    // è il termine per le offerte, e la data della gara resta nel PDF
+    var D = dateAsta(a), x = D.asta, te = D.termine, t = x && istante(x.data, x.ora), to = te && istante(te.data, te.ora);
+    var contoDi = function (ist, ora) { return ist ? '<span data-conto="' + ist + '" data-ora="' + esc(ora || '') + '">' + conto(ist, ora) + '</span>' : ''; };
+    if (dem && !x) {
+      h += tile('Termine per le offerte', te ? esc(quandoEsteso(te.data, te.ora)) : nd(a), contoDi(to, te && te.ora), 't-testo t-medio');
       h += tile('Apertura delle offerte', nd(a, 'indicata nel PDF dell\'avviso'), 'Data, ora e luogo della gara sono nell\'avviso', 't-testo');
     } else {
-      h += tile('Data e ora dell\'asta', a.dataAsta ? esc(quandoEsteso(a.dataAsta, a.ora)) : nd(a), t ? '<span data-conto="' + t + '" data-ora="' + esc(a.ora || '') + '">' + conto(t, a.ora) + '</span>' : '', 't-testo t-medio');
-      var to = a.termineOfferte && istante(a.termineOfferte);
-      h += tile('Termine per le offerte', a.termineOfferte ? esc(quandoEsteso(a.termineOfferte)) : nd(a), to ? '<span data-conto="' + to + '" data-ora="1">' + conto(to, '1') + '</span>' : 'Di solito entro le 12 del giorno feriale prima dell\'asta: verifica nell\'avviso', 't-testo t-medio');
+      // Demanio senza l'ora della gara: niente ore contate fino a fine giornata
+      h += tile(dem && x && !x.ora ? 'Data dell\'asta' : 'Data e ora dell\'asta', x ? esc(quandoEsteso(x.data, x.ora)) : nd(a), dem && x && !x.ora ? 'Ora e luogo della gara sono nell\'avviso' : contoDi(t, x && x.ora), 't-testo t-medio');
+      h += tile('Termine per le offerte', te ? esc(quandoEsteso(te.data, te.ora)) : nd(a), to ? contoDi(to, '1') : 'Di solito entro le 12 del giorno feriale prima dell\'asta: verifica nell\'avviso', 't-testo t-medio');
     }
     return '<section class="sc-sez" id="sez-numeri" aria-labelledby="h-numeri"><h2 id="h-numeri" class="sr-only">Prezzi e date</h2><div class="sc-numeri">' + h + '</div></section>';
   }
@@ -234,7 +243,12 @@
     var ch = Array.isArray(a.rischi) ? a.rischi.length : null;
     switch (k) {
       case 'sconto': return r.sconto != null ? 'Costo totale ' + U.pct(Math.abs(r.sconto), 0) + (r.sconto >= 0 ? ' sotto' : ' sopra') + ' il valore' : 'serve il valore';
-      case 'tentativo': return a.tentativo ? a.tentativo + '° tentativo' + (a.deserte ? ', ' + a.deserte + (a.deserte === 1 ? ' deserta' : ' deserte') : '') : 'non noto';
+      case 'tentativo':
+        if (!a.tentativo) return 'non noto';
+        // il punteggio usa il numero dell'indice; la stima dai prezzi (linea del tempo) si dice accanto, come stima
+        var tq = SD && SD.tentativo ? SD.tentativo(a) : null;
+        return a.tentativo + '° tentativo' + (a.deserte ? ', ' + a.deserte + (a.deserte === 1 ? ' deserta' : ' deserte') : '') +
+          (tq && tq.stima ? ' secondo l\'indice del Portale (stima dai prezzi: almeno il ' + tq.numero + '°, vedi la linea del tempo)' : '');
       case 'occupazione': return a.categoria !== 'immobile' ? 'non si applica: punteggio neutro' : a.stato === 'libero' ? 'libero' : a.stato === 'occupato' ? 'occupato' : 'non indicato: punteggio neutro';
       case 'rischi': return ch === null ? 'testo non controllato: punteggio neutro' : ch ? ch + (ch === 1 ? ' rischio trovato' : ' rischi trovati') : 'nessuno nel testo';
       case 'zona':
@@ -290,7 +304,8 @@
   var AFFIDABILITA = {
     alta: ['p-good', 'Alta', 'due fonti indipendenti concordano entro il 35%: quotazione OMI della zona e stima del perito (o prezzo della prima asta)'],
     media: ['p-info', 'Media', 'una sola fonte diretta: quotazione OMI della zona oppure stima del perito'],
-    bassa: ['p-warn', 'Bassa', 'stima indiretta o fonti molto diverse: il punteggio resta al massimo "Da valutare"']
+    // anche un bene mobile con la sola stima del perito (js/punteggio.js): il motivo è nei controlli qui sotto
+    bassa: ['p-warn', 'Bassa', 'stima indiretta, fonti molto diverse o non confermate (motivo nei controlli qui sotto o in «La zona»): il punteggio resta al massimo "Da valutare"']
   };
 
   function forchetta(v, r) {
@@ -349,11 +364,13 @@
   var AFF_OMI = { media: ['p-info', 'zona riconosciuta, una sola fonte (OMI)'], bassa: ['p-warn', 'valori tipici del comune o lotto con più unità: solo orientativo'], alta: ['p-good', 'confermato da una seconda fonte'] };
 
   // link alla mappa con le aste dello stesso comune (mappa.js legge ?filtri= e data-passa="filtri:…")
-  function linkMappa(z) {
+  function linkMappa(z, a) {
     if (!z.mappa) return '';
     var j = JSON.stringify(z.mappa), dove = z.mappa.comune || 'provincia di ' + z.mappa.provincia;
+    var posizione = isFinite(parseFloat(a.lat)) && isFinite(parseFloat(a.lng)) && (+a.lat || +a.lng);
     return '<div class="row-actions sc-fondo"><a class="btn ghost" href="mappa.html?filtri=' + encodeURIComponent(j) + '" data-passa="filtri:' + esc(j) + '">' + U.icona('mappa') + 'Vedi sulla mappa</a>' +
-      '<span class="note">Le aste di ' + esc(dove) + ' sulla mappa, con le altre zone vicine.</span></div>';
+      '<span class="note">' + (posizione ? 'Le aste di ' + esc(dove) + ' sulla mappa, questa compresa.'
+        : 'Questa asta non ha ancora una posizione sulla mappa: vedrai le altre aste di ' + esc(dove) + '.') + '</span></div>';
   }
 
   function sezZona(a) {
@@ -368,12 +385,12 @@
           (zz.spiegaFascia ? '<span>Vuol dire ' + esc(zz.spiegaFascia) + '.</span>' : '') +
           '<span class="muted">Zona ' + esc(zz.codice) + (zz.descrizione ? ' · ' + esc(zz.descrizione) : '') + ' · ' + dove + '</span></div></div>'
         : '<div class="sc-fascia"><span class="sc-fascia-lettera" aria-hidden="true">–</span><div><b>Valori tipici del comune</b><span>' + esc(o.senzaZona) + '.</span><span class="muted">' + dove + '</span></div></div>';
-      var kv = voce('Prezzi di vendita', forbice(o.euroMq.min, o.euroMq.max) + ' €/m²') +
-        voce('Affitto', o.affittoMq ? forbice(o.affittoMq.min, o.affittoMq.max, 2) + ' €/m² al mese' : nd(a, 'non quotato')) +
+      var kv = voce('Prezzi di vendita', forbice(o.euroMq.min, o.euroMq.max) + '\u00a0€/m²') +
+        voce('Affitto', o.affittoMq ? forbice(o.affittoMq.min, o.affittoMq.max, 2) + '\u00a0€/m² al mese' : nd(a, 'non quotato')) +
         voce('Tipologia OMI', o.tipologia ? esc(o.tipologia) + (o.stato ? ', stato ' + esc(o.stato) : '') : nd(a, 'non indicata')) +
         voce('Superficie usata', o.mq ? mq(o.mq) + (o.affittoMq && o.affittoMq.superficie ? ' <span class="muted">(OMI: superficie ' + esc(o.affittoMq.superficie) + ')</span>' : '') : nd(a, 'non indicata nell\'avviso'));
-      if (o.valore) kv += voce('Valore OMI per ' + mq(o.mq), forbice(o.valore.min, o.valore.max) + ' €');
-      if (o.affitto) kv += voce('Affitto per ' + mq(o.mq), forbice(o.affitto.min, o.affitto.max) + ' € al mese');
+      if (o.valore) kv += voce('Valore OMI per ' + mq(o.mq), forbice(o.valore.min, o.valore.max) + '\u00a0€');
+      if (o.affitto) kv += voce('Affitto per ' + mq(o.mq), forbice(o.affitto.min, o.affitto.max) + '\u00a0€ al mese');
       kv += voce('Compravendite nel comune', o.compravendite ? 'circa ' + cifre(Math.round(o.compravendite.ntn)) + (o.compravendite.anno ? ' nel ' + esc(o.compravendite.anno) : ' l\'anno') + ' <span class="muted">(NTN)</span>' +
           (o.compravendite.taglia ? ' · taglia ' + esc(o.compravendite.taglia) : '') : nd(a, 'non disponibili'));
       h += '<dl class="kv sc-dati sc-zona-kv">' + kv + '</dl></div>';
@@ -397,7 +414,7 @@
     }
     var altre = o ? z.mancanti : z.mancanti.slice(1);
     if (altre.length) h += '<div class="sc-manca"><h3>Cosa manca</h3><ul>' + altre.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
-    return '<section class="panel sc-sez" id="sez-zona" aria-labelledby="h-zona"><div class="sc-sez-testa"><h2 id="h-zona">La zona</h2>' + pill + '</div>' + h + linkMappa(z) + '</section>';
+    return '<section class="panel sc-sez" id="sez-zona" aria-labelledby="h-zona"><div class="sc-sez-testa"><h2 id="h-zona">La zona</h2>' + pill + '</div>' + h + linkMappa(z, a) + '</section>';
   }
 
   /* ---------- costo totale ---------- */
@@ -527,7 +544,7 @@
         '<p class="note" id="probIpotesi">' + esc(p.testoIpotesi) + '</p>' +
         '<p class="note sc-attenzione" id="probSotto" hidden>Con un\'offerta sotto il prezzo base (ma non sotto l\'offerta minima), se sei l\'unico offerente il giudice può non accettarla (art. 572 c.p.c.): la probabilità qui sopra non ne tiene conto.</p>' +
         (conclusa ? '<p class="note">Questa asta è già conclusa: i numeri valgono solo come riferimento per aste simili.</p>' : '') +
-        '<p class="note sc-fonte">Fonte: ' + (p.url ? esterno(p.url, esc(p.fonte)) : esc(p.fonte)) + '. Campione: ' + esc(p.testoCampione) + (p.perche ? ' ' + esc(p.perche) : '') + '</p>' +
+        '<p class="note sc-fonte">' + esc(p.testoStima) + ' Fonte: ' + (p.url ? esterno(p.url, esc(p.fonte)) : esc(p.fonte)) + '. Campione: ' + esc(p.testoCampione) + (p.perche ? ' ' + esc(p.perche) : '') + '</p>' +
         '<details class="sc-prob-come"><summary>Come si calcola e limiti dei dati</summary><div><p class="note">' + esc(p.spiegazione) + '</p>' +
         (p.avvertenze.length ? '<ul>' + p.avvertenze.map(function (t) { return '<li class="note">' + esc(t) + '</li>'; }).join('') + '</ul>' : '') + '</div></details>';
     }
@@ -548,10 +565,12 @@
     $('#probIpotesi').textContent = p.testoIpotesi;
   }
 
-  function simula(valore) {
+  // daUtente: offerta scelta con il cursore o i valori rapidi (finisce nel report da stampare)
+  function simula(valore, daUtente) {
     var a = stato.a, r = stato.r, inp = $('#offerta'); if (!inp) return;
     var v = valore != null ? valore : +inp.value;
     stato.offerta = v;
+    if (daUtente) stato.toccata = true;
     var min = +inp.min, max = +inp.max;
     inp.style.setProperty('--p', ((v - min) / (max - min) * 100).toFixed(1) + '%');
     inp.setAttribute('aria-valuetext', U.eur(v));
@@ -620,9 +639,11 @@
     }).join('');
     var note = lt.note.map(function (t) { return '<p class="note">' + esc(t) + '</p>'; }).join('');
     return '<section class="panel sc-sez" id="sez-tempi" aria-labelledby="h-tempi"><div class="sc-sez-testa"><h2 id="h-tempi">Linea del tempo</h2>' +
-      (a.tentativo ? '<span class="pill p-info">' + a.tentativo + '° tentativo</span>' : '') + '</div><ol class="tempi">' + li + '</ol>' + note +
-      '<p class="note">Pallino pieno: già avvenuto.' + (lt.eventi.some(function (e) { return e.chiave === 'tentativo' || e.chiave === 'sospesa'; }) ? ' Date e prezzi dei tentativi precedenti vengono dallo storico delle vendite del Portale delle Vendite Pubbliche.' : '') +
-      (lt.eventi.some(function (e) { return e.stima; }) ? ' Le date segnate come stima vanno verificate nell\'avviso.' : '') + '</p></section>';
+      (lt.tentativo && lt.tentativo.stima ? '<span class="pill p-info">Almeno il ' + lt.tentativo.numero + '° tentativo (stima)</span>' :
+        a.tentativo ? '<span class="pill p-info">' + a.tentativo + '° tentativo</span>' : '') + '</div><ol class="tempi">' + li + '</ol>' + note +
+      '<p class="note">Pallino pieno: già avvenuto' + (lt.eventi.some(function (e) { return e.qui && e.stato !== 'fatto'; }) ? '; con il punto al centro: questa asta' : '') +
+      (lt.eventi.some(function (e) { return e.stima; }) ? '; tratteggiato: data stimata, da verificare nell\'avviso' : '') + '.' +
+      (lt.eventi.some(function (e) { return e.chiave === 'tentativo' || e.chiave === 'sospesa'; }) ? ' Date e prezzi dei tentativi precedenti vengono dallo storico delle vendite del Portale delle Vendite Pubbliche.' : '') + '</p></section>';
   }
 
   /* ---------- descrizione e dati ---------- */
@@ -701,6 +722,20 @@
     return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) + ' alle ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   }
 
+  // rischi per la stampa: prima i trovati, poi gli incerti; quelli con lo stesso esito e lo stesso testo in una riga sola
+  var ORDINE_RISCHI = { rosso: 0, giallo: 1, grigio: 2, verde: 3 };
+  function gruppiRischi(semafori) {
+    var gruppi = [], stessi = {};
+    semafori.forEach(function (s) {
+      var k = s.colore + '|' + s.testo;
+      if (!s.prova && stessi[k]) { stessi[k].titoli.push(s.titolo); return; }
+      var g = { colore: s.colore, testo: s.testo, prova: s.prova, titoli: [s.titolo], i: gruppi.length };
+      if (!s.prova) stessi[k] = g;
+      gruppi.push(g);
+    });
+    return gruppi.sort(function (x, y) { return ORDINE_RISCHI[x.colore] - ORDINE_RISCHI[y.colore] || x.i - y.i; });
+  }
+
   function rapportoStampa(a, r) {
     var dem = a.fonte === DEMANIO, v = r.valore, c = r.costo, lt = lineaTempo(a), h = '';
     var dove = window.Schede ? Schede.luogoBreve(a) : a.comune;
@@ -717,7 +752,7 @@
       st('Prezzo base', r.prezzoBase ? U.eur(r.prezzoBase) : dem ? 'nel PDF dell\'avviso' : 'non indicato') +
       st('Offerta minima', r.offertaMinima ? U.eur(r.offertaMinima) : 'non indicata') +
       st('Rialzo minimo', a.rialzo > 0 ? U.eur(a.rialzo) : 'non indicato') + st('Cauzione', cauz) +
-      (stato.offerta && r.prezzoBase ? st('Offerta simulata da te', U.eur(stato.offerta)) : '') + '</section>';
+      (stato.toccata && stato.offerta && r.prezzoBase ? st('Offerta simulata da te', U.eur(stato.offerta)) : '') + '</section>';
     h += '<section><h2>Valore di mercato</h2>';
     if (v) {
       var aff = AFFIDABILITA[v.affidabilita];
@@ -732,7 +767,7 @@
     h += '<div class="st-griglia"><section><h2>Costo totale ' + (a.categoria === 'immobile' ? '(offerta al prezzo base)' : '(aggiudicazione al prezzo base)') + '</h2>';
     if (c) {
       h += '<div class="result">' + vociCosto(a, c) + '</div><p class="st-nota">' + esc(ipotesi(a)) + '</p>';
-      if (stato.offerta && Math.abs(stato.offerta - r.prezzoBase) > 0.5) {
+      if (stato.toccata && stato.offerta && Math.abs(stato.offerta - r.prezzoBase) > 0.5) {
         var cs = A.costo(a, stato.offerta, v && v.centrale);
         if (cs) h += '<p class="st-nota"><b>Con la tua offerta di ' + U.eur(stato.offerta) + ':</b> costo totale ' + U.eur(cs.totale) + (v ? ', sconto sul valore ' + U.pct(cs.sconto, 0) : '') + '.</p>';
       }
@@ -760,8 +795,9 @@
     h += '<section class="st-blocco"><h2>Zona e probabilità</h2>' + righe.map(function (t) { return '<p class="st-nota">' + t + '</p>'; }).join('') + '</section>';
 
     // rischi
-    h += '<section class="st-blocco"><h2>Rischi cercati nel testo dell\'avviso</h2><ul class="st-rischi">' + r.semafori.map(function (s) {
-      return '<li><b>' + esc(s.titolo) + ':</b> ' + esc(ESITO[s.colore].toLowerCase()) + '. ' + esc(s.testo) + (s.prova ? ' «' + esc(s.prova) + '»' : '') + '</li>';
+    h += '<section class="st-blocco"><h2>Rischi cercati nel testo dell\'avviso</h2><ul class="st-rischi">' + gruppiRischi(r.semafori).map(function (g) {
+      var esito = g.testo.toLowerCase().indexOf(ESITO[g.colore].toLowerCase()) === 0 ? '' : esc(ESITO[g.colore].toLowerCase()) + '. ';
+      return '<li><b>' + esc(g.titoli.join('; ')) + ':</b> ' + esito + esc(g.testo) + (g.prova ? ' «' + esc(g.prova) + '»' : '') + '</li>';
     }).join('') + '</ul><p class="st-nota">Il controllo legge solo il testo breve dell\'avviso: un rischio può esserci anche se qui non compare. Leggi la perizia.</p></section>';
 
     // documenti, scritti per esteso
@@ -787,7 +823,8 @@
 
   function vuota(titolo, testo) {
     $('#scheda').setAttribute('aria-busy', 'false');
-    $('#scheda').innerHTML = '<div class="panel empty sc-vuota">' + U.icona('cerca', 'sc-vuota-icona') + '<h2>' + titolo + '</h2><p>' + testo + '</p>' +
+    // senza asta il titolo della pagina è questo: h1, come nella scheda piena
+    $('#scheda').innerHTML = '<div class="panel empty sc-vuota">' + U.icona('cerca', 'sc-vuota-icona') + '<h1>' + titolo + '</h1><p>' + testo + '</p>' +
       '<div class="row-actions"><a class="btn" href="aste.html">Vai all\'elenco delle aste</a><a class="btn ghost" href="mie-aste.html">Le aste che segui</a></div></div>';
     document.title = titolo + ' – Radar Aste Italia';
   }
@@ -808,7 +845,7 @@
     attivaGalleria(a);
     aggiornaAzioni();
     var inp = $('#offerta');
-    if (inp) { inp.addEventListener('input', function () { simula(); }); simula(r.offertaMinima); }
+    if (inp) { inp.addEventListener('input', function () { simula(null, true); }); simula(r.offertaMinima); }
     var ip = $('#ipotesi');
     if (ip) { ip.addEventListener('input', function () { aggiornaProbabilita(true); }); aggiornaProbabilita(); }
     preparaStampa();
@@ -873,7 +910,7 @@
         return;
       }
       var o = e.target.closest('[data-offerta]');
-      if (o) { var inp = $('#offerta'); inp.value = o.dataset.offerta; simula(+o.dataset.offerta); }
+      if (o) { var inp = $('#offerta'); inp.value = o.dataset.offerta; simula(+o.dataset.offerta, true); }
     });
     document.addEventListener('radaraste:seguite', aggiornaAzioni);
     // anche con la stampa del browser (Ctrl+P): report aggiornato

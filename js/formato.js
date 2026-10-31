@@ -8,7 +8,8 @@
  * - gli altri valori (numeri, testi, array) sono salvati così come sono;
  * - i link sono salvati come "~N" + resto, dove N è l'indice del prefisso comune in "prefissi";
  * - i valori null in fondo alla riga sono omessi.
- * Il formato precedente (campi + righe senza dizionari) resta leggibile. */
+ * Il formato precedente (campi + righe senza dizionari) resta leggibile.
+ * Formato.date(a) dice come leggere le date di un record (giorno dell'asta e termine per le offerte, Demanio compreso). */
 (function (root) {
   'use strict';
 
@@ -70,7 +71,26 @@
     });
   }
 
-  var Formato = { codifica: codifica, decodifica: decodifica };
+  /* Date di un'asta lette dai campi del record → { asta: { data, ora } | null, termine: { data, ora } | null }
+   * (data 'AAAA-MM-GG', ora 'HH:MM' o ''). dataAsta e ora sono il giorno dell'asta; termineOfferte ('AAAA-MM-GG' o
+   * 'AAAA-MM-GGTHH:MM') il termine per le offerte. Agenzia del Demanio: dal 26/10/2026 la raccolta mette in dataAsta il
+   * giorno dell'asta scritto nell'avviso e il termine in termineOfferte; nei dati raccolti prima (senza termineOfferte) e
+   * negli avvisi che non scrivono il giorno dell'asta (dataAsta e ora uguali al termine) la data è il termine per le
+   * offerte e il giorno dell'asta non è noto: asta null, mai inventata. */
+  var DEMANIO = 'Agenzia del Demanio';
+  function dataOra(x, ora) {
+    var m = /^(\d{4}-\d{2}-\d{2})(?:T(\d{1,2})[:.](\d{2}))?/.exec(String(x || '')), o = /^(\d{1,2})[:.](\d{2})/.exec(String(ora || ''));
+    if (!m) return null;
+    return { data: m[1], ora: m[2] ? ('0' + m[2]).slice(-2) + ':' + m[3] : o ? ('0' + o[1]).slice(-2) + ':' + o[2] : '' };
+  }
+  function date(a) {
+    a = a || {};
+    var asta = dataOra(a.dataAsta, a.ora), termine = dataOra(a.termineOfferte, a.oraTermine);
+    if (a.fonte === DEMANIO && asta && (!termine || (termine.data === asta.data && termine.ora === asta.ora))) return { asta: null, termine: asta };
+    return { asta: asta, termine: termine };
+  }
+
+  var Formato = { codifica: codifica, decodifica: decodifica, date: date };
   if (typeof module !== 'undefined' && module.exports) module.exports = Formato;
   else root.Formato = Formato;
 })(typeof window !== 'undefined' ? window : globalThis);

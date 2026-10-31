@@ -20,9 +20,14 @@ await cp(path.join(RADICE, 'manifest.webmanifest'), path.join(OUT, 'manifest.web
 const versione = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 13);
 await writeFile(path.join(OUT, 'sw.js'), (await readFile(path.join(RADICE, 'sw.js'), 'utf8')).replace(/__VERSIONE__/g, versione));
 
+// --anteprima-abbonamenti: l'anteprima mostra anche la zona abbonamenti in modalità test (nell'Artifact non si può
+// aggiungere ?anteprima=abbonamenti all'indirizzo, quindi la si accende da ogni pagina)
+const ANTEPRIMA = process.argv.includes('--anteprima-abbonamenti')
+  ? '<script>window.ANTEPRIMA_ABBONAMENTI = true; try { sessionStorage.setItem(\'radaraste.anteprima-abbonamenti\', \'1\'); } catch (e) {}</script>\n' : '';
 const pagine = (await readdir(RADICE)).filter((f) => f.endsWith('.html'));
 for (const p of pagine) {
   let html = await readFile(path.join(RADICE, p), 'utf8');
+  if (ANTEPRIMA) html = html.replace(/<head>\s*/i, (m) => m + ANTEPRIMA);
   if (p === 'index.html') {
     html = html
       .replace(/<!doctype html>\s*/i, '')
@@ -33,4 +38,4 @@ for (const p of pagine) {
   }
   await writeFile(path.join(OUT, p), html);
 }
-console.log('Pronto in _artifact/:', pagine.join(', '), '· versione della cache', versione);
+console.log('Pronto in _artifact/:', pagine.join(', '), '· versione della cache', versione, ANTEPRIMA ? '· con l\'anteprima degli abbonamenti' : '');

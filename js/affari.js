@@ -39,8 +39,18 @@
 
   function riepilogoGiro(A) {
     var sc = A.scartate || {}, parti = Object.keys(sc).sort(function (x, y) { return sc[y] - sc[x]; }).map(function (k) { return sc[k].toLocaleString('it-IT') + ' ' + k; });
-    return 'L\'agente ha analizzato <b>' + (A.analizzate || 0).toLocaleString('it-IT') + '</b> aste nuove o ribassate nelle ultime 24 ore e ne ha scelte <b>' + (A.migliori || []).length + '</b>.' +
+    var n = (A.analizzate || 0), s = (A.migliori || []).length;
+    return 'L\'agente ha analizzato <b>' + n.toLocaleString('it-IT') + '</b>' + (n === 1 ? ' asta nuova o ribassata' : ' aste nuove o ribassate') + ' nelle ultime 24 ore e ' +
+      (!s ? 'non ne ha scelta nessuna.' : 'ne ha ' + (s === 1 ? 'scelta' : 'scelte') + ' <b>' + s + '</b>.') +
       (parti.length ? ' Scartate: ' + U.esc(parti.join(', ')) + '.' : '');
+  }
+
+  // con zero affari lo dice già il riquadro vuoto sotto
+  function notaGiro(A) {
+    var m = (A.migliori || []).length;
+    if (!m) return '';
+    var n = K && K.nota ? K.nota(m, A.criteri && A.criteri.minimi ? A.criteri : null) : A.nota;
+    return n ? ' ' + U.esc(n) : '';
   }
 
   function formPreferenze(p) {
@@ -83,7 +93,8 @@
     var p = opz.compatto ? null : preferenze();
     var lista = (A.migliori || []).slice(0, opz.massimo || 10);
     el.innerHTML = testa + (opz.compatto ? '' : formPreferenze(p)) +
-      '<p class="aff-giro">' + riepilogoGiro(A) + (A.nota ? ' ' + U.esc(A.nota) : '') + '</p>' +
+      // la nota si riscrive con le regole di oggi (i file di dati vecchi possono avere la frase di prima)
+      '<p class="aff-giro">' + riepilogoGiro(A) + notaGiro(A) + '</p>' +
       (lista.length ? '<div class="aff-griglia">' + lista.map(card).join('') + '</div>'
         : '<p class="aff-vuoto">Oggi nessuna asta nuova o ribassata supera tutti i criteri (valore stimabile e affidabile, sconto reale almeno del 15%, punteggio almeno 50). Meglio nessun consiglio che un consiglio incerto.</p>') +
       (opz.compatto ? '' : '<div id="affPersonale"></div>' +

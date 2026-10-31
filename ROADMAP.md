@@ -4,7 +4,7 @@ Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce camb
 
 Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ aspetta una tua decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 13/10/2026, sera.
+Ultimo aggiornamento: 29/10/2026 (giro della squadra).
 
 ---
 
@@ -17,9 +17,13 @@ Ultimo aggiornamento: 13/10/2026, sera.
 - valori di mercato **più prudenti**: con fonti discordanti si usa il valore più basso e il punteggio si ferma a "Da valutare";
 - **README** e documentazione riscritti; **182 test** automatici.
 
-**Per pubblicare:** premi Merge sulla pull request [#2](https://github.com/mazzucchellipietro6-spec/radaraste/pull/2): la spinta diretta su `main` è stata bloccata dai permessi di questa sessione.
+**Pubblicato:**
+- il 13/10 hai unito la pull request [#2](https://github.com/mazzucchellipietro6-spec/radaraste/pull/2);
+- il 19/10 è stata pubblicata la correzione [#3](https://github.com/mazzucchellipietro6-spec/radaraste/pull/3). La scheda dell'asta era rotta. Ora ha zona OMI, linea del tempo, probabilità di vincere e stampa in PDF; in più c'è la mappa di calore degli sconti.
 
-**Resta da fare:** zona abbonamenti in modalità TEST (dopo il merge, senza attivare nulla), aste auto dall'estero, report PDF, Radar 3D, idee extra. Elenco completo sotto.
+**Squadra quotidiana (dal 20/10):** ogni mattina alle 08:13 una squadra di assistenti controlla raccolta, dati e sito, ripara e porta avanti questa ROADMAP. Ruoli e regole sono in [SQUADRA.md](SQUADRA.md); il diario è in [docs/diario-squadra.md](docs/diario-squadra.md). Pubblica sempre tu, con Merge.
+
+**Resta da fare:** zona abbonamenti in modalità TEST (senza attivare nulla), Stratega su più anni, Radar 3D, aste auto dall'estero, idee extra. Elenco completo sotto.
 
 **Da decidere tu:** sezione "Da decidere" in fondo. Le più urgenti:
 - il repository privato per i file OMI;
@@ -35,7 +39,8 @@ Ultimo aggiornamento: 13/10/2026, sera.
 - Mai dati inventati: se una fonte è bloccata o vietata, fermarsi su quella voce e scriverlo in "Da decidere".
 - Servizi a pagamento o chiavi API: mai attivarli senza il tuo via. Le chiavi solo nelle variabili d'ambiente, mai nel codice.
 - Per le scelte normali decido io e lo scrivo qui; quello che spetta a te va in "Da decidere".
-- Pubblicazione su `main` solo quando lo chiedi tu: il 13/10 hai chiesto di pubblicare a fine lavoro, con la pull request #2.
+- Pubblicazione su `main` solo quando lo chiedi tu, con il pulsante Merge sulla pull request. Il 19/10 la correzione della scheda rotta l'ho unita io (#3), perché il sito pubblicato era guasto da 6 giorni: d'ora in poi anche le correzioni urgenti aspettano il tuo Merge.
+- Dal 20/10 lavora ogni mattina la squadra descritta in [SQUADRA.md](SQUADRA.md), con queste stesse regole.
 
 ---
 
@@ -125,17 +130,29 @@ Ultimo aggiornamento: 13/10/2026, sera.
 
 ## In corso 🔄
 
-- ✅ Anteprima privata su claude.ai aggiornata il 13/10 sera (stesso indirizzo di prima).
-- ⏸ **Pubblicazione sul sito**: la spinta diretta su `main` è stata bloccata dai permessi di questa sessione, quindi è pronta la pull request [#2](https://github.com/mazzucchellipietro6-spec/radaraste/pull/2). Per pubblicare: apri la pull request e premi **Merge**. Parte il workflow e in circa 45 minuti il sito è aggiornato.
-- ⬜ **Zona abbonamenti in modalità TEST**: la preparo dopo il merge della #2, così non entra nella pubblicazione senza che tu l'abbia vista (vedi "Da decidere", punto 2).
+- 🔄 **Pull request [#4](https://github.com/mazzucchellipietro6-spec/radaraste/pull/4)**: correzioni del sito pubblicato rivedute dal Revisore il 26/10, più tutto il lavoro dal 19/10. Per pubblicare premi **Merge**.
+- 🔄 **Zona abbonamenti in modalità TEST** (vedi "Da decidere", punto 2). È tutta spenta finché non crei gli account. Nel sito pubblicato le pagine prezzi, account e bozze legali esistono ma non sono collegate da nessun menu.
+  - Pronti e riveduti:
+    - piani e blocchi (`config/abbonamenti.js`, `js/piani.js`) e funzioni Stripe di prova (`functions/`, `servizi/`);
+    - dal 27/10 anche account e accesso, con lo schema del database (provato su PostgreSQL), la pagina prezzi e le bozze legali.
+    - La revisione dell'account ha trovato e chiuso due falle gravi: si poteva far entrare qualcuno nell'account di un altro con un link, e i dati di una persona potevano finire nell'account di un'altra.
+  - Dal 29/10 è riveduta anche la preparazione per Cloudflare Pages: intestazioni di sicurezza provate nel browser, passo nel workflow dopo GitHub Pages, wrangler 4.151.2, guida `ABBONAMENTI.md` completa. **Tutta la zona abbonamenti è ora riveduta.**
+- ✅ **Stratega su più anni** (28/10): proiezione da 1 a 5 anni, con il grafico "Il patrimonio nel tempo" (caso basso, mediana, caso alto) e ipotesi e fonti elencate. Il calcolo è stato corretto: costi e sfitto come il calcolatore, plusvalenza prudente, rivalutazione solo degli immobili.
+- ✅ **Radar 3D** (29/10, in attesa del Merge):
+  - colonne per sconto e punteggio, esagoni, viaggio nel tempo, "Mostrami il miglior affare";
+  - ripieghi dello sfondo e al 2D;
+  - maplibre-gl 5.24.0 e deck.gl 9.3.11 inclusi con le licenze.
+  - Oggi solo 114 aste su 12.170 con posizione hanno uno sconto affidabile: le altre sono punti grigi.
+- ⬜ **Aste auto dall'estero**: rilanciate il 28/10 ma fermate subito dal limite d'uso; si riprendono nei prossimi giri.
+- ✅ **Squadra quotidiana** attiva dal 20/10 ([SQUADRA.md](SQUADRA.md)). Dal 26/10 lavora leggera: al massimo 3 agenti al giorno.
 
 ---
 
 ## Da fare ⬜ (in ordine)
 
 1. ⬜ **Aste auto dall'estero**: solo siti che lo consentono (da verificare robots.txt e condizioni d'uso uno per uno).
-2. ⬜ **Report PDF** dell'asta: versione stampabile della scheda, con valore, costi, rischi e fonti.
-3. ⬜ **Dati di zona** nella scheda: compravendite OMI del comune, servizi vicini (OpenStreetMap). Rischio frane e alluvioni solo con il tuo via (punto 8 di "Da decidere").
+2. ✅ **Report PDF** dell'asta: pulsante "Stampa o salva in PDF" nella scheda, due pagine A4 con valore, costi, rischi e fonti (19/10).
+3. 🔄 **Dati di zona** nella scheda: ✅ zona OMI, fascia, quotazioni e compravendite del comune (19/10); ⬜ servizi vicini (OpenStreetMap). Rischio frane e alluvioni solo con il tuo via (punto 8 di "Da decidere").
 4. ⬜ **Stratega su più anni**:
    - strategia in più mosse su 1-5 anni e grafico del patrimonio nel tempo;
    - reinvestimento di affitti e guadagni;
@@ -146,15 +163,19 @@ Ultimo aggiornamento: 13/10/2026, sera.
 7. ⬜ **Idee extra**:
    - s) storico delle aste concluse e "a quanto si vendono davvero" (il Portale non pubblica il prezzo di aggiudicazione: si può dire solo se è stata aggiudicata);
    - t) affitti: ✅ affitto OMI e rendimento lordo già nel punteggio e nella scheda; resta il rendimento netto;
-   - u) mappa di calore degli sconti;
-   - v) linea del tempo di ogni asta;
-   - w) "Simula la tua offerta" con la probabilità di vincere (le probabilità dello Stratega sono pronte da riusare);
+   - u) ✅ mappa di calore degli sconti (19/10);
+   - v) ✅ linea del tempo di ogni asta (19/10);
+   - w) ✅ "Simula la tua offerta" con la probabilità di vincere (19/10);
    - x) "Come funziona": ✅ tre passi in home e guida.
 8. ⬜ Azioni di GitHub su Node 24 (oggi avviso di deprecazione, funzionano).
 
 ---
 
 ## Scelte fatte da me (puoi cambiarle)
+
+- **Beni mobili più prudenti (26/10).** Con la sola stima del perito l'affidabilità è bassa e il punteggio si ferma a "Da valutare" (54). Vale per tutta la categoria "beni": anche barche, quote societarie e marchi. Caso reale: "Merci in giacenza" a Nuoro passa da 77 a 54.
+- **Combinazioni d'oro (26/10).** Niente risparmio "prima casa" quando la "pertinenza" costa più dell'abitazione o non è una pertinenza (uffici, D/8). Niente gruppi di lotti senza comune.
+- **Squadra leggera (26/10).** Al massimo 3 agenti al giorno, con i controlli a rotazione, per non esaurire il limite settimanale del tuo piano Claude.
 
 - **Stile "Classica"** (proposta A) invece di "Istituzionale" (B): più riconoscibile, da rapporto finanziario. Cambiare è solo questione di colori e caratteri in `assets/css/style.css`.
 - **Probabilità dello Stratega dalle ultime 4 settimane di esiti.** Nell'indice del Portale le vendite più vecchie perdono quasi sempre l'esito "aggiudicata": sull'intero periodo verrebbe un 3% falso, sulle ultime 4 settimane circa il 27%. Il metodo è spiegato nella pagina, con la forchetta minima e massima.
@@ -164,6 +185,31 @@ Ultimo aggiornamento: 13/10/2026, sera.
 ---
 
 ## Da decidere ⏸ (per te)
+
+**Nuove del 29/10:**
+- **Offerta massima dopo molte aste deserte.** Esempio: Sant'Elpidio a Mare, laboratorio di 828 m². Il valore è confermato da OMI e perito, ma dopo 4 ribassi a luglio nessuno ha offerto 169.214 €, mentre il sito consiglia fino a 308.400 €. Vuoi che, dopo molte aste deserte, l'affidabilità scenda o che l'offerta consigliata non superi l'ultimo prezzo andato deserto?
+- **OpenFreeMap** (sfondo del Radar 3D): condizioni d'uso da verificare. Da qui il sito è bloccato. Se preferisci, si spegne con una riga e resta OpenStreetMap.
+
+**Nuove del 28/10:**
+- **Stratega, reinvestimento:** con "Reinvesti i guadagni" le cifre crescono molto: sui dati reali 300.000 € diventano circa 1,25 milioni in 5 anni, supponendo altre aste con lo stesso margine. È spento di partenza e segnato come ipotesi ottimista. Lo teniamo?
+- **Stratega, plusvalenza:** per prudenza i costi di vendita non riducono la base tassata. Se un commercialista conferma che la provvigione d'agenzia si può dedurre, l'imposta scende.
+- **Calcolatore aperto da un'asta:** parte da "seconda casa da privato", come la scheda; il calcolo libero parte da "prima casa". Va bene così?
+
+**Nuove del 27/10 (abbonamenti, da vedere con calma prima di attivarli):**
+- **Rimborso alla cancellazione dell'account:** oggi il server annulla l'abbonamento senza rimborsare la parte già pagata.
+- **IVA:** regime IVA del titolare e IVA per i clienti degli altri Paesi UE (segnaposto nei termini).
+- **Recesso:** per non dover rimborsare tutto a chi recede entro 14 giorni, prima del pagamento serve una casella "inizia subito" (art. 57 c. 3). Da decidere con il professionista, insieme ai ruoli di Stripe, alla sede di Supabase e a quando partono i 14 giorni con la prova gratuita.
+- **Prova gratuita:** il server la controlla per account; chi cancella l'account e lo ricrea con la stessa email può riaverla. Va bene così?
+- **Link di accesso via email:** vanno aperti nello stesso browser in cui si chiedono (protezione PKCE). Le app di posta con il loro browser interno non funzionano: in futuro si può usare un codice di 6 cifre.
+- **Computer condivisi:** uscendo, i dati restano nel browser. Serve un pulsante "Esci e cancella i dati"?
+- **Registrazione con Google:** il consenso alle condizioni non viene registrato nell'account.
+- **GitHub Pages:** se il sito resta anche lì, va scritto nell'informativa privacy.
+
+**Nuove del 26/10:**
+- **Limiti d'uso della squadra.** Il 22/10 un giro di 5 agenti ha esaurito il limite settimanale del tuo piano: i giri del 23, 24 e 25 sono saltati. Ora la squadra lavora leggera. Se vuoi che faccia di più ogni giorno serve un piano Claude con limiti più alti; altrimenti va bene così, solo più lenta.
+- **Fonti concordi.** Quando OMI e perito concordano entro il 35% si usa l'OMI anche se è il più alto. Esempio: Codogno pvp-4617243, OMI 150.608 € contro 112.450 € della prima asta. Vuoi usare sempre il valore più basso?
+
+**Già in elenco:**
 
 1. **Repository privato per i file OMI.** Crea `radaraste-omi` privato, caricaci gli zip, poi aggiungi il secret `OMI_TOKEN` e la variabile `OMI_REPO`: passi esatti nel README, sezione "Quotazioni OMI". Senza, il sito pubblicato usa solo perizie e prima asta. Le quotazioni OMI ci sono solo nella mia copia locale e nell'anteprima.
 2. **Abbonamenti.** Nel messaggio del 13/10 hai scritto prima "lascia stare gli abbonamenti" e poi "zona abbonamenti in modalità TEST".
@@ -211,4 +257,17 @@ Ultimo aggiornamento: 13/10/2026, sera.
 - ✅ Il ricalcolo sostituiva le descrizioni complete delle schede con quelle brevi: corretto e verificato.
 - ✅ Sul telefono la riga di esempi della chat allargava la pagina.
 - ✅ Coordinate fuori dall'Italia, biciclette tra le auto, prezzi base a zero, aste di oggi già iniziate, titoli tagliati, offerte minime sopra il prezzo base: corretti nella raccolta del 12-13/10.
+- ✅ 19/10: la scheda dell'asta pubblicata mostrava "Scheda non disponibile" (un file mancava nella pagina) e il piè di pagina aveva 7 link a pagine non ancora create. Corretti con la #3; ora un test controlla che ogni voce del menu e del piè di pagina porti a una pagina esistente.
+- ✅ 22-26/10, trovati dalla squadra e corretti (in attesa del Merge):
+  - Combinazioni d'oro con un falso "risparmio prima casa" su uffici, D/8 e pertinenze più care della casa.
+  - Fonti OMI e perito considerate concordi anche con l'OMI più alto del 54%.
+  - Stato di conservazione mai passato all'OMI.
+  - Rischio "degrado" non visto per "allo stato grezzo", "diruto", "collabenti".
+  - Un affare intitolato "NESSUNA" con "nessun rischio".
+  - Date del Demanio: termine delle offerte scambiato per giorno dell'asta.
+  - Titoli sporchi e frasi sbagliate ("solo 0 aste", "ne ho trovate 1").
+  - Beni mobili segnati "Ottimo affare" con la sola stima.
+  - Stratega con due cifre diverse per la stessa cosa.
+  - Accessibilità di alcune pagine.
 - ⬜ Azioni di GitHub su Node 20 (avviso di deprecazione).
+- ✅ 26/10: sigle di provincia diverse tra aste e indice OMI corrette: 252 immobili in più con il valore OMI nei dati locali. Restano 606 "comune non trovato": 326 senza nome del comune; 280 con nomi scritti in modo diverso nell'indice ("S MARIA CAPUA VETERE", "MERANO .MERAN."), da fare.

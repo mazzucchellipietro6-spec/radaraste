@@ -297,6 +297,11 @@ test('chi vuole viverci cerca una sola casa', () => {
   const sim = S.simula(S.piano(cand, prof), prof, { n: 200, seme: 5 });
   assert.equal(sim.vinte.istogramma[1], 1);
   assert.equal(sim.perAsta[1].nonServe, 1);
+  // una cifra sola per il guadagno: la somma diretta conta anche la seconda casa, che non serve; la sintesi non la scrive
+  const ris = S.esegui(aste, { capitale: 500000, concorrenza: 1, strategia: 'vivere' }, { T, oggi: OGGI, n: 200, seme: 5 });
+  assert.ok(ris.piano.sintesi.guadagnoAttesoTotale > ris.simulazione.guadagno.media * 1.5, 'qui le due cifre sono molto diverse');
+  assert.doesNotMatch(ris.piano.sintesi.testo, /[Gg]uadagno|margine/);
+  assert.match(ris.piano.sintesi.testo, /^Piano con 2 aste .* di cassa su 500\.000 €\.$/);
 });
 
 test('spiega: ipotesi con le fonti, cosa non si sa e avvertenza finale', () => {
@@ -319,4 +324,502 @@ test('spiega: ipotesi con le fonti, cosa non si sa e avvertenza finale', () => {
   assert.match(testo, /1 asta in linea con le tue scelte è esclusa/);
   assert.match(S.spiega({}).righe.join('\n'), /non disponibili/);
   assert.equal(S.spiega({}).disclaimer, S.DISCLAIMER);
+});
+
+/* ---------- strategia su più anni: proiezione del patrimonio ---------- */
+
+// piano con un'asta sola che si vince sempre (senza statistiche e con concorrenza 1 la probabilità è 1)
+function sempreVinta(strategia, x, input) {
+  return S.esegui([asta(x || {})], { capitale: 150000, concorrenza: 1, strategia, ...input }, { T, oggi: OGGI, n: 300, seme: 4 });
+}
+
+test('proiezione: opzioni con valori predefiniti prudenti e limiti', () => {
+  const o = S.opzioniProiezione({});
+  assert.deepEqual(o, { anni: 3, rivalutazione: 0, costiAffitto: 0.38, mesiRivendita: 12, costiVendita: 0.04, reinvesti: false, tassoMutuo: null });
+  assert.equal(S.opzioniProiezione({}, T).costiAffitto, S.costiAffittoBase(T));
+  assert.equal(S.PROIEZIONE_BASE.rivalutazione, 0);
+  const l = S.opzioniProiezione({ anni: 9, rivalutazione: 0.5, costiAffitto: 2, mesiRivendita: 0, costiVendita: -1, reinvesti: 'si', tassoMutuo: '0.035' });
+  assert.deepEqual(l, { anni: 5, rivalutazione: 0.1, costiAffitto: 0.9, mesiRivendita: 1, costiVendita: 0, reinvesti: true, tassoMutuo: 0.035 });
+  assert.equal(S.opzioniProiezione({ anni: 0 }).anni, 1);
+  assert.equal(S.opzioniProiezione({ reinvesti: 'no' }).reinvesti, false);
+  assert.equal(S.opzioniProiezione({ tassoMutuo: '' }).tassoMutuo, null);
+});
+
+test('proiezione: riproducibile, anno per anno, con le stesse aste vinte della simulazione del piano', () => {
+  const { prof, cand } = casoRischio('audace');
+  const pi = S.piano(cand, prof);
+  const ris = { profilo: prof, candidati: cand, piano: pi, simulazione: S.simula(pi, prof, { n: 2000, seme: 21 }), T };
+  const a = S.proiezione(ris, { anni: 4 });
+  assert.deepEqual(a, S.proiezione(ris, { anni: 4 }));
+  assert.notDeepEqual(S.proiezione(ris, { anni: 4, seme: 22 }).serie, a.serie);
+  assert.equal(a.n, 2000);
+  assert.equal(a.seme, 21);
+  assert.equal(a.serie.length, 5);
+  assert.deepEqual(a.serie.map((s) => s.anno), [0, 1, 2, 3, 4]);
+  assert.deepEqual(a.serie.map((s) => s.data), ['2026-10-13', '2027-10-13', '2028-10-13', '2029-10-13', '2030-10-13']);
+  // oggi: solo il capitale in cassa
+  assert.deepEqual(a.serie[0].patrimonio, { p10: 100000, p50: 100000, p90: 100000, media: 100000 });
+  // a fine anno 1 (prima di qualsiasi vendita) gli immobili posseduti sono le aste vinte della simulazione, giro per giro
+  assert.equal(a.serie[1].posseduti, ris.simulazione.vinte.media);
+  assert.equal(S.proiezione(ris, { anni: 9 }).serie.length, 6);   // al massimo 5 anni
+});
+
+test('proiezione: nessuna rivalutazione se non la chiedi', () => {
+  const ris = sempreVinta('vivere');
+  const c = ris.piano.scelte[0];
+  const p = S.proiezione(ris, { anni: 3 });
+  for (const y of [1, 2, 3]) {
+    assert.equal(p.serie[y].immobili.p50, 180000);   // il valore minimo della forchetta, fermo
+    assert.equal(p.serie[y].patrimonio.p50, 150000 - c.cassaNecessaria + 180000);
+  }
+  assert.match(p.ipotesi.join('\n'), /senza rivalutazione/);
+  // con l'ipotesi esplicita dell'utente il valore cresce dell'x% l'anno
+  const r = S.proiezione(ris, { anni: 3, rivalutazione: 0.02 });
+  assert.equal(r.serie[3].immobili.p50, Math.round(180000 * Math.pow(1.02, 3)));
+  assert.match(r.ipotesi.join('\n'), /rivalutazione del 2% l'anno.*ipotesi tua/);
+  // un valore negativo si legge come calo dei prezzi, non come "rivalutazione del -2%"
+  const calo = S.proiezione(ris, { anni: 3, rivalutazione: -0.02 });
+  assert.equal(calo.serie[3].immobili.p50, Math.round(180000 * Math.pow(0.98, 3)));
+  assert.match(calo.ipotesi.join('\n'), /un calo dei prezzi del 2% l'anno/);
+});
+
+test('proiezione: affitti dalle quotazioni OMI di locazione, al netto di costi e sfitto', () => {
+  // asta il 01/12/2026, saldo entro il 31/03/2027: affitto dal primo mese intero dopo il saldo, 6 mesi nel primo anno
+  const ris = sempreVinta('affittare', { omiAffMin: 500, omiAffMax: 700 });
+  const p = S.proiezione(ris, { anni: 3 });
+  const f1 = p.serie[1].affitti, f3 = p.serie[3].affitti;
+  // costi e sfitto predefiniti: 38% del canone, resta il 62%
+  assert.ok(f1.p10 >= 6 * 500 * 0.62 && f1.p90 <= 6 * 700 * 0.62, JSON.stringify(f1));
+  assert.ok(f3.p10 >= 30 * 500 * 0.62 && f3.p90 <= 30 * 700 * 0.62, JSON.stringify(f3));
+  assert.ok(f3.p10 < f3.p50 && f3.p50 < f3.p90);   // un canone diverso per ogni simulazione, tra minimo e massimo OMI
+  assert.ok(Math.abs(f3.media - 30 * 600 * 0.62) < 300, String(f3.media));
+  assert.equal(p.serie[3].cassa.p50, 150000 - ris.piano.scelte[0].cassaNecessaria + p.serie[3].affitti.p50);
+  // senza costi e sfitto i canoni sono quelli lordi
+  const lordo = S.proiezione(ris, { anni: 3, costiAffitto: 0 });
+  assert.ok(Math.abs(lordo.serie[3].affitti.media - 30 * 600) < 400);
+  const testo = p.ipotesi.join('\n');
+  assert.match(testo, /quotazioni OMI di locazione/);
+  assert.match(testo, /38% del canone.*ipotesi tua/);
+  assert.match(testo, /21%/);
+  assert.ok(p.fonti.some((x) => /OMI/.test(x.nome) && /agenziaentrate\.gov\.it/.test(x.url)));
+  // senza quotazione OMI di locazione nessun affitto, e lo si dice
+  const senza = S.proiezione(sempreVinta('affittare'), { anni: 2 });
+  assert.equal(senza.serie[2].affitti.p90, 0);
+  assert.match(senza.avvertenze.join('\n'), /Per nessuna asta del piano c'è la quotazione OMI di locazione: non stimo nessun affitto/);
+  // chi rivende o ci va a vivere non incassa affitti
+  assert.equal(S.proiezione(sempreVinta('rivendere', { omiAffMin: 500, omiAffMax: 700 }), { anni: 3 }).serie[3].affitti.p90, 0);
+});
+
+test('proiezione: plusvalenza tassata solo se rivendi entro 5 anni', () => {
+  const v = S.vendita({ prezzo: 180000, costo: 99700, costiVendita: 0.04, mesiPossesso: 12 }, T);
+  assert.equal(v.costi, 7200);
+  // per prudenza i costi di vendita non si tolgono dalla plusvalenza (come js/calcoli.js): 180.000 − 99.700
+  assert.equal(v.plusvalenza, 80300);
+  assert.equal(v.imposta, 20878);
+  assert.equal(v.netto, 180000 - 7200 - 20878);
+  assert.equal(v.entroCinqueAnni, true);
+  assert.equal(S.vendita({ prezzo: 180000, costo: 99700, costiVendita: 0.04, mesiPossesso: 59 }, T).imposta, 20878);
+  const dopo = S.vendita({ prezzo: 180000, costo: 99700, costiVendita: 0.04, mesiPossesso: 61 }, T);
+  assert.equal(dopo.imposta, 0);
+  assert.equal(dopo.entroCinqueAnni, false);
+  assert.equal(dopo.netto, 180000 - 7200);
+  assert.equal(S.vendita({ prezzo: 180000, costo: 99700, costiVendita: 0.04, mesiPossesso: 12, abitazionePrincipale: true }, T).imposta, 0);
+  assert.equal(S.vendita({ prezzo: 90000, costo: 99700, costiVendita: 0.04, mesiPossesso: 12 }, T).imposta, 0);   // in perdita
+  assert.equal(S.vendita({ prezzo: 18000, costo: 9000, costiVendita: 0.04, mesiPossesso: 12, immobile: false }, T).imposta, 0);
+  // nella proiezione: vendita 12 mesi dopo il saldo (nel secondo anno), con l'imposta sostitutiva
+  const ris = sempreVinta('rivendere');
+  const c = ris.piano.scelte[0];
+  const p = S.proiezione(ris, { anni: 3 });
+  const atteso = S.vendita({ prezzo: 180000, costo: c.costoTotale, costiVendita: 0.04, mesiPossesso: 12 }, T);
+  assert.equal(p.serie[1].imposte.p50, 0);
+  assert.equal(p.serie[1].immobili.p50, 180000);
+  assert.equal(p.serie[2].imposte.p50, atteso.imposta);
+  assert.equal(p.serie[2].immobili.p50, 0);
+  assert.equal(p.serie[2].cassa.p50, Math.round(150000 - c.cassaNecessaria + atteso.netto));
+  assert.deepEqual(p.vendite, { media: 1, quotaGiri: 1, quotaConImposta: 1, impostaMedia: atteso.imposta });
+  const testo = p.ipotesi.join('\n');
+  assert.match(testo, /entro 5 anni/);
+  assert.match(testo, /imposta sostitutiva del 26%, che è facoltativa/);
+  assert.match(testo, /Art\. 67/);
+  // con una rivendita oltre la fine del periodo nessuna vendita e nessuna imposta
+  const tardi = S.proiezione(ris, { anni: 2, mesiRivendita: 24 });
+  assert.equal(tardi.vendite.media, 0);
+  assert.equal(tardi.serie[2].imposte.p90, 0);
+  assert.match(tardi.avvertenze.join('\n'), /nessun immobile è ancora venduto/);
+  // chi ci va a vivere non vende e non paga plusvalenze
+  assert.equal(S.proiezione(sempreVinta('vivere'), { anni: 5 }).vendite.impostaMedia, 0);
+});
+
+test('proiezione: la cassa non scende mai sotto zero', () => {
+  // capitale tutto impegnato, mutuo con interessi alti e reinvestimento: la cassa resta >= 0 in ogni simulazione e in ogni mese
+  const casi = [
+    sempreVinta('affittare', { omiAffMin: 100, omiAffMax: 120 }, { capitale: 27700, mutuo: 72000 }),
+    sempreVinta('rivendere', {}, { capitale: 99700 }),
+    S.esegui([asta({ comune: 'A', dataAsta: '2026-11-03' }), asta({ comune: 'B', dataAsta: '2026-11-20' }), asta({ comune: 'C', dataAsta: '2027-01-15', omiAffMin: 400, omiAffMax: 600 })],
+      { capitale: 120000, mutuo: 60000, prudenza: 'audace', strategia: 'affittare' }, { T, stat: STAT, oggi: OGGI, n: 1500, seme: 8 })
+  ];
+  for (const ris of casi) {
+    for (const opz of [{ anni: 5 }, { anni: 5, reinvesti: true, tassoMutuo: 0.2 }, { anni: 5, reinvesti: true, mesiRivendita: 6, costiVendita: 0.3 }]) {
+      const p = S.proiezione(ris, opz);
+      assert.ok(p.cassaMinima >= 0, JSON.stringify(opz) + ' ' + p.cassaMinima);
+      p.serie.forEach((s) => assert.ok(s.cassa.p10 >= 0));
+    }
+  }
+  // mutuo senza tasso: il debito resta per intero e si avverte che gli interessi mancano
+  const m = S.proiezione(casi[0], { anni: 2 });
+  assert.equal(m.mutuo, true);
+  assert.equal(m.serie[2].debito.p50, 72000);
+  assert.match(m.avvertenze.join('\n'), /tasso del mutuo/);
+  // con il tasso gli interessi pesano sulla cassa o sul debito
+  const t = S.proiezione(casi[0], { anni: 2, tassoMutuo: 0.04 });
+  assert.ok(t.serie[2].patrimonio.p50 < m.serie[2].patrimonio.p50);
+});
+
+test('proiezione: forchetta p10 <= p50 <= p90 in ogni anno', () => {
+  const ris = S.esegui([asta({ comune: 'A', dataAsta: '2026-11-03', omiAffMin: 500, omiAffMax: 800 }), asta({ comune: 'B', dataAsta: '2026-12-20', omiAffMin: 450, omiAffMax: 600 })],
+    { capitale: 200000, strategia: 'affittare', prudenza: 'equilibrata' }, { T, stat: STAT, oggi: OGGI, n: 1500, seme: 13 });
+  for (const opz of [{ anni: 5 }, { anni: 5, reinvesti: true, rivalutazione: 0.01 }, { anni: 3, rivalutazione: -0.02 }]) {
+    const p = S.proiezione(ris, opz);
+    p.serie.forEach((s) => {
+      for (const k of ['patrimonio', 'cassa', 'immobili', 'debito', 'affitti', 'imposte']) assert.ok(s[k].p10 <= s[k].p50 && s[k].p50 <= s[k].p90, k + ' anno ' + s.anno);
+    });
+    assert.ok(p.finale.patrimonio.p10 < p.finale.patrimonio.p90);   // c'è incertezza: la fascia non è un punto
+  }
+});
+
+test('proiezione: reinvestimento con le medie del piano, detto come ipotesi', () => {
+  const ris = S.esegui([asta({ comune: 'A', dataAsta: '2026-11-03' }), asta({ comune: 'B', dataAsta: '2026-11-20', valoreMin: 250000 })],
+    { capitale: 220000, concorrenza: 1, strategia: 'rivendere' }, { T, oggi: OGGI, n: 300, seme: 2 });
+  const s = ris.piano.scelte;
+  assert.equal(s.length, 2);
+  const senza = S.proiezione(ris, { anni: 5 }), con = S.proiezione(ris, { anni: 5, reinvesti: true });
+  assert.equal(senza.reinvestimento, null);
+  assert.equal(con.reinvestimento.simile.costo, Math.round((s[0].costoTotale + s[1].costoTotale) / 2));
+  assert.equal(con.reinvestimento.simile.valore, 215000);
+  assert.equal(con.reinvestimento.simile.probabilita, 1);
+  assert.equal(con.reinvestimento.simile.passo, 3);   // 2 aste in 6 mesi
+  // le due vendite lasciano circa 158.000 € di guadagni: basta per un'altra asta simile da 99.700 €
+  assert.ok(con.reinvestimento.media >= 1);
+  assert.ok(con.finale.patrimonio.p50 > senza.finale.patrimonio.p50);
+  assert.match(con.ipotesi.join('\n'), /medie delle aste del piano.*Non è detto che aste simili ci siano davvero/);
+  assert.match(senza.ipotesi.join('\n'), /Nessun reinvestimento/);
+  // chi ci va a vivere cerca una sola casa: niente reinvestimento
+  const v = S.proiezione(sempreVinta('vivere'), { anni: 5, reinvesti: true });
+  assert.equal(v.reinvestimento, null);
+  assert.match(v.ipotesi.join('\n'), /una sola casa/);
+});
+
+test('proiezione: senza piano il patrimonio resta il capitale; ipotesi, fonti e avviso sempre presenti', () => {
+  const vuoto = S.esegui([], { capitale: 50000 }, { T, oggi: OGGI, n: 100 });
+  const p = S.proiezione(vuoto, { anni: 2 });
+  p.serie.forEach((s) => assert.deepEqual(s.patrimonio, { p10: 50000, p50: 50000, p90: 50000, media: 50000 }));
+  assert.match(p.avvertenze.join('\n'), /Nessuna asta nel piano/);
+  assert.equal(p.disclaimer, S.DISCLAIMER);
+  const q = S.proiezione(sempreVinta('rivendere'), {});
+  assert.equal(q.anni, 3);
+  assert.match(q.ipotesi.join('\n'), /Forchetta: 300 simulazioni \(seme 4\)/);
+  assert.ok(q.fonti.some((x) => /Art\. 67/.test(x.nome) && x.url));
+  assert.throws(() => S.proiezione({ piano: { scelte: [] } }, {}), /tariffe/);
+});
+
+/* ---------- correzioni del 28/10/2026 alla proiezione ---------- */
+
+test('proiezione: costi e sfitto predefiniti con le stesse ipotesi del calcolatore «Conviene?»', () => {
+  // cedolare 21% sugli 11 mesi affittati, 1 mese sfitto, spese 10% del canone → resta il 62,4%: costi 37,6%, arrotondati per eccesso a 38%
+  assert.equal(S.costiAffittoBase(T), 0.38);
+  assert.equal(S.PROIEZIONE_BASE.costiAffitto, S.costiAffittoBase(T), 'il valore senza tariffe deve restare uguale a quello delle tariffe');
+  const c = C.strategie({ offerta: 90000, prezzoBase: 90000, valore: { min: 1, max: 1 }, canoneMese: { min: 1000, max: 1000 } }, T);
+  const costiCalcolatore = 1 - c.affitto.nettoAnno.min / 12000;
+  assert.ok(S.costiAffittoBase(T) >= costiCalcolatore && S.costiAffittoBase(T) - costiCalcolatore < 0.01, String(costiCalcolatore));
+  // senza tariffe resta il valore fisso; un valore scelto dall'utente vince sempre
+  assert.equal(S.costiAffittoBase(null), 0.38);
+  assert.equal(S.opzioniProiezione({ costiAffitto: 0.2 }, T).costiAffitto, 0.2);
+  const p = S.proiezione(sempreVinta('affittare', { omiAffMin: 500, omiAffMax: 700 }), { anni: 2 });
+  assert.equal(p.opzioni.costiAffitto, 0.38);
+  assert.match(p.ipotesi.join('\n'), /valore proposto, 38%.*cedolare secca del 21%.*1 mese senza inquilino.*10% del canone/);
+});
+
+test('proiezione: i costi di vendita non riducono la plusvalenza, come nel calcolatore «Conviene?»', () => {
+  const v = S.vendita({ prezzo: 200000, costo: 120000, costiVendita: 0.05, mesiPossesso: 24 }, T);
+  assert.equal(v.costi, 10000);
+  assert.equal(v.imposta, C.plusvalenza({ prezzoVendita: 200000, costoAcquisto: 120000, costiInerenti: 0, anniPossesso: 2 }, T).imposta);
+  assert.equal(v.imposta, 20800);
+  assert.equal(v.netto, 200000 - 10000 - 20800);
+  const ris = sempreVinta('rivendere');
+  assert.match(S.proiezione(ris, { anni: 3 }).ipotesi.join('\n'), /Per prudenza non tolgo i costi di vendita/);
+});
+
+test('proiezione: la rivalutazione vale solo per gli immobili, non per veicoli e beni', () => {
+  const auto = { categoria: 'auto', tipo: 'Autoveicoli e cicli', prezzoBase: 8000, offertaMinima: 6000, offertaMax: 9000, valoreMin: 14000 };
+  const ris = S.esegui([asta(auto)], { capitale: 50000, concorrenza: 1, strategia: 'rivendere', categoria: 'auto' }, { T, oggi: OGGI, n: 200, seme: 4 });
+  assert.equal(ris.piano.scelte.length, 1);
+  const ferma = S.proiezione(ris, { anni: 1, mesiRivendita: 24, rivalutazione: 0.05 });
+  assert.equal(ferma.serie[1].immobili.p50, 14000);   // prima era 14.000 × 1,05^(12/12): un'auto che si rivaluta
+  assert.match(ferma.avvertenze.join('\n'), /vale solo per gli immobili/);
+  // vendita dopo 12 mesi dal saldo: prezzo di oggi, meno i costi di vendita, senza imposta (non è un immobile)
+  const venduta = S.proiezione(ris, { anni: 3, rivalutazione: 0.05 });
+  const c = ris.piano.scelte[0];
+  assert.equal(venduta.serie[3].cassa.p50, Math.round(50000 - c.cassaNecessaria + 14000 * 0.96));
+  assert.equal(venduta.serie[3].imposte.p90, 0);
+  // l'immobile invece si rivaluta
+  assert.equal(S.proiezione(sempreVinta('vivere'), { anni: 1, rivalutazione: 0.05 }).serie[1].immobili.p50, Math.round(180000 * 1.05));
+});
+
+test('proiezione: la simulazione mediana, voce per voce, somma alla mediana del patrimonio', () => {
+  const ris = S.esegui([asta({ comune: 'A', dataAsta: '2026-11-03', omiAffMin: 500, omiAffMax: 800 }), asta({ comune: 'B', dataAsta: '2026-12-20', omiAffMin: 450, omiAffMax: 600 })],
+    { capitale: 200000, mutuo: 50000, strategia: 'affittare', prudenza: 'equilibrata' }, { T, stat: STAT, oggi: OGGI, n: 1500, seme: 13 });
+  const p = S.proiezione(ris, { anni: 4, tassoMutuo: 0.03 });
+  p.serie.forEach((s) => {
+    assert.equal(s.mediana.cassa + s.mediana.immobili - s.mediana.debito, s.patrimonio.p50, 'anno ' + s.anno);
+    assert.ok(s.mediana.cassa >= 0 && s.mediana.affitti >= 0);
+  });
+  assert.deepEqual(p.serie[0].mediana, { cassa: 200000, immobili: 0, debito: 0, affitti: 0, imposte: 0 });
+});
+
+test('proiezione: fonti con il semestre OMI, l\'art. 67 TUIR con link ufficiale e le statistiche del Portale', () => {
+  const stat = { ...STAT, recenti: { giorni: 28, fonte: 'Portale delle Vendite Pubbliche – esiti delle vendite dal 31/08/2026 al 27/09/2026', periodo: { dal: '2026-08-31', al: '2026-09-27' }, gruppi: STAT.gruppi, totale: conta(50, 50, 0, 0.5, 0.5, 0.5) } };
+  const affitto = S.esegui([asta({ omiAffMin: 500, omiAffMax: 700 })], { capitale: 150000, strategia: 'affittare' }, { T, stat, oggi: OGGI, n: 200, seme: 4 });
+  const p = S.proiezione(affitto, { anni: 2, semestreOmi: '2025/2' });
+  const omi = p.fonti.find((f) => /OMI di locazione/.test(f.nome));
+  assert.match(omi.nome, /semestre 2025\/2/);
+  assert.match(omi.url, /^https:\/\/www\.agenziaentrate\.gov\.it\//);
+  assert.match(p.ipotesi.join('\n'), /Agenzia delle Entrate – OMI, semestre 2025\/2/);
+  const pvp = p.fonti[0];
+  assert.match(pvp.nome, /Portale delle Vendite Pubbliche/);
+  assert.match(pvp.nome, /dal 31\/08\/2026 al 27\/09\/2026/);
+  assert.equal(pvp.url, 'https://pvp.giustizia.it/pvp/');
+  assert.equal(pvp.uso, 'probabilità di vincere');
+  // senza semestre lo si dice, non lo si inventa
+  assert.match(S.proiezione(affitto, { anni: 2 }).fonti.find((f) => /OMI/.test(f.nome)).nome, /semestre non indicato/);
+  const r = S.proiezione(S.esegui([asta({})], { capitale: 150000, strategia: 'rivendere' }, { T, stat, oggi: OGGI, n: 200, seme: 4 }), { anni: 2 });
+  const art67 = r.fonti.find((f) => /Art\. 67/.test(f.nome));
+  assert.equal(art67.url, T.plusvalenza.url);
+  assert.match(art67.url, /^https:\/\/www\.agenziaentrate\.gov\.it\//);
+});
+
+test('proiezione: quando mancano dati lo dice invece di stimare', () => {
+  // affitto senza nessuna quotazione OMI di locazione: nessun canone stimato
+  const senza = S.proiezione(sempreVinta('affittare'), { anni: 3 });
+  assert.equal(senza.affitto.conQuotazione, 0);
+  senza.serie.forEach((s) => assert.equal(s.affitti.p90, 0));
+  assert.match(senza.avvertenze.join('\n'), /Per nessuna asta del piano c'è la quotazione OMI di locazione/);
+  // senza statistiche degli esiti: probabilità del caso peggiore, detto
+  assert.match(senza.avvertenze.join('\n'), /Statistiche sugli esiti passati del Portale non disponibili/);
+  assert.equal(S.proiezione(S.esegui([asta({ omiAffMin: 500, omiAffMax: 700 })], { capitale: 150000, strategia: 'affittare' }, { T, stat: STAT, oggi: OGGI, n: 100 }), {}).avvertenze.some((a) => /Statistiche/.test(a)), false);
+  // immobile occupato da affittare: l'affitto dal saldo può essere contato per eccesso
+  const occ = S.proiezione(sempreVinta('affittare', { omiAffMin: 500, omiAffMax: 700, stato: 'occupato' }), { anni: 3 });
+  assert.equal(occ.affitto.occupati, 1);
+  assert.match(occ.avvertenze.join('\n'), /1 immobile del piano è occupato.*per eccesso/);
+  // mutuo senza tasso: avviso; rate del capitale non simulate, detto
+  const m = S.proiezione(sempreVinta('affittare', { omiAffMin: 100, omiAffMax: 120 }, { capitale: 27700, mutuo: 72000 }), { anni: 2 });
+  assert.match(m.avvertenze.join('\n'), /Indica il tasso del mutuo/);
+  assert.match(m.ipotesi.join('\n'), /Le rate del capitale non sono simulate/);
+});
+
+/* ---------- grafico "Il patrimonio nel tempo": dati puri per l'SVG ---------- */
+
+function proiezioneDiProva(opz) {
+  const ris = S.esegui([asta({ comune: 'A', dataAsta: '2026-11-03' }), asta({ comune: 'B', dataAsta: '2026-12-20', valoreMin: 160000 })],
+    { capitale: 200000, strategia: 'rivendere', prudenza: 'audace' }, { T, stat: STAT, oggi: OGGI, n: 800, seme: 13 });
+  return S.proiezione(ris, { anni: 5, reinvesti: true, ...opz });
+}
+
+test('grafico: una scala sola da zero, anni da oggi, fascia p10–p90 e linea mediana', () => {
+  const p = proiezioneDiProva();
+  const d = S.datiGrafico(p, { larghezza: 640, altezza: 300 });
+  assert.equal(d.vuoto, false);
+  assert.equal(d.compatto, false);
+  assert.equal(d.punti.length, 6);
+  assert.deepEqual(d.asseX.map((a) => a.testo), ['oggi', '1 anno', '2 anni', '3 anni', '4 anni', '5 anni']);
+  // x crescenti ed equidistanti, dentro il piano del grafico
+  const xs = d.punti.map((q) => q.x);
+  assert.equal(xs[0], d.piano.x0);
+  assert.equal(xs[5], d.piano.x1);
+  for (let i = 1; i < xs.length; i++) assert.ok(Math.abs((xs[i] - xs[i - 1]) - (xs[1] - xs[0])) < 0.2);
+  // scala: parte da zero, passo tondo, sopra il caso alto più alto; y del valore più alto più in alto
+  assert.equal(d.scala.min, 0);
+  assert.equal(d.scala.tacche[0].valore, 0);
+  assert.equal(d.scala.tacche[0].y, d.piano.y1);
+  assert.equal(d.scala.tacche[d.scala.tacche.length - 1].y, d.piano.y0);
+  assert.ok(d.scala.max >= Math.max(...p.serie.map((s) => s.patrimonio.p90)));
+  assert.ok([1, 2, 2.5, 5].includes(d.scala.passo / Math.pow(10, Math.floor(Math.log10(d.scala.passo)))));
+  d.punti.forEach((q, i) => {
+    const s = p.serie[i].patrimonio;
+    assert.deepEqual([q.p10, q.p50, q.p90], [s.p10, s.p50, s.p90]);
+    assert.ok(q.y90 <= q.y50 && q.y50 <= q.y10, 'anno ' + i);
+    assert.ok(q.y90 >= d.piano.y0 && q.y10 <= d.piano.y1);
+    assert.equal(q.mediana.cassa + q.mediana.immobili - q.mediana.debito, q.p50);
+  });
+  // linea: un punto per anno; fascia: sopra lungo p90 e ritorno lungo p10, chiusa
+  assert.equal((d.linea.match(/[ML]/g) || []).length, 6);
+  assert.ok(d.linea.startsWith('M' + d.punti[0].x + ' ' + d.punti[0].y50));
+  assert.equal((d.area.match(/[ML]/g) || []).length, 12);
+  assert.ok(d.area.endsWith('Z'));
+  assert.ok(d.area.includes('L' + d.punti[5].x + ' ' + d.punti[5].y10));
+  // zone del mouse e del tocco: contigue, senza buchi, una per anno
+  for (let i = 1; i < d.punti.length; i++) {
+    const z0 = d.punti[i - 1].zona, z1 = d.punti[i].zona;
+    assert.ok(Math.abs(z0.x + z0.larghezza - z1.x) < 0.2);
+  }
+  assert.equal(S.puntoVicino(d, d.punti[2].x + 3), 2);
+  assert.equal(S.puntoVicino(d, -100), 0);
+  assert.equal(S.puntoVicino(d, 9999), 5);
+});
+
+test('grafico: etichette dirette sui valori finali, senza sovrapporsi e dentro il riquadro', () => {
+  const p = proiezioneDiProva();
+  for (const larghezza of [640, 340]) {
+    const d = S.datiGrafico(p, { larghezza });
+    const u = d.punti[d.punti.length - 1];
+    const e = d.etichette;
+    assert.ok(e.length >= 1 && e.length <= 3);
+    assert.ok(e.some((x) => /mediana|tutte/.test(x.nome)));
+    // spazio di un'etichetta: 17 px per il valore e 13 px per ogni riga del nome
+    for (let i = 1; i < e.length; i++) assert.ok(e[i].c - e[i - 1].c >= 17 + 13 * e[i - 1].righe.length - 0.01, 'etichette sovrapposte a ' + larghezza + ' px');
+    e.forEach((x) => {
+      assert.ok(x.c >= 10 && x.c + 4 + 13 * x.righe.length <= d.altezza - 4);
+      assert.equal(x.nome, x.righe.join(' '));
+      // il testo più lungo entra nel margine destro (stima: 6,6 px a carattere per il valore, 5,7 per il nome)
+      assert.ok(12 + Math.max(x.testo.length * 6.6, ...x.righe.map((r) => r.length * 5.7)) <= d.margini.destra, x.testo);
+      assert.equal(x.guida, Math.abs(x.c - x.y) > 3);
+      assert.equal(x.valore, u[x.chiave]);
+    });
+  }
+  // valori molto vicini: le etichette si allontanano e hanno la linea guida
+  const vicini = S.datiGrafico({ aste: 1, n: 10, capitale: 1000, serie: [
+    { anno: 0, data: '2026-10-13', patrimonio: { p10: 1000, p50: 1000, p90: 1000 } },
+    { anno: 1, data: '2027-10-13', patrimonio: { p10: 100000, p50: 100500, p90: 101000 } }] }, { larghezza: 600 });
+  assert.equal(vicini.etichette.length, 3);
+  assert.ok(vicini.etichette.some((x) => x.guida));
+  for (let i = 1; i < 3; i++) assert.ok(vicini.etichette[i].c - vicini.etichette[i - 1].c >= 29.99);
+  // su telefono i nomi doppi vanno su due righe
+  const corto = S.datiGrafico({ aste: 1, n: 10, capitale: 50000, serie: [
+    { anno: 0, data: '2026-10-13', patrimonio: { p10: 50000, p50: 50000, p90: 50000 } },
+    { anno: 1, data: '2027-10-13', patrimonio: { p10: 50000, p50: 50000, p90: 170617 } }] }, { larghezza: 316 });
+  assert.deepEqual(corto.etichette.map((x) => x.righe), [['caso alto'], ['mediana e', 'caso basso']]);
+  assert.ok(corto.margini.destra <= 100 && corto.piano.x1 - corto.piano.x0 >= 150, JSON.stringify(corto.margini));
+  // le tacche dell'asse entrano nel margine sinistro
+  corto.scala.tacche.forEach((t) => assert.ok(t.testo.length * 5.7 + 8 <= corto.margini.sinistra, t.testo));
+  // valori uguali: un'etichetta sola, senza dire "caso alto" e "caso basso" per lo stesso numero
+  const uguali = S.datiGrafico({ aste: 1, n: 10, capitale: 50000, serie: [
+    { anno: 0, data: '2026-10-13', patrimonio: { p10: 50000, p50: 50000, p90: 50000 } },
+    { anno: 1, data: '2027-10-13', patrimonio: { p10: 70000, p50: 70000, p90: 70000 } }] }, { larghezza: 600 });
+  assert.deepEqual(uguali.etichette.map((x) => x.nome), ['tutte le simulazioni']);
+  assert.match(uguali.riassunto, /uguale in tutte le simulazioni/);
+  const dueUguali = S.datiGrafico({ aste: 1, n: 10, capitale: 50000, serie: [
+    { anno: 0, data: '2026-10-13', patrimonio: { p10: 50000, p50: 50000, p90: 50000 } },
+    { anno: 1, data: '2027-10-13', patrimonio: { p10: 40000, p50: 70000, p90: 70000 } }] }, { larghezza: 600 });
+  assert.deepEqual(dueUguali.etichette.map((x) => x.nome), ['mediana e caso alto', 'caso basso']);
+});
+
+test('grafico: su telefono forma compatta, numeri brevi e testo alternativo con il riassunto', () => {
+  const p = proiezioneDiProva();
+  const d = S.datiGrafico(p, { larghezza: 340 });
+  assert.equal(d.compatto, true);
+  assert.equal(d.larghezza, 340);
+  assert.deepEqual(d.asseX.map((a) => a.testo), ['oggi', '1', '2', '3', '4', '5']);
+  assert.equal(d.nomeAsse, 'anni');
+  assert.ok(d.piano.x1 - d.piano.x0 >= 180, 'resta spazio per il grafico');
+  d.etichette.forEach((x) => assert.match(x.testo, /^[−\d][\d,]* (mila |mln )?€$/));
+  d.scala.tacche.forEach((t) => assert.ok(t.testo.length <= 11, t.testo));
+  assert.match(d.scala.tacche[d.scala.tacche.length - 1].testo, / €$/);   // l'unità sulla tacca più alta
+  assert.doesNotMatch(d.scala.tacche[0].testo, /€/);
+  // riassunto: oggi, valori finali con il caso basso e alto, mediana di ogni anno
+  const u = p.finale.patrimonio;
+  assert.match(d.riassunto, /^Patrimonio stimato nei prossimi 5 anni, in 800 simulazioni\. Oggi: 200\.000 €\./);
+  assert.ok(d.riassunto.includes('mediana ' + Math.round(u.p50).toLocaleString('it-IT') + ' €'));
+  assert.ok(d.riassunto.includes('caso basso ' + u.p10.toLocaleString('it-IT') + ' €'));
+  assert.match(d.riassunto, /8 simulazioni su 10 stanno tra i due/);
+  assert.match(d.riassunto, /Mediana a fine anno: 1° .*, 5° /);
+  // larghezza minima garantita
+  assert.equal(S.datiGrafico(p, { larghezza: 100 }).larghezza, 280);
+  assert.match(S.datiGrafico(proiezioneDiProva({ anni: 1 })).riassunto, /^Patrimonio stimato nel prossimo anno,/);
+});
+
+test('grafico: numeri brevi, valori negativi e piano vuoto', () => {
+  assert.equal(S.eurBreve(950), '950');
+  assert.equal(S.eurBreve(12500), '12,5 mila');
+  assert.equal(S.eurBreve(250000), '250 mila');
+  assert.equal(S.eurBreve(1250000), '1,25 mln');
+  assert.equal(S.eurBreve(999600), '1 mln');
+  assert.equal(S.eurBreve(-20000), '−20 mila');
+  // patrimonio sotto zero: la scala scende sotto zero e lo zero resta una tacca
+  const neg = S.datiGrafico({ aste: 1, n: 10, capitale: 10000, serie: [
+    { anno: 0, data: '2026-10-13', patrimonio: { p10: 10000, p50: 10000, p90: 10000 } },
+    { anno: 1, data: '2027-10-13', patrimonio: { p10: -15000, p50: 5000, p90: 20000 } }] }, { larghezza: 600 });
+  assert.ok(neg.scala.min <= -15000);
+  assert.ok(neg.scala.tacche.some((t) => t.valore === 0 && t.testo === '0'));
+  assert.ok(neg.punti[1].y10 <= neg.piano.y1);
+  // nessuna asta nel piano: niente grafico, e lo si dice
+  const vuoto = S.datiGrafico(S.proiezione(S.esegui([], { capitale: 50000 }, { T, oggi: OGGI, n: 50 }), { anni: 2 }), { larghezza: 600 });
+  assert.equal(vuoto.vuoto, true);
+  assert.equal(vuoto.riassunto, 'Nessuna asta nel piano: il patrimonio resta il capitale in cassa, 50.000 €.');
+  assert.equal(S.datiGrafico(null).vuoto, true);
+});
+
+test('pagina: campi su più anni con valori prudenti e aiuto, sezione del patrimonio e avviso', () => {
+  const html = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'stratega.html'), 'utf8');
+  const campo = (nome) => {
+    const m = html.match(new RegExp('<(?:input|select)[^>]*name="' + nome + '"[^>]*>'));
+    assert.ok(m, 'manca il campo ' + nome);
+    const aiuto = (m[0].match(/aria-describedby="([^"]+)"/) || [])[1];
+    assert.ok(aiuto && html.includes('id="' + aiuto + '"'), 'manca l\'aiuto del campo ' + nome);
+    return m[0];
+  };
+  assert.match(html, /<select[^>]*name="anni"[\s\S]*?<option value="1">[\s\S]*?<option value="5">/);
+  assert.match(html, /<option value="3" selected>/);
+  assert.match(campo('rivalutazione'), /value="0"/);
+  assert.match(campo('costiAffitto'), /value="38"/);
+  assert.match(campo('mesiRivendita'), /value="12"/);
+  assert.match(campo('costiVendita'), /value="4"/);
+  assert.doesNotMatch(campo('reinvesti'), /checked/);
+  campo('tassoMutuo');
+  campo('anni');
+  assert.match(html, /simulazione, non una consulenza finanziaria/i);
+  // la sezione è disegnata dalla pagina: titolo, avviso ben visibile, grafico SVG accessibile e tabella dei numeri
+  const js = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'js', 'pages', 'stratega.js'), 'utf8');
+  assert.match(js, /<h2 id="h-patrimonio">Il patrimonio nel tempo<\/h2>/);
+  assert.match(js, /callout warn pt-avviso"><b>Simulazione, non consulenza finanziaria\.<\/b>/);
+  assert.match(js, /role="img" aria-labelledby="ptTit ptDesc"/);
+  assert.match(js, /<summary>I numeri del grafico<\/summary>/);
+  assert.match(js, /S\.datiGrafico\(/);
+});
+
+test('pagina: affitti e imposte con una cifra sola, quella della simulazione mediana mostrata anche nel riquadro dell\'anno e nella tabella', () => {
+  // collaudo del 28/10/2026 (150.000 €, "Lo affitto"): la frase diceva 33.799 € "nella mediana delle simulazioni",
+  // il riquadro dell'anno 32.268 € "affitti incassati". Erano due statistiche diverse con nomi quasi uguali.
+  const ris = S.esegui([
+    asta({ comune: 'A', dataAsta: '2026-11-03', omiAffMin: 500, omiAffMax: 800, valoreMin: 150000 }),
+    asta({ comune: 'B', dataAsta: '2026-12-20', omiAffMin: 300, omiAffMax: 1200, valoreMin: 200000 }),
+    asta({ comune: 'C', dataAsta: '2027-01-20', omiAffMin: 900, omiAffMax: 1000, valoreMin: 170000 })
+  ], { capitale: 400000, strategia: 'affittare', prudenza: 'prudente', concorrenza: 0.3 }, { T, oggi: OGGI, n: 400, seme: 1 });
+  const p = S.proiezione(ris, { anni: 3 });
+  const d = S.datiGrafico(p, { larghezza: 640 });
+  // le due statistiche qui sono davvero diverse: per questo la pagina ne mostra una sola
+  assert.notEqual(p.finale.affitti.p50, p.finale.mediana.affitti);
+  // riquadro dell'anno e tabella leggono la simulazione mediana (punti[A].mediana), la stessa di p.finale.mediana
+  assert.deepEqual(d.punti[d.punti.length - 1].mediana, p.finale.mediana);
+  const js = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'js', 'pages', 'stratega.js'), 'utf8');
+  const frase = js.slice(js.indexOf('var diff = P.p50 - p.capitale'), js.indexOf('h += \'<div class="ar-numeri">\' +\n      tile(\'Dopo \''));
+  assert.match(frase, /um = u\.mediana \|\| \{\}/);
+  assert.match(frase, /U\.eur\(um\.affitti\)/);
+  assert.match(frase, /U\.eur\(um\.imposte\)/);
+  assert.doesNotMatch(frase, /u\.affitti\.p50|nella mediana delle simulazioni/);
+  assert.match(frase, /nella simulazione mediana \(quella con il patrimonio a metà classifica\), la stessa del grafico e della tabella/);
+  // la media delle imposte resta, ma con un nome che dice che è un'altra cosa
+  assert.match(frase, /Media di tutte le simulazioni: ' \+ U\.eur\(p\.vendite\.impostaMedia\)/);
+  assert.match(js, /'<p class="pt-tip-s">Nella simulazione mediana<\/p>'/);
+});
+
+test('cookie.html: la chiave radaraste.stratega descrive il profilo e tutti i campi «Su più anni» che la pagina salva', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  const js = fs.readFileSync(path.join(__dirname, '..', 'js', 'pages', 'stratega.js'), 'utf8');
+  const campi = JSON.parse(js.match(/var CAMPI_ANNI = (\[[^\]]+\])/)[1].replace(/'/g, '"'));
+  const NOMI = { anni: /anni da simulare/, rivalutazione: /rivalutazione degli immobili/, costiAffitto: /costi e sfitto/, mesiRivendita: /mesi alla rivendita/,
+    costiVendita: /costi di vendita/, tassoMutuo: /tasso del mutuo/, reinvesti: /reinvestire i guadagni/ };
+  assert.deepEqual(campi.slice().sort(), Object.keys(NOMI).sort(), 'un campo nuovo va descritto anche in cookie.html');
+  const riga = fs.readFileSync(path.join(__dirname, '..', 'cookie.html'), 'utf8').match(/<code>radaraste\.stratega<\/code><\/td><td[^>]*><span class="v">([^<]+)<\/span>/)[1];
+  assert.match(riga, /«Su più anni»/);
+  for (const k of campi) assert.match(riga, NOMI[k], k);
+  for (const p of [/capitale/, /mutuo/, /orizzonte/, /strategia/, /prudenza/, /regione/, /altri offerenti/]) assert.match(riga, p);
 });

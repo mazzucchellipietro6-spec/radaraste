@@ -19,7 +19,10 @@
       document.head.appendChild(s);
     }).then(function (l) {
       var R = window.ASTE_RACCOLTE;
-      $('#csStato').textContent = l.length ? 'Pronto · ' + l.length.toLocaleString('it-IT') + ' aste' + (R && R.aggiornato ? ', dati del ' + U.dataIt(R.aggiornato.slice(0, 10)) : '') + ' · modalità regole'
+      // una fonte che l'ultima raccolta non ha aggiornato resta con le aste dell'ultima raccolta riuscita: si dice di quando sono
+      var giro = R && R.aggiornato ? U.oggi(new Date(R.aggiornato)) : null, quando = giro === U.oggi() ? 'oggi' : giro ? 'il ' + U.dataIt(giro) : 'nell\'ultima raccolta';
+      var ferme = U.fontiFerme(R).map(function (f) { return ' · ' + f.nome + ': ' + quando + ' nessun aggiornamento, aste dell\'ultima raccolta riuscita (' + U.dataIt(f.data) + ')'; }).join('');
+      $('#csStato').textContent = l.length ? 'Pronto · ' + l.length.toLocaleString('it-IT') + ' aste' + (giro ? ', raccolta del ' + U.dataIt(giro) : '') + ferme + ' · modalità regole'
         : 'Nessuna asta disponibile: posso comunque fare i conti e spiegare le regole.';
       return l;
     });
@@ -33,7 +36,11 @@
   }
 
   /* ---------- disegno dei blocchi della risposta ---------- */
-  function luogo(a) { return [a.comune ? a.comune + (a.provincia ? ' (' + a.provincia + ')' : '') : a.regione, a.dataAsta ? 'asta ' + U.dataIt(a.dataAsta) : ''].filter(Boolean).join(' · '); }
+  // del Demanio a volte si conosce solo il termine per le offerte (js/formato.js)
+  function luogo(a) {
+    var D = window.Formato.date(a), quando = D.asta ? 'asta ' + U.dataIt(D.asta.data) : D.termine ? 'offerte entro il ' + U.dataIt(D.termine.data) : '';
+    return [a.comune ? a.comune + (a.provincia ? ' (' + a.provincia + ')' : '') : a.regione, quando].filter(Boolean).join(' · ');
+  }
   function rigaAsta(a) {
     var p = a.punteggio, fa = window.Punteggio ? window.Punteggio.fascia(p == null ? null : p).chiave : 'nd';
     return '<a class="cs-asta" href="scheda.html?id=' + encodeURIComponent(a.id) + '" data-passa="id:' + U.esc(a.id) + '">' +
@@ -117,7 +124,7 @@
     if (nome === 'scheda_asta') {
       var a = perId(String(input && input.id || ''));
       if (!a) return { blocchi: [{ tipo: 'testo', testo: 'Asta non trovata.' }], mostra: [] };
-      var campi = {}; ['id', 'titolo', 'categoria', 'tipo', 'comune', 'provincia', 'tribunale', 'prezzoBase', 'offertaMinima', 'dataAsta', 'termineOfferte', 'stato', 'tentativo', 'superficieMq',
+      var campi = {}; ['id', 'titolo', 'categoria', 'tipo', 'comune', 'provincia', 'tribunale', 'fonte', 'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'termineOfferte', 'stato', 'tentativo', 'superficieMq',
         'valore', 'valoreMin', 'valoreMax', 'fonteValore', 'affidabilita', 'costoTotale', 'sconto', 'offertaMax', 'punteggio', 'rischi', 'rendimento', 'linkAvviso'].forEach(function (k) { if (a[k] != null) campi[k] = a[k]; });
       return { blocchi: [{ tipo: 'dati', asta: campi }], mostra: [{ tipo: 'aste', ids: [a.id], totale: 1 }] };
     }

@@ -4,7 +4,7 @@
 // data decrescente e la lettura si ferma alla prima asta già passata.
 import { richiesta } from '../lib/http.mjs';
 import { provincia, titolo as maiuscole } from '../lib/luoghi.mjs';
-import { pulisci, spazi } from '../lib/dettaglio-pvp.mjs';
+import { pulisci, spazi, segnaposto } from '../lib/dettaglio-pvp.mjs';
 import { controllaCoordinate, soloBiciclette, prezzo, togliPrefisso, frase } from '../lib/correzioni.mjs';
 
 export const NOME = 'Portale Vendite Pubbliche';
@@ -34,12 +34,30 @@ function stato(disp) {
 // "ALTRA_CATEGORIA_M" → "Altra categoria m": le etichette abbreviate dalla fonte restano come sono (nessun completamento)
 export const tipo = (s) => s ? (s.charAt(0) + s.slice(1).toLowerCase()).replace(/_/g, ' ') : '';
 
+// entità HTML, anche codificate due volte dalla fonte: "&amp;quot;Serpentara&amp;quot;" (pvp-4641380) → "\"Serpentara\""
+const ENTITA = { amp: '&', quot: '"', apos: '\'', lt: '<', gt: '>', nbsp: ' ', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', laquo: '«', raquo: '»',
+  deg: '°', euro: '€', agrave: 'à', egrave: 'è', eacute: 'é', igrave: 'ì', ograve: 'ò', ugrave: 'ù' };
+export function entita(t) {
+  let s = String(t || '');
+  for (let i = 0; i < 3 && /&amp;/.test(s); i++) s = s.replace(/&amp;/g, '&');
+  return s.replace(/&(#\d{1,7}|#x[\da-f]{1,6}|[a-z]{2,6});/gi, (m, e) => {
+    if (e[0] !== '#') return ENTITA[e] ?? m;
+    const n = /^#x/i.test(e) ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+    return n > 31 && n <= 0x10ffff ? String.fromCodePoint(n) : m;
+  });
+}
+
+// segni iniziali senza senso: "• ", "-", "► ", "_", "° " (resto di "LOTTO 7° costituito", pvp-4618989), "/D: " (resto di "Lotto 4/D:"),
+// simboli di caratteri speciali (U+E000-U+F8FF); restano parentesi, virgolette, "½" e "+", che possono essere testo vero
+const SEGNI = /^[\s\u2022\u2023\u25aa\u25ba\u25cf\u27a2\u00b7°º*=_.,;:\-–—\/\ue000-\uf8ff]+/;
+export const segniIniziali = (t) => String(t || '').replace(/^\s*\/[A-Za-z\d]{1,3}\s*[:.)–-]\s*/, '').replace(SEGNI, '');
+
 // "(Lotto n.1) - APPARTAMENTO SITO IN ..." → "Appartamento sito in ...", al massimo 110 caratteri
-// (la descrizione completa è nella scheda a pezzi)
+// (la descrizione completa è nella scheda a pezzi); senza descrizione vera ("Lotto 1", "NESSUNA"): categoria e comune
 export function titolo(x, comune, sigla) {
-  let t = spazi(frase(togliPrefisso(pulisci(x.descLotto)), { comune, provincia: sigla })).trim();
+  let t = spazi(frase(segniIniziali(togliPrefisso(segniIniziali(pulisci(entita(x.descLotto))))), { comune, provincia: sigla })).trim();
   if (t.length > 110) t = t.slice(0, 110).replace(/\s+\S*$/, '').replace(/[\s,;:–-]+$/, '') + '…';
-  if (t.replace(/[^A-Za-zÀ-ÿ]/g, '').length < 6) t = tipo(x.categoriaLotto) + (comune ? ' – ' + comune : '');
+  if (t.replace(/[^A-Za-zÀ-ÿ]/g, '').length < 6 || segnaposto(t)) t = tipo(x.categoriaLotto) + (comune ? ' – ' + comune : '');
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 

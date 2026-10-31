@@ -25,6 +25,7 @@
 .sc-vuoto-sez > .icona { width: 28px; height: 28px; color: var(--muted); }
 .sc-vuoto-sez p + p { margin-top: 6px; }
 .sc-vuota { padding-block: 48px; }
+.sc-vuota h1 { font-size: clamp(21px, 2.3vw, 26px); line-height: 1.25; letter-spacing: -.005em; }
 .sc-vuota p { max-width: 56ch; }
 .sc-vuota-icona { width: 48px; height: 48px; color: var(--muted); stroke-width: 1.4; }
 
@@ -105,8 +106,8 @@
 .sc-azioni .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .sc-azioni [data-azione="segui"][aria-pressed="true"] .icona { fill: currentColor; }
 @media (max-width: 559px) {
-  .sc-azioni .btn:first-child:not(.ghost) { flex: 1 0 100%; }
-  .sc-azioni .btn.ghost { flex: 1 1 auto; padding-inline: 12px; }
+  .sc-azioni:not(.sc-azioni-2) .btn:first-child:not(.ghost) { flex: 1 0 100%; }
+  .sc-azioni .btn.ghost, .sc-azioni-2 .btn { flex: 1 1 auto; padding-inline: 12px; }
 }
 
 .sc-sezioni { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; margin: -2px; overscroll-behavior-x: contain; }
@@ -184,6 +185,7 @@
 .sc-calc .cursore .testa output { font-size: 22px; font-weight: 600; }
 .sc-calc input[type=range] { height: 44px; }
 .sc-scorciatoie .chip { font-size: 13.5px; }
+.pg-scheda .line.sub { max-width: none; } /* .sub del design system limita la riga a 64ch */
 .sc-esiti { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
 .sc-esiti div { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-2); padding: 10px 12px; min-width: 0; }
 .sc-esiti dt { font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
@@ -219,7 +221,9 @@
 .sc-sez .tempi strong, .sc-sez .tempi .sc-t-tit { font-family: var(--f-body); font-size: 14.5px; font-weight: 600; white-space: normal; overflow-wrap: anywhere; }
 .sc-sez .tempi li > b { align-self: start; padding-top: 1px; text-align: right; }
 .sc-sez .tempi small { color: var(--muted); font-size: 13px; }
-.sc-sez .tempi li.qui .punto { border-color: var(--accent); background: var(--accent); }
+/* questa asta: punto al centro; pieno quando è già passata */
+.sc-sez .tempi li.qui .punto { background: radial-gradient(circle, var(--accent) 0 4px, var(--surface) 4.5px); }
+.sc-sez .tempi li.qui.fatto .punto { background: var(--accent); }
 @media (max-width: 479px) {
   /* telefono: la data va sotto il titolo, così il titolo ha tutta la larghezza */
   .sc-sez .tempi li { grid-template-columns: 20px minmax(0, 1fr); row-gap: 2px; }

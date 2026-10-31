@@ -81,8 +81,14 @@
 
     // segnali di affare (solo da dati presenti)
     if (out.sconto >= CRITERI.scontoMinimo) out.segnaliAffare.push('Sconto reale del ' + pct(out.sconto) + ' sul valore stimato, imposte e spese comprese' + (out.sconto >= CRITERI.scontoAffare ? ' (oltre la soglia d\'affare del ' + pct(CRITERI.scontoAffare) + ')' : ''));
-    var t = num(a.tentativo);
-    if (t >= 3) out.segnaliAffare.push('È il ' + t + '° tentativo' + (num(a.deserte) ? ' (' + a.deserte + ' aste andate deserte)' : '') + (num(a.primoPrezzo) > 0 ? ': prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo' : ''));
+    var t = num(a.tentativo), tm = P.tentativoMinimo ? P.tentativoMinimo(a) : null;
+    // tentativi intermedi mancanti nell'indice del Portale: il numero dedotto dai prezzi si dice come stima (js/punteggio.js)
+    if (tm) {
+      out.tentativoMinimo = tm.tentativo;
+      out.segnaliAffare.push('È almeno il ' + tm.tentativo + '° tentativo (stima: il prezzo base è quello della prima asta, ' + eur(a.primoPrezzo) + ', ridotto ' +
+        tm.ribassi + ' volte del 25%' + (tm.tentativo < tm.ribassi + 1 ? ', e dopo il quarto tentativo deserto un ribasso può arrivare alla metà' : '') +
+        '; l\'indice del Portale ne mostra ' + t + '): prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo');
+    } else if (t >= 3) out.segnaliAffare.push('È il ' + t + '° tentativo' + (num(a.deserte) ? ' (' + a.deserte + ' aste andate deserte)' : '') + (num(a.primoPrezzo) > 0 ? ': prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo' : ''));
     else if (t === 2) out.segnaliAffare.push('Secondo tentativo' + (num(a.primoPrezzo) > 0 ? ': prezzo già sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) : ''));
     if (c.motivo === 'ribasso' && num(a.prezzoPrecedente) > 0) out.segnaliAffare.push('Prezzo ribassato ieri da ' + eur(a.prezzoPrecedente) + ' a ' + eur(a.prezzoBase));
     if (a.categoria === 'immobile' && a.stato === 'libero') out.segnaliAffare.push('Immobile libero');
@@ -126,23 +132,26 @@
     return scelte;
   }
 
-  // termineOfferte arriva come 'AAAA-MM-GG' o 'AAAA-MM-GGTHH:MM' (dal dettaglio del PVP)
+  // termineOfferte arriva come 'AAAA-MM-GG' o 'AAAA-MM-GGTHH:MM' (dal dettaglio del PVP); letto con js/formato.js, che sa
+  // anche quando la data del Demanio è il termine per le offerte
   function scadenza(a) {
-    if (a.termineOfferte) {
-      var p = String(a.termineOfferte).split('T'), ora = p[1] ? p[1].slice(0, 5) : a.oraTermine || null;
-      return { data: p[0], ora: ora, testo: 'Offerte entro il ' + dataIt(p[0]) + (ora ? ' alle ' + ora : '') + ' (dall\'avviso)' };
-    }
+    var F = NODE ? require('./formato.js') : root.Formato, te = F ? F.date(a).termine : null;
+    if (te) return { data: te.data, ora: te.ora || null, testo: 'Offerte entro il ' + dataIt(te.data) + (te.ora ? ' alle ' + te.ora : '') + ' (dall\'avviso)' };
     return { data: null, ora: null, testo: 'Termine per le offerte non letto dall\'avviso: di solito scade il giorno prima dell\'asta (asta il ' + dataIt(a.dataAsta) + '), verificalo nell\'avviso' };
   }
+
+  var SENZA_TESTO = 'Testo dell\'avviso non disponibile: rischi da verificare nella perizia';
 
   /* Riassunto scritto a regole, solo con dati dell'avviso e calcoli. */
   function riassunto(x) {
     var a = x.asta, v = x.valore;
     var perche = x.segnaliAffare.slice();
     if (v) perche.unshift('Valore stimato ' + eur(v.min) + '–' + eur(v.max) + ' (' + v.fonte + ', affidabilità ' + x.affidabilita + '); costo totale al prezzo base circa ' + eur(x.costoTotale));
+    // senza testo dell'avviso (rischi assente) non si può dire che rischi non ce ne sono
+    var letto = Array.isArray(a.rischi);
     return {
       titolo: a.titolo, perche: perche,
-      rischi: x.pericoli.length ? x.pericoli : ['Nessun rischio trovato nel testo dell\'avviso: leggi comunque la perizia'],
+      rischi: x.pericoli.length ? x.pericoli.concat(letto ? [] : [SENZA_TESTO]) : [letto ? 'Nessun rischio trovato nel testo dell\'avviso: leggi comunque la perizia' : SENZA_TESTO],
       offertaMassima: x.offertaMax ? { importo: x.offertaMax, testo: 'Offerta massima consigliata: ' + eur(x.offertaMax) + ' (così, con imposte e spese, resti almeno il 20% sotto il valore minimo stimato)' } : null,
       scadenza: scadenza(a), nonSappiamo: x.nonSappiamo,
       altriLotti: x.altriLotti ? 'La stessa procedura ha altri ' + x.altriLotti + ' lotti tra le aste di oggi' : null
@@ -150,7 +159,8 @@
   }
 
   function testoTelegram(sel, info) {
-    var r = ['🎯 Affari di oggi – ' + dataIt(info.oggi), info.analizzate + ' aste nuove o ribassate analizzate, ' + sel.length + ' superano i criteri.', ''];
+    var r = ['🎯 Affari di oggi – ' + dataIt(info.oggi), info.analizzate + (info.analizzate === 1 ? ' asta nuova o ribassata analizzata, ' : ' aste nuove o ribassate analizzate, ') +
+      (!sel.length ? 'nessuna supera i criteri.' : sel.length + (sel.length === 1 ? ' supera' : ' superano') + ' i criteri.'), ''];
     sel.forEach(function (x, i) {
       var s = riassunto(x), a = x.asta;
       r.push((i + 1) + '. ' + a.titolo + (a.comune ? ' – ' + a.comune + (a.provincia ? ' (' + a.provincia + ')' : '') : ''));
@@ -196,12 +206,20 @@
       id: a.id, titolo: a.titolo, categoria: a.categoria, tipo: a.tipo, regione: a.regione, provincia: a.provincia, comune: a.comune,
       tribunale: a.tribunale, rge: a.rge, prezzoBase: a.prezzoBase, offertaMinima: a.offertaMinima, dataAsta: a.dataAsta, ora: a.ora,
       termineOfferte: a.termineOfferte, stato: a.stato, linkAvviso: a.linkAvviso, nFoto: a.nFoto, lat: a.lat, lng: a.lng,
-      tentativo: a.tentativo, rischi: a.rischi, motivo: x.motivo, punteggio: x.punteggio, sconto: x.sconto, costoTotale: x.costoTotale,
+      tentativo: a.tentativo, tentativoMinimo: x.tentativoMinimo, rischi: a.rischi, motivo: x.motivo, punteggio: x.punteggio, sconto: x.sconto, costoTotale: x.costoTotale,
       offertaMax: x.offertaMax, affidabilita: x.affidabilita, valore: x.valore, rango: Math.round(x.rango * 10) / 10, scarto: x.scarto || undefined
     };
     if (conRiassunto) o.riassunto = riassunto(x);
     for (var k in o) if (o[k] == null) delete o[k];
     return o;
+  }
+
+  // nota sotto gli affari quando sono meno dei minimi: si dice, senza riempire
+  function nota(n, criteri) {
+    var min = (criteri || CRITERI).minimi;
+    if (n >= min) return null;
+    if (!n) return 'Oggi nessuna asta supera tutti i criteri: meglio aspettare che proporre affari incerti.';
+    return 'Oggi solo ' + n + (n === 1 ? ' asta supera' : ' aste superano') + ' tutti i criteri: non ne aggiungiamo altre per arrivare a ' + min + '.';
   }
 
   /* Giro completo: { aste, oggi, T, zone } → risultato pronto da scrivere in data/affari.js */
@@ -217,7 +235,7 @@
       oggi: opz.oggi, analizzate: analizzate.length,
       perMotivo: c.reduce(function (m, x) { m[x.motivo] = (m[x.motivo] || 0) + 1; return m; }, {}),
       scartate: scarti, criteri: CRITERI,
-      nota: sel.length < CRITERI.minimi ? 'Oggi solo ' + sel.length + ' aste superano tutti i criteri: non ne aggiungiamo altre per arrivare a ' + CRITERI.minimi + '.' : null,
+      nota: nota(sel.length),
       migliori: sel.map(function (x) { return compatta(x, true); }),
       piscina: piscina.map(function (x) { return compatta(x, false); }),
       telegram: testoTelegram(sel, info)
@@ -264,7 +282,7 @@
   }
 
   var Cacciatore = { CRITERI: CRITERI, candidati: candidati, analizza: analizza, seleziona: seleziona, riassunto: riassunto, personale: personale,
-    compatta: compatta, esegui: esegui, testoTelegram: testoTelegram, aggiornaStorico: aggiornaStorico, misure: misure };
+    compatta: compatta, nota: nota, esegui: esegui, testoTelegram: testoTelegram, aggiornaStorico: aggiornaStorico, misure: misure };
   if (NODE) module.exports = Cacciatore;
   else root.Cacciatore = Cacciatore;
 })(typeof window !== 'undefined' ? window : globalThis);
