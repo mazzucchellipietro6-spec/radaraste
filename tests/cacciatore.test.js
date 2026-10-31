@@ -137,3 +137,10 @@ test('tentativo stimato dai prezzi nei segnali d\'affare, dichiarato come stima 
   assert.equal(y.tentativoMinimo, undefined);
   assert.ok(y.segnaliAffare.some((f) => /^È il 3° tentativo \(2 aste andate deserte\)/.test(f)));
 });
+
+test('tentativo stimato oltre il quarto ribasso: si dice che dopo il quarto tentativo il ribasso può arrivare alla metà (revisione del 30/10/2026)', () => {
+  // pvp-4480064, Augusta: 62.850 € × 0,75⁵ = 14.914,61 €, l'indice ne mostra 4: almeno il 5°, non il 6°
+  const x = K.analizza({ asta: asta({ categoria: 'immobile', tentativo: 4, deserte: 3, primoPrezzo: 62850, prezzoBase: 14914.61, offertaMinima: 11185.96, stima: 62850 }), motivo: 'nuovo-tentativo' }, { T });
+  assert.equal(x.tentativoMinimo, 5);
+  assert.ok(x.segnaliAffare.some((f) => /^È almeno il 5° tentativo \(stima: .*ridotto 5 volte del 25%, e dopo il quarto tentativo deserto un ribasso può arrivare alla metà; l'indice del Portale ne mostra 4\)/.test(f)));
+});

@@ -86,7 +86,8 @@
     if (tm) {
       out.tentativoMinimo = tm.tentativo;
       out.segnaliAffare.push('È almeno il ' + tm.tentativo + '° tentativo (stima: il prezzo base è quello della prima asta, ' + eur(a.primoPrezzo) + ', ridotto ' +
-        tm.ribassi + ' volte del 25%; l\'indice del Portale ne mostra ' + t + '): prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo');
+        tm.ribassi + ' volte del 25%' + (tm.tentativo < tm.ribassi + 1 ? ', e dopo il quarto tentativo deserto un ribasso può arrivare alla metà' : '') +
+        '; l\'indice del Portale ne mostra ' + t + '): prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo');
     } else if (t >= 3) out.segnaliAffare.push('È il ' + t + '° tentativo' + (num(a.deserte) ? ' (' + a.deserte + ' aste andate deserte)' : '') + (num(a.primoPrezzo) > 0 ? ': prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo' : ''));
     else if (t === 2) out.segnaliAffare.push('Secondo tentativo' + (num(a.primoPrezzo) > 0 ? ': prezzo già sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) : ''));
     if (c.motivo === 'ribasso' && num(a.prezzoPrecedente) > 0) out.segnaliAffare.push('Prezzo ribassato ieri da ' + eur(a.prezzoPrecedente) + ' a ' + eur(a.prezzoBase));
