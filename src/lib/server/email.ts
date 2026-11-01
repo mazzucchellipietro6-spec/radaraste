@@ -49,6 +49,7 @@ export async function sendEmail(mail: Mail): Promise<'sent' | 'skipped' | 'faile
   } else {
     console.warn(`[email] non inviata (RESEND_API_KEY o EMAIL_FROM mancanti): "${mail.subject}" a ${mail.to}`);
   }
+  await saveToOutbox(mail);
   if (dbConfigured()) {
     await asSystem(
       (tx) => tx`insert into public.email_log (to_email, subject, template, lang, status, provider_id, error, related_type, related_id)
@@ -58,6 +59,21 @@ export async function sendEmail(mail: Mail): Promise<'sent' | 'skipped' | 'faile
   }
   if (status === 'failed') console.error('[email] invio fallito:', error);
   return status;
+}
+
+/** Solo sviluppo e test: copia di ogni email nella cartella EMAIL_OUTBOX_DIR (per vederle senza inviarle). */
+async function saveToOutbox(mail: Mail) {
+  const dir = env('EMAIL_OUTBOX_DIR');
+  if (!dir) return;
+  try {
+    const { mkdir, writeFile } = await import('node:fs/promises');
+    await mkdir(dir, { recursive: true });
+    const name = `${Date.now()}-${mail.template}-${mail.to.replace(/[^a-z0-9]+/gi, '_')}`;
+    await writeFile(`${dir}/${name}.html`, mail.html);
+    await writeFile(`${dir}/${name}.json`, JSON.stringify({ to: mail.to, subject: mail.subject, text: mail.text }, null, 2));
+  } catch (err) {
+    console.warn('[email] cartella di prova non scrivibile:', (err as Error).message);
+  }
 }
 
 /** Indirizzo a cui arrivano le notifiche per lo staff (nuove richieste, prenotazioni, B2B). */

@@ -1,0 +1,42 @@
+---
+import Admin from '~/layouts/Admin.astro';
+import RecordForm from '~/components/admin/RecordForm.astro';
+import { canAccess, resource } from '~/lib/server/admin/resources';
+import { getRow, resolveOptions } from '~/lib/server/admin/data';
+import { withUser } from '~/lib/server/db';
+export const prerender = false;
+const r = resource('requests')!;
+const admin = Astro.locals.admin;
+if (!admin || !canAccess(r, admin.profile)) return Astro.redirect('/admin/');
+const id = Astro.params.id ?? '';
+const row = await getRow(admin.user, r, id);
+if (!row) return Astro.redirect('/admin/requests/');
+const options = await resolveOptions(admin.user, r);
+type N = { body: string; created_at: Date; author: string | null };
+const notes = await withUser(admin.user.claims, (tx) => tx<N[]>`select n.body, n.created_at, p.email as author from public.internal_notes n left join public.profiles p on p.id = n.created_by where n.entity = 'request' and n.entity_id = ${id} order by n.created_at desc`);
+const quotes = await withUser(admin.user.claims, (tx) => tx<{ id: string; number: string; status: string }[]>`select id, number, status from public.quotes where request_id = ${id}`);
+const trade = admin.profile.role === 'admin' || admin.profile.permissions.includes('trade');
+const sp = Astro.url.searchParams;
+---
+
+<Admin title={`Richiesta ${row.reference}`} active="requests">
+  <p class="mt-2"><a href="/admin/requests/" class="text-brass-deep">← Richieste</a></p>
+  {sp.get('ok') && <p class="mt-4 border border-success px-4 py-2 text-success" role="status">Salvato.</p>}
+  {sp.get('error') && <p class="mt-4 border border-danger px-4 py-2 text-danger" role="alert">{sp.get('error')}</p>}
+  <section class="adm-card mt-6">
+    <h2 class="font-display text-xl">Azioni</h2>
+    <div class="mt-3 flex flex-wrap gap-3">
+      <form method="post" action="/api/admin/requests/action"><input type="hidden" name="id" value={id} /><button name="action" value="quote_trading" class="btn btn-primary btn-sm">Crea preventivo (trading)</button></form>
+      <form method="post" action="/api/admin/requests/action"><input type="hidden" name="id" value={id} /><button name="action" value="quote_brokerage" class="btn btn-outline btn-sm">Crea offerta di brokerage</button></form>
+      {trade && <form method="post" action="/api/admin/requests/action"><input type="hidden" name="id" value={id} /><button name="action" value="deal" class="btn btn-outline btn-sm">Apri trattativa</button></form>}
+      {row.email && <a class="btn btn-outline btn-sm" href={`mailto:${row.email}?subject=${encodeURIComponent(`WHITE CARRARA — ${row.reference}`)}`}>Rispondi via email</a>}
+    </div>
+    {quotes.length > 0 && <p class="mt-3 text-[0.9rem]">Preventivi: {quotes.map((q) => <a href={`/admin/quotes/${q.id}/`} class="me-3 text-brass-deep">{q.number} ({q.status})</a>)}</p>}
+  </section>
+  <section class="adm-card mt-6">
+    <h2 class="font-display text-xl">Note interne</h2>
+    <form method="post" action="/api/admin/requests/action" class="mt-3 flex gap-3"><input type="hidden" name="id" value={id} /><input type="hidden" name="action" value="note" /><input class="input" name="body" required maxlength="4000" placeholder="Nota visibile solo allo staff" /><button class="btn btn-primary btn-sm" type="submit">Aggiungi</button></form>
+    <ul class="mt-3 space-y-2 text-[0.9rem]">{notes.map((n) => <li class="border-b border-stone pb-2"><span class="text-ash">{new Date(n.created_at).toLocaleString('it-IT')} · {n.author}</span><br />{n.body}</li>)}</ul>
+  </section>
+  <RecordForm r={r} row={row} options={options} profile={admin.profile} back={`/admin/requests/${id}/`} />
+</Admin>

@@ -1,0 +1,99 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import Status from '~/components/account/Status.astro';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+import { withUser } from '~/lib/server/db';
+import { company } from '~/lib/site';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t, fmt } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const session = 'user' in s ? s : null;
+const id = Astro.params.id ?? '';
+if (!/^[0-9a-f-]{36}$/.test(id)) return Astro.redirect(`/${lang}/account/quotes/`);
+type Q = { id: string; number: string; status: string; model: string; total: string; currency: string; valid_until: Date | null; created_at: Date; incoterm: string | null; delivery_terms: string | null; payment_terms: string | null; notes: string | null; customer_name: string | null; customer_company: string | null; deposit_percent: string | null };
+type I = { description: string; finish: string | null; thickness: string | null; quantity: string; unit: string; unit_price: string };
+const data = session
+  ? await withUser(session.user.claims, async (tx) => ({
+      q: (await tx<Q[]>`select * from public.quotes where id = ${id}`)[0],
+      items: await tx<I[]>`select description, finish, thickness, quantity, unit, unit_price from public.quote_items where quote_id = ${id} order by position, created_at`,
+    }))
+  : null;
+if (session && !data?.q) return Astro.redirect(`/${lang}/account/quotes/`);
+const c = await company();
+const money = (v: string | number, cur: string) => new Intl.NumberFormat(tr.info.intl, { style: 'currency', currency: cur }).format(Number(v));
+const q = data?.q;
+const open = q && q.status === 'sent' && (!q.valid_until || new Date(q.valid_until) >= new Date(new Date().toDateString()));
+---
+
+<Account t={tr} path={`/${lang}/account/quotes/${id}/`} section="quotes" title={q ? `${t('account.nav.quotes')} ${q.number}` : t('account.nav.quotes')} profile={session?.profile}>
+  {
+    !session || !q ? (
+      <NotConfigured t={tr} />
+    ) : (
+      <article class="quote-doc max-w-4xl">
+        <header class="flex flex-wrap items-start justify-between gap-6 border-b border-stone pb-6">
+          <div>
+            <p class="font-display text-2xl tracking-[0.3em]">WHITE CARRARA</p>
+            <p class="mt-1 text-[0.82rem] text-ash">{c.legalName || 'WHITE CARRARA'} · {c.address}{c.vatNumber && ` · P.IVA ${c.vatNumber}`}</p>
+          </div>
+          <div class="text-end">
+            <p class="font-display text-xl">{q.number}</p>
+            <p class="text-[0.85rem] text-ash">{fmt.date(q.created_at)}</p>
+            <p class="mt-2"><Status label={t(`account.quotes.statuses.${q.status}`)} tone={q.status === 'accepted' ? 'ok' : q.status === 'sent' ? 'warn' : 'neutral'} /></p>
+          </div>
+        </header>
+        <p class="mt-6 text-[0.95rem]">{t(`account.quotes.models.${q.model}`)}</p>
+        {q.model === 'brokerage' && <p class="mt-2 text-[0.88rem] text-ash">{t('account.quotes.brokerageNote')}</p>}
+        <div class="mt-8 overflow-x-auto">
+          <table class="w-full min-w-[560px] text-[0.92rem]">
+            <thead class="text-[0.75rem] uppercase tracking-[0.1em] text-ash">
+              <tr><th class="py-2 text-start font-medium">{t('account.quotes.description')}</th><th class="text-end font-medium">{t('account.quotes.quantity')}</th><th class="text-end font-medium">{t('account.quotes.unitPrice')}</th><th class="text-end font-medium">{t('account.quotes.amount')}</th></tr>
+            </thead>
+            <tbody class="divide-y divide-stone border-y border-stone">
+              {data!.items.map((i) => (
+                <tr>
+                  <td class="py-3">{i.description}{(i.finish || i.thickness) && <span class="block text-[0.82rem] text-ash">{[i.finish, i.thickness].filter(Boolean).join(' · ')}</span>}</td>
+                  <td class="text-end">{fmt.number(Number(i.quantity))} {i.unit}</td>
+                  <td class="text-end">{money(i.unit_price, q.currency)}</td>
+                  <td class="text-end">{money(Number(i.quantity) * Number(i.unit_price), q.currency)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot><tr><td colspan="3" class="py-4 text-end font-medium">{t('account.quotes.total')}</td><td class="text-end font-display text-xl">{money(q.total, q.currency)}</td></tr></tfoot>
+          </table>
+        </div>
+        <p class="mt-2 text-[0.8rem] text-ash">{t('account.quotes.vatNote')}</p>
+        <dl class="mt-8 grid gap-3 text-[0.92rem] sm:grid-cols-2">
+          {q.valid_until && <div><dt class="text-ash">{t('account.quotes.validUntil')}</dt><dd>{fmt.date(q.valid_until)}</dd></div>}
+          {q.incoterm && <div><dt class="text-ash">{t('account.quotes.incoterm')}</dt><dd>{q.incoterm}</dd></div>}
+          {q.delivery_terms && <div><dt class="text-ash">{t('account.quotes.delivery')}</dt><dd>{q.delivery_terms}</dd></div>}
+          {q.payment_terms && <div><dt class="text-ash">{t('account.quotes.payment')}</dt><dd>{q.payment_terms}</dd></div>}
+          {q.notes && <div class="sm:col-span-2"><dt class="text-ash">{t('account.quotes.notes')}</dt><dd class="whitespace-pre-line">{q.notes}</dd></div>}
+        </dl>
+        <p class="mt-6 text-[0.82rem] text-ash">{t('common.availabilityNote')}</p>
+        <div class="no-print mt-10 flex flex-wrap gap-3">
+          {open && (
+            <>
+              <form method="post" action="/api/me/quote-respond"><input type="hidden" name="id" value={q.id} /><input type="hidden" name="decision" value="accept" /><button class="btn btn-primary" type="submit">{t('account.quotes.accept')}</button></form>
+              <form method="post" action="/api/me/quote-respond"><input type="hidden" name="id" value={q.id} /><input type="hidden" name="decision" value="reject" /><button class="btn btn-outline" type="submit">{t('account.quotes.reject')}</button></form>
+            </>
+          )}
+          <button type="button" class="btn btn-outline" onclick="window.print()">{t('account.quotes.print')}</button>
+        </div>
+      </article>
+    )
+  }
+</Account>
+
+<style>
+  @media print {
+    :global(nav[aria-label]),
+    :global(section.bg-texture) {
+      display: none !important;
+    }
+  }
+</style>

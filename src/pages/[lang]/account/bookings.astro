@@ -1,0 +1,47 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import Status from '~/components/account/Status.astro';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+import { withUser } from '~/lib/server/db';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t, fmt } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const session = 'user' in s ? s : null;
+type B = { reference: string; kind: string; item_title: string | null; preferred_date: Date | null; participants: number | null; status: string; price: string | null; currency: string; payment_url: string | null; created_at: Date };
+const rows = session ? await withUser(session.user.claims, (tx) => tx<B[]>`select reference, kind, item_title, preferred_date, participants, status, price, currency, payment_url, created_at from public.bookings order by created_at desc`) : [];
+const tone = (st: string) => (['confirmed', 'paid', 'completed'].includes(st) ? 'ok' : st === 'awaiting_payment' ? 'warn' : ['declined', 'cancelled'].includes(st) ? 'bad' : 'neutral');
+---
+
+<Account t={tr} path={`/${lang}/account/bookings/`} section="bookings" title={t('account.nav.bookings')} profile={session?.profile}>
+  {
+    !session ? (
+      <NotConfigured t={tr} />
+    ) : rows.length === 0 ? (
+      <p class="text-ash">{t('account.bookings.empty')} <a href={tr.href('experience')} class="text-brass-deep">{t('nav.experience')}</a> · <a href={tr.href('tours')} class="text-brass-deep">{t('nav.tours')}</a></p>
+    ) : (
+      <ul class="divide-y divide-stone border-y border-stone">
+        {rows.map((b) => (
+          <li class="grid gap-3 py-5 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div>
+              <p class="text-[0.82rem] text-ash">{b.reference} · {fmt.date(b.created_at, { dateStyle: 'medium' })}</p>
+              <p class="mt-1 font-display text-xl">{b.item_title}</p>
+              <p class="mt-1 text-[0.9rem] text-ash">
+                {b.preferred_date && <>{t('account.bookings.date')}: {fmt.date(b.preferred_date)} · </>}
+                {b.participants && <>{t('account.bookings.participants')}: {b.participants}</>}
+                {b.price && <> · {t('account.bookings.amount')}: {new Intl.NumberFormat(tr.info.intl, { style: 'currency', currency: b.currency }).format(Number(b.price))}</>}
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <Status label={t(`account.bookings.statuses.${b.status}`)} tone={tone(b.status)} />
+              {b.status === 'awaiting_payment' && b.payment_url && <a href={b.payment_url} class="btn btn-primary btn-sm">{t('account.bookings.pay')}</a>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Account>

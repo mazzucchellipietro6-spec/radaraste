@@ -1,0 +1,18 @@
+---
+import Admin from '~/layouts/Admin.astro';
+import RecordForm from '~/components/admin/RecordForm.astro';
+import { canAccess, resource } from '~/lib/server/admin/resources';
+import { resolveOptions } from '~/lib/server/admin/data';
+export const prerender = false;
+const r = resource(Astro.params.resource ?? '');
+const admin = Astro.locals.admin;
+if (!r || !admin || !canAccess(r, admin.profile) || r.create === false || r.readonly) return Astro.redirect('/admin/');
+const options = await resolveOptions(admin.user, r);
+const error = Astro.url.searchParams.get('error');
+---
+
+<Admin title={`Nuovo: ${r.singular}`} active={r.key}>
+  <p class="mt-2"><a href={`/admin/${r.key}/`} class="text-brass-deep">← {r.label}</a></p>
+  {error && <p class="mt-4 border border-danger px-4 py-2 text-danger" role="alert">{error}</p>}
+  <RecordForm r={r} row={null} options={options} profile={admin.profile} back={`/admin/${r.key}/`} />
+</Admin>

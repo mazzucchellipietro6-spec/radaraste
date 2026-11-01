@@ -1,0 +1,28 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import { pageLang } from '~/lib/server/page';
+import { authConfigured, currentUser } from '~/lib/server/auth';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t } = tr;
+const error = Astro.url.searchParams.get('error');
+const user = authConfigured() ? await currentUser(Astro) : null;
+---
+
+<Account t={tr} path={`/${lang}/account/reset/`} section="reset" title={t('account.reset.title')}>
+  {
+    !authConfigured() ? (
+      <NotConfigured t={tr} />
+    ) : !user || error === 'expired' ? (
+      <p class="lead max-w-xl">{t('account.reset.expired')} <a href={`/${lang}/account/forgot/`} class="text-brass-deep">{t('account.login.forgot')}</a></p>
+    ) : (
+      <form method="post" action="/api/auth/reset" class="max-w-md space-y-5">
+        {error === 'weak' && <p class="text-danger" role="alert">{t('account.register.passwordWeak')}</p>}
+        <input type="hidden" name="lang" value={lang} />
+        <label class="field"><span class="field-label">{t('account.register.password')}</span><input class="input" type="password" name="password" required minlength="10" autocomplete="new-password" /><span class="field-hint">{t('account.register.passwordHint')}</span></label>
+        <button class="btn btn-primary" type="submit">{t('account.reset.submit')}</button>
+      </form>
+    )
+  }
+</Account>

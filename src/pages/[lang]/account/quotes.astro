@@ -1,0 +1,46 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import Status from '~/components/account/Status.astro';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+import { withUser } from '~/lib/server/db';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t, fmt } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const session = 'user' in s ? s : null;
+type Q = { id: string; number: string; status: string; model: string; total: string; currency: string; valid_until: Date | null; created_at: Date };
+const rows = session ? await withUser(session.user.claims, (tx) => tx<Q[]>`select id, number, status, model, total, currency, valid_until, created_at from public.quotes order by created_at desc`) : [];
+const money = (v: string, c: string) => new Intl.NumberFormat(tr.info.intl, { style: 'currency', currency: c }).format(Number(v));
+---
+
+<Account t={tr} path={`/${lang}/account/quotes/`} section="quotes" title={t('account.nav.quotes')} profile={session?.profile}>
+  {
+    !session ? (
+      <NotConfigured t={tr} />
+    ) : rows.length === 0 ? (
+      <p class="text-ash">{t('account.quotes.empty')}</p>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[560px] text-start text-[0.95rem]">
+          <thead class="text-[0.78rem] uppercase tracking-[0.1em] text-ash">
+            <tr><th class="py-3 text-start font-medium">{t('account.quotes.number')}</th><th class="text-start font-medium">{t('account.quotes.date')}</th><th class="text-start font-medium">{t('account.quotes.total')}</th><th class="text-start font-medium">{t('account.quotes.status')}</th><th /></tr>
+          </thead>
+          <tbody class="divide-y divide-stone border-y border-stone">
+            {rows.map((q) => (
+              <tr>
+                <td class="py-4">{q.number}<br /><span class="text-[0.8rem] text-ash">{t(`account.quotes.models.${q.model}`)}</span></td>
+                <td>{fmt.date(q.created_at, { dateStyle: 'medium' })}</td>
+                <td>{money(q.total, q.currency)}</td>
+                <td><Status label={t(`account.quotes.statuses.${q.status}`)} tone={q.status === 'accepted' ? 'ok' : q.status === 'sent' ? 'warn' : q.status === 'rejected' ? 'bad' : 'neutral'} /></td>
+                <td class="text-end"><a href={`/${lang}/account/quotes/${q.id}/`} class="link-luxe text-graphite">{t('account.quotes.open')}</a></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+</Account>

@@ -1,0 +1,53 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import { pageLang } from '~/lib/server/page';
+import { authConfigured, currentUser } from '~/lib/server/auth';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t } = tr;
+if (authConfigured() && (await currentUser(Astro))) return Astro.redirect(`/${lang}/account/`);
+const next = Astro.url.searchParams.get('next') ?? '';
+const error = Astro.url.searchParams.get('error');
+const sent = Astro.url.searchParams.get('sent');
+const errText: Record<string, string> = { invalid: t('account.login.invalid'), unconfirmed: t('account.login.unconfirmed'), expired: t('account.reset.expired'), rate_limited: t('forms.rateLimited') };
+---
+
+<Account t={tr} path={`/${lang}/account/login/`} section="login" title={t('account.login.title')}>
+  {
+    !authConfigured() ? (
+      <NotConfigured t={tr} />
+    ) : (
+      <div class="grid max-w-4xl gap-12 md:grid-cols-2">
+        <div>
+          <p class="text-ash">{t('account.login.lead')}</p>
+          {error && <p class="mt-6 border border-danger bg-white px-4 py-3 text-danger" role="alert">{errText[error] ?? errText.invalid}</p>}
+          <form method="post" action="/api/auth/login" class="mt-8 space-y-5">
+            <input type="hidden" name="lang" value={lang} />
+            <input type="hidden" name="next" value={next} />
+            <label class="field"><span class="field-label">{t('account.login.email')}</span><input class="input" type="email" name="email" required autocomplete="email" dir="ltr" /></label>
+            <label class="field"><span class="field-label">{t('account.login.password')}</span><input class="input" type="password" name="password" required autocomplete="current-password" /></label>
+            <button class="btn btn-primary w-full" type="submit">{t('account.login.submit')}</button>
+          </form>
+          <p class="mt-6 flex flex-wrap justify-between gap-3 text-[0.92rem]">
+            <a href={`/${lang}/account/forgot/`} class="text-brass-deep">{t('account.login.forgot')}</a>
+            <span>{t('account.login.noAccount')} <a href={`/${lang}/account/register/`} class="text-brass-deep">{t('account.login.register')}</a></span>
+          </p>
+        </div>
+        <div class="border border-stone bg-ivory p-7">
+          <h2 class="font-display text-xl">{t('account.login.magic')}</h2>
+          {sent === 'magic' ? (
+            <p class="mt-4 text-success" role="status">{t('account.login.magicSent')}</p>
+          ) : (
+            <form method="post" action="/api/auth/magic" class="mt-5 space-y-4">
+              <input type="hidden" name="lang" value={lang} />
+              <input type="hidden" name="next" value={next} />
+              <label class="field"><span class="field-label">{t('account.login.email')}</span><input class="input" type="email" name="email" required autocomplete="email" dir="ltr" /></label>
+              <button class="btn btn-outline w-full" type="submit">{t('account.login.magicSubmit')}</button>
+            </form>
+          )}
+        </div>
+      </div>
+    )
+  }
+</Account>

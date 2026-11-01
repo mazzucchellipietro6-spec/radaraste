@@ -1,0 +1,29 @@
+---
+// Barre orizzontali ordinate, un solo colore, valore scritto accanto (leggibile anche senza colori).
+interface Props {
+  rows: { label: string; value: number; display?: string }[];
+  caption: string;
+}
+const { rows, caption } = Astro.props;
+const max = Math.max(1, ...rows.map((r) => r.value));
+---
+
+<table class="w-full text-[0.88rem]">
+  <caption class="visually-hidden">{caption}</caption>
+  <tbody>
+    {
+      rows.map((r) => (
+        <tr title={`${r.label}: ${r.display ?? r.value}`}>
+          <th scope="row" class="w-[38%] py-1.5 pe-3 text-start font-normal">{r.label}</th>
+          <td class="py-1.5">
+            <span class="flex items-center gap-2">
+              <span class="block h-3 rounded-e-[4px] bg-brass-deep" style={`width:${Math.max(r.value ? 1.5 : 0, (r.value / max) * 85)}%`} aria-hidden="true" />
+              <span class="tabular-nums text-graphite">{r.display ?? r.value}</span>
+            </span>
+          </td>
+        </tr>
+      ))
+    }
+    {rows.length === 0 && <tr><td class="py-3 text-ash">Nessun dato.</td></tr>}
+  </tbody>
+</table>

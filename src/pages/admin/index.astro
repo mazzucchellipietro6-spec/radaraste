@@ -1,0 +1,96 @@
+---
+import Admin from '~/layouts/Admin.astro';
+import StatTile from '~/components/admin/StatTile.astro';
+import { withUser } from '~/lib/server/db';
+export const prerender = false;
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect('/it/account/login/?next=/admin/');
+const p = admin.profile;
+const has = (x: string) => p.role === 'admin' || p.permissions.includes(x);
+const eur = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', notation: n >= 100000 ? 'compact' : 'standard', maximumFractionDigits: n >= 100000 ? 1 : 0 }).format(n);
+type K = Record<string, string | number | null>;
+const k = await withUser(admin.user.claims, async (tx) => {
+  const out: K = {};
+  if (has('customers')) {
+    Object.assign(out, (await tx<K[]>`select
+      (select count(*) from public.requests where status = 'new')::int as new_requests,
+      (select count(*) from public.profiles where b2b_status = 'pending')::int as b2b_pending,
+      (select count(*) from public.messages where sender = 'customer' and read_at is null)::int as unread,
+      (select coalesce(sum(total), 0) from public.quotes where status = 'sent')::numeric as open_quotes,
+      (select count(*) from public.quotes where status = 'sent')::int as open_quotes_n`)[0]);
+  }
+  if (has('tours')) {
+    Object.assign(out, (await tx<K[]>`select
+      (select count(*) from public.bookings where status in ('requested', 'checking'))::int as to_confirm,
+      (select count(*) from public.bookings where status in ('confirmed', 'paid', 'awaiting_payment') and preferred_date between current_date and current_date + 14)::int as upcoming,
+      (select count(*) from public.bookings where status = 'awaiting_payment')::int as awaiting_payment`)[0]);
+  }
+  if (has('trade')) {
+    Object.assign(out, (await tx<K[]>`select
+      (select coalesce(sum(margin_amount), 0) from public.deals where model = 'trading' and stage in ('ordered', 'delivered', 'closed_won') and date_trunc('year', updated_at) = date_trunc('year', now()))::numeric as margin_ytd,
+      (select coalesce(sum(amount), 0) from public.commissions where status in ('expected', 'invoiced'))::numeric as comm_expected,
+      (select coalesce(sum(amount), 0) from public.commissions where status = 'paid' and date_trunc('year', coalesce(paid_at, updated_at::date)) = date_trunc('year', now()))::numeric as comm_paid_ytd,
+      (select count(*) from public.deals where stage in ('lead', 'negotiation'))::int as open_deals,
+      (select count(*) from public.shipments where status in ('booked', 'in_transit'))::int as shipping`)[0]);
+  }
+  return out;
+});
+type Recent = { at: Date; actor: string; action: string; table_name: string };
+const recent = p.role === 'admin' ? await withUser(admin.user.claims, (tx) => tx<Recent[]>`select at, actor, action, table_name from public.audit_log order by at desc limit 12`) : [];
+const n = (v: unknown) => Number(v ?? 0);
+---
+
+<Admin title="Dashboard generale" active="dashboard">
+  <p class="mt-2 text-ash">Benvenuto. Qui trovi ciò che richiede attenzione oggi.</p>
+  {
+    has('customers') && (
+      <section class="mt-8">
+        <h2 class="font-display text-xl">Clienti e richieste</h2>
+        <div class="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatTile label="Richieste nuove" value={String(n(k.new_requests))} href="/admin/requests/?status=new" />
+          <StatTile label="Preventivi in attesa di risposta" value={eur(n(k.open_quotes))} note={`${n(k.open_quotes_n)} preventivi inviati`} href="/admin/quotes/?status=sent" />
+          <StatTile label="Account B2B da approvare" value={String(n(k.b2b_pending))} href="/admin/customers/?b2b_status=pending" />
+          <StatTile label="Messaggi dei clienti da leggere" value={String(n(k.unread))} href="/admin/customers/" />
+        </div>
+      </section>
+    )
+  }
+  {
+    has('tours') && (
+      <section class="mt-8">
+        <h2 class="font-display text-xl">Turismo</h2>
+        <div class="mt-3 grid gap-4 sm:grid-cols-3">
+          <StatTile label="Prenotazioni da confermare" value={String(n(k.to_confirm))} href="/admin/bookings/?status=requested" />
+          <StatTile label="Esperienze nei prossimi 14 giorni" value={String(n(k.upcoming))} href="/admin/bookings/?status=confirmed" />
+          <StatTile label="In attesa di pagamento" value={String(n(k.awaiting_payment))} href="/admin/bookings/?status=awaiting_payment" />
+        </div>
+      </section>
+    )
+  }
+  {
+    has('trade') && (
+      <section class="mt-8">
+        <h2 class="font-display text-xl">Commercio</h2>
+        <div class="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <StatTile label="Margine trading dall'inizio dell'anno" value={eur(n(k.margin_ytd))} href="/admin/trading/" />
+          <StatTile label="Provvigioni da incassare" value={eur(n(k.comm_expected))} href="/admin/commissions/?status=expected" />
+          <StatTile label="Provvigioni incassate nell'anno" value={eur(n(k.comm_paid_ytd))} href="/admin/commissions/?status=paid" />
+          <StatTile label="Trattative aperte" value={String(n(k.open_deals))} href="/admin/trading/?stage=negotiation" />
+          <StatTile label="Spedizioni in corso" value={String(n(k.shipping))} href="/admin/shipments/?status=in_transit" />
+        </div>
+      </section>
+    )
+  }
+  {
+    recent.length > 0 && (
+      <section class="mt-10">
+        <h2 class="font-display text-xl">Ultime modifiche</h2>
+        <table class="adm-table mt-3">
+          <thead><tr><th>Quando</th><th>Chi</th><th>Azione</th><th>Tabella</th></tr></thead>
+          <tbody>{recent.map((r) => <tr><td>{new Date(r.at).toLocaleString('it-IT', { timeZone: 'Europe/Rome' })}</td><td>{r.actor}</td><td>{r.action}</td><td>{r.table_name}</td></tr>)}</tbody>
+        </table>
+        <a href="/admin/audit/" class="mt-3 inline-block text-[0.9rem] text-brass-deep">Registro completo →</a>
+      </section>
+    )
+  }
+</Admin>

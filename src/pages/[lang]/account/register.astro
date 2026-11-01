@@ -1,0 +1,48 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import FormShell from '~/components/forms/FormShell.astro';
+import Field from '~/components/forms/Field.astro';
+import { pageLang } from '~/lib/server/page';
+import { authConfigured } from '~/lib/server/auth';
+import { dbConfigured } from '~/lib/server/db';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t } = tr;
+const b2b = Astro.url.searchParams.get('b2b') === '1';
+const types = ['architect', 'interior', 'importer', 'reseller', 'company', 'contractor', 'other'].map((v) => ({ value: v, label: t(`account.b2bTypes.${v}`) }));
+---
+
+<Account t={tr} path={`/${lang}/account/register/`} section="register" title={t('account.register.title')}>
+  {
+    !authConfigured() || !dbConfigured() ? (
+      <NotConfigured t={tr} />
+    ) : (
+      <div class="max-w-2xl">
+        <p class="text-ash">{t('account.register.lead')}</p>
+        <div class="mt-8">
+          <FormShell t={tr} action="/api/auth/register" submitLabel={b2b ? t('account.register.b2bSubmit') : t('account.register.submit')} id="register" hidden={b2b ? { b2b: '1' } : {}}>
+            <Field name="name" label={t('account.register.name')} required autocomplete="name" />
+            <Field name="email" type="email" label={t('forms.email')} required autocomplete="email" dir="ltr" />
+            <Field name="password" type="password" label={t('account.register.password')} hint={t('account.register.passwordHint')} required autocomplete="new-password" />
+            {b2b && (
+              <fieldset class="space-y-5 border-t border-stone pt-6">
+                <legend class="font-display text-2xl">{t('account.register.b2bTitle')}</legend>
+                <p class="text-[0.92rem] text-ash">{t('account.register.b2bLead')}</p>
+                <div class="grid gap-5 sm:grid-cols-2">
+                  <Field name="company" label={t('account.register.company')} required autocomplete="organization" />
+                  <Field name="b2bType" type="select" label={t('account.register.b2bType')} options={types} placeholder={t('forms.choose')} required />
+                  <Field name="vat" label={t('account.register.vat')} optionalLabel={t('common.optional')} />
+                  <Field name="country" label={t('account.register.country')} required autocomplete="country-name" />
+                </div>
+                <Field name="companySite" type="url" label={t('account.register.website')} optionalLabel={t('common.optional')} dir="ltr" />
+                <Field name="b2bNotes" type="textarea" label={t('account.register.b2bNotes')} rows={3} optionalLabel={t('common.optional')} />
+              </fieldset>
+            )}
+          </FormShell>
+          <p class="mt-6 text-[0.92rem]">{t('account.register.haveAccount')} <a href={`/${lang}/account/login/`} class="text-brass-deep">{t('account.login.submit')}</a></p>
+        </div>
+      </div>
+    )
+  }
+</Account>

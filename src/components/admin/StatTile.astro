@@ -1,0 +1,16 @@
+---
+interface Props {
+  label: string;
+  value: string;
+  note?: string;
+  href?: string;
+}
+const { label, value, note, href } = Astro.props;
+const Tag = href ? 'a' : 'div';
+---
+
+<Tag href={href} class="adm-card block no-underline hover:border-brass">
+  <p class="text-[0.82rem] text-ash">{label}</p>
+  <p class="mt-2 text-[2rem] font-semibold leading-none text-graphite tabular-nums">{value}</p>
+  {note && <p class="mt-2 text-[0.8rem] text-ash">{note}</p>}
+</Tag>

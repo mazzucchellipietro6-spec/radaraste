@@ -1,0 +1,41 @@
+---
+import Admin from '~/layouts/Admin.astro';
+import { env } from '~/lib/server/env';
+export const prerender = false;
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect('/admin/');
+const ks = import.meta.env.KEYSTATIC_ENABLED;
+const hook = !!env('DEPLOY_HOOK_URL');
+const sp = Astro.url.searchParams;
+const items: [string, string, string][] = [
+  ['Marmi (catalogo)', 'collection/marbles', 'Schede, foto, finiture e schede tecniche pubbliche'],
+  ['Glossario del marmo', 'collection/glossary', 'Termini tecnici'],
+  ['Experience Carrara', 'collection/experiences', 'Esperienze, prezzi se configurati, pagamento online'],
+  ['Italian Tours', 'collection/destinations', 'Destinazioni, attrazioni, itinerari'],
+  ['Progetti', 'collection/projects', 'Casi reali (solo con il consenso del cliente)'],
+  ['Pagine legali', 'collection/legal', 'Privacy, cookie, termini, note legali'],
+  ['Dati aziendali e contatti', 'singleton/settings', 'Ragione sociale, Partita IVA, contatti, iubenda'],
+  ['Immagini della home', 'singleton/home', 'Foto principali della home'],
+];
+---
+
+<Admin title="Contenuti" active="content">
+  <p class="mt-2 max-w-3xl text-ash">I contenuti editoriali (testi in italiano, foto, schede) si gestiscono nel pannello contenuti Keystatic. Le altre lingue arrivano dalle traduzioni: le correzioni si fanno nella sezione <a href="/admin/translations/" class="text-brass-deep">Traduzioni</a>.</p>
+  {sp.get('ok') && <p class="mt-4 border border-success px-4 py-2 text-success" role="status">{sp.get('ok')}</p>}
+  {sp.get('error') && <p class="mt-4 border border-danger px-4 py-2 text-danger" role="alert">{sp.get('error')}</p>}
+  {!ks && <p class="adm-note mt-4">Il pannello contenuti non è attivo su questo sito pubblicato: va collegato a GitHub (vedi DEPLOYMENT.md, «Pannello contenuti»). In locale si apre su /keystatic.</p>}
+  <ul class="mt-6 grid gap-4 md:grid-cols-2">
+    {items.map(([label, path, help]) => (
+      <li class="adm-card flex items-center justify-between gap-4">
+        <span><span class="font-display text-lg">{label}</span><br /><span class="text-[0.85rem] text-ash">{help}</span></span>
+        {ks && <a class="btn btn-outline btn-sm" href={`/keystatic/${path}`}>Apri</a>}
+      </li>
+    ))}
+  </ul>
+  <section class="adm-card mt-8">
+    <h2 class="font-display text-xl">Pubblica le modifiche</h2>
+    <p class="mt-2 text-[0.9rem] text-ash">Le modifiche salvate nel pannello contenuti (su GitHub) avviano da sole un nuovo build. Le correzioni delle traduzioni sono nel database: per vederle sulle pagine statiche serve un nuovo build.</p>
+    <form method="post" action="/api/admin/publish" class="mt-4"><button class="btn btn-primary btn-sm" type="submit" disabled={!hook}>Avvia un nuovo build</button></form>
+    {!hook && <p class="mt-2 text-[0.82rem] text-ash">Imposta DEPLOY_HOOK_URL (Vercel o Netlify) per attivare il pulsante.</p>}
+  </section>
+</Admin>

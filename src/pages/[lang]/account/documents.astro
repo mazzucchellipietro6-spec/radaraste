@@ -1,0 +1,41 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import Icon from '~/components/Icon.astro';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+import { withUser } from '~/lib/server/db';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t, fmt } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const session = 'user' in s ? s : null;
+type D = { id: string; title: string; description: string | null; scope: string; created_at: Date };
+const rows = session ? await withUser(session.user.claims, (tx) => tx<D[]>`select id, title, description, scope, created_at from public.documents where scope in ('customer', 'b2b') order by created_at desc`) : [];
+---
+
+<Account t={tr} path={`/${lang}/account/documents/`} section="documents" title={t('account.nav.documents')} profile={session?.profile}>
+  {
+    !session ? (
+      <NotConfigured t={tr} />
+    ) : rows.length === 0 ? (
+      <p class="text-ash">{t('account.documents.empty')}</p>
+    ) : (
+      <ul class="divide-y divide-stone border-y border-stone">
+        {rows.map((d) => (
+          <li class="flex flex-wrap items-center justify-between gap-4 py-4">
+            <div class="flex items-start gap-3">
+              <Icon name="document" class="mt-1 text-brass-deep" />
+              <div>
+                <p class="font-medium">{d.title}</p>
+                <p class="text-[0.85rem] text-ash">{d.description} {fmt.date(d.created_at, { dateStyle: 'medium' })}{d.scope === 'b2b' && ' · B2B'}</p>
+              </div>
+            </div>
+            <a href={`/api/me/documents/${d.id}`} class="btn btn-outline btn-sm">{t('account.documents.download')}</a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Account>

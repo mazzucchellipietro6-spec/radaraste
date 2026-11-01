@@ -1,0 +1,37 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import Selection from '~/islands/Selection';
+import Collections from '~/islands/Collections';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t, href } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const p = 'user' in s ? s.profile : null;
+const sel = Object.fromEntries(['empty', 'request', 'clear', 'browse', 'saved'].map((k) => [k, t(`selection.${k}`)]));
+sel.remove = t('common.remove');
+const col: Record<string, string> = {};
+for (const k of ['collections', 'newCollection', 'collectionName', 'create', 'collectionsSynced', 'collectionsLocal', 'deleteCollection', 'emptyCollection', 'noCollections', 'requestQuote']) col[k] = t(`showroom.${k}`);
+col.close = t('common.close');
+---
+
+<Account t={tr} path={`/${lang}/account/favorites/`} section="favorites" title={t('account.nav.favorites')} profile={p}>
+  {
+    !p ? (
+      <NotConfigured t={tr} />
+    ) : (
+      <div class="space-y-16">
+        <section>
+          <h2 class="display-md">{t('nav.selection')}</h2>
+          <Selection client:load lang={lang} s={sel} quoteHref={href('quote')} browseHref={href('marbles')} />
+        </section>
+        <section class="border-t border-stone pt-12">
+          <Collections client:load lang={lang} s={col} quoteHref={href('quote')} />
+        </section>
+      </div>
+    )
+  }
+</Account>

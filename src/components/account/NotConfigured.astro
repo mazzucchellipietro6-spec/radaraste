@@ -1,0 +1,11 @@
+---
+import type { Translator } from '~/i18n';
+interface Props {
+  t: Translator;
+}
+const { t } = Astro.props.t;
+---
+
+<div class="max-w-xl border border-stone bg-ivory p-8">
+  <p class="lead">{t('account.notConfigured')}</p>
+</div>

@@ -933,5 +933,231 @@
   "title": "Page not found",
   "text": "The page you are looking for does not exist or has been moved.",
   "home": "Back to home"
+ },
+ "account": {
+  "title": "My account",
+  "notConfigured": "The customer area is not active on this site yet.",
+  "signInRequired": "Please sign in to continue.",
+  "nav": {
+   "overview": "Overview",
+   "profile": "Profile",
+   "favorites": "Favourites and collections",
+   "projects": "Projects",
+   "requests": "Requests",
+   "quotes": "Quotes",
+   "bookings": "Bookings",
+   "documents": "Documents",
+   "messages": "Messages",
+   "b2b": "B2B area",
+   "logout": "Sign out",
+   "admin": "Admin panel"
+  },
+  "login": {
+   "title": "Sign in",
+   "lead": "Sign in to find your saved marbles, collections, requests, quotes and bookings.",
+   "email": "Email",
+   "password": "Password",
+   "submit": "Sign in",
+   "magic": "Get a sign-in link by email",
+   "magicSubmit": "Send link",
+   "magicSent": "If this address is registered, you will shortly receive an email with a sign-in link.",
+   "noAccount": "Don't have an account?",
+   "register": "Register",
+   "forgot": "Forgot your password?",
+   "invalid": "Incorrect email or password.",
+   "unconfirmed": "Please confirm your email address first: open the link we sent you."
+  },
+  "register": {
+   "title": "Create an account",
+   "lead": "Save marbles and collections, and follow requests, quotes and bookings in one place.",
+   "name": "Full name",
+   "password": "Password",
+   "passwordHint": "At least 10 characters.",
+   "submit": "Create account",
+   "sent": "We have sent you an email: open the link to confirm your address and activate your account.",
+   "haveAccount": "Already have an account?",
+   "b2bTitle": "Professional details",
+   "b2bLead": "Fill in these details to request access to the B2B area: we will review your request before approval.",
+   "b2bType": "Business type",
+   "vat": "VAT number",
+   "website": "Website",
+   "country": "Country",
+   "company": "Company",
+   "b2bNotes": "Briefly describe your business",
+   "b2bSubmit": "Create account and request B2B access",
+   "passwordWeak": "The password must be at least 10 characters long."
+  },
+  "b2bTypes": {
+   "architect": "Architecture practice",
+   "interior": "Interior design",
+   "importer": "Importer",
+   "reseller": "Reseller",
+   "company": "Construction company",
+   "contractor": "Contractor",
+   "other": "Other"
+  },
+  "forgot": {
+   "title": "Forgot password",
+   "lead": "Enter your email: we will send you a link to choose a new password.",
+   "submit": "Send me the link"
+  },
+  "reset": {
+   "title": "New password",
+   "submit": "Save new password",
+   "done": "Password updated.",
+   "expired": "This link is no longer valid: please request a new one."
+  },
+  "overview": {
+   "welcome": "Welcome, {name}",
+   "welcomeNoName": "Welcome",
+   "lead": "Manage your marbles, projects, requests and journeys with WHITE CARRARA from here."
+  },
+  "profile": {
+   "saved": "Details saved.",
+   "language": "Preferred language",
+   "marketing": "I would like to receive news from WHITE CARRARA",
+   "exportTitle": "Your data",
+   "exportText": "You can download a copy of the data we keep in your account at any time.",
+   "export": "Download my data",
+   "deleteTitle": "Delete account",
+   "deleteText": "Deletion is permanent: we will delete your account, favourites, collections, projects and messages. Requests, quotes and documents we are legally required to keep will remain archived for the required period, no longer linked to your account.",
+   "deleteConfirm": "To confirm, type your email address",
+   "deleteButton": "Permanently delete account",
+   "deleted": "Your account has been deleted."
+  },
+  "projects": {
+   "new": "New project",
+   "name": "Project name",
+   "type": "Type",
+   "location": "Location",
+   "description": "Description",
+   "marbles": "Marbles (comma separated)",
+   "status": "Status",
+   "save": "Save",
+   "delete": "Delete",
+   "empty": "You have no projects yet.",
+   "statuses": {
+    "open": "Open",
+    "in_progress": "In progress",
+    "on_hold": "On hold",
+    "completed": "Completed",
+    "archived": "Archived"
+   }
+  },
+  "requests": {
+   "empty": "No requests.",
+   "statuses": {
+    "new": "Received",
+    "in_progress": "In progress",
+    "waiting_customer": "Waiting for your information",
+    "quoted": "Quote sent",
+    "won": "Completed",
+    "lost": "Not concluded",
+    "closed": "Closed",
+    "spam": "Closed"
+   },
+   "kinds": {
+    "quote": "Quote",
+    "concierge": "Marble Concierge",
+    "matching": "Marble Matching",
+    "contact": "Contact",
+    "b2b": "B2B",
+    "tech_sheet": "Data sheet",
+    "custom_trip": "Tailor-made trip",
+    "trade": "Trading and brokerage"
+   }
+  },
+  "quotes": {
+   "empty": "No quotes.",
+   "number": "Number",
+   "date": "Date",
+   "total": "Total",
+   "validUntil": "Valid until",
+   "status": "Status",
+   "statuses": {
+    "sent": "Awaiting your review",
+    "accepted": "Accepted",
+    "rejected": "Declined",
+    "expired": "Expired",
+    "cancelled": "Cancelled",
+    "draft": "In preparation"
+   },
+   "accept": "Accept quote",
+   "reject": "Decline",
+   "accepted": "Quote accepted: we will contact you about the next steps.",
+   "rejected": "Quote declined.",
+   "models": {
+    "trading": "Supply by WHITE CARRARA (trading)",
+    "brokerage": "Brokerage"
+   },
+   "brokerageNote": "Brokerage offer: the supply contract will be entered into with the supplier named at the time of agreement.",
+   "description": "Description",
+   "quantity": "Quantity",
+   "unitPrice": "Unit price",
+   "amount": "Amount",
+   "incoterm": "Delivery terms (Incoterm)",
+   "delivery": "Delivery",
+   "payment": "Payment",
+   "notes": "Notes",
+   "print": "Print or save as PDF",
+   "vatNote": "Amounts exclude VAT unless otherwise stated.",
+   "open": "Open"
+  },
+  "bookings": {
+   "empty": "No bookings.",
+   "statuses": {
+    "requested": "Request sent",
+    "checking": "Checking availability",
+    "confirmed": "Confirmed",
+    "awaiting_payment": "Awaiting payment",
+    "paid": "Paid",
+    "completed": "Completed",
+    "declined": "Not available",
+    "cancelled": "Cancelled"
+   },
+   "pay": "Pay now",
+   "date": "Date",
+   "participants": "Participants",
+   "amount": "Amount"
+  },
+  "documents": {
+   "empty": "No documents available.",
+   "download": "Download"
+  },
+  "messages": {
+   "empty": "No messages. Write to us with any question.",
+   "placeholder": "Write a message…",
+   "send": "Send",
+   "you": "You",
+   "staff": "WHITE CARRARA",
+   "sent": "Message sent."
+  },
+  "b2b": {
+   "none": "You have not requested access to the professional area yet.",
+   "pending": "Your B2B access request is under review: we will write to you as soon as it is approved.",
+   "approved": "Your professional account is active.",
+   "rejected": "Your B2B access request was not approved. Please write to us if you have questions.",
+   "apply": "Request B2B access",
+   "applied": "Request sent: we will review it shortly.",
+   "pricesTitle": "Reserved prices",
+   "pricesEmpty": "No reserved prices published at the moment.",
+   "docsTitle": "Technical documents",
+   "docsEmpty": "No technical documents published at the moment.",
+   "marble": "Material",
+   "finish": "Finish",
+   "thickness": "Thickness",
+   "price": "Price",
+   "validUntil": "Valid until"
+  },
+  "mfa": {
+   "title": "Two-step verification",
+   "lead": "To protect the admin panel you need a code generated by an authenticator app (for example Google Authenticator, 1Password, Authy).",
+   "enrollTitle": "Set up your authenticator app",
+   "enrollText": "Scan the QR code with the app, then enter the 6-digit code it shows.",
+   "secret": "Or enter this key",
+   "code": "6-digit code",
+   "verify": "Verify",
+   "invalid": "Invalid code, please try again."
+  }
  }
 }

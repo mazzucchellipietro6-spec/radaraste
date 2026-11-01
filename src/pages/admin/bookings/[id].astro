@@ -1,0 +1,71 @@
+---
+import Admin from '~/layouts/Admin.astro';
+import RecordForm from '~/components/admin/RecordForm.astro';
+import { canAccess, resource } from '~/lib/server/admin/resources';
+import { getRow, refOptions, resolveOptions } from '~/lib/server/admin/data';
+import { withUser } from '~/lib/server/db';
+import { stripeConfigured } from '~/lib/server/stripe';
+export const prerender = false;
+const r = resource('bookings')!;
+const admin = Astro.locals.admin;
+if (!admin || !canAccess(r, admin.profile)) return Astro.redirect('/admin/');
+const id = Astro.params.id ?? '';
+const row = await getRow(admin.user, r, id);
+if (!row) return Astro.redirect('/admin/bookings/');
+const options = await resolveOptions(admin.user, r);
+const partners = await refOptions(admin.user, 'partners');
+type Int = { partner_id: string | null; partner_cost: string | null; partner_confirmed_at: Date | null; notes: string | null };
+type Pay = { id: string; amount: string; currency: string; status: string; url: string | null; created_at: Date; paid_at: Date | null };
+const extra = await withUser(admin.user.claims, async (tx) => ({
+  internal: (await tx<Int[]>`select partner_id, partner_cost, partner_confirmed_at, notes from public.booking_internal where booking_id = ${id}`)[0] ?? null,
+  payments: await tx<Pay[]>`select id, amount, currency, status, url, created_at, paid_at from public.payments where kind = 'booking' and ref_id = ${id} order by created_at desc`,
+}));
+const sp = Astro.url.searchParams;
+const price = Number(row.price ?? 0);
+---
+
+<Admin title={`Prenotazione ${row.reference}`} active="bookings">
+  <p class="mt-2"><a href="/admin/bookings/" class="text-brass-deep">← Prenotazioni</a></p>
+  {sp.get('ok') && <p class="mt-4 border border-success px-4 py-2 text-success" role="status">{sp.get('ok') === '1' ? 'Salvato.' : sp.get('ok')}</p>}
+  {sp.get('error') && <p class="mt-4 border border-danger px-4 py-2 text-danger" role="alert">{sp.get('error')}</p>}
+
+  <section class="adm-card mt-6">
+    <h2 class="font-display text-xl">Azioni</h2>
+    <p class="mt-1 text-[0.88rem] text-ash">La richiesta diventa una prenotazione solo dopo la verifica con partner autorizzati. Il cliente riceve un'email nella sua lingua ({String(row.lang ?? 'en')}).</p>
+    <div class="mt-4 flex flex-wrap gap-3">
+      <form method="post" action="/api/admin/bookings/action"><input type="hidden" name="id" value={id} /><button name="action" value="checking" class="btn btn-outline btn-sm">In verifica con i partner</button></form>
+      <form method="post" action="/api/admin/bookings/action"><input type="hidden" name="id" value={id} /><button name="action" value="confirm" class="btn btn-primary btn-sm">Conferma (pagamento sul posto o separato)</button></form>
+      <form method="post" action="/api/admin/bookings/action" class="flex flex-wrap items-center gap-2">
+        <input type="hidden" name="id" value={id} />
+        <input class="input !min-h-10 w-32" name="amount" type="number" step="0.01" min="1" value={price || ''} placeholder="Importo €" required />
+        <button name="action" value="confirm_pay" class="btn btn-primary btn-sm" disabled={!stripeConfigured()} title={stripeConfigured() ? '' : 'Stripe non configurato'}>Conferma e invia link di pagamento</button>
+      </form>
+      <form method="post" action="/api/admin/bookings/action"><input type="hidden" name="id" value={id} /><button name="action" value="complete" class="btn btn-outline btn-sm">Segna completata</button></form>
+      <form method="post" action="/api/admin/bookings/action"><input type="hidden" name="id" value={id} /><button name="action" value="decline" class="btn btn-sm border border-danger text-danger">Non disponibile (avvisa il cliente)</button></form>
+    </div>
+    {!stripeConfigured() && <p class="mt-3 text-[0.82rem] text-ash">Pagamento online non attivo: aggiungi le chiavi Stripe (vedi DEPLOYMENT.md).</p>}
+  </section>
+
+  <section class="adm-card mt-6">
+    <h2 class="font-display text-xl">Dati interni (mai visibili al cliente)</h2>
+    <form method="post" action="/api/admin/bookings/action" class="mt-4 grid gap-4 md:grid-cols-3">
+      <input type="hidden" name="id" value={id} /><input type="hidden" name="action" value="internal" />
+      <label class="field"><span class="field-label">Partner autorizzato</span><select class="input" name="partner_id"><option value="">—</option>{partners.map(([k, l]) => <option value={k} selected={extra.internal?.partner_id === k}>{l}</option>)}</select></label>
+      <label class="field"><span class="field-label">Costo del partner €</span><input class="input" name="partner_cost" type="number" step="0.01" value={extra.internal?.partner_cost ?? ''} /></label>
+      <label class="field flex items-center gap-3 self-end"><input type="checkbox" class="checkbox !mt-0" name="partner_confirmed" checked={!!extra.internal?.partner_confirmed_at} /><span>Disponibilità confermata dal partner</span></label>
+      <label class="field md:col-span-3"><span class="field-label">Note interne</span><textarea class="input" name="notes" rows="3">{extra.internal?.notes ?? ''}</textarea></label>
+      <div><button class="btn btn-primary btn-sm" type="submit">Salva dati interni</button></div>
+    </form>
+  </section>
+
+  {extra.payments.length > 0 && (
+    <section class="mt-6">
+      <h2 class="font-display text-xl">Pagamenti</h2>
+      <table class="adm-table mt-3"><thead><tr><th>Creato</th><th>Importo</th><th>Stato</th><th>Link</th></tr></thead>
+        <tbody>{extra.payments.map((p) => <tr><td>{new Date(p.created_at).toLocaleString('it-IT')}</td><td>{Number(p.amount).toFixed(2)} {p.currency}</td><td>{p.status}{p.paid_at && ` · ${new Date(p.paid_at).toLocaleString('it-IT')}`}</td><td>{p.url && p.status === 'pending' && <a href={p.url} target="_blank" rel="noopener" class="text-brass-deep">Apri</a>}</td></tr>)}</tbody>
+      </table>
+    </section>
+  )}
+
+  <RecordForm r={r} row={row} options={options} profile={admin.profile} back={`/admin/bookings/${id}/`} />
+</Admin>

@@ -1,0 +1,86 @@
+---
+import Admin from '~/layouts/Admin.astro';
+import CatalogView from '~/components/admin/CatalogView.astro';
+import { canAccess, resource } from '~/lib/server/admin/resources';
+import { displayValue, listRows, resolveOptions } from '~/lib/server/admin/data';
+export const prerender = false;
+const admin = Astro.locals.admin;
+// Marmi, tour ed esperienze, destinazioni: vista dedicata (i contenuti sono in Keystatic)
+const catalogKind = Astro.params.resource === 'catalog' ? (Astro.url.searchParams.get('kind') ?? 'marbles') : null;
+const isCatalog = !!catalogKind && ['marbles', 'experiences', 'destinations'].includes(catalogKind) && !!admin;
+const r = resource(Astro.params.resource ?? '');
+if (!isCatalog && (!r || !admin || !canAccess(r, admin.profile))) return Astro.redirect('/admin/');
+const sp = Astro.url.searchParams;
+const q = sp.get('q') ?? '';
+const page = Number(sp.get('page') ?? 1) || 1;
+const filters: Record<string, string> = Object.fromEntries((r?.filters ?? []).map((f) => [f, sp.get(f) ?? '']));
+const { rows, total, pages } = isCatalog || !r || !admin ? { rows: [], total: 0, pages: 1 } : await listRows(admin.user, r, { q, filters, page });
+const options = isCatalog || !r || !admin ? {} : await resolveOptions(admin.user, r);
+const cols = r?.fields.filter((f) => f.list) ?? [];
+const qs = (p: number) => {
+  const u = new URLSearchParams(sp);
+  u.set('page', String(p));
+  return `?${u}`;
+};
+const exportHref = r ? `/api/admin/export/${r.key}?${new URLSearchParams({ q, ...filters })}` : '';
+const msg = sp.get('ok') ? 'Operazione completata.' : sp.get('error') ? sp.get('error') : '';
+---
+
+{isCatalog ? (
+  <CatalogView kind={catalogKind as 'marbles' | 'experiences' | 'destinations'} />
+) : r && (
+<Admin title={r.label} active={r.key}>
+  {r.note && <p class="adm-note mt-4">{r.note}</p>}
+  {msg && <p class:list={['mt-4 border px-4 py-2', sp.get('error') ? 'border-danger text-danger' : 'border-success text-success']} role="status">{msg}</p>}
+  <form method="get" class="mt-6 flex flex-wrap items-end gap-3">
+    <label class="field"><span class="field-label">Cerca</span><input class="input !min-h-10 w-64" name="q" value={q} /></label>
+    {
+      (r.filters ?? []).map((name) => {
+        const f = r.fields.find((x) => x.name === name);
+        const list: [string, string][] = name === 'active' ? [['true', 'Attivi'], ['false', 'Disattivati']] : (f?.options ?? []);
+        return (
+          <label class="field">
+            <span class="field-label">{f?.label ?? 'Attivo'}</span>
+            <select class="input !min-h-10" name={name}>
+              <option value="">Tutti</option>
+              {list.map(([k, l]) => <option value={k} selected={filters[name] === k}>{l}</option>)}
+            </select>
+          </label>
+        );
+      })
+    }
+    <button class="btn btn-outline btn-sm" type="submit">Filtra</button>
+    <span class="flex-1"></span>
+    <a href={exportHref} class="btn btn-outline btn-sm">Esporta CSV</a>
+    {r.create !== false && !r.readonly && <a href={`/admin/${r.key}/new/`} class="btn btn-primary btn-sm">Nuovo</a>}
+  </form>
+  <p class="mt-4 text-[0.85rem] text-ash">{total} elementi</p>
+  <div class="mt-2 overflow-x-auto">
+    <table class="adm-table">
+      <thead><tr>{cols.map((c) => <th>{c.label}</th>)}<th></th></tr></thead>
+      <tbody>
+        {
+          rows.map((row) => (
+            <tr>
+              {cols.map((c) => (
+                <td class="max-w-[22rem] truncate">{displayValue(c, row[c.name], options[c.name])}</td>
+              ))}
+              <td class="text-end"><a href={`/admin/${r.key}/${row.id}/`} class="text-brass-deep">Apri</a></td>
+            </tr>
+          ))
+        }
+        {rows.length === 0 && <tr><td colspan={cols.length + 1} class="py-8 text-center text-ash">Nessun elemento.</td></tr>}
+      </tbody>
+    </table>
+  </div>
+  {
+    pages > 1 && (
+      <nav class="mt-6 flex items-center gap-3 text-[0.9rem]" aria-label="Pagine">
+        {page > 1 && <a href={qs(page - 1)}>← Precedente</a>}
+        <span class="text-ash">Pagina {page} di {pages}</span>
+        {page < pages && <a href={qs(page + 1)}>Successiva →</a>}
+      </nav>
+    )
+  }
+</Admin>
+)}

@@ -933,5 +933,231 @@
   "title": "Pagina non trovata",
   "text": "La pagina che cercate non esiste o è stata spostata.",
   "home": "Torna alla home"
+ },
+ "account": {
+  "title": "Area clienti",
+  "notConfigured": "L'area clienti non è ancora attiva su questo sito.",
+  "signInRequired": "Accedete per continuare.",
+  "nav": {
+   "overview": "Panoramica",
+   "profile": "Profilo",
+   "favorites": "Preferiti e collezioni",
+   "projects": "Progetti",
+   "requests": "Richieste",
+   "quotes": "Preventivi",
+   "bookings": "Prenotazioni",
+   "documents": "Documenti",
+   "messages": "Comunicazioni",
+   "b2b": "Area B2B",
+   "logout": "Esci",
+   "admin": "Pannello amministratore"
+  },
+  "login": {
+   "title": "Accedi",
+   "lead": "Accedete per ritrovare marmi salvati, collezioni, richieste, preventivi e prenotazioni.",
+   "email": "Email",
+   "password": "Password",
+   "submit": "Accedi",
+   "magic": "Ricevi un link di accesso via email",
+   "magicSubmit": "Invia il link",
+   "magicSent": "Se l'indirizzo è registrato, riceverete a breve un'email con il link di accesso.",
+   "noAccount": "Non avete un account?",
+   "register": "Registratevi",
+   "forgot": "Password dimenticata?",
+   "invalid": "Email o password non corretti.",
+   "unconfirmed": "Confermate prima l'indirizzo email: aprite il link che vi abbiamo inviato."
+  },
+  "register": {
+   "title": "Create un account",
+   "lead": "Salvate marmi e collezioni e seguite richieste, preventivi e prenotazioni da un unico posto.",
+   "name": "Nome e cognome",
+   "password": "Password",
+   "passwordHint": "Almeno 10 caratteri.",
+   "submit": "Crea l'account",
+   "sent": "Vi abbiamo inviato un'email: aprite il link per confermare l'indirizzo e attivare l'account.",
+   "haveAccount": "Avete già un account?",
+   "b2bTitle": "Dati professionali",
+   "b2bLead": "Compilate questi dati per richiedere l'accesso all'area B2B: verificheremo la richiesta prima dell'approvazione.",
+   "b2bType": "Attività",
+   "vat": "Partita IVA / VAT",
+   "website": "Sito web",
+   "country": "Paese",
+   "company": "Azienda",
+   "b2bNotes": "Presentate brevemente la vostra attività",
+   "b2bSubmit": "Crea l'account e richiedi l'accesso B2B",
+   "passwordWeak": "La password deve avere almeno 10 caratteri."
+  },
+  "b2bTypes": {
+   "architect": "Studio di architettura",
+   "interior": "Interior design",
+   "importer": "Importatore",
+   "reseller": "Rivenditore",
+   "company": "Impresa",
+   "contractor": "Contractor",
+   "other": "Altro"
+  },
+  "forgot": {
+   "title": "Password dimenticata",
+   "lead": "Indicate la vostra email: vi invieremo un link per scegliere una nuova password.",
+   "submit": "Inviami il link"
+  },
+  "reset": {
+   "title": "Nuova password",
+   "submit": "Salva la nuova password",
+   "done": "Password aggiornata.",
+   "expired": "Il link non è più valido: richiedetene uno nuovo."
+  },
+  "overview": {
+   "welcome": "Benvenuti, {name}",
+   "welcomeNoName": "Benvenuti",
+   "lead": "Da qui gestite i vostri marmi, progetti, richieste e viaggi con WHITE CARRARA."
+  },
+  "profile": {
+   "saved": "Dati salvati.",
+   "language": "Lingua preferita",
+   "marketing": "Desidero ricevere comunicazioni da WHITE CARRARA",
+   "exportTitle": "I vostri dati",
+   "exportText": "Potete scaricare in qualsiasi momento una copia dei dati che conserviamo nel vostro account.",
+   "export": "Scarica i miei dati",
+   "deleteTitle": "Eliminare l'account",
+   "deleteText": "L'eliminazione è definitiva: cancelleremo account, preferiti, collezioni, progetti e messaggi. Le richieste, i preventivi e i documenti che dobbiamo conservare per legge resteranno archiviati per il tempo previsto, senza collegamento al vostro account.",
+   "deleteConfirm": "Per confermare scrivete il vostro indirizzo email",
+   "deleteButton": "Elimina definitivamente l'account",
+   "deleted": "Il vostro account è stato eliminato."
+  },
+  "projects": {
+   "new": "Nuovo progetto",
+   "name": "Nome del progetto",
+   "type": "Tipo",
+   "location": "Luogo",
+   "description": "Descrizione",
+   "marbles": "Marmi (separati da virgola)",
+   "status": "Stato",
+   "save": "Salva",
+   "delete": "Elimina",
+   "empty": "Non avete ancora progetti.",
+   "statuses": {
+    "open": "Aperto",
+    "in_progress": "In corso",
+    "on_hold": "In pausa",
+    "completed": "Completato",
+    "archived": "Archiviato"
+   }
+  },
+  "requests": {
+   "empty": "Nessuna richiesta.",
+   "statuses": {
+    "new": "Ricevuta",
+    "in_progress": "In lavorazione",
+    "waiting_customer": "In attesa di vostre informazioni",
+    "quoted": "Preventivo inviato",
+    "won": "Conclusa",
+    "lost": "Non conclusa",
+    "closed": "Chiusa",
+    "spam": "Chiusa"
+   },
+   "kinds": {
+    "quote": "Preventivo",
+    "concierge": "Marble Concierge",
+    "matching": "Marble Matching",
+    "contact": "Contatto",
+    "b2b": "B2B",
+    "tech_sheet": "Scheda tecnica",
+    "custom_trip": "Viaggio su misura",
+    "trade": "Trading e brokerage"
+   }
+  },
+  "quotes": {
+   "empty": "Nessun preventivo.",
+   "number": "Numero",
+   "date": "Data",
+   "total": "Totale",
+   "validUntil": "Valido fino al",
+   "status": "Stato",
+   "statuses": {
+    "sent": "Da valutare",
+    "accepted": "Accettato",
+    "rejected": "Rifiutato",
+    "expired": "Scaduto",
+    "cancelled": "Annullato",
+    "draft": "In preparazione"
+   },
+   "accept": "Accetta il preventivo",
+   "reject": "Rifiuta",
+   "accepted": "Preventivo accettato: vi contatteremo per i passi successivi.",
+   "rejected": "Preventivo rifiutato.",
+   "models": {
+    "trading": "Fornitura WHITE CARRARA (trading)",
+    "brokerage": "Intermediazione (brokerage)"
+   },
+   "brokerageNote": "Offerta di intermediazione: il contratto di fornitura sarà stipulato con il fornitore indicato al momento dell'accordo.",
+   "description": "Descrizione",
+   "quantity": "Quantità",
+   "unitPrice": "Prezzo unitario",
+   "amount": "Importo",
+   "incoterm": "Resa (Incoterm)",
+   "delivery": "Consegna",
+   "payment": "Pagamento",
+   "notes": "Note",
+   "print": "Stampa o salva in PDF",
+   "vatNote": "Importi IVA esclusa, salvo diversa indicazione.",
+   "open": "Apri"
+  },
+  "bookings": {
+   "empty": "Nessuna prenotazione.",
+   "statuses": {
+    "requested": "Richiesta inviata",
+    "checking": "Verifica della disponibilità",
+    "confirmed": "Confermata",
+    "awaiting_payment": "In attesa di pagamento",
+    "paid": "Pagata",
+    "completed": "Completata",
+    "declined": "Non disponibile",
+    "cancelled": "Annullata"
+   },
+   "pay": "Paga ora",
+   "date": "Data",
+   "participants": "Partecipanti",
+   "amount": "Importo"
+  },
+  "documents": {
+   "empty": "Nessun documento disponibile.",
+   "download": "Scarica"
+  },
+  "messages": {
+   "empty": "Nessun messaggio. Scriveteci per qualsiasi domanda.",
+   "placeholder": "Scrivete un messaggio…",
+   "send": "Invia",
+   "you": "Voi",
+   "staff": "WHITE CARRARA",
+   "sent": "Messaggio inviato."
+  },
+  "b2b": {
+   "none": "Non avete ancora richiesto l'accesso all'area professionisti.",
+   "pending": "La vostra richiesta di accesso B2B è in verifica: vi scriveremo appena sarà approvata.",
+   "approved": "Il vostro account professionale è attivo.",
+   "rejected": "La richiesta di accesso B2B non è stata approvata. Per chiarimenti scriveteci.",
+   "apply": "Richiedi l'accesso B2B",
+   "applied": "Richiesta inviata: la verificheremo al più presto.",
+   "pricesTitle": "Prezzi riservati",
+   "pricesEmpty": "Nessun prezzo riservato pubblicato al momento.",
+   "docsTitle": "Documenti tecnici",
+   "docsEmpty": "Nessun documento tecnico pubblicato al momento.",
+   "marble": "Materiale",
+   "finish": "Finitura",
+   "thickness": "Spessore",
+   "price": "Prezzo",
+   "validUntil": "Validità"
+  },
+  "mfa": {
+   "title": "Verifica in due passaggi",
+   "lead": "Per proteggere il pannello amministratore serve un codice generato da un'app di autenticazione (ad esempio Google Authenticator, 1Password, Authy).",
+   "enrollTitle": "Attiva l'app di autenticazione",
+   "enrollText": "Inquadrate il codice QR con l'app, poi inserite il codice di 6 cifre che compare.",
+   "secret": "Oppure inserite questa chiave",
+   "code": "Codice di 6 cifre",
+   "verify": "Verifica",
+   "invalid": "Codice non valido, riprovate."
+  }
  }
 }

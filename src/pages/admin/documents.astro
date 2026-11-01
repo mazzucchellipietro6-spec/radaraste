@@ -1,0 +1,45 @@
+---
+import Admin from '~/layouts/Admin.astro';
+import { refOptions, marbleOptions } from '~/lib/server/admin/data';
+import { withUser } from '~/lib/server/db';
+import { env } from '~/lib/server/env';
+export const prerender = false;
+const admin = Astro.locals.admin;
+const p = admin?.profile;
+if (!admin || !p || !(p.role === 'admin' || p.permissions.includes('customers') || p.permissions.includes('trade'))) return Astro.redirect('/admin/');
+type D = { id: string; title: string; scope: string; owner: string | null; marble_slug: string | null; size_bytes: number | null; created_at: Date };
+const docs = await withUser(admin.user.claims, (tx) => tx<D[]>`select d.id, d.title, d.scope, pr.email as owner, d.marble_slug, d.size_bytes, d.created_at from public.documents d left join public.profiles pr on pr.id = d.owner_id order by d.created_at desc limit 300`);
+const customers = await refOptions(admin.user, 'customers');
+const marbles = await marbleOptions();
+const storage = !!env('SUPABASE_SERVICE_ROLE_KEY');
+const sp = Astro.url.searchParams;
+const SCOPE: Record<string, string> = { customer: 'Cliente', b2b: 'Professionisti B2B', internal: 'Interno' };
+---
+
+<Admin title="Documenti" active="documents">
+  <p class="mt-2 max-w-3xl text-ash">I file sono privati (archivio Supabase) e si scaricano solo con link temporanei: i clienti vedono i propri documenti, i professionisti approvati quelli B2B.</p>
+  {sp.get('ok') && <p class="mt-4 border border-success px-4 py-2 text-success" role="status">Fatto.</p>}
+  {sp.get('error') && <p class="mt-4 border border-danger px-4 py-2 text-danger" role="alert">{sp.get('error')}</p>}
+  <form method="post" action="/api/admin/documents" enctype="multipart/form-data" class="adm-card mt-6 grid gap-4 md:grid-cols-2">
+    <label class="field"><span class="field-label">Titolo *</span><input class="input" name="title" required maxlength="200" /></label>
+    <label class="field"><span class="field-label">Visibile a</span><select class="input" name="scope">{Object.entries(SCOPE).map(([k, l]) => <option value={k}>{l}</option>)}</select></label>
+    <label class="field"><span class="field-label">Cliente (solo per «Cliente»)</span><select class="input" name="owner_id"><option value="">—</option>{customers.map(([k, l]) => <option value={k}>{l}</option>)}</select></label>
+    <label class="field"><span class="field-label">Marmo collegato</span><select class="input" name="marble_slug"><option value="">—</option>{marbles.map(([k, l]) => <option value={k}>{l}</option>)}</select></label>
+    <label class="field md:col-span-2"><span class="field-label">Descrizione</span><input class="input" name="description" maxlength="500" /></label>
+    <label class="field md:col-span-2"><span class="field-label">File (PDF o immagine, max 20 MB) *</span><input class="input" type="file" name="file" required accept="application/pdf,image/jpeg,image/png,image/webp" /></label>
+    <div><button class="btn btn-primary btn-sm" type="submit" disabled={!storage}>Carica</button>{!storage && <span class="ms-3 text-[0.82rem] text-ash">Archivio file non configurato (SUPABASE_SERVICE_ROLE_KEY).</span>}</div>
+  </form>
+  <table class="adm-table mt-8">
+    <thead><tr><th>Titolo</th><th>Visibile a</th><th>Cliente</th><th>Marmo</th><th>Data</th><th></th></tr></thead>
+    <tbody>
+      {docs.map((d) => (
+        <tr>
+          <td>{d.title}</td><td>{SCOPE[d.scope]}</td><td>{d.owner ?? '—'}</td><td>{d.marble_slug ?? '—'}</td><td>{new Date(d.created_at).toLocaleDateString('it-IT')}</td>
+          <td class="whitespace-nowrap text-end"><a class="text-brass-deep" href={`/api/me/documents/${d.id}`}>Scarica</a>
+            <form method="post" action="/api/admin/documents" class="ms-3 inline"><input type="hidden" name="delete" value={d.id} /><button class="text-danger underline" type="submit">Elimina</button></form></td>
+        </tr>
+      ))}
+      {docs.length === 0 && <tr><td colspan="6" class="py-6 text-center text-ash">Nessun documento.</td></tr>}
+    </tbody>
+  </table>
+</Admin>

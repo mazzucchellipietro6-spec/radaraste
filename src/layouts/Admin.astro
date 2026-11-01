@@ -1,0 +1,176 @@
+---
+// Pannello amministratore (in italiano, solo per lo staff autorizzato con verifica in due passaggi).
+import '~/styles/global.css';
+import { RESOURCES, canAccess } from '~/lib/server/admin/resources';
+
+interface Props {
+  title: string;
+  active?: string;
+  wide?: boolean;
+}
+const { title, active = '', wide = false } = Astro.props;
+const admin = Astro.locals.admin;
+const profile = admin?.profile;
+const can = (key: string) => {
+  const r = RESOURCES.find((x) => x.key === key);
+  return !!profile && !!r && canAccess(r, profile);
+};
+const has = (p: string) => !!profile && (profile.role === 'admin' || profile.permissions.includes(p));
+const groups: { label: string; items: { key: string; label: string; href: string; show: boolean }[] }[] = [
+  { label: '', items: [{ key: 'dashboard', label: 'Dashboard generale', href: '/admin/', show: !!profile }] },
+  {
+    label: 'CRM',
+    items: [
+      { key: 'customers', label: 'Clienti', href: '/admin/customers/', show: can('customers') },
+      { key: 'requests', label: 'Richieste', href: '/admin/requests/', show: can('requests') },
+      { key: 'quotes', label: 'Preventivi', href: '/admin/quotes/', show: can('quotes') },
+      { key: 'projects', label: 'Progetti', href: '/admin/projects/', show: can('projects') },
+    ],
+  },
+  {
+    label: 'Commercio',
+    items: [
+      { key: 'marbles', label: 'Marmi', href: '/admin/catalog/?kind=marbles', show: has('trade') || has('content') },
+      { key: 'suppliers', label: 'Fornitori', href: '/admin/suppliers/', show: can('suppliers') },
+      { key: 'materials', label: 'Materiali', href: '/admin/materials/', show: can('materials') },
+      { key: 'b2bPrices', label: 'Prezzi B2B', href: '/admin/b2bPrices/', show: can('b2bPrices') },
+      { key: 'trading', label: 'Trading', href: '/admin/trading/', show: can('trading') },
+      { key: 'brokerage', label: 'Brokerage', href: '/admin/brokerage/', show: can('brokerage') },
+      { key: 'commissions', label: 'Commissioni', href: '/admin/commissions/', show: can('commissions') },
+      { key: 'orders', label: 'Ordini', href: '/admin/orders/', show: can('orders') },
+      { key: 'shipments', label: 'Spedizioni', href: '/admin/shipments/', show: can('shipments') },
+    ],
+  },
+  {
+    label: 'Turismo',
+    items: [
+      { key: 'bookings', label: 'Prenotazioni', href: '/admin/bookings/', show: can('bookings') },
+      { key: 'experiences', label: 'Tour ed esperienze', href: '/admin/catalog/?kind=experiences', show: has('tours') || has('content') },
+      { key: 'destinations', label: 'Destinazioni', href: '/admin/catalog/?kind=destinations', show: has('tours') || has('content') },
+      { key: 'partners', label: 'Partner turistici', href: '/admin/partners/', show: can('partners') },
+      { key: 'payments', label: 'Pagamenti', href: '/admin/payments/', show: can('payments') },
+    ],
+  },
+  {
+    label: 'Sito',
+    items: [
+      { key: 'content', label: 'Contenuti', href: '/admin/content/', show: has('content') },
+      { key: 'translations', label: 'Traduzioni', href: '/admin/translations/', show: has('content') },
+      { key: 'documents', label: 'Documenti', href: '/admin/documents/', show: has('customers') || has('trade') },
+      { key: 'emails', label: 'Email', href: '/admin/emails/', show: can('emails') },
+      { key: 'stats', label: 'Statistiche', href: '/admin/stats/', show: !!profile },
+      { key: 'audit', label: 'Registro modifiche', href: '/admin/audit/', show: can('audit') },
+    ],
+  },
+];
+---
+
+<!doctype html>
+<html lang="it" dir="ltr" data-script="Latn">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} — Pannello WHITE CARRARA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="bg-ivory">
+    <div class="min-h-screen lg:grid lg:grid-cols-[16rem_1fr]">
+      <aside class="border-b border-stone bg-graphite text-marble lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:border-b-0">
+        <div class="flex items-center justify-between px-6 py-5">
+          <a href="/admin/" class="font-display text-lg tracking-[0.3em] text-marble no-underline">WHITE CARRARA</a>
+          <a href="/it/" class="text-[0.75rem] text-mist">Sito ↗</a>
+        </div>
+        <details class="lg:hidden" id="admin-nav-m"><summary class="cursor-pointer px-6 pb-4 text-[0.85rem] text-mist">Menu</summary><nav class="admin-nav px-3 pb-4" aria-label="Pannello (telefono)"></nav></details>
+        <nav class="admin-nav hidden px-3 pb-8 lg:block" aria-label="Pannello">
+          {
+            groups.map((g) => {
+              const items = g.items.filter((i) => i.show);
+              return items.length ? (
+                <div class="mt-4">
+                  {g.label && <p class="px-3 pb-1 text-[0.65rem] uppercase tracking-[0.2em] text-brass-light">{g.label}</p>}
+                  <ul>
+                    {items.map((i) => (
+                      <li><a href={i.href} aria-current={active === i.key ? 'page' : undefined}>{i.label}</a></li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null;
+            })
+          }
+          <div class="mt-8 border-t border-white/10 px-3 pt-4 text-[0.78rem] text-mist">
+            {profile?.email}<br />{profile?.role === 'admin' ? 'Amministratore' : `Staff · ${profile?.permissions.join(', ')}`}
+            <form method="post" action="/api/auth/logout" class="mt-3"><input type="hidden" name="lang" value="it" /><button class="underline" type="submit">Esci</button></form>
+          </div>
+        </nav>
+      </aside>
+      <main class:list={['min-w-0 px-4 py-8 sm:px-8 lg:px-12', !wide && 'max-w-[90rem]']}>
+        <h1 class="font-display text-3xl lg:text-4xl">{title}</h1>
+        <slot />
+      </main>
+    </div>
+    <script>
+      // Su telefono il menu laterale si apre dal pulsante "Menu"
+      const src = document.querySelector('nav.admin-nav.hidden');
+      const dst = document.querySelector('#admin-nav-m nav');
+      if (src && dst && !dst.children.length) dst.innerHTML = src.innerHTML;
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  .admin-nav a {
+    display: block;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.88rem;
+    color: var(--color-marble);
+    text-decoration: none;
+    opacity: 0.82;
+  }
+  .admin-nav a:hover {
+    opacity: 1;
+    background: rgb(255 255 255 / 0.06);
+  }
+  .admin-nav a[aria-current='page'] {
+    opacity: 1;
+    background: rgb(255 255 255 / 0.1);
+    box-shadow: inset 2px 0 0 var(--color-brass-light);
+  }
+  .adm-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    background: #fff;
+  }
+  .adm-table th {
+    text-align: start;
+    font-weight: 500;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ash);
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--color-stone);
+    white-space: nowrap;
+  }
+  .adm-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-stone) 60%, transparent);
+    vertical-align: top;
+  }
+  .adm-table tr:hover td {
+    background: var(--color-marble);
+  }
+  .adm-card {
+    background: #fff;
+    border: 1px solid var(--color-stone);
+    padding: 1.25rem 1.5rem;
+  }
+  .adm-note {
+    border-inline-start: 2px solid var(--color-brass);
+    padding: 0.5rem 0.9rem;
+    background: #fff;
+    font-size: 0.88rem;
+    color: var(--color-ash);
+  }
+</style>

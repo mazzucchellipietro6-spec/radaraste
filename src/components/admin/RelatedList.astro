@@ -1,0 +1,38 @@
+---
+import { canAccess, resource } from '~/lib/server/admin/resources';
+import { displayValue, listRows, resolveOptions } from '~/lib/server/admin/data';
+interface Props {
+  resourceKey: string;
+  where: Record<string, string>;
+  label: string;
+}
+const { resourceKey, where, label } = Astro.props;
+const admin = Astro.locals.admin!;
+const r = resource(resourceKey);
+const allowed = !!r && canAccess(r, admin.profile);
+const data = allowed ? await listRows(admin.user, r!, { where }) : null;
+const opts = allowed ? await resolveOptions(admin.user, r!) : {};
+const cols = r?.fields.filter((f) => f.list) ?? [];
+---
+
+{
+  allowed && data && (
+    <section class="mt-10">
+      <h2 class="font-display text-2xl">{label}</h2>
+      <div class="mt-3 overflow-x-auto">
+        <table class="adm-table">
+          <thead><tr>{cols.map((f) => <th>{f.label}</th>)}<th /></tr></thead>
+          <tbody>
+            {data.rows.map((x) => (
+              <tr>
+                {cols.map((f) => <td>{displayValue(f, x[f.name], opts[f.name])}</td>)}
+                <td class="text-end"><a href={`/admin/${r!.key}/${x.id}/`} class="text-brass-deep">Apri</a></td>
+              </tr>
+            ))}
+            {data.rows.length === 0 && <tr><td colspan="20" class="py-4 text-ash">Nessun elemento.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
