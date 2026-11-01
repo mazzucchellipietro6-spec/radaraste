@@ -51,9 +51,9 @@ const v = (group: string, key: string) => t(`vocab.${group}.${key}`);
     <div class="hero-shade absolute inset-0 -z-10" aria-hidden="true"></div>
     <div class="container-page w-full pb-20 pt-40 lg:pb-28">
       <p class="eyebrow flex items-center gap-4" data-reveal><span class="rule" aria-hidden="true"></span>{t('meta.payoff')}</p>
-      <h1 class="display-xl mt-7 max-w-[15ch]" data-reveal style="--reveal-delay:.08s">
-        <span class="block">{heroA}</span>
-        {heroB && <span class="hero-em block">{heroB}</span>}
+      <h1 class="display-xl mt-7 max-w-[15ch]">
+        <span class="hero-line"><span>{heroA}</span></span>
+        {heroB && <span class="hero-line"><span class="hero-em">{heroB}</span></span>}
       </h1>
       <p class="lead mt-7 max-w-xl !text-marble/85" data-reveal style="--reveal-delay:.16s">{t('home.heroSubtitle')}</p>
       <div class="mt-10 flex flex-wrap gap-4" data-reveal style="--reveal-delay:.24s">
@@ -99,7 +99,7 @@ const v = (group: string, key: string) => t(`vocab.${group}.${key}`);
           allMarbles.map((m, i) => (
             <li class="snap-start" data-reveal style={`--reveal-delay:${i * 0.07}s`}>
               <a href={href('marble', m.id)} class="card-hover group block no-underline">
-                <div class="aspect-[3/4] overflow-hidden bg-stone">
+                <div class="aspect-[3/4] overflow-hidden bg-stone" data-tilt>
                   <Img src={m.data.slab} alt={m.data.slabAlt} sizes="(min-width: 1024px) 20vw, (min-width: 640px) 44vw, 74vw" widths={[360, 540, 720, 960]} class="h-full w-full object-cover" />
                 </div>
                 <p class="eyebrow mt-5 !text-ash">{m.data.baseColor[0] ? v('baseColor', m.data.baseColor[0]) : '\u00a0'}</p>
@@ -250,7 +250,7 @@ const v = (group: string, key: string) => t(`vocab.${group}.${key}`);
         {
           featuredDest.map((d, i) => (
             <li data-reveal style={`--reveal-delay:${(i % 3) * 0.08}s`}>
-              <a href={href('destination', d.id)} class="card-hover group relative block aspect-[4/5] overflow-hidden bg-stone no-underline">
+              <a href={href('destination', d.id)} class="card-hover group relative block aspect-[4/5] overflow-hidden bg-stone no-underline" data-tilt>
                 <Img src={d.data.image} alt={d.data.imageAlt} sizes="(min-width: 1024px) 31vw, (min-width: 640px) 48vw, 100vw" widths={[400, 640, 900, 1200]} class="h-full w-full object-cover" />
                 <span class="card-shade" aria-hidden="true" />
                 <span class="on-dark absolute inset-x-0 bottom-0 p-7 text-marble">
@@ -350,6 +350,28 @@ const v = (group: string, key: string) => t(`vocab.${group}.${key}`);
 </script>
 
 <style>
+  /* titolo dell'apertura: ogni riga sale da sotto una maschera */
+  .hero-line {
+    display: block;
+    overflow: hidden;
+    padding: 0 0.12em 0.14em;
+    margin: 0 -0.12em -0.14em;
+  }
+  .hero-line > span {
+    display: inline-block;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html.js) .hero-line > span {
+      animation: line-up 1.4s var(--ease-luxe) both 0.15s;
+    }
+    :global(html.js) .hero-line + .hero-line > span {
+      animation-delay: 0.38s;
+    }
+    @keyframes line-up {
+      from { transform: translateY(110%); }
+      to { transform: none; }
+    }
+  }
   .sculpt-canvas {
     opacity: 0;
     transition: opacity 1.2s var(--ease-luxe);

@@ -36,7 +36,7 @@ const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.ma
           list.map((m, i) => (
             <li data-reveal style={`--reveal-delay:${(i % 3) * 0.07}s`}>
               <a href={href('marble', m.id)} class="card-hover group block no-underline">
-                <div class="aspect-[4/3] overflow-hidden bg-stone">
+                <div class="aspect-[4/3] overflow-hidden bg-stone" data-tilt>
                   <Img src={m.data.slab} alt={m.data.slabAlt} sizes="(min-width: 1024px) 31vw, (min-width: 640px) 48vw, 100vw" widths={[480, 720, 960, 1280]} class="h-full w-full object-cover" />
                 </div>
                 <div class="mt-6 flex items-start justify-between gap-4">

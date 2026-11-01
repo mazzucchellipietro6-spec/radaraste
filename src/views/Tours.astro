@@ -42,7 +42,7 @@ const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.to
               .filter((d) => d.data.region === r)
               .map((d) => (
                 <li data-reveal>
-                  <a href={href('destination', d.id)} class="card-hover group relative block aspect-[4/3] overflow-hidden bg-stone no-underline">
+                  <a href={href('destination', d.id)} class="card-hover group relative block aspect-[4/3] overflow-hidden bg-stone no-underline" data-tilt>
                     <Img src={d.data.image} alt={d.data.imageAlt} sizes="(min-width: 1024px) 31vw, (min-width: 640px) 48vw, 100vw" widths={[400, 640, 900, 1200]} class="h-full w-full object-cover" />
                     <span class="tour-shade" aria-hidden="true" />
                     <span class="on-dark absolute inset-x-0 bottom-0 p-6 text-marble">

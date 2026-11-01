@@ -527,3 +527,27 @@ html[data-script]:not([data-script='Latn']):not([data-script='Cyrl']):not([data-
     background: var(--color-ivory);
   }
 }
+
+/* Schede inclinabili con riflesso di luce (vedi src/scripts/tilt.ts) */
+[data-tilt] {
+  position: relative;
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.7s var(--ease-luxe), box-shadow 0.7s var(--ease-luxe);
+  will-change: transform;
+}
+[data-tilt].is-tilting {
+  transition: transform 0.12s linear, box-shadow 0.4s var(--ease-luxe);
+  box-shadow: 0 30px 60px -30px rgb(26 26 28 / 0.45);
+}
+[data-tilt]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / 0.4), rgb(255 255 255 / 0) 40%, rgb(26 26 28 / 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-luxe);
+}
+[data-tilt].is-tilting::after {
+  opacity: 1;
+}
