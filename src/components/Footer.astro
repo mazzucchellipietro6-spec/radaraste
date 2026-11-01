@@ -1,0 +1,141 @@
+---
+import Icon from './Icon.astro';
+import LanguagePicker from './LanguagePicker.astro';
+import type { Translator } from '~/i18n';
+import { company, instagramHref, telHref, whatsappHref } from '~/lib/site';
+
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href, lang } = tr;
+const c = await company();
+const year = new Date().getFullYear();
+const ph = t('common.toBeEntered');
+
+const cols = [
+  {
+    title: t('footer.explore'),
+    links: [
+      [t('nav.marbles'), href('marbles')],
+      [t('nav.showroom'), href('showroom')],
+      [t('nav.matching'), href('matching')],
+      [t('nav.concierge'), href('concierge')],
+      [t('nav.glossary'), href('glossary')],
+    ],
+  },
+  {
+    title: t('footer.travel'),
+    links: [
+      [t('nav.experience'), href('experience')],
+      [t('nav.tours'), href('tours')],
+      [t('nav.customTrip'), href('customTrip')],
+      [t('nav.booking'), href('booking')],
+    ],
+  },
+  {
+    title: t('footer.company'),
+    links: [
+      [t('nav.about'), href('about')],
+      [t('nav.projects'), href('projects')],
+      [t('nav.trade'), href('trade')],
+      [t('nav.b2b'), href('b2b')],
+      [t('nav.account'), `/${lang}/account/`],
+      [t('nav.contact'), href('contact')],
+    ],
+  },
+];
+---
+
+<footer data-site-footer class="on-dark bg-graphite text-marble">
+  <div class="container-page py-20 lg:py-24">
+    <div class="grid gap-14 lg:grid-cols-[1fr_2.4fr]">
+      <div>
+        <a href={href('home')} class="inline-block text-marble no-underline" aria-label={t('a11y.home')}>
+          <span class="block font-display text-2xl tracking-[0.34em]">WHITE CARRARA</span>
+          <span class="mt-2 block text-[0.65rem] uppercase tracking-[0.3em] text-brass-light">{t('meta.payoff')}</span>
+        </a>
+        <p class="mt-6 max-w-sm text-mist">{t('footer.tagline')}</p>
+        <a href={href('quote')} class="btn btn-primary mt-8">{t('nav.quote')}</a>
+      </div>
+      <div class="grid gap-10 sm:grid-cols-2 xl:grid-cols-4">
+        {
+          cols.map((col) => (
+            <div>
+              <h2 class="eyebrow mb-5">{col.title}</h2>
+              <ul class="space-y-2.5">
+                {col.links.map(([label, url]) => (
+                  <li>
+                    <a href={url} class="text-[0.95rem] text-marble/85 no-underline hover:text-brass-light">
+                      {label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+        <div>
+          <h2 class="eyebrow mb-5">{t('footer.contacts')}</h2>
+          <address class="space-y-3 text-[0.95rem] not-italic text-marble/85">
+            <p class="flex gap-3"><Icon name="pin" size={18} class="mt-1 shrink-0 text-brass-light" />{c.address}</p>
+            {c.email && (
+              <p class="flex gap-3">
+                <Icon name="mail" size={18} class="mt-1 shrink-0 text-brass-light" />
+                <a href={`mailto:${c.email}`} class="no-underline [overflow-wrap:anywhere] hover:text-brass-light">{c.email}</a>
+              </p>
+            )}
+            {c.phone && (
+              <p class="flex gap-3">
+                <Icon name="phone" size={18} class="mt-1 shrink-0 text-brass-light" />
+                <a href={telHref(c.phone)} class="no-underline hover:text-brass-light" dir="ltr">{c.phone}</a>
+              </p>
+            )}
+            {c.whatsapp && (
+              <p class="flex gap-3">
+                <Icon name="whatsapp" size={18} class="mt-1 shrink-0 text-brass-light" />
+                <a href={whatsappHref(c.whatsapp)} class="no-underline hover:text-brass-light" rel="noopener" target="_blank">
+                  WhatsApp <span class="visually-hidden">{t('a11y.newTab')}</span>
+                </a>
+              </p>
+            )}
+            {c.instagram && (
+              <p class="flex gap-3">
+                <Icon name="instagram" size={18} class="mt-1 shrink-0 text-brass-light" />
+                <a href={instagramHref(c.instagram)} class="no-underline hover:text-brass-light" rel="noopener" target="_blank">
+                  @{c.instagram} <span class="visually-hidden">{t('a11y.newTab')}</span>
+                </a>
+              </p>
+            )}
+          </address>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="border-t border-white/10">
+    <div class="container-page flex flex-col gap-6 py-8 text-[0.82rem] text-mist lg:flex-row lg:items-center lg:justify-between">
+      <div class="space-y-1">
+        <p>© {year} WHITE CARRARA — {t('footer.rights')}</p>
+        <p>
+          {t('footer.legalName')}: {c.legalName || <span class="placeholder-data">{ph}</span>}
+          <span aria-hidden="true" class="mx-2">·</span>
+          {t('footer.vat')}: {c.vatNumber || <span class="placeholder-data">{ph}</span>}
+          {c.rea && <><span aria-hidden="true" class="mx-2">·</span>{t('footer.rea')}: {c.rea}</>}
+          {c.pec && <><span aria-hidden="true" class="mx-2">·</span>{t('footer.pec')}: {c.pec}</>}
+        </p>
+      </div>
+      <nav aria-label={t('footer.legal')}>
+        <ul class="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <li><a href={href('privacy')} class="no-underline hover:text-marble">{t('footer.privacy')}</a></li>
+          <li><a href={href('cookies')} class="no-underline hover:text-marble">{t('footer.cookies')}</a></li>
+          <li><a href={href('terms')} class="no-underline hover:text-marble">{t('footer.terms')}</a></li>
+          <li><a href={href('legalNotice')} class="no-underline hover:text-marble">{t('footer.legalNotice')}</a></li>
+          <li><button type="button" class="cursor-pointer hover:text-marble" data-cookie-open>{t('footer.cookiePrefs')}</button></li>
+          <li class="text-marble"><LanguagePicker t={tr} path={path} id="footer" /></li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</footer>

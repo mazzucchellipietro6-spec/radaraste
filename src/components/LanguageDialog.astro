@@ -1,0 +1,165 @@
+---
+// Finestra di scelta della lingua: nomi scritti nella lingua stessa, nessuna bandiera, ricerca.
+import Icon from './Icon.astro';
+import { LANGS, LANG_INFO, type Translator } from '~/i18n';
+import { nameIn } from '~/i18n/languages.mjs';
+import { translatePath } from '~/i18n/routes.mjs';
+
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, lang } = tr;
+
+const rows = LANGS.map((code) => {
+  const info = LANG_INFO[code];
+  return {
+    code,
+    name: info.name,
+    english: info.english,
+    local: nameIn(code, lang),
+    dir: info.dir,
+    main: info.main,
+    href: translatePath(path, lang, code),
+  };
+});
+const main = rows.filter((r) => r.main);
+const others = rows.filter((r) => !r.main).sort((a, b) => a.english.localeCompare(b.english));
+---
+
+<dialog id="language-dialog" class="lang-dialog" aria-labelledby="language-dialog-title">
+  <div class="flex max-h-[85vh] flex-col">
+    <div class="flex items-center justify-between gap-4 border-b border-stone px-6 py-5">
+      <h2 id="language-dialog-title" class="font-display text-2xl">{t('lang.choose')}</h2>
+      <button type="button" class="inline-flex h-10 w-10 items-center justify-center" data-lang-close>
+        <Icon name="close" size={22} />
+        <span class="visually-hidden">{t('common.close')}</span>
+      </button>
+    </div>
+    <div class="px-6 pt-5">
+      <label class="relative block">
+        <span class="visually-hidden">{t('lang.search')}</span>
+        <Icon name="search" size={18} class="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ash" />
+        <input type="search" class="input ps-10" placeholder={t('lang.search')} data-lang-search autocomplete="off" />
+      </label>
+    </div>
+    <div class="overflow-y-auto px-6 pb-6" data-lang-list>
+      <h3 class="eyebrow mt-6 mb-3" data-lang-group>{t('lang.main')}</h3>
+      <ul class="grid grid-cols-2 gap-x-6 sm:grid-cols-3">
+        {
+          main.map((r) => (
+            <li data-lang-item data-terms={`${r.code} ${r.name} ${r.english} ${r.local}`.toLowerCase()}>
+              <a
+                href={r.href}
+                hreflang={r.code}
+                lang={r.code}
+                dir={r.dir}
+                data-lang-choice={r.code}
+                aria-current={r.code === lang ? 'true' : undefined}
+                class="lang-choice"
+              >
+                <span>{r.name}</span>
+                {r.code !== lang && r.local && r.local !== r.name && <span class="lang-sub" lang={lang} dir="auto">{r.local}</span>}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      {
+        others.length > 0 && (
+          <>
+            <h3 class="eyebrow mt-8 mb-3" data-lang-group>{t('lang.others')}</h3>
+            <ul class="grid grid-cols-2 gap-x-6 sm:grid-cols-3">
+              {others.map((r) => (
+                <li data-lang-item data-terms={`${r.code} ${r.name} ${r.english} ${r.local}`.toLowerCase()}>
+                  <a href={r.href} hreflang={r.code} lang={r.code} dir={r.dir} data-lang-choice={r.code} class="lang-choice">
+                    <span>{r.name}</span>
+                    {r.local && r.local !== r.name && <span class="lang-sub" lang={lang} dir="auto">{r.local}</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </>
+        )
+      }
+      <p class="mt-6 text-sm text-ash" data-lang-empty hidden>{t('lang.noResults')}</p>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  .lang-dialog {
+    width: min(46rem, calc(100vw - 2rem));
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--color-stone);
+    background: var(--color-marble);
+    color: var(--color-graphite);
+  }
+  .lang-dialog::backdrop {
+    background: rgb(26 26 28 / 0.45);
+  }
+  .lang-choice {
+    display: flex;
+    flex-direction: column;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-stone) 60%, transparent);
+    text-decoration: none;
+    color: inherit;
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+  .lang-choice:hover span:first-child {
+    color: var(--color-brass-deep);
+  }
+  .lang-choice[aria-current='true'] span:first-child {
+    font-weight: 500;
+    color: var(--color-brass-deep);
+  }
+  .lang-sub {
+    font-size: 0.78rem;
+    color: var(--color-ash);
+  }
+</style>
+
+<script>
+  const dialog = document.getElementById('language-dialog') as HTMLDialogElement | null;
+  if (dialog) {
+    const search = dialog.querySelector<HTMLInputElement>('[data-lang-search]');
+    const items = Array.from(dialog.querySelectorAll<HTMLElement>('[data-lang-item]'));
+    const empty = dialog.querySelector<HTMLElement>('[data-lang-empty]');
+    document.querySelectorAll('[data-lang-open]').forEach((b) =>
+      b.addEventListener('click', () => {
+        document.querySelector<HTMLDialogElement>('#mobile-menu[open]')?.close();
+        dialog.showModal();
+        search?.focus();
+      }),
+    );
+    dialog.querySelector('[data-lang-close]')?.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+    search?.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      let shown = 0;
+      for (const li of items) {
+        const ok = !q || (li.dataset.terms ?? '').includes(q);
+        li.hidden = !ok;
+        if (ok) shown++;
+      }
+      if (empty) empty.hidden = shown > 0;
+    });
+    // La scelta viene ricordata: niente più avvisi di cambio lingua
+    dialog.querySelectorAll<HTMLAnchorElement>('[data-lang-choice]').forEach((a) =>
+      a.addEventListener('click', () => {
+        try {
+          localStorage.setItem('wc-lang', a.dataset.langChoice ?? '');
+        } catch {
+          /* niente archivio */
+        }
+        document.cookie = `wc_lang=${a.dataset.langChoice}; path=/; max-age=31536000; samesite=lax`;
+      }),
+    );
+  }
+</script>

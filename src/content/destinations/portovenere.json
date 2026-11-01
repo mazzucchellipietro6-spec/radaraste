@@ -1,0 +1,34 @@
+{
+  "name": "Portovenere",
+  "active": true,
+  "featured": false,
+  "order": 80,
+  "region": "liguria",
+  "tagline": "Il borgo sul promontorio, di fronte all'isola Palmaria.",
+  "description": "Portovenere chiude a sud il Golfo dei Poeti: case-torri affacciate sul porto, il Castello Doria e la chiesa di San Pietro, sospesa sulla scogliera.\n\nDi fronte si trovano le isole Palmaria, Tino e Tinetto, che insieme al borgo e alle Cinque Terre sono patrimonio UNESCO.",
+  "attractions": [
+    "Chiesa di San Pietro",
+    "Castello Doria",
+    "Grotta di Byron",
+    "Isola Palmaria",
+    "Golfo dei Poeti"
+  ],
+  "experiences": [
+    "Giro delle isole in barca",
+    "Passeggiata nel borgo",
+    "Cena di pesce sul porto"
+  ],
+  "itineraries": [
+    {
+      "title": "Golfo dei Poeti",
+      "text": "Lerici e Tellaro al mattino, battello per Portovenere, giro delle isole nel pomeriggio."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/portovenere.jpg",
+  "imageAlt": "La chiesa di San Pietro a Portovenere sul promontorio",
+  "seoTitle": "",
+  "seoDescription": ""
+}

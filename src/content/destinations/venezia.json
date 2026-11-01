@@ -1,0 +1,34 @@
+{
+  "name": "Venezia",
+  "active": true,
+  "featured": true,
+  "order": 100,
+  "region": "veneto",
+  "tagline": "La città sull'acqua, unica al mondo.",
+  "description": "Venezia e la sua laguna sono patrimonio UNESCO. Piazza San Marco, la Basilica d'oro e il Palazzo Ducale sono il cuore della città, mentre il Canal Grande scorre tra palazzi gotici e rinascimentali.\n\nLe isole di Murano, Burano e Torcello completano il viaggio con il vetro, i merletti e il silenzio della laguna.",
+  "attractions": [
+    "Piazza e Basilica di San Marco",
+    "Palazzo Ducale e Ponte dei Sospiri",
+    "Canal Grande e Ponte di Rialto",
+    "Gallerie dell'Accademia",
+    "Murano, Burano e Torcello"
+  ],
+  "experiences": [
+    "Giro privato in motoscafo o in gondola",
+    "Visita alle fornaci di Murano",
+    "Cicchetti nei bacari"
+  ],
+  "itineraries": [
+    {
+      "title": "Due giorni a Venezia",
+      "text": "Primo giorno tra San Marco, Palazzo Ducale e Rialto; secondo giorno nelle isole della laguna."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/venezia.jpg",
+  "imageAlt": "Il Canal Grande a Venezia con le gondole",
+  "seoTitle": "",
+  "seoDescription": ""
+}

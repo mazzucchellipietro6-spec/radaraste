@@ -1,0 +1,35 @@
+{
+  "name": "Cinque Terre",
+  "active": true,
+  "featured": true,
+  "order": 60,
+  "region": "liguria",
+  "tagline": "Cinque borghi colorati sospesi sul mare.",
+  "description": "Monterosso, Vernazza, Corniglia, Manarola e Riomaggiore si affacciano su un tratto di costa segnato da terrazzamenti di viti e muretti a secco, patrimonio UNESCO insieme a Portovenere e alle isole.\n\nSi visitano in treno, in battello (secondo stagione) o lungo i sentieri del Parco Nazionale. Da Carrara si raggiungono facilmente in giornata.",
+  "attractions": [
+    "Monterosso al Mare",
+    "Vernazza",
+    "Corniglia",
+    "Manarola",
+    "Riomaggiore",
+    "Il Sentiero Azzurro"
+  ],
+  "experiences": [
+    "Giro in battello (secondo stagione)",
+    "Trekking guidato sui sentieri",
+    "Degustazione di Sciacchetrà"
+  ],
+  "itineraries": [
+    {
+      "title": "Le Cinque Terre in un giorno",
+      "text": "Treno da La Spezia, tre borghi a piedi, pranzo vista mare e rientro in battello se il mare lo consente."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/cinque-terre.jpg",
+  "imageAlt": "Le case colorate di Manarola, alle Cinque Terre, sul mare",
+  "seoTitle": "",
+  "seoDescription": ""
+}

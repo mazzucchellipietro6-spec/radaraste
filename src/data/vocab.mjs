@@ -1,0 +1,91 @@
+// Vocabolari controllati: usati dal pannello contenuti, dai filtri dello showroom,
+// dal Marble Concierge e dal Marble Matching. Le etichette visibili ai clienti sono
+// tradotte in src/i18n/locales/ui/*.json alla voce vocab.<gruppo>.<valore>.
+
+export const VOCAB = {
+  category: {
+    'bianco-carrara': 'Bianco Carrara',
+    statuario: 'Statuario',
+    calacatta: 'Calacatta',
+    arabescato: 'Arabescato',
+    bardiglio: 'Bardiglio',
+    altro: 'Altro',
+  },
+  baseColor: {
+    'bianco-puro': 'Bianco puro',
+    'bianco-caldo': 'Bianco caldo',
+    'bianco-grigio': 'Bianco grigio',
+    avorio: 'Avorio',
+    'grigio-chiaro': 'Grigio chiaro',
+    'grigio-azzurro': 'Grigio azzurro',
+    grigio: 'Grigio',
+  },
+  veinColor: {
+    grigio: 'Grigio',
+    'grigio-scuro': 'Grigio scuro',
+    oro: 'Oro / ambra',
+    beige: 'Beige',
+    antracite: 'Antracite',
+    bianco: 'Bianco',
+  },
+  veinIntensity: {
+    leggera: 'Leggera',
+    media: 'Media',
+    marcata: 'Marcata',
+  },
+  veinPattern: {
+    fine: 'Fine e diffusa',
+    nuvolata: 'Nuvolata',
+    lineare: 'Lineare / a strisce',
+    ampia: 'Ampia e scenografica',
+    rete: 'A rete (arabescata)',
+  },
+  finish: {
+    lucida: 'Lucida',
+    levigata: 'Levigata (opaca)',
+    spazzolata: 'Spazzolata',
+    bocciardata: 'Bocciardata',
+    sabbiata: 'Sabbiata',
+    anticata: 'Anticata',
+  },
+  application: {
+    pavimenti: 'Pavimenti',
+    rivestimenti: 'Rivestimenti',
+    bagni: 'Bagni',
+    cucine: 'Piani cucina',
+    scale: 'Scale',
+    arredo: 'Arredo e design',
+    scultura: 'Scultura',
+    esterni: 'Esterni',
+  },
+  projectType: {
+    residenziale: 'Residenziale',
+    hospitality: 'Hotel e hospitality',
+    retail: 'Retail e boutique',
+    uffici: 'Uffici',
+    pubblico: 'Spazi pubblici',
+    arte: 'Arte e scultura',
+    yacht: 'Yacht e nautica',
+  },
+  experienceCategory: {
+    cave: 'Cave',
+    laboratori: 'Laboratori',
+    gusto: 'Food & Wine',
+    cultura: 'Cultura',
+    panorama: 'Panorami',
+    privato: 'Su misura',
+    transfer: 'Transfer',
+  },
+  region: {
+    toscana: 'Toscana',
+    liguria: 'Liguria',
+    veneto: 'Veneto',
+    lazio: 'Lazio',
+    campania: 'Campania',
+    lombardia: 'Lombardia',
+    sardegna: 'Sardegna',
+    sicilia: 'Sicilia',
+  },
+};
+
+export const options = (group) => Object.entries(VOCAB[group]).map(([value, label]) => ({ value, label }));

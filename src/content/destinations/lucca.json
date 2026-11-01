@@ -1,0 +1,34 @@
+{
+  "name": "Lucca",
+  "active": true,
+  "featured": false,
+  "order": 30,
+  "region": "toscana",
+  "tagline": "La città dentro le Mura, da percorrere a piedi o in bicicletta.",
+  "description": "Lucca è racchiusa da Mura rinascimentali perfettamente conservate, oggi un parco alberato che si percorre a piedi o in bicicletta.\n\nNel centro si incontrano la Piazza dell'Anfiteatro, nata sui resti di quello romano, la Torre Guinigi con gli alberi in cima e molte chiese romaniche. È anche la città natale di Giacomo Puccini.",
+  "attractions": [
+    "Le Mura e il loro parco",
+    "Piazza dell'Anfiteatro",
+    "Torre Guinigi",
+    "Cattedrale di San Martino",
+    "Casa natale di Giacomo Puccini"
+  ],
+  "experiences": [
+    "Giro delle Mura in bicicletta",
+    "Visita delle ville lucchesi",
+    "Concerti pucciniani (secondo calendario)"
+  ],
+  "itineraries": [
+    {
+      "title": "Lucca e le ville",
+      "text": "Mattina in centro e sulle Mura, pomeriggio nelle ville storiche delle colline lucchesi."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/lucca.jpg",
+  "imageAlt": "Le Mura alberate di Lucca e la Piazza dell'Anfiteatro",
+  "seoTitle": "",
+  "seoDescription": ""
+}

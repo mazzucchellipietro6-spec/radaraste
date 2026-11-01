@@ -1,0 +1,34 @@
+{
+  "name": "Genova",
+  "active": true,
+  "featured": false,
+  "order": 90,
+  "region": "liguria",
+  "tagline": "Palazzi, vicoli e il porto antico.",
+  "description": "Genova è stata una delle grandi repubbliche marinare. I Palazzi dei Rolli in Via Garibaldi, patrimonio UNESCO, raccontano la ricchezza dei suoi banchieri e mercanti.\n\nIl centro storico è un intreccio di vicoli, i caruggi, che scendono verso il Porto Antico, rinnovato su progetto di Renzo Piano e sede dell'Acquario.",
+  "attractions": [
+    "Via Garibaldi e i Palazzi dei Rolli",
+    "Palazzo Ducale",
+    "Cattedrale di San Lorenzo",
+    "Porto Antico e Acquario",
+    "Boccadasse"
+  ],
+  "experiences": [
+    "Visita dei Palazzi dei Rolli",
+    "Cibo di strada genovese nei caruggi",
+    "Tramonto a Boccadasse"
+  ],
+  "itineraries": [
+    {
+      "title": "Genova in un giorno",
+      "text": "Via Garibaldi e i Rolli al mattino, focaccia nei caruggi, Porto Antico e Boccadasse al tramonto."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/genova.jpg",
+  "imageAlt": "I palazzi storici di Via Garibaldi a Genova",
+  "seoTitle": "",
+  "seoDescription": ""
+}

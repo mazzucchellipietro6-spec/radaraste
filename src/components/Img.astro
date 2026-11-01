@@ -1,0 +1,33 @@
+---
+// Immagine ottimizzata: AVIF/WebP ridimensionati automaticamente, lazy loading salvo indicazione.
+import { Picture } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  sizes?: string;
+  widths?: number[];
+  class?: string;
+  pictureClass?: string;
+  priority?: boolean;
+}
+const { src, alt, sizes = '100vw', widths, class: cls = '', pictureClass = '', priority = false } = Astro.props;
+const max = src.width;
+const ws = (widths ?? [480, 768, 1080, 1440, 1920, 2400]).filter((w) => w <= max);
+if (ws.length === 0) ws.push(max);
+---
+
+<Picture
+  src={src}
+  alt={alt}
+  formats={['avif', 'webp']}
+  widths={ws}
+  sizes={sizes}
+  class={cls}
+  pictureAttributes={{ class: pictureClass }}
+  loading={priority ? 'eager' : 'lazy'}
+  decoding={priority ? 'sync' : 'async'}
+  fetchpriority={priority ? 'high' : 'auto'}
+  quality={priority ? 70 : 72}
+/>

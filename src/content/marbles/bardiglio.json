@@ -1,0 +1,32 @@
+{
+  "name": "Bardiglio",
+  "active": true,
+  "order": 5,
+  "category": "bardiglio",
+  "tagline": "Il grigio azzurro delle Apuane, sobrio ed elegante.",
+  "description": "Il Bardiglio è un marmo grigio, con tonalità che vanno dal grigio chiaro al grigio azzurro, percorso da venature più scure spesso parallele.\n\nÈ la scelta ideale per chi cerca un materiale naturale dal carattere discreto, che dialoga bene con il legno, l'ottone e i toni neutri. Le varianti commerciali differiscono per tono e disegno.",
+  "baseColor": [
+    "grigio-azzurro",
+    "grigio"
+  ],
+  "veinColor": [
+    "grigio-scuro",
+    "bianco"
+  ],
+  "veinIntensity": "media",
+  "veinPattern": "lineare",
+  "visualNotes": "Fondo grigio, dal chiaro al grigio azzurro.\n\nVenature più scure, spesso parallele, con sottili striature chiare.",
+  "finishes": [],
+  "thicknesses": [],
+  "applications": [],
+  "techSheets": [],
+  "slab": "../../assets/images/marbles/bardiglio-slab.jpg",
+  "slabAlt": "Lastra di marmo Bardiglio grigio azzurro con venature lineari",
+  "detail": "../../assets/images/marbles/bardiglio-detail.jpg",
+  "detailAlt": "Dettaglio delle venature del Bardiglio",
+  "ambient": "../../assets/images/marbles/bardiglio-ambient.jpg",
+  "ambientAlt": "Bardiglio in un ambiente",
+  "gallery": [],
+  "seoTitle": "",
+  "seoDescription": ""
+}

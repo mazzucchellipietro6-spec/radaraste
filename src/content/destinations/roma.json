@@ -1,0 +1,35 @@
+{
+  "name": "Roma",
+  "active": true,
+  "featured": true,
+  "order": 120,
+  "region": "lazio",
+  "tagline": "Tremila anni di storia in una sola città.",
+  "description": "Roma è un museo a cielo aperto: il Colosseo, i Fori Imperiali e il Palatino raccontano la grandezza dell'antichità, mentre piazze e fontane barocche come Piazza Navona e Fontana di Trevi animano il centro.\n\nUna guida privata permette di organizzare la visita con ingressi prenotati e percorsi su misura.",
+  "attractions": [
+    "Colosseo, Foro Romano e Palatino",
+    "Pantheon",
+    "Piazza Navona",
+    "Fontana di Trevi",
+    "Piazza di Spagna e Trinità dei Monti",
+    "Trastevere"
+  ],
+  "experiences": [
+    "Visita guidata del Colosseo con ingresso prenotato",
+    "Roma barocca a piedi",
+    "Cena a Trastevere"
+  ],
+  "itineraries": [
+    {
+      "title": "Roma in due giorni",
+      "text": "Roma antica il primo giorno, Roma barocca e Trastevere il secondo; il Vaticano si può aggiungere come terza giornata."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/roma.jpg",
+  "imageAlt": "Il Colosseo a Roma nella luce del mattino",
+  "seoTitle": "",
+  "seoDescription": ""
+}

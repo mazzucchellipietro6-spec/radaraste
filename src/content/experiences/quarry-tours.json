@@ -1,0 +1,27 @@
+{
+  "title": "Quarry Tours",
+  "active": true,
+  "order": 1,
+  "category": "cave",
+  "summary": "In fuoristrada nei bacini marmiferi di Carrara, tra pareti di marmo e panorami sul mare.",
+  "description": "Un'escursione nei bacini marmiferi di Colonnata, Fantiscritti e Torano, dove il marmo si estrae da oltre duemila anni.\n\nSi sale lungo le strade di cava con mezzi e operatori autorizzati, tra gradoni bianchi, blocchi appena tagliati e punti panoramici che si aprono sulla costa. Il percorso esatto dipende dall'attività delle cave nel giorno della visita.",
+  "highlights": [
+    "I bacini di Colonnata, Fantiscritti e Torano",
+    "Le tecniche di estrazione di ieri e di oggi",
+    "Punti panoramici sulle Alpi Apuane e sulla costa",
+    "La storia del marmo di Carrara"
+  ],
+  "duration": "",
+  "languages": [],
+  "minParticipants": null,
+  "maxParticipants": null,
+  "price": null,
+  "priceUnit": "persona",
+  "priceNote": "",
+  "onlinePayment": false,
+  "meetingPoint": "",
+  "image": "../../assets/images/experiences/quarry-tours.jpg",
+  "imageAlt": "Fuoristrada su una strada di cava tra pareti di marmo bianco",
+  "seoTitle": "",
+  "seoDescription": ""
+}

@@ -1,0 +1,33 @@
+---
+// Indirizzo principale: porta alla lingua preferita del browser (fra quelle pubblicate), altrimenti all'inglese.
+// La scelta fatta dal visitatore (cookie wc_lang) ha sempre la precedenza.
+import { LANGS } from '~/i18n';
+export const prerender = false;
+
+const pick = () => {
+  const chosen = Astro.cookies.get('wc_lang')?.value;
+  if (chosen && LANGS.includes(chosen)) return chosen;
+  const header = Astro.request.headers.get('accept-language') ?? '';
+  const prefs = header
+    .split(',')
+    .map((p) => {
+      const [tag, q] = p.trim().split(';q=');
+      return { tag: tag.toLowerCase(), q: q ? Number(q) : 1 };
+    })
+    .sort((a, b) => b.q - a.q);
+  for (const { tag } of prefs) {
+    if (tag.startsWith('zh')) {
+      const tw = /zh-(tw|hk|mo|hant)/.test(tag);
+      if (tw && LANGS.includes('zh-tw')) return 'zh-tw';
+      if (LANGS.includes('zh')) return 'zh';
+    }
+    if (LANGS.includes(tag)) return tag;
+    const base = tag.split('-')[0] === 'iw' ? 'he' : tag.split('-')[0];
+    if (LANGS.includes(base)) return base;
+  }
+  return 'en';
+};
+Astro.response.headers.set('vary', 'accept-language, cookie');
+Astro.response.headers.set('cache-control', 'private, no-store');
+return Astro.redirect(`/${pick()}/`, 302);
+---

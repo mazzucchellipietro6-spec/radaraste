@@ -1,0 +1,34 @@
+{
+  "name": "Etna",
+  "active": true,
+  "featured": false,
+  "order": 240,
+  "region": "sicilia",
+  "tagline": "Il vulcano attivo più alto d'Europa.",
+  "description": "L'Etna è il vulcano attivo più alto d'Europa e un sito UNESCO. Si sale dal versante sud o da quello nord fino a quote dove si cammina tra crateri spenti e colate laviche.\n\nLe escursioni in quota si svolgono solo con guide autorizzate e possono cambiare in base all'attività del vulcano. Alle pendici, le cantine producono vini sempre più apprezzati.",
+  "attractions": [
+    "Crateri Silvestri",
+    "Rifugio Sapienza",
+    "Funivia dell'Etna",
+    "Valle del Bove",
+    "Cantine del versante nord"
+  ],
+  "experiences": [
+    "Escursione con guida vulcanologica",
+    "Tour in fuoristrada",
+    "Degustazione nelle cantine dell'Etna"
+  ],
+  "itineraries": [
+    {
+      "title": "L'Etna in mezza giornata",
+      "text": "Salita al Rifugio Sapienza, crateri Silvestri e, se le condizioni lo permettono, funivia; pranzo in cantina."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/etna.jpg",
+  "imageAlt": "I crateri dell'Etna e le colate laviche",
+  "seoTitle": "",
+  "seoDescription": ""
+}

@@ -1,0 +1,26 @@
+---
+// Router delle pagine pubbliche: un solo file genera tutte le pagine in tutte le lingue,
+// con i percorsi localizzati definiti in src/i18n/routes.mjs.
+import { LANGS, getTranslator } from '~/i18n';
+import { pathFor } from '~/i18n/routes.mjs';
+import { VIEWS, staticPages } from '~/views/registry';
+
+export async function getStaticPaths() {
+  const pages = await staticPages();
+  return LANGS.flatMap((lang) =>
+    pages.map(({ key, id }) => {
+      const full = pathFor(lang, key, id);
+      const rest = full.replace(`/${lang}/`, '').replace(/\/$/, '');
+      return { params: { lang, path: rest || undefined }, props: { key, id } };
+    }),
+  );
+}
+
+const { lang } = Astro.params as { lang: string };
+const { key, id } = Astro.props as { key: string; id?: string };
+const t = await getTranslator(lang);
+const path = pathFor(lang, key, id);
+const View = VIEWS[key];
+---
+
+<View t={t} path={path} id={id} />

@@ -1,0 +1,30 @@
+{
+  "name": "Bianco Carrara",
+  "active": true,
+  "order": 1,
+  "category": "bianco-carrara",
+  "tagline": "Il bianco classico delle Apuane, luminoso e versatile.",
+  "description": "Il Bianco Carrara è il marmo che ha reso celebre la città nel mondo: un fondo bianco con sfumature grigio chiaro, attraversato da venature sottili e diffuse.\n\nÈ il più conosciuto tra i marmi apuani e si presta a progetti molto diversi, dall'architettura contemporanea agli interni classici. L'aspetto varia da blocco a blocco: per questo ogni fornitura viene selezionata e approvata insieme al cliente.",
+  "baseColor": [
+    "bianco-grigio"
+  ],
+  "veinColor": [
+    "grigio"
+  ],
+  "veinIntensity": "leggera",
+  "veinPattern": "fine",
+  "visualNotes": "Fondo bianco con sfumature grigio chiaro, abbastanza uniforme.\n\nVenature grigie sottili e morbide, distribuite su tutta la superficie.",
+  "finishes": [],
+  "thicknesses": [],
+  "applications": [],
+  "techSheets": [],
+  "slab": "../../assets/images/marbles/bianco-carrara-slab.jpg",
+  "slabAlt": "Lastra di marmo Bianco Carrara con venature grigie sottili",
+  "detail": "../../assets/images/marbles/bianco-carrara-detail.jpg",
+  "detailAlt": "Dettaglio delle venature del Bianco Carrara",
+  "ambient": "../../assets/images/marbles/bianco-carrara-ambient.jpg",
+  "ambientAlt": "Bianco Carrara in un ambiente",
+  "gallery": [],
+  "seoTitle": "",
+  "seoDescription": ""
+}

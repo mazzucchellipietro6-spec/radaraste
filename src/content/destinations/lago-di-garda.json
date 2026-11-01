@@ -1,0 +1,34 @@
+{
+  "name": "Lago di Garda",
+  "active": true,
+  "featured": false,
+  "order": 200,
+  "region": "lombardia",
+  "tagline": "Il lago più grande d'Italia, tra ulivi e castelli.",
+  "description": "Il Lago di Garda unisce paesaggi mediterranei e scenari alpini. Sirmione, con il Castello Scaligero e le Grotte di Catullo, si allunga su una penisola a sud, mentre a nord il lago si stringe tra le montagne.\n\nLe sponde ospitano borghi come Malcesine, Limone e Gardone Riviera, sede del Vittoriale degli Italiani.",
+  "attractions": [
+    "Sirmione e il Castello Scaligero",
+    "Grotte di Catullo",
+    "Malcesine",
+    "Limone sul Garda",
+    "Il Vittoriale degli Italiani"
+  ],
+  "experiences": [
+    "Giro in barca privata",
+    "Degustazioni di olio e vino",
+    "Funivia del Monte Baldo"
+  ],
+  "itineraries": [
+    {
+      "title": "Il Garda in un giorno",
+      "text": "Sirmione al mattino, barca verso Garda o Malcesine, tramonto sul lago."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/lago-di-garda.jpg",
+  "imageAlt": "Sirmione e il Castello Scaligero sul Lago di Garda",
+  "seoTitle": "",
+  "seoDescription": ""
+}

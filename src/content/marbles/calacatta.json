@@ -1,0 +1,31 @@
+{
+  "name": "Calacatta",
+  "active": true,
+  "order": 3,
+  "category": "calacatta",
+  "tagline": "Fondo candido, venature ampie dai toni grigi e dorati.",
+  "description": "Il Calacatta si riconosce per il fondo bianco caldo e per le venature ampie e irregolari, che vanno dal grigio a sfumature dorate o ambrate.\n\nÈ un materiale di grande impatto, scelto per bagni, cucine e superfici di rappresentanza. Esistono molte varianti commerciali, diverse per tono e disegno: la selezione avviene lastra per lastra.",
+  "baseColor": [
+    "bianco-caldo"
+  ],
+  "veinColor": [
+    "grigio",
+    "oro"
+  ],
+  "veinIntensity": "marcata",
+  "veinPattern": "ampia",
+  "visualNotes": "Fondo bianco caldo, talvolta leggermente avorio.\n\nVenature ampie e irregolari, dal grigio al dorato, con forte contrasto.",
+  "finishes": [],
+  "thicknesses": [],
+  "applications": [],
+  "techSheets": [],
+  "slab": "../../assets/images/marbles/calacatta-slab.jpg",
+  "slabAlt": "Lastra di marmo Calacatta con venature grigie e dorate",
+  "detail": "../../assets/images/marbles/calacatta-detail.jpg",
+  "detailAlt": "Dettaglio delle venature del Calacatta",
+  "ambient": "../../assets/images/marbles/calacatta-ambient.jpg",
+  "ambientAlt": "Calacatta in un ambiente",
+  "gallery": [],
+  "seoTitle": "",
+  "seoDescription": ""
+}

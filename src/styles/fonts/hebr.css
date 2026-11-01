@@ -1,0 +1,6 @@
+@import '@fontsource-variable/noto-serif-hebrew/wght.css';
+@import '@fontsource-variable/noto-sans-hebrew/wght.css';
+:root {
+  --font-display: 'Bodoni Moda Variable', 'Noto Serif Hebrew Variable', 'Noto Serif Hebrew', serif;
+  --font-sans: 'Jost Variable', 'Noto Sans Hebrew Variable', 'Noto Sans Hebrew', system-ui, sans-serif;
+}

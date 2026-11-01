@@ -1,0 +1,35 @@
+{
+  "name": "Firenze",
+  "active": true,
+  "featured": true,
+  "order": 10,
+  "region": "toscana",
+  "tagline": "La culla del Rinascimento, tra cupole, ponti e capolavori.",
+  "description": "Firenze custodisce alcune delle opere più importanti dell'arte occidentale. Il centro storico, patrimonio UNESCO, si visita a piedi: dal Duomo con la cupola del Brunelleschi a Ponte Vecchio, dagli Uffizi al David di Michelangelo alla Galleria dell'Accademia.\n\nCon una guida privata si evitano le attese e si scoprono anche le botteghe artigiane dell'Oltrarno.",
+  "attractions": [
+    "Cattedrale di Santa Maria del Fiore e Cupola del Brunelleschi",
+    "Galleria degli Uffizi",
+    "Galleria dell'Accademia e il David di Michelangelo",
+    "Ponte Vecchio",
+    "Palazzo Pitti e Giardino di Boboli",
+    "Piazzale Michelangelo"
+  ],
+  "experiences": [
+    "Visita guidata dei musei con ingresso prenotato",
+    "Botteghe artigiane dell'Oltrarno",
+    "Degustazioni sulle colline fiorentine"
+  ],
+  "itineraries": [
+    {
+      "title": "Una giornata a Firenze",
+      "text": "Mattina al Duomo e agli Uffizi, pranzo in centro, pomeriggio tra Ponte Vecchio e Oltrarno, tramonto al Piazzale Michelangelo."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/firenze.jpg",
+  "imageAlt": "La cupola del Brunelleschi vista dal Piazzale Michelangelo",
+  "seoTitle": "",
+  "seoDescription": ""
+}

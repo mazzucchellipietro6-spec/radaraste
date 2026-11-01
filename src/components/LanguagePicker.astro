@@ -1,0 +1,24 @@
+---
+// Pulsante del selettore lingua: apre la finestra con l'elenco (LanguageDialog, una sola per pagina).
+import Icon from './Icon.astro';
+import type { Translator } from '~/i18n';
+
+interface Props {
+  t: Translator;
+  path: string;
+  id?: string;
+}
+const { t: tr } = Astro.props;
+---
+
+<button
+  type="button"
+  class="lang-btn inline-flex items-center gap-2 py-2 text-[0.72rem] font-medium uppercase"
+  data-lang-open
+  aria-haspopup="dialog"
+  aria-controls="language-dialog"
+>
+  <Icon name="globe" size={17} />
+  <span lang={tr.lang}>{tr.info.name}</span>
+  <span class="visually-hidden">— {tr.t('lang.choose')}</span>
+</button>

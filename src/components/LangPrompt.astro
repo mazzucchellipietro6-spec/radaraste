@@ -1,0 +1,87 @@
+---
+// "Vuoi vedere il sito in [lingua]?": compare solo se la lingua del browser è diversa
+// da quella della pagina e il visitatore non ha già scelto. Non cambia mai lingua da solo.
+import { LANGS } from '~/i18n';
+import { translatePath } from '~/i18n/routes.mjs';
+interface Props {
+  lang: string;
+  path: string;
+}
+const { lang, path } = Astro.props;
+const targets = Object.fromEntries(LANGS.map((l) => [l, translatePath(path, lang, l)]));
+---
+
+<aside class="lang-prompt no-print" data-lang-prompt data-current={lang} data-targets={JSON.stringify(targets)} hidden aria-live="polite">
+  <p class="text-[0.95rem]" data-lang-prompt-q></p>
+  <div class="mt-3 flex flex-wrap gap-2">
+    <a class="btn btn-primary btn-sm" data-lang-prompt-yes href="#"></a>
+    <button type="button" class="btn btn-outline btn-sm" data-lang-prompt-no></button>
+  </div>
+</aside>
+
+<style>
+  .lang-prompt {
+    position: fixed;
+    top: calc(var(--header-h) + 0.75rem);
+    inset-inline-end: clamp(0.75rem, 2vw, 1.5rem);
+    z-index: 45;
+    max-width: 22rem;
+    padding: 1.1rem 1.25rem;
+    background: var(--color-marble);
+    border: 1px solid var(--color-stone);
+    box-shadow: 0 20px 50px -28px rgb(26 26 28 / 0.5);
+  }
+</style>
+
+<script>
+  const box = document.querySelector<HTMLElement>('[data-lang-prompt]');
+  (async () => {
+    if (!box) return;
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem('wc-lang');
+    } catch {
+      /* niente archivio */
+    }
+    const current = box.dataset.current!;
+    if (stored) return; // il visitatore ha già scelto
+    const targets: Record<string, string> = JSON.parse(box.dataset.targets || '{}');
+    const wanted = (navigator.languages || [navigator.language]).map((l) => l.toLowerCase());
+    let match: string | undefined;
+    for (const l of wanted) {
+      const base = l.split('-')[0];
+      const candidates = [l, l === 'zh-tw' || l === 'zh-hk' || l === 'zh-hant' ? 'zh-tw' : '', base === 'zh' && l !== 'zh-tw' ? 'zh' : '', base, base === 'iw' ? 'he' : ''];
+      match = candidates.find((c) => c && targets[c]);
+      if (match) break;
+    }
+    if (!match || match === current) return;
+    const res = await fetch('/i18n/prompt.json').catch(() => null);
+    if (!res?.ok) return;
+    const texts = (await res.json())[match];
+    if (!texts) return;
+    const q = box.querySelector<HTMLElement>('[data-lang-prompt-q]')!;
+    const yes = box.querySelector<HTMLAnchorElement>('[data-lang-prompt-yes]')!;
+    const no = box.querySelector<HTMLButtonElement>('[data-lang-prompt-no]')!;
+    q.textContent = texts.q;
+    q.lang = match;
+    q.dir = texts.dir;
+    yes.textContent = texts.yes;
+    yes.lang = match;
+    yes.href = targets[match];
+    no.textContent = texts.no;
+    no.lang = match;
+    const remember = (v: string) => {
+      try {
+        localStorage.setItem('wc-lang', v);
+      } catch {
+        /* niente archivio */
+      }
+    };
+    yes.addEventListener('click', () => remember(match!));
+    no.addEventListener('click', () => {
+      remember(current);
+      box.hidden = true;
+    });
+    box.hidden = false;
+  })();
+</script>

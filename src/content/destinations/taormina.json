@@ -1,0 +1,34 @@
+{
+  "name": "Taormina",
+  "active": true,
+  "featured": true,
+  "order": 230,
+  "region": "sicilia",
+  "tagline": "Il Teatro Antico tra il mare e l'Etna.",
+  "description": "Taormina domina la costa ionica da una terrazza naturale. Il Teatro Antico, di origine greca, offre una delle viste più celebri d'Italia, con l'Etna sullo sfondo.\n\nCorso Umberto, i palazzi storici e i giardini della Villa Comunale accompagnano la passeggiata; più in basso si raggiunge Isola Bella.",
+  "attractions": [
+    "Teatro Antico",
+    "Corso Umberto",
+    "Villa Comunale",
+    "Isola Bella",
+    "Castelmola"
+  ],
+  "experiences": [
+    "Escursione sull'Etna",
+    "Gita in barca a Isola Bella",
+    "Degustazione di vini dell'Etna"
+  ],
+  "itineraries": [
+    {
+      "title": "Taormina ed Etna",
+      "text": "Mattina sull'Etna con guida, pomeriggio al Teatro Antico e cena a Taormina."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/taormina.jpg",
+  "imageAlt": "Il Teatro Antico di Taormina con l'Etna sullo sfondo",
+  "seoTitle": "",
+  "seoDescription": ""
+}

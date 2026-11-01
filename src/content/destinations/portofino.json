@@ -1,0 +1,34 @@
+{
+  "name": "Portofino",
+  "active": true,
+  "featured": false,
+  "order": 70,
+  "region": "liguria",
+  "tagline": "La piazzetta, il porticciolo e il promontorio.",
+  "description": "Portofino è un piccolo borgo di pescatori diventato simbolo della Riviera ligure, con la piazzetta affacciata sul porticciolo e le case color pastello.\n\nDal paese si sale alla chiesa di San Giorgio e a Castello Brown, mentre il Parco di Portofino offre sentieri verso San Fruttuoso e la sua abbazia sul mare.",
+  "attractions": [
+    "La Piazzetta e il porticciolo",
+    "Castello Brown",
+    "Chiesa di San Giorgio",
+    "Abbazia di San Fruttuoso",
+    "Santa Margherita Ligure"
+  ],
+  "experiences": [
+    "Escursione in barca privata",
+    "Sentieri del Parco di Portofino",
+    "Pranzo sul mare"
+  ],
+  "itineraries": [
+    {
+      "title": "Riviera di Levante",
+      "text": "Santa Margherita al mattino, barca fino a Portofino e San Fruttuoso, aperitivo in piazzetta."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/portofino.jpg",
+  "imageAlt": "Il porticciolo di Portofino con le case color pastello",
+  "seoTitle": "",
+  "seoDescription": ""
+}

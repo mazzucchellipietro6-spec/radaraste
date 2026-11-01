@@ -1,0 +1,34 @@
+{
+  "name": "Capri",
+  "active": true,
+  "featured": false,
+  "order": 150,
+  "region": "campania",
+  "tagline": "Scogliere, grotte e la Piazzetta.",
+  "description": "Capri è un'isola di scogliere calcaree, giardini e ville. Dalla Piazzetta si raggiungono i Giardini di Augusto, con la vista sui Faraglioni, e la Via Krupp che scende a Marina Piccola.\n\nIn barca si fa il giro dell'isola e, quando il mare lo consente, si entra nella Grotta Azzurra. Anacapri e Villa San Michele completano la giornata.",
+  "attractions": [
+    "La Piazzetta",
+    "Giardini di Augusto e Faraglioni",
+    "Grotta Azzurra (secondo il mare)",
+    "Anacapri e Villa San Michele",
+    "Villa Jovis"
+  ],
+  "experiences": [
+    "Giro dell'isola in barca privata",
+    "Pranzo vista mare",
+    "Shopping nelle boutique"
+  ],
+  "itineraries": [
+    {
+      "title": "Una giornata a Capri",
+      "text": "Aliscafo da Napoli o Sorrento, giro in barca, pranzo e pomeriggio tra la Piazzetta e i Giardini di Augusto."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/capri.jpg",
+  "imageAlt": "I Faraglioni di Capri visti dai Giardini di Augusto",
+  "seoTitle": "",
+  "seoDescription": ""
+}

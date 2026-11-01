@@ -1,0 +1,34 @@
+{
+  "name": "Spiagge della Sardegna",
+  "active": true,
+  "featured": false,
+  "order": 220,
+  "region": "sardegna",
+  "tagline": "Località costiere tra le più belle del Mediterraneo.",
+  "description": "La Sardegna offre chilometri di costa molto diversi tra loro: le spiagge chiare del sud, le scogliere del Golfo di Orosei, le dune della costa occidentale.\n\nVi aiutiamo a costruire un itinerario tra le località costiere più adatte alla stagione e al vostro modo di viaggiare, con transfer e servizi su richiesta.",
+  "attractions": [
+    "Golfo di Orosei e Cala Goloritzé",
+    "Chia e la costa del sud",
+    "Villasimius",
+    "Stintino e La Pelosa",
+    "Alghero"
+  ],
+  "experiences": [
+    "Escursioni in barca lungo la costa",
+    "Itinerari tra spiagge e borghi",
+    "Esperienze enogastronomiche"
+  ],
+  "itineraries": [
+    {
+      "title": "La costa est in barca",
+      "text": "Escursione nel Golfo di Orosei tra calette raggiungibili solo dal mare."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/spiagge-sardegna.jpg",
+  "imageAlt": "Una spiaggia di sabbia chiara e mare cristallino in Sardegna",
+  "seoTitle": "",
+  "seoDescription": ""
+}

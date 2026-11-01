@@ -1,0 +1,26 @@
+---
+import FormShell from './FormShell.astro';
+import Field from './Field.astro';
+import type { Translator } from '~/i18n';
+
+interface Props {
+  t: Translator;
+  interest?: string;
+  compact?: boolean;
+  source?: string;
+}
+const { t: tr, interest = '', compact = false, source = 'quote' } = Astro.props;
+const { t } = tr;
+const interests = ['marble', 'experience', 'tour', 'trade', 'other'].map((v) => ({ value: v, label: t(`forms.interestOptions.${v}`) }));
+---
+
+<FormShell t={tr} action="/api/forms/quote" submitLabel={t('forms.submitQuote')} id={`quote-${source}`} hidden={{ source }}>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <Field name="name" label={t('forms.name')} required autocomplete="name" />
+    <Field name="email" type="email" label={t('forms.email')} required autocomplete="email" dir="ltr" />
+    {!compact && <Field name="phone" type="tel" label={t('forms.phone')} autocomplete="tel" optionalLabel={t('common.optional')} dir="ltr" />}
+    {!compact && <Field name="company" label={t('forms.company')} autocomplete="organization" optionalLabel={t('common.optional')} />}
+  </div>
+  <Field name="interest" type="select" label={t("forms.interest")} options={interests} value={interest} placeholder={t("forms.choose")} required />
+  <Field name="message" type="textarea" label={t('forms.message')} placeholder={t('forms.messagePlaceholder')} required rows={compact ? 4 : 6} />
+</FormShell>

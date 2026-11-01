@@ -1,0 +1,134 @@
+---
+import '~/styles/global.css';
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+import CookieBanner from '~/components/CookieBanner.astro';
+import LangPrompt from '~/components/LangPrompt.astro';
+import LanguageDialog from '~/components/LanguageDialog.astro';
+import WhatsAppButton from '~/components/WhatsAppButton.astro';
+import { LANGS, LANG_INFO, type Translator } from '~/i18n';
+import { translatePath } from '~/i18n/routes.mjs';
+import ogDefault from '~/assets/images/og/default.jpg';
+import bodoniLatin from '@fontsource-variable/bodoni-moda/files/bodoni-moda-latin-opsz-normal.woff2?url';
+import jostLatin from '@fontsource-variable/jost/files/jost-latin-wght-normal.woff2?url';
+import arabCss from '~/styles/fonts/arab.css?url';
+import hebrCss from '~/styles/fonts/hebr.css?url';
+import devaCss from '~/styles/fonts/deva.css?url';
+import jpanCss from '~/styles/fonts/jpan.css?url';
+import hansCss from '~/styles/fonts/hans.css?url';
+import hantCss from '~/styles/fonts/hant.css?url';
+import koreCss from '~/styles/fonts/kore.css?url';
+import thaiCss from '~/styles/fonts/thai.css?url';
+
+interface Props {
+  t: Translator;
+  title: string;
+  description?: string;
+  path: string;
+  image?: ImageMetadata;
+  noindex?: boolean;
+  header?: 'overlay' | 'solid';
+  jsonld?: Record<string, unknown>[];
+  fullTitle?: boolean;
+}
+
+const { t: tr, title, description, path, image, noindex = false, header = 'solid', jsonld = [], fullTitle = false } = Astro.props;
+const { t, lang, info } = tr;
+const site = (Astro.site?.toString() ?? 'http://localhost:4321/').replace(/\/$/, '');
+const canonical = `${site}${path}`;
+const pageTitle = fullTitle ? title : `${title} — ${t('meta.titleSuffix')}`;
+const desc = description || t('meta.defaultDescription');
+const og = await getImage({ src: image ?? ogDefault, width: 1200, height: 630, fit: 'cover', format: 'jpg' });
+const ogUrl = og.src.startsWith('http') ? og.src : `${site}${og.src}`;
+
+const scriptCss: Record<string, string> = {
+  Arab: arabCss,
+  Hebr: hebrCss,
+  Deva: devaCss,
+  Jpan: jpanCss,
+  Hans: hansCss,
+  Hant: hantCss,
+  Kore: koreCss,
+  Thai: thaiCss,
+};
+const extraCss = scriptCss[info.script];
+const isAccount = path.includes('/account/');
+const alternates = !noindex && !isAccount && LANGS.length <= 24 ? LANGS : [];
+const isHome = path === `/${lang}/`;
+---
+
+<!doctype html>
+<html lang={info.hreflang} dir={info.dir} data-script={info.script}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={desc} />
+    {noindex ? <meta name="robots" content="noindex, nofollow" /> : <link rel="canonical" href={canonical} />}
+    {alternates.map((l) => <link rel="alternate" hreflang={LANG_INFO[l].hreflang} href={`${site}${translatePath(path, lang, l)}`} />)}
+    {alternates.length > 0 && <link rel="alternate" hreflang="x-default" href={isHome ? `${site}/` : `${site}${translatePath(path, lang, 'en')}`} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="WHITE CARRARA" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content={info.intl.replace('-', '_')} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#f8f6f1" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="preload" href={bodoniLatin} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={jostLatin} as="font" type="font/woff2" crossorigin />
+    {extraCss && <link rel="stylesheet" href={extraCss} />}
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    {jsonld.map((j) => <script type="application/ld+json" set:html={JSON.stringify(j)} />)}
+    <slot name="head" />
+  </head>
+  <body>
+    <a href="#main" class="skip-link">{t('a11y.skip')}</a>
+    <Header t={tr} path={path} variant={header} />
+    <main id="main" tabindex="-1" class:list={[header === 'solid' && 'pt-16 lg:pt-28', 'outline-none']}>
+      <slot />
+    </main>
+    <Footer t={tr} path={path} />
+    <WhatsAppButton t={tr} />
+    <CookieBanner t={tr} />
+    <LangPrompt lang={lang} path={path} />
+    <LanguageDialog t={tr} path={path} />
+    <script>
+      // Comparsa morbida delle sezioni (disattivata con "riduci movimento" dal CSS)
+      const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
+      if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add('is-in');
+                io.unobserve(e.target);
+              }
+            }
+          },
+          { rootMargin: '0px 0px -8% 0px', threshold: 0.08 },
+        );
+        els.forEach((el) => io.observe(el));
+      } else {
+        els.forEach((el) => el.classList.add('is-in'));
+      }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  @media (min-width: 64rem) {
+    :root {
+      --header-h: 7rem;
+    }
+  }
+</style>

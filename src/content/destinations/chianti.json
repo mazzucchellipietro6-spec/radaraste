@@ -1,0 +1,33 @@
+{
+  "name": "Chianti",
+  "active": true,
+  "featured": false,
+  "order": 50,
+  "region": "toscana",
+  "tagline": "Colline, vigneti e borghi tra Firenze e Siena.",
+  "description": "Il Chianti è il paesaggio toscano per eccellenza: colline coltivate a vite e olivo, cipressi, pievi e castelli tra Firenze e Siena.\n\nBorghi come Greve, Radda, Castellina e Gaiole accolgono cantine storiche e ristoranti di campagna, ideali per una giornata tra degustazioni e panorami.",
+  "attractions": [
+    "Greve in Chianti",
+    "Radda e Castellina in Chianti",
+    "Castelli e pievi romaniche",
+    "Strade panoramiche tra i vigneti"
+  ],
+  "experiences": [
+    "Degustazioni in cantina",
+    "Pranzo in fattoria",
+    "Tour privato con autista"
+  ],
+  "itineraries": [
+    {
+      "title": "Una giornata nel Chianti",
+      "text": "Due visite in cantina con degustazione, pranzo in un borgo e rientro al tramonto lungo la Chiantigiana."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/chianti.jpg",
+  "imageAlt": "Colline del Chianti con vigneti e cipressi",
+  "seoTitle": "",
+  "seoDescription": ""
+}

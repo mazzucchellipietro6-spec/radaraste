@@ -1,0 +1,146 @@
+---
+// Banner cookie GDPR: nessuno strumento di statistica parte prima del consenso.
+// Il consenso è salvato nel browser (wc-consent) e si può cambiare dal piè di pagina.
+import type { Translator } from '~/i18n';
+interface Props {
+  t: Translator;
+}
+const { t: tr } = Astro.props;
+const { t, href } = tr;
+const plausible = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN ?? '';
+const plausibleSrc = import.meta.env.PUBLIC_PLAUSIBLE_SRC ?? 'https://plausible.io/js/script.js';
+const ga4 = import.meta.env.PUBLIC_GA4_ID ?? '';
+---
+
+<section
+  class="cookie-banner no-print"
+  data-cookie-banner
+  data-plausible={plausible}
+  data-plausible-src={plausibleSrc}
+  data-ga4={ga4}
+  role="region"
+  aria-labelledby="cookie-title"
+  hidden
+>
+  <div class="mx-auto max-w-3xl">
+    <h2 id="cookie-title" class="font-display text-xl">{t('cookie.title')}</h2>
+    <p class="mt-2 text-[0.95rem] text-ash">
+      {t('cookie.text')}
+      <a href={href('cookies')} class="text-brass-deep">{t('cookie.policy')}</a>
+    </p>
+    <form class="mt-4 space-y-3 border-t border-stone pt-4" data-cookie-details hidden>
+      <label class="flex gap-3">
+        <input type="checkbox" class="checkbox" checked disabled />
+        <span><strong class="font-medium">{t('cookie.necessary')}</strong><br /><span class="text-sm text-ash">{t('cookie.necessaryText')}</span></span>
+      </label>
+      <label class="flex gap-3">
+        <input type="checkbox" class="checkbox" name="analytics" data-cookie-analytics />
+        <span><strong class="font-medium">{t('cookie.analytics')}</strong><br /><span class="text-sm text-ash">{t('cookie.analyticsText')}</span></span>
+      </label>
+    </form>
+    <div class="mt-5 flex flex-wrap gap-3">
+      <button type="button" class="btn btn-primary btn-sm" data-cookie-accept>{t('cookie.acceptAll')}</button>
+      <button type="button" class="btn btn-outline btn-sm" data-cookie-reject>{t('cookie.rejectAll')}</button>
+      <button type="button" class="btn btn-outline btn-sm" data-cookie-customize>{t('cookie.customize')}</button>
+      <button type="button" class="btn btn-primary btn-sm" data-cookie-save hidden>{t('cookie.save')}</button>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cookie-banner {
+    position: fixed;
+    inset-inline: clamp(0.75rem, 2vw, 1.5rem);
+    bottom: clamp(0.75rem, 2vw, 1.5rem);
+    z-index: 60;
+    max-width: 44rem;
+    margin-inline: auto;
+    padding: 1.5rem 1.6rem;
+    background: var(--color-marble);
+    border: 1px solid var(--color-stone);
+    box-shadow: 0 24px 60px -30px rgb(26 26 28 / 0.45);
+  }
+</style>
+
+<script>
+  type Consent = { v: 1; analytics: boolean; at: string };
+  const KEY = 'wc-consent';
+  const banner = document.querySelector<HTMLElement>('[data-cookie-banner]');
+
+  function read(): Consent | null {
+    try {
+      const c = JSON.parse(localStorage.getItem(KEY) || 'null');
+      return c && c.v === 1 ? c : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function loadAnalytics() {
+    if (!banner || (window as unknown as { __wcAnalytics?: boolean }).__wcAnalytics) return;
+    (window as unknown as { __wcAnalytics?: boolean }).__wcAnalytics = true;
+    const domain = banner.dataset.plausible;
+    if (domain) {
+      const s = document.createElement('script');
+      s.defer = true;
+      s.dataset.domain = domain;
+      s.src = banner.dataset.plausibleSrc || 'https://plausible.io/js/script.js';
+      document.head.appendChild(s);
+    }
+    const ga = banner.dataset.ga4;
+    if (ga) {
+      const s = document.createElement('script');
+      s.async = true;
+      s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga)}`;
+      document.head.appendChild(s);
+      const w = window as unknown as { dataLayer: unknown[]; gtag: (...a: unknown[]) => void };
+      w.dataLayer = w.dataLayer || [];
+      w.gtag = function () {
+        // eslint-disable-next-line prefer-rest-params
+        w.dataLayer.push(arguments);
+      };
+      w.gtag('js', new Date());
+      w.gtag('config', ga, { anonymize_ip: true });
+    }
+  }
+
+  function save(analytics: boolean) {
+    const c: Consent = { v: 1, analytics, at: new Date().toISOString() };
+    try {
+      localStorage.setItem(KEY, JSON.stringify(c));
+    } catch {
+      /* niente archivio: il banner ricomparirà */
+    }
+    if (banner) banner.hidden = true;
+    if (analytics) loadAnalytics();
+    else if ((window as unknown as { __wcAnalytics?: boolean }).__wcAnalytics) location.reload();
+  }
+
+  if (banner) {
+    const consent = read();
+    if (!consent) banner.hidden = false;
+    else if (consent.analytics) loadAnalytics();
+
+    const details = banner.querySelector<HTMLElement>('[data-cookie-details]')!;
+    const analyticsBox = banner.querySelector<HTMLInputElement>('[data-cookie-analytics]')!;
+    const saveBtn = banner.querySelector<HTMLElement>('[data-cookie-save]')!;
+    banner.querySelector('[data-cookie-accept]')?.addEventListener('click', () => save(true));
+    banner.querySelector('[data-cookie-reject]')?.addEventListener('click', () => save(false));
+    banner.querySelector('[data-cookie-customize]')?.addEventListener('click', () => {
+      details.hidden = false;
+      saveBtn.hidden = false;
+      analyticsBox.checked = !!read()?.analytics;
+      analyticsBox.focus();
+    });
+    saveBtn.addEventListener('click', () => save(analyticsBox.checked));
+    document.querySelectorAll('[data-cookie-open]').forEach((b) =>
+      b.addEventListener('click', () => {
+        banner.hidden = false;
+        details.hidden = false;
+        saveBtn.hidden = false;
+        analyticsBox.checked = !!read()?.analytics;
+        banner.querySelector<HTMLElement>('[data-cookie-accept]')?.focus();
+      }),
+    );
+  }
+</script>

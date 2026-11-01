@@ -1,0 +1,26 @@
+{
+  "title": "Marble Workshops",
+  "active": true,
+  "order": 3,
+  "category": "laboratori",
+  "summary": "Dal blocco all'oggetto: segherie e laboratori artigiani della zona di Carrara.",
+  "description": "Un percorso tra le aziende che trasformano il marmo: segherie, laboratori di lavorazione e artigiani specializzati.\n\nÈ l'occasione per capire come un blocco diventa lastra, piano o elemento d'arredo, e per vedere da vicino finiture e lavorazioni. Pensato per architetti, designer e appassionati.",
+  "highlights": [
+    "Dal blocco alla lastra: il taglio in segheria",
+    "Finiture e lavorazioni di superficie",
+    "Incontro con artigiani del marmo"
+  ],
+  "duration": "",
+  "languages": [],
+  "minParticipants": null,
+  "maxParticipants": null,
+  "price": null,
+  "priceUnit": "persona",
+  "priceNote": "",
+  "onlinePayment": false,
+  "meetingPoint": "",
+  "image": "../../assets/images/experiences/marble-workshops.jpg",
+  "imageAlt": "Mani di un artigiano che rifiniscono un pezzo di marmo",
+  "seoTitle": "",
+  "seoDescription": ""
+}

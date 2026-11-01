@@ -1,0 +1,26 @@
+{
+  "title": "Laboratorio di scultura",
+  "active": true,
+  "order": 4,
+  "category": "laboratori",
+  "summary": "Scalpello in mano, sotto la guida di uno scultore.",
+  "description": "Una sessione pratica in uno studio di scultura: si impara a conoscere il marmo, gli attrezzi e i primi gesti della lavorazione.\n\nCarrara è da secoli una città di scultori e ospita una storica Accademia di Belle Arti. Il laboratorio si svolge con artisti professionisti, in piccoli gruppi o in forma privata.",
+  "highlights": [
+    "Introduzione ai materiali e agli attrezzi",
+    "Prova pratica guidata",
+    "Visita allo studio dell'artista"
+  ],
+  "duration": "",
+  "languages": [],
+  "minParticipants": null,
+  "maxParticipants": null,
+  "price": null,
+  "priceUnit": "persona",
+  "priceNote": "",
+  "onlinePayment": false,
+  "meetingPoint": "",
+  "image": "../../assets/images/experiences/laboratorio-scultura.jpg",
+  "imageAlt": "Studio di scultura con modelli in gesso e una scultura in lavorazione",
+  "seoTitle": "",
+  "seoDescription": ""
+}

@@ -1,0 +1,26 @@
+{
+  "title": "Tour panoramici",
+  "active": true,
+  "order": 8,
+  "category": "panorama",
+  "summary": "Belvedere sulle Alpi Apuane, tra cave, borghi e mare.",
+  "description": "Un itinerario panoramico sulle strade che salgono da Carrara verso le Apuane, con soste nei punti più spettacolari, come il belvedere di Campocecina, e nei borghi di montagna.\n\nNelle giornate limpide lo sguardo spazia dalle cave fino al mare.",
+  "highlights": [
+    "Il belvedere di Campocecina",
+    "I borghi di montagna delle Apuane",
+    "Viste sulle cave e sulla costa"
+  ],
+  "duration": "",
+  "languages": [],
+  "minParticipants": null,
+  "maxParticipants": null,
+  "price": null,
+  "priceUnit": "persona",
+  "priceNote": "",
+  "onlinePayment": false,
+  "meetingPoint": "",
+  "image": "../../assets/images/experiences/tour-panoramici.jpg",
+  "imageAlt": "Vista dal belvedere di Campocecina sulle cave e sulla costa",
+  "seoTitle": "",
+  "seoDescription": ""
+}

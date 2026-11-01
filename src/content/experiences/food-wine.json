@@ -1,0 +1,26 @@
+{
+  "title": "Food & Wine",
+  "active": true,
+  "order": 5,
+  "category": "gusto",
+  "summary": "Il Lardo di Colonnata IGP e i vini dei colli apuani, dove nascono.",
+  "description": "Un percorso nei sapori del territorio, a partire dal Lardo di Colonnata IGP, stagionato nelle tradizionali conche di marmo.\n\nAl lardo si affiancano i prodotti della Lunigiana e della costa apuana e i vini dei colli tra Carrara e Massa, in degustazioni presso produttori e locali selezionati.",
+  "highlights": [
+    "Colonnata e la stagionatura del lardo nelle conche di marmo",
+    "Degustazione di prodotti tipici",
+    "Vini dei colli apuani"
+  ],
+  "duration": "",
+  "languages": [],
+  "minParticipants": null,
+  "maxParticipants": null,
+  "price": null,
+  "priceUnit": "persona",
+  "priceNote": "",
+  "onlinePayment": false,
+  "meetingPoint": "",
+  "image": "../../assets/images/experiences/food-wine.jpg",
+  "imageAlt": "Lardo di Colonnata su un tagliere di marmo con un calice di vino",
+  "seoTitle": "",
+  "seoDescription": ""
+}
