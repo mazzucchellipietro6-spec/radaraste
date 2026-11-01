@@ -14,14 +14,18 @@ interface Props {
 }
 const { src, alt, sizes = '100vw', widths, class: cls = '', pictureClass = '', priority = false } = Astro.props;
 const max = src.width;
-const ws = (widths ?? [480, 768, 1080, 1440, 1920, 2400]).filter((w) => w <= max);
+// Anteprima statica (WC_PREVIEW=1): solo WebP in due misure, per un pacchetto di file leggero.
+const preview = process.env.WC_PREVIEW === '1';
+const ws = (preview ? [800, 1600] : (widths ?? [480, 768, 1080, 1440, 1920, 2400])).filter((w) => w <= max);
 if (ws.length === 0) ws.push(max);
 ---
 
 <Picture
   src={src}
   alt={alt}
-  formats={['avif', 'webp']}
+  formats={preview ? ['webp'] : ['avif', 'webp']}
+  fallbackFormat={preview ? 'webp' : undefined}
+  width={preview ? Math.max(...ws) : undefined}
   widths={ws}
   sizes={sizes}
   class={cls}

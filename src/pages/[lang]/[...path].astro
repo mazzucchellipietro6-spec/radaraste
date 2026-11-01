@@ -7,7 +7,9 @@ import { VIEWS, staticPages } from '~/views/registry';
 
 export async function getStaticPaths() {
   const pages = await staticPages();
-  return LANGS.flatMap((lang) =>
+  // WC_PREVIEW_LANGS=it,en limita le lingue generate (solo per le anteprime veloci)
+  const only = process.env.WC_PREVIEW_LANGS?.split(',').filter(Boolean);
+  return LANGS.filter((l) => !only?.length || only.includes(l)).flatMap((lang) =>
     pages.map(({ key, id }) => {
       const full = pathFor(lang, key, id);
       const rest = full.replace(`/${lang}/`, '').replace(/\/$/, '');
