@@ -304,7 +304,24 @@ const v = (group: string, key: string) => t(`vocab.${group}.${key}`);
 <style>
   .hero-shade {
     background:
-      linear-gradient(to top, rgb(26 26 28 / 0.82) 0%, rgb(26 26 28 / 0.42) 42%, rgb(26 26 28 / 0.18) 70%, rgb(26 26 28 / 0.38) 100%);
+      linear-gradient(to top, rgb(26 26 28 / 0.82) 0%, rgb(26 26 28 / 0.42) 42%, rgb(26 26 28 / 0.14) 70%, rgb(26 26 28 / 0.42) 100%),
+      linear-gradient(to right, rgb(26 26 28 / 0.5) 0%, rgb(26 26 28 / 0.22) 45%, rgb(26 26 28 / 0) 70%);
+  }
+  :global([dir='rtl']) .hero-shade {
+    background:
+      linear-gradient(to top, rgb(26 26 28 / 0.82) 0%, rgb(26 26 28 / 0.42) 42%, rgb(26 26 28 / 0.14) 70%, rgb(26 26 28 / 0.42) 100%),
+      linear-gradient(to left, rgb(26 26 28 / 0.5) 0%, rgb(26 26 28 / 0.22) 45%, rgb(26 26 28 / 0) 70%);
+  }
+  /* Lento avvicinamento dell'immagine (effetto "Ken Burns"), solo se l'utente non ha chiesto meno animazioni */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero :global(img) {
+      animation: hero-drift 22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+      transform-origin: 62% 40%;
+    }
+    @keyframes hero-drift {
+      from { transform: scale(1.09); }
+      to { transform: scale(1); }
+    }
   }
   :global(html[data-script='Latn']) .hero-em,
   :global(html[data-script='Cyrl']) .hero-em,

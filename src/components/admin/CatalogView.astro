@@ -18,11 +18,12 @@ const site = { marbles: '/it/marmi/', experiences: '/it/esperienze-carrara/', de
 type Row = { id: string; name: string; active: boolean; extra: string[] };
 let rows: Row[] = [];
 if (kind === 'marbles') {
+  const ids = (await marbles()).map((m) => m.id);
   const stats = has('trade')
     ? await withUser(admin!.user.claims, (tx) => tx<{ slug: string; materials: number; prices: number }[]>`select s.slug,
         (select count(*) from public.materials m where m.marble_slug = s.slug and m.active)::int as materials,
         (select count(*) from public.b2b_prices b where b.marble_slug = s.slug and b.active)::int as prices
-        from unnest(${(await marbles()).map((m) => m.id)}::text[]) as s(slug)`)
+        from unnest(${ids}::text[]) as s(slug)`)
     : [];
   const req = has('customers') ? await withUser(admin!.user.claims, (tx) => tx<{ slug: string; n: number }[]>`select unnest(marbles) as slug, count(*)::int as n from public.requests group by 1`) : [];
   rows = (await marbles()).map((m) => {
