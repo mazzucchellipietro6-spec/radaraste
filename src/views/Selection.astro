@@ -1,0 +1,24 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Selection from '~/islands/Selection';
+import type { Translator } from '~/i18n';
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href, lang } = tr;
+const s = Object.fromEntries(['empty', 'request', 'clear', 'browse', 'saved'].map((k) => [k, t(`selection.${k}`)]));
+s.remove = t('common.remove');
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.selection') }];
+---
+
+<Base t={tr} title={t('selection.seoTitle')} path={path} noindex>
+  <PageHero eyebrow={t('selection.eyebrow')} title={t('selection.title')} lead={t('selection.lead')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+  <section class="py-16 lg:py-24">
+    <div class="container-page">
+      <Selection client:load lang={lang} s={s} quoteHref={href('quote')} browseHref={href('marbles')} />
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,60 @@
+---
+// Apertura delle pagine interne: con foto a tutta larghezza (header trasparente) oppure fascia chiara.
+import type { ImageMetadata } from 'astro';
+import Img from './Img.astro';
+import Breadcrumbs from './Breadcrumbs.astro';
+
+interface Props {
+  eyebrow?: string;
+  title: string;
+  lead?: string;
+  image?: ImageMetadata | null;
+  alt?: string;
+  crumbs?: { label: string; href?: string }[];
+  crumbLabel?: string;
+  compact?: boolean;
+}
+const { eyebrow, title, lead, image, alt = '', crumbs, crumbLabel = '', compact = false } = Astro.props;
+---
+
+{
+  image ? (
+    <section class:list={['on-dark relative isolate flex items-end overflow-hidden text-marble', compact ? 'min-h-[62vh]' : 'min-h-[78vh]']}>
+      <Img src={image} alt={alt} priority class="absolute inset-0 -z-20 h-full w-full object-cover" pictureClass="contents" />
+      <div class="page-shade absolute inset-0 -z-10" aria-hidden="true" />
+      <div class="container-page w-full pb-16 pt-40 lg:pb-20">
+        {crumbs && <Breadcrumbs items={crumbs} label={crumbLabel} dark />}
+        {eyebrow && (
+          <p class="eyebrow mt-8 flex items-center gap-4" data-reveal>
+            <span class="rule" aria-hidden="true" />
+            {eyebrow}
+          </p>
+        )}
+        <h1 class="display-xl mt-6 max-w-[18ch]" data-reveal style="--reveal-delay:.08s">{title}</h1>
+        {lead && <p class="lead mt-6 max-w-2xl !text-marble/85" data-reveal style="--reveal-delay:.16s">{lead}</p>}
+        <slot />
+      </div>
+    </section>
+  ) : (
+    <section class="bg-texture border-b border-stone">
+      <div class:list={['container-page', compact ? 'py-14 lg:py-16' : 'py-16 lg:py-24']}>
+        {crumbs && <Breadcrumbs items={crumbs} label={crumbLabel} />}
+        {eyebrow && (
+          <p class="eyebrow mt-8 flex items-center gap-4" data-reveal>
+            <span class="rule" aria-hidden="true" />
+            {eyebrow}
+          </p>
+        )}
+        <h1 class:list={['mt-6 max-w-[22ch]', compact ? 'display-lg' : 'display-xl']} data-reveal style="--reveal-delay:.08s">{title}</h1>
+        {lead && <p class="lead mt-6 max-w-2xl" data-reveal style="--reveal-delay:.16s">{lead}</p>}
+        <slot />
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .page-shade {
+    background: linear-gradient(to top, rgb(26 26 28 / 0.8) 0%, rgb(26 26 28 / 0.35) 50%, rgb(26 26 28 / 0.35) 100%);
+  }
+</style>

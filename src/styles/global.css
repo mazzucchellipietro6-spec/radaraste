@@ -440,3 +440,90 @@ html[data-script]:not([data-script='Latn']):not([data-script='Cyrl']):not([data-
     display: none !important;
   }
 }
+
+/* Controlli dello showroom */
+@layer components {
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--color-stone);
+    background: #fff;
+    font-size: 0.85rem;
+    color: var(--color-graphite);
+    cursor: pointer;
+    transition: border-color 0.25s, background-color 0.25s;
+  }
+  .chip:hover {
+    border-color: var(--color-graphite);
+  }
+  .chip.is-on {
+    background: var(--color-graphite);
+    border-color: var(--color-graphite);
+    color: var(--color-marble);
+  }
+  .seg {
+    min-height: 2.5rem;
+    padding: 0.4rem 1rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .seg.is-on {
+    background: var(--color-graphite);
+    color: var(--color-marble);
+  }
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.5rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--color-stone);
+    font-size: 0.8rem;
+    color: var(--color-graphite);
+    background: transparent;
+    cursor: pointer;
+    transition: border-color 0.25s, background-color 0.25s, color 0.25s;
+  }
+  .icon-btn:hover {
+    border-color: var(--color-graphite);
+  }
+  .icon-btn[aria-pressed='true'] {
+    background: var(--color-graphite);
+    border-color: var(--color-graphite);
+    color: var(--color-marble);
+  }
+  .compare-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 45;
+    background: var(--color-graphite);
+    color: var(--color-marble);
+    box-shadow: 0 -12px 40px -20px rgb(0 0 0 / 0.5);
+  }
+  .compare-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    overflow-y: auto;
+    background: var(--color-marble);
+  }
+}
+
+@layer components {
+  .dropzone {
+    position: relative;
+    border: 1px dashed var(--color-mist);
+    background: #fff;
+    transition: border-color 0.25s, background-color 0.25s;
+  }
+  .dropzone.is-drag {
+    border-color: var(--color-brass-deep);
+    background: var(--color-ivory);
+  }
+}

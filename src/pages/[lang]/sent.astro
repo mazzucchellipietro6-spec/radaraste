@@ -1,0 +1,17 @@
+---
+// Conferma di invio per chi usa i moduli senza JavaScript.
+import Base from '~/layouts/Base.astro';
+import { getTranslator, isLang } from '~/i18n';
+export const prerender = false;
+const lang = isLang(Astro.params.lang) ? Astro.params.lang : 'en';
+const tr = await getTranslator(lang);
+const ref = (Astro.url.searchParams.get('ref') ?? '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 40);
+---
+
+<Base t={tr} title={tr.t('forms.submitQuote')} path={`/${lang}/sent/`} noindex>
+  <section class="container-page py-24">
+    <h1 class="display-lg max-w-2xl">{tr.t('forms.success')}</h1>
+    {ref && <p class="lead mt-6">{tr.t('emails.reference')}: <strong>{ref}</strong></p>}
+    <a href={tr.href('home')} class="btn btn-primary mt-10">{tr.t('nav.home')}</a>
+  </section>
+</Base>

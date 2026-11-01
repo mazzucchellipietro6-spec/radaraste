@@ -1,10 +1,34 @@
 // Elenco delle pagine pubbliche: chiave del percorso -> componente.
 import Home from './Home.astro';
+import Marbles from './Marbles.astro';
+import Marble from './Marble.astro';
+import Showroom from './Showroom.astro';
+import Selection from './Selection.astro';
+import Matching from './Matching.astro';
+import Concierge from './Concierge.astro';
+import Experience from './Experience.astro';
+import ExperienceItem from './ExperienceItem.astro';
+import Tours from './Tours.astro';
+import Destination from './Destination.astro';
+import CustomTrip from './CustomTrip.astro';
+import Booking from './Booking.astro';
 import { destinations, experiences, marbles } from '~/lib/site';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const VIEWS: Record<string, any> = {
   home: Home,
+  marbles: Marbles,
+  marble: Marble,
+  showroom: Showroom,
+  selection: Selection,
+  matching: Matching,
+  concierge: Concierge,
+  experience: Experience,
+  experienceItem: ExperienceItem,
+  tours: Tours,
+  destination: Destination,
+  customTrip: CustomTrip,
+  booking: Booking,
 };
 
 /** Pagine da generare per ogni lingua. */

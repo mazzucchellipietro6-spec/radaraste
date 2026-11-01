@@ -1,0 +1,45 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Lightbox from '~/components/Lightbox.astro';
+import CtaBand from '~/components/CtaBand.astro';
+import Showroom from '~/islands/Showroom';
+import type { Translator } from '~/i18n';
+import { VOCAB } from '~/data/vocab.mjs';
+
+import showroomImg from '~/assets/images/pages/showroom.jpg';
+
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href, lang } = tr;
+const keys = {
+  showroom: ['filters', 'filterColor', 'filterType', 'filterFinish', 'filterVein', 'reset', 'noResults', 'finishNote', 'view', 'viewGrid', 'viewSlab', 'compareNow', 'compareTitle', 'compareClear', 'compareMax', 'compareHint', 'collections', 'newCollection', 'collectionName', 'addTo', 'create', 'collectionsLocal', 'collectionsSynced', 'deleteCollection', 'emptyCollection', 'noCollections', 'requestQuote', 'open', 'zoom', 'favorite'],
+  marble: ['addSelection', 'inSelection', 'compare', 'inCompare', 'baseColor', 'veinColor', 'veinIntensity', 'veinPattern', 'finishes', 'thicknesses', 'applications', 'toVerify', 'disclaimer'],
+};
+const s: Record<string, string> = { close: t('common.close'), loading: t('a11y.loading') };
+for (const [ns, list] of Object.entries(keys)) for (const k of list) s[k] = t(`${ns}.${k}`);
+s.resultsOne = t('showroom.results.one');
+s.resultsOther = t('showroom.results.other');
+s.compareBarOne = t('showroom.compareBar.one');
+s.compareBarOther = t('showroom.compareBar.other');
+const vocab: Record<string, Record<string, string>> = {};
+for (const g of ['baseColor', 'category', 'finish', 'veinPattern'] as const) {
+  vocab[g] = Object.fromEntries(Object.keys(VOCAB[g]).map((k) => [k, t(`vocab.${g}.${k}`)]));
+}
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.showroom') }];
+---
+
+<Base t={tr} title={t('showroom.seoTitle')} description={t('showroom.seoDescription')} path={path} header="overlay">
+  <PageHero eyebrow={t('showroom.eyebrow')} title={t('showroom.title')} lead={t('showroom.lead')} image={showroomImg} alt={t('home.showroom.imageAlt')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+  <section class="py-16 lg:py-24">
+    <div class="container-page">
+      <Showroom client:visible lang={lang} s={s} vocab={vocab} quoteHref={href('quote')} />
+      <noscript><p class="mt-8"><a href={href('marbles')}>{t('nav.marbles')}</a></p></noscript>
+    </div>
+  </section>
+  <CtaBand t={tr} />
+  <Lightbox t={tr} />
+</Base>

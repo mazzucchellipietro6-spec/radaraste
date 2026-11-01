@@ -1,0 +1,86 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import FormShell from '~/components/forms/FormShell.astro';
+import Field from '~/components/forms/Field.astro';
+import CountryList from '~/components/forms/CountryList.astro';
+import type { Translator } from '~/i18n';
+import { destinations } from '~/lib/site';
+import { VOCAB } from '~/data/vocab.mjs';
+import { MAIN_LANGS } from '~/i18n/languages.mjs';
+import customImg from '~/assets/images/pages/custom-trip.jpg';
+
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href, lang } = tr;
+const dests = (await destinations()).map((d) => ({ id: d.id, region: d.data.region, name: tr.localize('destinations', d.id, d.data).name }));
+const regions = Object.keys(VOCAB.region).filter((r) => dests.some((d) => d.region === r));
+const langNames = new Intl.DisplayNames([tr.info.intl], { type: 'language' });
+const guideLangs = MAIN_LANGS.map((l) => ({ value: l.code, label: langNames.of(l.code === 'zh' ? 'zh-Hans' : l.code) ?? l.name }));
+const paces = ['relaxed', 'balanced', 'intense'].map((p) => ({ value: p, label: t(`customTrip.paceOptions.${p}`) }));
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.tours'), href: href('tours') }, { label: t('nav.customTrip') }];
+---
+
+<Base t={tr} title={t('customTrip.seoTitle')} description={t('customTrip.seoDescription')} path={path} header="overlay" image={customImg}>
+  <PageHero eyebrow={t('customTrip.eyebrow')} title={t('customTrip.title')} lead={t('customTrip.lead')} image={customImg} alt={t('customTrip.title')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+  <section class="py-16 lg:py-24">
+    <div class="container-page max-w-4xl">
+      <FormShell t={tr} action="/api/forms/custom-trip" submitLabel={t('customTrip.submit')} id="custom-trip">
+        <fieldset data-field="destinations">
+          <legend class="field-label">{t('customTrip.destinations')}</legend>
+          <p class="field-hint mt-1">{t('customTrip.destinationsHint')}</p>
+          <div class="mt-4 grid gap-6 sm:grid-cols-2">
+            {
+              regions.map((r) => (
+                <div>
+                  <p class="eyebrow mb-2">{t(`vocab.region.${r}`)}</p>
+                  <ul class="space-y-1.5">
+                    {dests.filter((d) => d.region === r).map((d) => (
+                      <li><label class="flex items-center gap-3"><input type="checkbox" name="destinations" value={d.id} class="checkbox !mt-0" />{d.name}</label></li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            }
+          </div>
+          <p class="field-error mt-2" data-error-for="destinations" hidden></p>
+        </fieldset>
+        <div class="grid gap-5 sm:grid-cols-3">
+          <Field name="start" type="date" label={t('customTrip.start')} required />
+          <Field name="end" type="date" label={t('customTrip.end')} required />
+          <Field name="participants" type="number" label={t('booking.participants')} required min={1} max={500} value={2} />
+        </div>
+        <div class="grid gap-5 sm:grid-cols-2">
+          <Field name="pace" type="select" label={t('customTrip.pace')} options={paces} value="balanced" required />
+          <Field name="guideLanguage" type="select" label={t('booking.guideLanguage')} options={guideLangs} value={lang} required />
+        </div>
+        <Field name="interests" label={t('customTrip.interests')} placeholder={t('customTrip.interestsPlaceholder')} optionalLabel={t('common.optional')} />
+        <Field name="budget" label={t('customTrip.budget')} />
+        <div class="grid gap-5 sm:grid-cols-2">
+          <Field name="firstName" label={t('forms.firstName')} required autocomplete="given-name" />
+          <Field name="lastName" label={t('forms.lastName')} required autocomplete="family-name" />
+          <Field name="email" type="email" label={t('forms.email')} required autocomplete="email" dir="ltr" />
+          <Field name="phone" type="tel" label={t('forms.phone')} required autocomplete="tel" dir="ltr" />
+        </div>
+        <div class="field" data-field="nationality">
+          <label for="ct-nationality" class="field-label">{t('forms.nationality')}</label>
+          <input id="ct-nationality" name="nationality" class="input" list="countries" required autocomplete="country-name" />
+          <p class="field-error" data-error-for="nationality" hidden></p>
+        </div>
+        <label class="flex items-center gap-3"><input type="checkbox" name="transfer" value="yes" class="checkbox !mt-0" />{t('booking.transfer')}</label>
+        <Field name="notes" type="textarea" label={t('booking.notes')} placeholder={t('booking.notesPlaceholder')} rows={4} optionalLabel={t('common.optional')} />
+      </FormShell>
+      <CountryList id="countries" intl={tr.info.intl} />
+    </div>
+  </section>
+</Base>
+
+<script>
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  document.querySelectorAll<HTMLInputElement>('input[type="date"]').forEach((i) => (i.min = tomorrow));
+  const p = new URLSearchParams(location.search).get('destination');
+  if (p) document.querySelector<HTMLInputElement>(`input[name="destinations"][value="${CSS.escape(p)}"]`)?.click();
+</script>

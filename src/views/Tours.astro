@@ -1,0 +1,83 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Img from '~/components/Img.astro';
+import Icon from '~/components/Icon.astro';
+import type { Translator } from '~/i18n';
+import { destinations } from '~/lib/site';
+import { VOCAB } from '~/data/vocab.mjs';
+import toursImg from '~/assets/images/pages/tours.jpg';
+import customImg from '~/assets/images/pages/custom-trip.jpg';
+
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href } = tr;
+const list = (await destinations()).map((d) => ({ ...d, data: tr.localize('destinations', d.id, d.data) }));
+const regions = Object.keys(VOCAB.region).filter((r) => list.some((d) => d.data.region === r));
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.tours') }];
+---
+
+<Base t={tr} title={t('tours.seoTitle')} fullTitle description={t('tours.seoDescription')} path={path} header="overlay" image={toursImg}>
+  <PageHero eyebrow={t('tours.eyebrow')} title={t('tours.title')} lead={t('tours.lead')} image={toursImg} alt={t('tours.title')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} />
+
+  <nav class="sticky top-16 z-30 border-b border-stone bg-marble/95 backdrop-blur lg:top-28" aria-label={t('tours.regions')}>
+    <ul class="container-page flex gap-6 overflow-x-auto py-4 text-[0.75rem] font-medium uppercase tracking-[0.14em] whitespace-nowrap">
+      {regions.map((r) => <li><a href={`#${r}`} class="no-underline hover:text-brass-deep">{t(`vocab.region.${r}`)}</a></li>)}
+    </ul>
+  </nav>
+
+  {
+    regions.map((r, ri) => (
+      <section id={r} class:list={['scroll-mt-44 py-16 lg:py-20', ri % 2 === 1 && 'bg-ivory']} aria-labelledby={`${r}-title`}>
+        <div class="container-page">
+          <h2 id={`${r}-title`} class="display-md flex items-center gap-5">
+            <span class="rule" aria-hidden="true" />
+            {t(`vocab.region.${r}`)}
+          </h2>
+          <ul class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {list
+              .filter((d) => d.data.region === r)
+              .map((d) => (
+                <li data-reveal>
+                  <a href={href('destination', d.id)} class="card-hover group relative block aspect-[4/3] overflow-hidden bg-stone no-underline">
+                    <Img src={d.data.image} alt={d.data.imageAlt} sizes="(min-width: 1024px) 31vw, (min-width: 640px) 48vw, 100vw" widths={[400, 640, 900, 1200]} class="h-full w-full object-cover" />
+                    <span class="tour-shade" aria-hidden="true" />
+                    <span class="on-dark absolute inset-x-0 bottom-0 p-6 text-marble">
+                      <span class="block font-display text-[1.7rem] leading-tight">{d.data.name}</span>
+                      <span class="mt-1 block text-[0.9rem] text-marble/80">{d.data.tagline}</span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+          </ul>
+        </div>
+      </section>
+    ))
+  }
+
+  <section class="on-dark bg-graphite text-marble" aria-labelledby="custom-title">
+    <div class="container-page grid items-center gap-12 py-20 lg:grid-cols-12 lg:py-28">
+      <div class="lg:col-span-6">
+        <div class="aspect-[4/3] overflow-hidden bg-graphite-2"><Img src={customImg} alt={t('customTrip.title')} sizes="(min-width: 1024px) 45vw, 100vw" class="h-full w-full object-cover" /></div>
+      </div>
+      <div class="lg:col-span-5 lg:col-start-8">
+        <p class="eyebrow">{t('customTrip.eyebrow')}</p>
+        <h2 id="custom-title" class="display-md mt-4">{t('tours.customTitle')}</h2>
+        <p class="lead mt-5">{t('tours.customText')}</p>
+        <a href={href('customTrip')} class="btn btn-primary mt-10">{t('tours.customCta')}</a>
+        <p class="mt-8 flex gap-3 text-[0.85rem] text-mist"><Icon name="info" size={18} class="mt-0.5 shrink-0 text-brass-light" />{t('tours.noInvent')}</p>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .tour-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgb(26 26 28 / 0.75), rgb(26 26 28 / 0.05) 60%);
+  }
+</style>

@@ -1,0 +1,96 @@
+---
+// Visore a tutto schermo con zoom e trascinamento, per le venature delle lastre.
+import Icon from './Icon.astro';
+import type { Translator } from '~/i18n';
+interface Props {
+  t: Translator;
+}
+const { t } = Astro.props.t;
+---
+
+<dialog class="zoom-dialog" data-zoom-dialog aria-label={t('marble.zoom')}>
+  <div class="zoom-stage" data-zoom-stage>
+    <img data-zoom-img alt="" draggable="false" />
+  </div>
+  <div class="zoom-bar">
+    <p class="zoom-caption" data-zoom-caption></p>
+    <div class="flex items-center gap-1">
+      <button type="button" class="zoom-btn" data-zoom-out aria-label={t('marble.zoomOut')}><Icon name="minus" /></button>
+      <button type="button" class="zoom-btn" data-zoom-reset aria-label={t('marble.zoomReset')}><Icon name="grid" /></button>
+      <button type="button" class="zoom-btn" data-zoom-in aria-label={t('marble.zoomIn')}><Icon name="plus" /></button>
+      <button type="button" class="zoom-btn" data-zoom-close aria-label={t('common.close')}><Icon name="close" /></button>
+    </div>
+  </div>
+  <p class="visually-hidden">{t('marble.zoomHint')}</p>
+</dialog>
+
+<style>
+  .zoom-dialog {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: #111113;
+    color: var(--color-marble);
+  }
+  .zoom-dialog::backdrop {
+    background: #111113;
+  }
+  .zoom-stage {
+    position: absolute;
+    inset: 0 0 4.5rem;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+  }
+  .zoom-stage:active {
+    cursor: grabbing;
+  }
+  .zoom-stage img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    max-width: none;
+    transform-origin: 0 0;
+    user-select: none;
+  }
+  .zoom-bar {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 4.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-inline: clamp(1rem, 3vw, 2rem);
+    border-top: 1px solid rgb(255 255 255 / 0.1);
+  }
+  .zoom-caption {
+    font-size: 0.85rem;
+    color: var(--color-mist);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .zoom-btn {
+    display: inline-flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(255 255 255 / 0.18);
+    color: inherit;
+  }
+  .zoom-btn:hover {
+    border-color: var(--color-brass-light);
+  }
+</style>
+
+<script>
+  import { initZoom } from '~/scripts/zoom';
+  initZoom();
+</script>

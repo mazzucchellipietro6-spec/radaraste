@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@astrojs/react';
+import preact from '@astrojs/preact';
 import keystatic from '@keystatic/astro';
 import node from '@astrojs/node';
 import vercel from '@astrojs/vercel';
@@ -33,7 +34,12 @@ export default defineConfig({
   adapter: adapter(),
   trailingSlash: 'ignore',
   build: { format: 'directory', inlineStylesheets: 'auto' },
-  integrations: [react(), ...(keystaticEnabled ? [keystatic()] : [])],
+  integrations: [
+    // Preact per le parti interattive del sito (leggero), React solo per il pannello Keystatic
+    preact({ include: ['**/islands/**'] }),
+    react({ include: ['**/keystatic.config.*', '**/node_modules/@keystatic/**'] }),
+    ...(keystaticEnabled ? [keystatic()] : []),
+  ],
   vite: {
     plugins: [tailwindcss()],
     define: {

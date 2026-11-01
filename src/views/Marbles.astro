@@ -1,0 +1,86 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Img from '~/components/Img.astro';
+import Icon from '~/components/Icon.astro';
+import CtaBand from '~/components/CtaBand.astro';
+import type { Translator } from '~/i18n';
+import { marbles } from '~/lib/site';
+import { breadcrumbJsonLd } from '~/lib/seo';
+
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href } = tr;
+const list = (await marbles()).map((m) => ({ ...m, data: tr.localize('marbles', m.id, m.data) }));
+const v = (g: string, k: string) => t(`vocab.${g}.${k}`);
+const tools = [
+  { k: 'showroom', icon: 'slab', label: t('nav.showroom'), href: href('showroom') },
+  { k: 'matching', icon: 'sparkle', label: t('nav.matching'), href: href('matching') },
+  { k: 'concierge', icon: 'chat', label: t('nav.concierge'), href: href('concierge') },
+  { k: 'glossary', icon: 'document', label: t('nav.glossary'), href: href('glossary') },
+] as const;
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.marbles') }];
+---
+
+<Base t={tr} title={t('marbles.seoTitle')} description={t('marbles.seoDescription')} path={path} jsonld={[breadcrumbJsonLd(crumbs.map((c) => ({ name: c.label, url: c.href ?? path })))]}>
+  <PageHero eyebrow={t('marbles.eyebrow')} title={t('marbles.title')} lead={t('marbles.lead')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} />
+
+  <section class="py-20 lg:py-28">
+    <div class="container-page">
+      <p class="eyebrow !text-ash">{t('marbles.count', { count: list.length })}</p>
+      <ul class="mt-8 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          list.map((m, i) => (
+            <li data-reveal style={`--reveal-delay:${(i % 3) * 0.07}s`}>
+              <a href={href('marble', m.id)} class="card-hover group block no-underline">
+                <div class="aspect-[4/3] overflow-hidden bg-stone">
+                  <Img src={m.data.slab} alt={m.data.slabAlt} sizes="(min-width: 1024px) 31vw, (min-width: 640px) 48vw, 100vw" widths={[480, 720, 960, 1280]} class="h-full w-full object-cover" />
+                </div>
+                <div class="mt-6 flex items-start justify-between gap-4">
+                  <div>
+                    <p class="eyebrow !text-ash">{m.data.baseColor.map((x) => v('baseColor', x)).join(' · ')}</p>
+                    <h2 class="mt-2 font-display text-[1.9rem] leading-tight text-graphite">{m.data.name}</h2>
+                  </div>
+                  <Icon name="arrow" size={22} class="mt-6 shrink-0 text-brass-deep transition-transform duration-500 group-hover:translate-x-1 rtl:-scale-x-100" />
+                </div>
+                <p class="mt-3 text-[0.95rem] leading-relaxed text-ash">{m.data.tagline}</p>
+                <p class="mt-4 text-[0.82rem] text-ash">
+                  {t('marble.veinPattern')}: {v('veinPattern', m.data.veinPattern)} · {t('marble.veinIntensity')}: {v('veinIntensity', m.data.veinIntensity)}
+                </p>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="mt-16 flex max-w-3xl gap-3 text-[0.88rem] text-ash">
+        <Icon name="info" size={18} class="mt-0.5 shrink-0 text-brass-deep" />
+        {t('common.availabilityNote')}
+      </p>
+    </div>
+  </section>
+
+  <section class="bg-ivory py-20 lg:py-28" aria-labelledby="tools-title">
+    <div class="container-page">
+      <h2 id="tools-title" class="display-md max-w-xl">{t('marbles.toolsTitle')}</h2>
+      <ul class="mt-12 grid gap-px border border-stone bg-stone sm:grid-cols-2 lg:grid-cols-4">
+        {
+          tools.map((tool) => (
+            <li class="bg-ivory">
+              <a href={tool.href} class="group flex h-full flex-col gap-4 p-8 no-underline hover:bg-marble">
+                <Icon name={tool.icon} size={28} class="text-brass" stroke={1.1} />
+                <span class="font-display text-xl text-graphite">{tool.label}</span>
+                <span class="text-[0.92rem] text-ash">{t(`marbles.tools.${tool.k}`)}</span>
+                <span class="link-luxe mt-auto pt-4 text-graphite">{t('common.learnMore')}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <CtaBand t={tr} />
+</Base>

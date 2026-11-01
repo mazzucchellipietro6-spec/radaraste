@@ -54,10 +54,10 @@ const accountHref = `/${lang}/account/`;
   <nav class="hdr-nav hidden lg:block" aria-label={t('nav.mainNav')}>
     <div class="container-page flex h-12 items-center gap-6">
       <a href={href('home')} class="logo-mini" tabindex="-1" aria-hidden="true">WHITE CARRARA</a>
-      <ul class="flex flex-1 flex-wrap items-center justify-center gap-x-7 gap-y-1">
+      <ul class="nav-list flex flex-1 flex-wrap items-center justify-center gap-x-5 gap-y-1 xl:gap-x-7">
         {
           items.map((it) => (
-            <li>
+            <li data-nav-key={it.key}>
               <a href={it.href} class="nav-item" aria-current={isActive(it.href, it.key) ? 'page' : undefined}>
                 {it.label}
               </a>
@@ -224,8 +224,20 @@ const accountHref = `/${lang}/account/`;
     background: var(--color-graphite);
     color: var(--color-marble);
   }
-  .site-header[data-scrolled='true'] .quote-mini {
-    display: inline-flex;
+  @media (min-width: 90rem) {
+    .site-header[data-scrolled='true'] .quote-mini {
+      display: inline-flex;
+    }
+  }
+  /* Riga compatta: il logo fa da "Home" e le voci si stringono */
+  .site-header[data-scrolled='true'] [data-nav-key='home'] {
+    display: none;
+  }
+  .site-header[data-scrolled='true'] .nav-list {
+    column-gap: 1.25rem;
+  }
+  .site-header[data-scrolled='true'] .nav-item {
+    letter-spacing: 0.12em;
   }
   .hdr-nav {
     border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent);

@@ -33,7 +33,6 @@ const marbles = defineCollection({
             verified: z.boolean().default(false),
             verifiedOn: z.string().nullish(),
             source: text,
-            reserved: z.boolean().default(false),
           }),
         )
         .default([]),

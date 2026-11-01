@@ -1,0 +1,53 @@
+---
+// Dati pratici di un'esperienza: mostra solo ciò che è confermato, altrimenti un segnaposto chiaro.
+import Icon from './Icon.astro';
+import type { Translator } from '~/i18n';
+interface Props {
+  t: Translator;
+  d: { duration: string; languages: string[]; minParticipants?: number | null; maxParticipants?: number | null; price?: number | null; priceUnit: string; priceNote: string };
+  compact?: boolean;
+}
+const { t: tr, d, compact = false } = Astro.props;
+const { t, fmt, lang } = tr;
+const names = new Intl.DisplayNames([tr.info.intl], { type: 'language' });
+const langs = d.languages.map((l) => {
+  try {
+    return names.of(l === 'zh' ? 'zh-Hans' : l) ?? l;
+  } catch {
+    return l;
+  }
+});
+const participants =
+  d.minParticipants && d.maxParticipants
+    ? t('experience.participantsRange', { min: d.minParticipants, max: d.maxParticipants })
+    : d.minParticipants
+      ? t('experience.participantsMin', { min: d.minParticipants })
+      : d.maxParticipants
+        ? t('experience.participantsMax', { max: d.maxParticipants })
+        : '';
+const rows = [
+  { icon: 'clock', label: t('experience.duration'), value: d.duration, empty: t('common.toBeAgreed') },
+  { icon: 'language', label: t('experience.languages'), value: langs.join(', '), empty: t('common.toBeVerified') },
+  { icon: 'people', label: t('experience.participants'), value: participants, empty: t('common.toBeVerified') },
+  {
+    icon: 'euro',
+    label: t('experience.price'),
+    value: d.price != null ? `${fmt.price(d.price)} ${d.priceUnit === 'gruppo' ? t('experience.perGroup') : t('experience.perPerson')}${d.priceNote ? ` · ${d.priceNote}` : ''}` : '',
+    empty: t('experience.priceOnRequest'),
+  },
+] as const;
+---
+
+<dl class:list={['grid', compact ? 'gap-2 text-[0.85rem]' : 'gap-4 text-[0.95rem]']} data-lang={lang}>
+  {
+    rows.map((r) => (
+      <div class="flex items-start gap-3">
+        <Icon name={r.icon} size={compact ? 16 : 19} class="mt-0.5 shrink-0 text-brass-deep" />
+        <div class:list={[compact ? 'flex flex-wrap gap-x-2' : '']}>
+          <dt class="text-ash">{r.label}</dt>
+          <dd>{r.value ? r.value : <span class={r.icon === 'euro' ? '' : 'placeholder-data'}>{r.empty}</span>}</dd>
+        </div>
+      </div>
+    ))
+  }
+</dl>

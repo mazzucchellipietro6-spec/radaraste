@@ -1,0 +1,96 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Icon from '~/components/Icon.astro';
+import FormShell from '~/components/forms/FormShell.astro';
+import Field from '~/components/forms/Field.astro';
+import CountryList from '~/components/forms/CountryList.astro';
+import type { Translator } from '~/i18n';
+import { MAIN_LANGS } from '~/i18n/languages.mjs';
+import { destinations, experiences } from '~/lib/site';
+
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href, lang } = tr;
+const exps = (await experiences()).map((e) => ({ id: e.id, title: tr.localize('experiences', e.id, e.data).title }));
+const dests = (await destinations()).map((d) => ({ id: d.id, name: tr.localize('destinations', d.id, d.data).name }));
+const langNames = new Intl.DisplayNames([tr.info.intl], { type: 'language' });
+const guideLangs = MAIN_LANGS.map((l) => ({ value: l.code, label: langNames.of(l.code === 'zh' ? 'zh-Hans' : l.code) ?? l.name }));
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.booking') }];
+---
+
+<Base t={tr} title={t('booking.seoTitle')} description={t('booking.seoDescription')} path={path}>
+  <PageHero eyebrow={t('booking.eyebrow')} title={t('booking.title')} lead={t('booking.lead')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+  <section class="py-16 lg:py-24">
+    <div class="container-page grid gap-14 lg:grid-cols-12">
+      <div class="lg:col-span-7">
+        <FormShell t={tr} action="/api/forms/booking" submitLabel={t('booking.submit')} id="booking">
+          <div class="field" data-field="item">
+            <label for="booking-item" class="field-label">{t('booking.what')}</label>
+            <select id="booking-item" name="item" class="input" required aria-describedby="booking-item-err">
+              <option value="" disabled selected>{t('forms.choose')}</option>
+              <optgroup label={t('nav.experience')}>
+                {exps.map((e) => <option value={`experience:${e.id}`}>{e.title}</option>)}
+              </optgroup>
+              <optgroup label={t('nav.tours')}>
+                {dests.map((d) => <option value={`destination:${d.id}`}>{d.name}</option>)}
+              </optgroup>
+            </select>
+            <p id="booking-item-err" class="field-error" data-error-for="item" hidden></p>
+          </div>
+          <div class="grid gap-5 sm:grid-cols-2">
+            <Field name="firstName" label={t('forms.firstName')} required autocomplete="given-name" />
+            <Field name="lastName" label={t('forms.lastName')} required autocomplete="family-name" />
+            <Field name="email" type="email" label={t('forms.email')} required autocomplete="email" dir="ltr" />
+            <Field name="phone" type="tel" label={t('forms.phone')} required autocomplete="tel" dir="ltr" />
+          </div>
+          <div class="field" data-field="nationality">
+            <label for="booking-nationality" class="field-label">{t('forms.nationality')}</label>
+            <input id="booking-nationality" name="nationality" class="input" list="countries" required autocomplete="country-name" aria-describedby="booking-nat-err" />
+            <p id="booking-nat-err" class="field-error" data-error-for="nationality" hidden></p>
+          </div>
+          <div class="grid gap-5 sm:grid-cols-3">
+            <Field name="date" type="date" label={t('booking.date')} required />
+            <Field name="altDate" type="date" label={t('booking.altDate')} optionalLabel={t('common.optional')} />
+            <Field name="participants" type="number" label={t('booking.participants')} required min={1} max={500} value={2} />
+          </div>
+          <Field name="guideLanguage" type="select" label={t('booking.guideLanguage')} options={guideLangs} value={lang} required />
+          <label class="flex items-center gap-3">
+            <input type="checkbox" name="transfer" value="yes" class="checkbox !mt-0" data-transfer-toggle />
+            <span>{t('booking.transfer')}</span>
+          </label>
+          <div data-transfer-details hidden>
+            <Field name="transferDetails" label={t('booking.transferDetails')} />
+          </div>
+          <Field name="notes" type="textarea" label={t('booking.notes')} placeholder={t('booking.notesPlaceholder')} rows={4} optionalLabel={t('common.optional')} />
+        </FormShell>
+        <CountryList id="countries" intl={tr.info.intl} />
+      </div>
+      <aside class="lg:col-span-4 lg:col-start-9">
+        <div class="border border-stone bg-ivory p-8 lg:sticky lg:top-36">
+          <h2 class="font-display text-2xl">{t('booking.summaryTitle')}</h2>
+          <ul class="mt-6 space-y-4 text-[0.95rem]">
+            {['summary1', 'summary2', 'summary3'].map((k) => <li class="flex gap-3"><Icon name="check" size={18} class="mt-1 shrink-0 text-brass-deep" />{t(`booking.${k}`)}</li>)}
+          </ul>
+          <p class="mt-8 flex gap-3 border-t border-stone pt-6 text-[0.85rem] text-ash"><Icon name="shield" size={18} class="mt-0.5 shrink-0 text-brass-deep" />{t('experience.authorizedNote')}</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<script>
+  // Preseleziona l'esperienza o la destinazione arrivando da una scheda (?experience=... / ?destination=...)
+  const p = new URLSearchParams(location.search);
+  const sel = document.querySelector<HTMLSelectElement>('#booking-item');
+  const want = p.get('experience') ? `experience:${p.get('experience')}` : p.get('destination') ? `destination:${p.get('destination')}` : '';
+  if (sel && want && Array.from(sel.options).some((o) => o.value === want)) sel.value = want;
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  document.querySelectorAll<HTMLInputElement>('input[type="date"]').forEach((i) => (i.min = tomorrow));
+  const toggle = document.querySelector<HTMLInputElement>('[data-transfer-toggle]');
+  const details = document.querySelector<HTMLElement>('[data-transfer-details]');
+  toggle?.addEventListener('change', () => details && (details.hidden = !toggle.checked));
+</script>

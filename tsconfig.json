@@ -1,12 +1,24 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "node_modules", "test-results", "playwright-report"],
+  "include": [
+    ".astro/types.d.ts",
+    "**/*"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "test-results",
+    "playwright-report"
+  ],
   "compilerOptions": {
     "baseUrl": ".",
-    "paths": { "~/*": ["src/*"] },
+    "paths": {
+      "~/*": [
+        "src/*"
+      ]
+    },
     "jsx": "react-jsx",
-    "jsxImportSource": "react",
+    "jsxImportSource": "preact",
     "allowJs": true,
     "resolveJsonModule": true
   }

@@ -1,0 +1,25 @@
+---
+interface Props {
+  items: { label: string; href?: string }[];
+  label: string;
+  dark?: boolean;
+}
+const { items, label, dark = false } = Astro.props;
+---
+
+<nav aria-label={label} class:list={['text-[0.72rem] uppercase tracking-[0.16em]', dark ? 'text-marble/75' : 'text-ash']}>
+  <ol class="flex flex-wrap items-center gap-x-3 gap-y-1">
+    {
+      items.map((it, i) => (
+        <li class="flex items-center gap-3">
+          {i > 0 && <span aria-hidden="true" class="opacity-60">/</span>}
+          {it.href && i < items.length - 1 ? (
+            <a href={it.href} class="no-underline hover:underline">{it.label}</a>
+          ) : (
+            <span aria-current={i === items.length - 1 ? 'page' : undefined}>{it.label}</span>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+</nav>

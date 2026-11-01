@@ -1,0 +1,276 @@
+---
+import { getImage } from 'astro:assets';
+import Base from '~/layouts/Base.astro';
+import Img from '~/components/Img.astro';
+import Icon from '~/components/Icon.astro';
+import Breadcrumbs from '~/components/Breadcrumbs.astro';
+import CtaBand from '~/components/CtaBand.astro';
+import Lightbox from '~/components/Lightbox.astro';
+import type { Translator } from '~/i18n';
+import { marbles } from '~/lib/site';
+import { absUrl, breadcrumbJsonLd } from '~/lib/seo';
+
+interface Props {
+  t: Translator;
+  path: string;
+  id: string;
+}
+const { t: tr, path, id } = Astro.props;
+const { t, href, fmt } = tr;
+const all = await marbles();
+const entry = all.find((m) => m.id === id)!;
+const m = tr.localize('marbles', id, entry.data);
+const v = (g: string, k: string) => t(`vocab.${g}.${k}`);
+const zoomOf = async (src: typeof m.slab) => (await getImage({ src, width: Math.min(2400, src.width), format: 'webp', quality: 82 })).src;
+const photos = [
+  { src: m.slab, alt: m.slabAlt || m.name, label: t('marble.photoSlab') },
+  ...(m.detail ? [{ src: m.detail, alt: m.detailAlt || m.name, label: t('marble.photoDetail') }] : []),
+  ...(m.ambient ? [{ src: m.ambient, alt: m.ambientAlt || m.name, label: t('marble.photoAmbient') }] : []),
+  ...m.gallery.map((g) => ({ src: g.image, alt: g.alt || m.name, label: '' })),
+];
+const zoomUrls = await Promise.all(photos.map((p) => zoomOf(p.src)));
+const related = all.filter((x) => x.id !== id).slice(0, 4).map((x) => ({ ...x, data: tr.localize('marbles', x.id, x.data) }));
+const crumbs = [
+  { label: t('nav.home'), href: href('home') },
+  { label: t('nav.marbles'), href: href('marbles') },
+  { label: m.name },
+];
+const quoteHref = `${href('quote')}?marble=${encodeURIComponent(id)}`;
+const sheets = m.techSheets.filter((s) => s.file);
+const ogImg = await getImage({ src: m.slab, width: 1200, height: 630, fit: 'cover', format: 'jpg' });
+const productLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: m.name,
+  description: m.tagline,
+  category: 'Natural stone / Marble',
+  brand: { '@type': 'Brand', name: 'WHITE CARRARA' },
+  image: absUrl(ogImg.src),
+  url: absUrl(path),
+  material: 'Marble',
+  countryOfOrigin: 'IT',
+};
+const specRows = [
+  [t('marble.baseColor'), m.baseColor.map((x) => v('baseColor', x)).join(', ')],
+  [t('marble.veinColor'), m.veinColor.map((x) => v('veinColor', x)).join(', ')],
+  [t('marble.veinIntensity'), v('veinIntensity', m.veinIntensity)],
+  [t('marble.veinPattern'), v('veinPattern', m.veinPattern)],
+];
+const lists = [
+  { title: t('marble.finishes'), items: m.finishes.map((x) => v('finish', x)) },
+  { title: t('marble.thicknesses'), items: m.thicknesses },
+  { title: t('marble.applications'), items: m.applications.map((x) => v('application', x)) },
+];
+---
+
+<Base
+  t={tr}
+  title={m.seoTitle || `${m.name} — ${t('nav.marbles')}`}
+  description={m.seoDescription || m.tagline}
+  path={path}
+  image={m.slab}
+  jsonld={[productLd, breadcrumbJsonLd(crumbs.map((c) => ({ name: c.label, url: c.href ?? path })))]}
+>
+  <section class="pb-20 pt-10 lg:pb-28 lg:pt-14">
+    <div class="container-page">
+      <Breadcrumbs items={crumbs} label={t('a11y.breadcrumb')} />
+      <div class="mt-8 grid gap-12 lg:grid-cols-12 lg:gap-14">
+        <div class="lg:col-span-7">
+          <button type="button" class="group relative block w-full cursor-zoom-in overflow-hidden bg-stone" data-zoom-src={zoomUrls[0]} data-zoom-alt={photos[0].alt}>
+            <Img src={m.slab} alt={m.slabAlt || m.name} priority sizes="(min-width: 1024px) 56vw, 100vw" class="aspect-[12/7] h-full w-full object-cover transition-transform duration-[1.2s] group-hover:scale-[1.02]" />
+            <span class="absolute bottom-4 end-4 inline-flex items-center gap-2 bg-marble/95 px-3 py-2 text-[0.72rem] font-medium uppercase tracking-[0.16em] text-graphite">
+              <Icon name="zoom" size={16} />{t('marble.zoom')}
+            </span>
+          </button>
+          {
+            photos.length > 1 && (
+              <ul class="mt-4 grid grid-cols-3 gap-4 sm:grid-cols-4">
+                {photos.slice(1).map((p, i) => (
+                  <li>
+                    <button type="button" class="group block w-full cursor-zoom-in overflow-hidden bg-stone" data-zoom-src={zoomUrls[i + 1]} data-zoom-alt={p.alt}>
+                      <Img src={p.src} alt={p.alt} sizes="(min-width: 1024px) 14vw, 30vw" widths={[240, 400, 600]} class="aspect-square w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    </button>
+                    {p.label && <p class="mt-2 text-[0.72rem] uppercase tracking-[0.14em] text-ash">{p.label}</p>}
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+        </div>
+
+        <aside class="lg:col-span-5">
+          <div class="lg:sticky lg:top-36">
+            <p class="eyebrow">{v('category', m.category)}</p>
+            <h1 class="display-lg mt-4">{m.name}</h1>
+            <p class="lead mt-5">{m.tagline}</p>
+            <dl class="mt-8 divide-y divide-stone border-y border-stone">
+              {
+                specRows.map(([k, val]) => (
+                  <div class="grid grid-cols-[1fr_1.2fr] gap-4 py-3 text-[0.92rem]">
+                    <dt class="text-ash">{k}</dt>
+                    <dd>{val}</dd>
+                  </div>
+                ))
+              }
+            </dl>
+            <div class="mt-8 grid gap-3">
+              <a href={quoteHref} class="btn btn-primary w-full">{t('nav.quote')}</a>
+              <div class="grid grid-cols-2 gap-3">
+                <button type="button" class="btn btn-outline btn-sm" data-select-toggle={id} aria-pressed="false" data-label-on={t('marble.inSelection')} data-label-off={t('marble.addSelection')}>
+                  <Icon name="heart" size={16} /><span data-label>{t('marble.addSelection')}</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" data-compare-toggle={id} aria-pressed="false" data-label-on={t('marble.inCompare')} data-label-off={t('marble.compare')} data-msg-full={t('marble.compareFull')}>
+                  <Icon name="compare" size={16} /><span data-label>{t('marble.compare')}</span>
+                </button>
+              </div>
+              <p class="text-[0.85rem] text-danger" data-compare-msg role="status" hidden></p>
+            </div>
+            <p class="mt-6 flex gap-3 text-[0.82rem] text-ash">
+              <Icon name="info" size={17} class="mt-0.5 shrink-0 text-brass-deep" />{t('marble.disclaimer')}
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="border-t border-stone py-20 lg:py-28">
+    <div class="container-page grid gap-14 lg:grid-cols-12">
+      <div class="lg:col-span-7">
+        <h2 class="eyebrow">{t('marble.description')}</h2>
+        <div class="prose-luxe mt-6 text-[1.08rem]" set:html={m.description} />
+      </div>
+      <div class="lg:col-span-4 lg:col-start-9">
+        <h2 class="eyebrow">{t('marble.visual')}</h2>
+        <div class="prose-luxe mt-6 text-ash" set:html={m.visualNotes} />
+      </div>
+    </div>
+    <div class="container-page mt-16"><div class="grid gap-px border border-stone bg-stone md:grid-cols-3">
+      {
+        lists.map((l) => (
+          <div class="bg-marble p-8">
+            <h3 class="eyebrow">{l.title}</h3>
+            {l.items.length ? (
+              <ul class="mt-5 space-y-2">
+                {l.items.map((x) => (
+                  <li class="flex items-center gap-3">
+                    <Icon name="check" size={16} class="text-brass-deep" />
+                    {x}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="mt-5"><span class="placeholder-data">{t('marble.toVerify')}</span></p>
+            )}
+          </div>
+        ))
+      }
+    </div></div>
+  </section>
+
+  <section class="bg-ivory py-20 lg:py-24">
+    <div class="container-page grid gap-12 lg:grid-cols-2">
+      <div>
+        <h2 class="display-md">{t('marble.techSheets')}</h2>
+        {
+          sheets.length ? (
+            <ul class="mt-8 divide-y divide-stone border-y border-stone">
+              {sheets.map((s) => (
+                <li class="flex items-center justify-between gap-6 py-4">
+                  <div>
+                    <p class="font-medium">{s.title}</p>
+                    <p class="text-[0.85rem] text-ash">
+                      {s.verified && s.verifiedOn ? t('marble.techVerified', { date: fmt.date(s.verifiedOn) }) : t('marble.toVerify')}
+                      {s.source && <> · {t('marble.techSource', { source: s.source })}</>}
+                    </p>
+                  </div>
+                  <a href={s.file!} class="btn btn-outline btn-sm" download>
+                    <Icon name="document" size={16} />
+                    {t('marble.download')}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="mt-6 max-w-lg text-ash">{t('marble.techNone')}</p>
+          )
+        }
+        <a href={`${quoteHref}&doc=1`} class="link-luxe mt-8 text-graphite">{t('marble.techRequest')}</a>
+      </div>
+      <div class="border border-stone bg-marble p-8 lg:p-10" data-b2b-prices={id}>
+        <p class="eyebrow flex items-center gap-3"><Icon name="lock" size={16} />{t('nav.b2b')}</p>
+        <h2 class="display-md mt-4">{t('marble.b2bTitle')}</h2>
+        <p class="mt-4 text-ash" data-b2b-text>{t('marble.b2bText')}</p>
+        <div data-b2b-list hidden></div>
+        <p class="mt-4 text-[0.82rem] text-ash" data-b2b-note hidden>{t('marble.b2bPriceNote')}</p>
+        <p class="mt-4 text-ash" data-b2b-none hidden>{t('marble.b2bNone')}</p>
+        <a href={href('b2b')} class="btn btn-outline btn-sm mt-8" data-b2b-cta>{t('marble.b2bCta')}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-20 lg:py-28" aria-labelledby="related-title">
+    <div class="container-page">
+      <h2 id="related-title" class="display-md">{t('marble.related')}</h2>
+      <ul class="mt-10 grid grid-cols-2 gap-5 lg:grid-cols-4">
+        {
+          related.map((r) => (
+            <li>
+              <a href={href('marble', r.id)} class="card-hover group block no-underline">
+                <div class="aspect-[4/5] overflow-hidden bg-stone">
+                  <Img src={r.data.slab} alt={r.data.slabAlt} sizes="(min-width: 1024px) 22vw, 46vw" widths={[320, 480, 720]} class="h-full w-full object-cover" />
+                </div>
+                <h3 class="mt-4 font-display text-xl text-graphite">{r.data.name}</h3>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <CtaBand t={tr} />
+  <Lightbox t={tr} />
+</Base>
+
+<script>
+  import { getCompare, getSelection, onStoreChange, toggleCompare, toggleSelection } from '~/scripts/store';
+  import { loadB2bPrices } from '~/scripts/b2b-prices';
+
+  const sync = () => {
+    document.querySelectorAll<HTMLButtonElement>('[data-select-toggle]').forEach((b) => {
+      const on = getSelection().includes(b.dataset.selectToggle!);
+      b.setAttribute('aria-pressed', String(on));
+      b.querySelector('[data-label]')!.textContent = on ? b.dataset.labelOn! : b.dataset.labelOff!;
+    });
+    document.querySelectorAll<HTMLButtonElement>('[data-compare-toggle]').forEach((b) => {
+      const on = getCompare().includes(b.dataset.compareToggle!);
+      b.setAttribute('aria-pressed', String(on));
+      b.querySelector('[data-label]')!.textContent = on ? b.dataset.labelOn! : b.dataset.labelOff!;
+    });
+  };
+  document.querySelectorAll<HTMLButtonElement>('[data-select-toggle]').forEach((b) =>
+    b.addEventListener('click', () => toggleSelection(b.dataset.selectToggle!)),
+  );
+  document.querySelectorAll<HTMLButtonElement>('[data-compare-toggle]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const r = toggleCompare(b.dataset.compareToggle!);
+      const msg = document.querySelector<HTMLElement>('[data-compare-msg]');
+      if (msg) {
+        msg.hidden = r !== 'full';
+        msg.textContent = r === 'full' ? b.dataset.msgFull! : '';
+      }
+    }),
+  );
+  onStoreChange(sync);
+  sync();
+  loadB2bPrices();
+</script>
+
+<style>
+  button[aria-pressed='true'] {
+    background: var(--color-graphite);
+    color: var(--color-marble);
+    border-color: var(--color-graphite);
+  }
+</style>
