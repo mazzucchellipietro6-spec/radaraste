@@ -1,0 +1,38 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import QuoteForm from '~/components/forms/QuoteForm.astro';
+import Icon from '~/components/Icon.astro';
+import type { Translator } from '~/i18n';
+import { company, telHref, whatsappHref } from '~/lib/site';
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href } = tr;
+const c = await company();
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.quote') }];
+---
+
+<Base t={tr} title={t('quotePage.seoTitle')} description={t('quotePage.seoDescription')} path={path}>
+  <PageHero eyebrow={t('quotePage.eyebrow')} title={t('quotePage.title')} lead={t('quotePage.lead')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+  <section class="py-16 lg:py-24">
+    <div class="container-page grid gap-14 lg:grid-cols-12">
+      <div class="lg:col-span-7"><QuoteForm t={tr} source="quote-page" prefill /></div>
+      <aside class="lg:col-span-4 lg:col-start-9">
+        <div class="border border-stone bg-ivory p-8">
+          <h2 class="font-display text-2xl">{t('quotePage.next')}</h2>
+          <ol class="mt-6 space-y-4">
+            {['1', '2', '3'].map((n) => <li class="flex gap-4"><span class="font-display text-xl text-brass-deep">0{n}</span><span>{t(`quotePage.steps.${n}`)}</span></li>)}
+          </ol>
+          <div class="mt-8 space-y-3 border-t border-stone pt-6 text-[0.95rem]">
+            {c.email && <p class="flex items-center gap-3"><Icon name="mail" class="text-brass-deep" /><a href={`mailto:${c.email}`} class="[overflow-wrap:anywhere] no-underline">{c.email}</a></p>}
+            {c.phone && <p class="flex items-center gap-3"><Icon name="phone" class="text-brass-deep" /><a href={telHref(c.phone)} class="no-underline" dir="ltr">{c.phone}</a></p>}
+            {c.whatsapp && <p class="flex items-center gap-3"><Icon name="whatsapp" class="text-brass-deep" /><a href={whatsappHref(c.whatsapp)} target="_blank" rel="noopener" class="no-underline">WhatsApp</a></p>}
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</Base>

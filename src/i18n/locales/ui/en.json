@@ -563,7 +563,8 @@
   "send": "Send request",
   "success": "Request sent. Reference: {ref}. We have emailed you a summary and will get back to you personally.",
   "restart": "Start again",
-  "summary": "Summary"
+  "summary": "Summary",
+  "successNoEmail": "Request sent. Reference: {ref}. We will get back to you personally."
  },
  "emails": {
   "greeting": "Dear {name},",
@@ -760,5 +761,177 @@
   "summary2": "We reply after checking which operators and partners are available.",
   "summary3": "Online payment, where applicable, takes place only after confirmation.",
   "successNoEmail": "Request sent. Reference: {ref}. The booking will be valid after our confirmation."
+ },
+ "about": {
+  "seoTitle": "About us",
+  "seoDescription": "WHITE CARRARA: premium Italian marble, international trade and travel experiences, from Carrara to the world.",
+  "eyebrow": "About",
+  "title": "From Carrara, to the world.",
+  "lead": "WHITE CARRARA was born in Carrara, the city of marble, and brings two worlds together: Italian natural stone and the hospitality of a unique land.",
+  "p1": "We select Italian marble for architects, designers, contractors and private clients around the world, working with suppliers and partners we know. We do not necessarily own the materials we present: we search for them, check them and follow every supply through to delivery.",
+  "p2": "Alongside marble, we guide our guests to discover Carrara and Italy: quarries, workshops, art cities and coastlines, always with authorised operators.",
+  "whatTitle": "What we do",
+  "what": {
+   "trade": "Marble trading and resale",
+   "brokerage": "Commercial brokerage",
+   "sourcing": "Material research and sourcing",
+   "export": "International export",
+   "tourism": "Tourism in Carrara",
+   "tours": "Tours and experiences across Italy"
+  },
+  "valuesTitle": "How we work",
+  "values": {
+   "selection": {
+    "title": "Selection",
+    "text": "Every material is chosen lot by lot, with photographs and samples of the actual stone."
+   },
+   "transparency": {
+    "title": "Transparency",
+    "text": "Availability, sizes and prices are checked before any final proposal. No promises we cannot keep."
+   },
+   "hospitality": {
+    "title": "Hospitality",
+    "text": "Experiences organised with authorised partners, confirmed only when everything is ready."
+   }
+  },
+  "carraraTitle": "Carrara, the city of marble",
+  "carraraText": "Marble has been quarried in the Apuan Alps since Roman times. Today the Colonnata, Fantiscritti and Torano basins still shape the landscape above the city, among workshops, sculptors and a tradition that continues to speak to the world."
+ },
+ "trade": {
+  "seoTitle": "International marble trade: trading and brokerage",
+  "seoDescription": "Sourcing, trading, brokerage and export of Italian marble: supplier search, offers, negotiation, documents and worldwide shipping.",
+  "eyebrow": "International Trade",
+  "title": "The right marble, from the right supplier.",
+  "lead": "We search for and select materials through suppliers and partners, prepare offers and follow negotiation, paperwork and shipping all the way to your site.",
+  "servicesTitle": "Services",
+  "services": {
+   "sourcing": {
+    "title": "Research and sourcing",
+    "text": "We find the right material for your project in quarries, sawmills and stockyards, with photos and samples of the actual lot."
+   },
+   "trading": {
+    "title": "Trading",
+    "text": "We buy from the supplier and resell to you: one point of contact, one contract, verified quality."
+   },
+   "brokerage": {
+    "title": "Brokerage",
+    "text": "We connect buyer and selected supplier and follow the negotiation through to agreement, with a commission agreed in advance."
+   },
+   "export": {
+    "title": "Export and logistics",
+    "text": "Packing, paperwork, required certificates and shipping by sea or road, under the agreed Incoterm."
+   }
+  },
+  "processTitle": "How it works",
+  "process": {
+   "1": "You send your request: material, quantity, finish, destination.",
+   "2": "We check availability and lots with suppliers.",
+   "3": "We send you an offer, as trader or as broker.",
+   "4": "Negotiation and agreement, on clear terms.",
+   "5": "Order, production and inspection of the material.",
+   "6": "Shipping and delivery, with all documents."
+  },
+  "modelsTitle": "Trading or brokerage?",
+  "modelsText": "In trading, WHITE CARRARA buys and resells the material and is your only supplier. In brokerage, we put you in touch with the supplier and assist you in the negotiation; the supply contract is between you and the supplier. We always tell you clearly which model applies to each offer.",
+  "note": "WHITE CARRARA does not necessarily own the materials presented: products are sourced through suppliers and partners, and availability is verified before any final proposal.",
+  "b2bCta": "Are you a professional? Go to the B2B area"
+ },
+ "projects": {
+  "seoTitle": "Projects",
+  "seoDescription": "Residences, hotels, boutiques, public spaces, yachts and works of art: how we support Italian marble projects.",
+  "eyebrow": "Projects",
+  "title": "Marble projects, from concept to installation.",
+  "lead": "We support architects, interior designers, contractors and private clients in choosing and supplying materials for projects worldwide.",
+  "typesTitle": "For every kind of project",
+  "caseStudies": "Completed projects",
+  "empty": "Completed projects will be published in this section, always with our clients' consent.",
+  "processTitle": "How we follow a project",
+  "process": {
+   "1": "Analysis of the project and its technical and aesthetic requirements.",
+   "2": "Material proposal, with photos and samples of available lots.",
+   "3": "Offer, lot approval and planning.",
+   "4": "Processing, inspection and shipping to site."
+  },
+  "materials": "Materials",
+  "year": "Year",
+  "location": "Location"
+ },
+ "contact": {
+  "seoTitle": "Contact",
+  "seoDescription": "Contact WHITE CARRARA in Carrara: email, phone, WhatsApp and contact form.",
+  "eyebrow": "Contact",
+  "title": "Let's talk about your project.",
+  "lead": "For marble, tours and experiences, write to us or call us: we will reply personally.",
+  "details": "Contact details",
+  "formTitle": "Write to us",
+  "map": "Map",
+  "showMap": "Show map",
+  "mapNote": "The map is loaded from OpenStreetMap only after you click.",
+  "openMaps": "Open in Google Maps",
+  "whatsappText": "Message us on WhatsApp"
+ },
+ "quotePage": {
+  "seoTitle": "Request a quote",
+  "seoDescription": "Request a quote for Italian marble, international supplies, experiences in Carrara or tours in Italy.",
+  "eyebrow": "Request a Quote",
+  "title": "Request a quote",
+  "lead": "Tell us what you need: material, quantity, finish, destination or the journey you have in mind. We will reply personally.",
+  "selected": "Selected marbles",
+  "next": "What happens next",
+  "steps": {
+   "1": "We receive your request and send you a confirmation with its reference.",
+   "2": "We check materials, availability and partners.",
+   "3": "We send you a clear proposal, with no obligation."
+  }
+ },
+ "glossaryPage": {
+  "seoTitle": "Marble glossary",
+  "seoDescription": "Marble terminology explained simply: block, slab, finishes, veining, book-matching and more.",
+  "eyebrow": "Marble Glossary",
+  "title": "Marble glossary",
+  "lead": "The vocabulary of marble, from quarry to installation. Each entry also shows the Italian term used in the trade.",
+  "italianTerm": "Italian term"
+ },
+ "b2b": {
+  "seoTitle": "B2B area for professionals",
+  "seoDescription": "Reserved area for architects, interior designers, importers, resellers, contractors and construction companies: reserved prices, technical documents, projects and quote history.",
+  "eyebrow": "B2B",
+  "title": "The area reserved for professionals.",
+  "lead": "For architects, interior designers, importers, resellers, companies and contractors: reserved prices, technical documents and a dedicated contact.",
+  "forTitle": "Who it is for",
+  "who": {
+   "architect": "Architects",
+   "interior": "Interior designers",
+   "importer": "Importers",
+   "reseller": "Resellers",
+   "company": "Companies",
+   "contractor": "Contractors"
+  },
+  "benefitsTitle": "What you will find",
+  "benefits": {
+   "prices": "Reserved indicative prices for catalogue materials",
+   "docs": "Technical documents and data sheets",
+   "projects": "Management of your projects",
+   "quotes": "History of quotes and requests",
+   "requests": "Direct commercial requests",
+   "contact": "A dedicated contact"
+  },
+  "howTitle": "How to get access",
+  "how": {
+   "1": "Create an account and fill in your professional details.",
+   "2": "We review your request and approve the account.",
+   "3": "Access reserved prices and technical documents."
+  },
+  "register": "Request B2B access",
+  "login": "Sign in"
+ },
+ "legal": {
+  "italianPrevails": "This text is a courtesy translation: in case of discrepancies, the Italian version prevails.",
+  "updated": "Last updated: {date}"
+ },
+ "notFound": {
+  "title": "Page not found",
+  "text": "The page you are looking for does not exist or has been moved.",
+  "home": "Back to home"
  }
 }

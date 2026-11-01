@@ -76,5 +76,5 @@ export const POST: APIRoute = async (ctx) => {
     ],
   });
   await sendEmail({ to: d.email, ...mail, template: 'request-received', lang: g.lang, related: saved.id ? { type: 'request', id: saved.id } : undefined });
-  return done(g, saved.reference, emailConfigured() ? {} : { message: tr.t('concierge.success', { ref: saved.reference }).split('.')[0] + '.' });
+  return done(g, saved.reference, { message: tr.t(emailConfigured() ? 'concierge.success' : 'concierge.successNoEmail', { ref: saved.reference }) });
 };

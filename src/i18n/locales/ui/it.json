@@ -563,7 +563,8 @@
   "send": "Invia la richiesta",
   "success": "Richiesta inviata. Riferimento: {ref}. Vi abbiamo mandato una email di riepilogo e vi contatteremo personalmente.",
   "restart": "Ricomincia",
-  "summary": "Riepilogo"
+  "summary": "Riepilogo",
+  "successNoEmail": "Richiesta inviata. Riferimento: {ref}. Vi contatteremo personalmente."
  },
  "emails": {
   "greeting": "Gentile {name},",
@@ -760,5 +761,177 @@
   "summary2": "Vi rispondiamo dopo aver verificato operatori e partner disponibili.",
   "summary3": "Il pagamento online, quando previsto, avviene solo dopo la conferma.",
   "successNoEmail": "Richiesta inviata. Riferimento: {ref}. La prenotazione sarà valida dopo la nostra conferma."
+ },
+ "about": {
+  "seoTitle": "Chi siamo",
+  "seoDescription": "WHITE CARRARA: marmo italiano di pregio, commercio internazionale ed esperienze di viaggio, da Carrara al mondo.",
+  "eyebrow": "About",
+  "title": "Da Carrara, verso il mondo.",
+  "lead": "WHITE CARRARA nasce a Carrara, la città del marmo, e unisce due mondi: la pietra naturale italiana e l'ospitalità di un territorio unico.",
+  "p1": "Selezioniamo marmi italiani per architetti, designer, imprese e privati in tutto il mondo, lavorando con fornitori e partner che conosciamo. Non possediamo necessariamente i materiali che presentiamo: li cerchiamo, li verifichiamo e seguiamo ogni fornitura fino alla consegna.",
+  "p2": "Accanto al marmo, accompagniamo i nostri ospiti alla scoperta di Carrara e dell'Italia: cave, laboratori, città d'arte e coste, sempre con operatori autorizzati.",
+  "whatTitle": "Che cosa facciamo",
+  "what": {
+   "trade": "Commercio e rivendita di marmo",
+   "brokerage": "Intermediazione commerciale",
+   "sourcing": "Ricerca e selezione dei materiali",
+   "export": "Esportazione internazionale",
+   "tourism": "Turismo a Carrara",
+   "tours": "Tour ed esperienze in tutta Italia"
+  },
+  "valuesTitle": "Il nostro modo di lavorare",
+  "values": {
+   "selection": {
+    "title": "Selezione",
+    "text": "Ogni materiale viene scelto lotto per lotto, con fotografie e campioni del materiale reale."
+   },
+   "transparency": {
+    "title": "Trasparenza",
+    "text": "Disponibilità, formati e prezzi vengono verificati prima di ogni proposta definitiva. Nessuna promessa che non possiamo mantenere."
+   },
+   "hospitality": {
+    "title": "Ospitalità",
+    "text": "Esperienze organizzate con partner autorizzati, confermate solo quando tutto è pronto."
+   }
+  },
+  "carraraTitle": "Carrara, la città del marmo",
+  "carraraText": "Il marmo delle Alpi Apuane si estrae dall'epoca romana. Ancora oggi i bacini di Colonnata, Fantiscritti e Torano disegnano il paesaggio sopra la città, tra laboratori, scultori e una tradizione che continua a parlare al mondo."
+ },
+ "trade": {
+  "seoTitle": "Commercio internazionale del marmo: trading e brokerage",
+  "seoDescription": "Sourcing, trading, brokerage ed export di marmo italiano: ricerca dei fornitori, offerte, trattative, documenti e spedizioni in tutto il mondo.",
+  "eyebrow": "International Trade",
+  "title": "Il marmo giusto, dal fornitore giusto.",
+  "lead": "Cerchiamo e selezioniamo i materiali presso fornitori e partner, prepariamo le offerte e seguiamo trattativa, documenti e spedizione fino al vostro cantiere.",
+  "servicesTitle": "Servizi",
+  "services": {
+   "sourcing": {
+    "title": "Ricerca e sourcing",
+    "text": "Troviamo il materiale adatto al progetto presso cave, segherie e depositi, con foto e campioni del lotto reale."
+   },
+   "trading": {
+    "title": "Trading",
+    "text": "Acquistiamo dal fornitore e rivendiamo a voi: un unico interlocutore, un unico contratto, qualità verificata."
+   },
+   "brokerage": {
+    "title": "Brokerage",
+    "text": "Mettiamo in contatto acquirente e fornitore selezionato e seguiamo la trattativa fino all'accordo, con una provvigione concordata in anticipo."
+   },
+   "export": {
+    "title": "Export e logistica",
+    "text": "Imballi, documenti, certificazioni richieste e spedizioni via mare o via terra, secondo l'Incoterm concordato."
+   }
+  },
+  "processTitle": "Come funziona",
+  "process": {
+   "1": "Ci inviate la richiesta: materiale, quantità, finitura, destinazione.",
+   "2": "Verifichiamo disponibilità e lotti presso i fornitori.",
+   "3": "Vi inviamo un'offerta, come trader o come broker.",
+   "4": "Trattativa e accordo, con condizioni chiare.",
+   "5": "Ordine, produzione e controllo del materiale.",
+   "6": "Spedizione e consegna, con tutti i documenti."
+  },
+  "modelsTitle": "Trading o brokerage?",
+  "modelsText": "Nel trading WHITE CARRARA acquista e rivende il materiale ed è il vostro unico fornitore. Nel brokerage vi mette in contatto con il fornitore e vi assiste nella trattativa; il contratto di fornitura è tra voi e il fornitore. Vi diremo sempre con chiarezza quale modello si applica a ogni offerta.",
+  "note": "WHITE CARRARA non possiede necessariamente i materiali presentati: i prodotti sono reperiti attraverso fornitori e partner e la disponibilità viene verificata prima di ogni proposta definitiva.",
+  "b2bCta": "Siete professionisti? Accedete all'area B2B"
+ },
+ "projects": {
+  "seoTitle": "Progetti",
+  "seoDescription": "Residenze, hotel, boutique, spazi pubblici, yacht e opere d'arte: come seguiamo i progetti in marmo italiano.",
+  "eyebrow": "Projects",
+  "title": "Progetti in marmo, dal concept alla posa.",
+  "lead": "Affianchiamo architetti, interior designer, imprese e privati nella scelta e nella fornitura dei materiali per progetti in tutto il mondo.",
+  "typesTitle": "Per ogni tipo di progetto",
+  "caseStudies": "Progetti realizzati",
+  "empty": "In questa sezione pubblicheremo i progetti realizzati, sempre con il consenso dei clienti.",
+  "processTitle": "Come seguiamo un progetto",
+  "process": {
+   "1": "Analisi del progetto e delle esigenze tecniche ed estetiche.",
+   "2": "Proposta di materiali, con foto e campioni dei lotti disponibili.",
+   "3": "Offerta, approvazione dei lotti e pianificazione.",
+   "4": "Lavorazione, controllo e spedizione fino al cantiere."
+  },
+  "materials": "Materiali",
+  "year": "Anno",
+  "location": "Luogo"
+ },
+ "contact": {
+  "seoTitle": "Contatti",
+  "seoDescription": "Contattate WHITE CARRARA a Carrara: email, telefono, WhatsApp e modulo di contatto.",
+  "eyebrow": "Contact",
+  "title": "Parliamo del vostro progetto.",
+  "lead": "Per marmi, tour ed esperienze scriveteci o chiamateci: vi risponderemo personalmente.",
+  "details": "Recapiti",
+  "formTitle": "Scriveteci",
+  "map": "Mappa",
+  "showMap": "Mostra la mappa",
+  "mapNote": "La mappa viene caricata da OpenStreetMap solo dopo il vostro clic.",
+  "openMaps": "Apri in Google Maps",
+  "whatsappText": "Scriveteci su WhatsApp"
+ },
+ "quotePage": {
+  "seoTitle": "Richiedi un preventivo",
+  "seoDescription": "Richiedete un preventivo per marmi italiani, forniture internazionali, esperienze a Carrara o tour in Italia.",
+  "eyebrow": "Request a Quote",
+  "title": "Richiedi un preventivo",
+  "lead": "Raccontateci di cosa avete bisogno: materiale, quantità, finitura, destinazione o il viaggio che avete in mente. Vi risponderemo personalmente.",
+  "selected": "Marmi selezionati",
+  "next": "Cosa succede dopo",
+  "steps": {
+   "1": "Riceviamo la richiesta e vi inviamo una conferma con il riferimento.",
+   "2": "Verifichiamo materiali, disponibilità e partner.",
+   "3": "Vi inviamo una proposta chiara, senza impegno."
+  }
+ },
+ "glossaryPage": {
+  "seoTitle": "Glossario del marmo",
+  "seoDescription": "I termini tecnici del marmo spiegati in modo semplice: blocco, lastra, finiture, venature, macchia aperta e altri.",
+  "eyebrow": "Marble Glossary",
+  "title": "Glossario del marmo",
+  "lead": "Le parole del marmo, dalla cava alla posa. Accanto a ogni voce trovate il termine italiano usato nel settore.",
+  "italianTerm": "Termine italiano"
+ },
+ "b2b": {
+  "seoTitle": "Area B2B per professionisti",
+  "seoDescription": "Area riservata per architetti, interior designer, importatori, rivenditori, imprese e contractor: prezzi riservati, documenti tecnici, progetti e storico preventivi.",
+  "eyebrow": "B2B",
+  "title": "L'area riservata ai professionisti.",
+  "lead": "Per architetti, interior designer, importatori, rivenditori, imprese e contractor: prezzi riservati, documenti tecnici e un referente dedicato.",
+  "forTitle": "Per chi è",
+  "who": {
+   "architect": "Architetti",
+   "interior": "Interior designer",
+   "importer": "Importatori",
+   "reseller": "Rivenditori",
+   "company": "Imprese",
+   "contractor": "Contractor"
+  },
+  "benefitsTitle": "Cosa trovate",
+  "benefits": {
+   "prices": "Prezzi indicativi riservati sui materiali del catalogo",
+   "docs": "Documenti e schede tecniche",
+   "projects": "Gestione dei vostri progetti",
+   "quotes": "Storico di preventivi e richieste",
+   "requests": "Richieste commerciali dirette",
+   "contact": "Un referente dedicato"
+  },
+  "howTitle": "Come accedere",
+  "how": {
+   "1": "Create un account e compilate i dati professionali.",
+   "2": "Verifichiamo la richiesta e approviamo l'account.",
+   "3": "Accedete a prezzi riservati e documenti tecnici."
+  },
+  "register": "Richiedi l'accesso B2B",
+  "login": "Accedi"
+ },
+ "legal": {
+  "italianPrevails": "Questo testo è una traduzione di cortesia: in caso di differenze prevale la versione italiana.",
+  "updated": "Ultimo aggiornamento: {date}"
+ },
+ "notFound": {
+  "title": "Pagina non trovata",
+  "text": "La pagina che cercate non esiste o è stata spostata.",
+  "home": "Torna alla home"
  }
 }

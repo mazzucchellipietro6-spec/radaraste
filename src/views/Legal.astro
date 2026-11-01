@@ -1,0 +1,27 @@
+---
+import { getEntry } from 'astro:content';
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import type { Translator } from '~/i18n';
+interface Props {
+  t: Translator;
+  path: string;
+  id: string;
+}
+const { t: tr, path, id: slug } = Astro.props;
+const { t, href, fmt, lang } = tr;
+const entry = await getEntry('legal', slug);
+const doc = tr.localize('legal', slug, entry!.data);
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: doc.title }];
+---
+
+<Base t={tr} title={doc.title} path={path}>
+  <PageHero title={doc.title} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+  <section class="py-16 lg:py-24">
+    <div class="container-page">
+      {lang !== 'it' && <p class="mb-10 max-w-2xl border-s-2 border-brass ps-4 text-[0.9rem] text-ash">{t('legal.italianPrevails')}</p>}
+      <div class="prose-luxe" set:html={doc.body} />
+      {entry!.data.updated && <p class="mt-14 text-[0.85rem] text-ash">{t('legal.updated', { date: fmt.date(entry!.data.updated) })}</p>}
+    </div>
+  </section>
+</Base>

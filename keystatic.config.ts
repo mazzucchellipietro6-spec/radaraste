@@ -31,6 +31,7 @@ export default config({
       Catalogo: ['marbles', 'glossary'],
       Turismo: ['experiences', 'destinations'],
       Progetti: ['projects'],
+      'Pagine legali': ['legal'],
       Impostazioni: ['settings', 'home'],
     },
   },
@@ -172,6 +173,18 @@ export default config({
         image: img('destinations', 'Foto principale'),
         imageAlt: alt(),
         ...seo,
+      },
+    }),
+
+    legal: collection({
+      label: 'Pagine legali',
+      slugField: 'title',
+      path: 'src/content/legal/*',
+      format: { data: 'json' },
+      schema: {
+        title: fields.slug({ name: { label: 'Titolo' } }),
+        updated: fields.date({ label: 'Data dell\u2019ultimo aggiornamento' }),
+        body: multiline('Testo', 'Usa ## per i titoli dei paragrafi e - per gli elenchi. Le parti tra [ ] sono da completare.'),
       },
     }),
 

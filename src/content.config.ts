@@ -124,6 +124,11 @@ const projects = defineCollection({
     }),
 });
 
+const legal = defineCollection({
+  loader: glob({ pattern: '*.json', base: './src/content/legal' }),
+  schema: z.object({ title: z.string(), updated: z.string().nullish(), body: text }),
+});
+
 const settings = defineCollection({
   loader: glob({ pattern: '*.json', base: './src/content/settings' }),
   schema: ({ image }) =>
@@ -151,4 +156,4 @@ const settings = defineCollection({
     }),
 });
 
-export const collections = { marbles, glossary, experiences, destinations, projects, settings };
+export const collections = { marbles, glossary, experiences, destinations, projects, legal, settings };

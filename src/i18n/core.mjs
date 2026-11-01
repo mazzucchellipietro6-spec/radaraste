@@ -87,6 +87,10 @@ export const SPECS = {
     term: 't',
     definition: 't',
   },
+  legal: {
+    title: 't',
+    body: 'md',
+  },
 };
 
 /** Visita ogni testo traducibile di un contenuto: cb(chiave, testo, tipo). */

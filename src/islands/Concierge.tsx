@@ -126,7 +126,7 @@ export default function Concierge({ lang, s, vocab, privacyHref, turnstileKey }:
         body: JSON.stringify({ ...contact, privacy: contact.privacy ? 'yes' : '', lang, brief: b, proposals: ranked.map((r) => r.it.slug), _ts: started, 'cf-turnstile-response': token }),
       });
       const data = await res.json().catch(() => ({}));
-      if (data.ok) setStatus({ kind: 'ok', text: s.success.replace('{ref}', data.reference ?? '') });
+      if (data.ok) setStatus({ kind: 'ok', text: data.message ?? s.success.replace('{ref}', data.reference ?? '') });
       else setStatus({ kind: 'err', text: (data.code && s[`err_${data.code}`]) || s.errorGeneric });
     } catch {
       setStatus({ kind: 'err', text: s.errorGeneric });
