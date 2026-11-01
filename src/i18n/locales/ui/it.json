@@ -162,7 +162,15 @@
    "lead": "Materiali, quantità, destinazione o un viaggio da organizzare: vi risponderemo personalmente, senza impegno.",
    "contactsTitle": "Contatti diretti"
   },
-  "coordinates": "Alpi Apuane · 44°04′ N · 10°05′ E"
+  "coordinates": "Alpi Apuane · 44°04′ N · 10°05′ E",
+  "sculpt": {
+   "eyebrow": "Dal blocco alla forma",
+   "title": "Ogni scultura è già nel blocco.",
+   "text": "Il marmo di Carrara si lavora da oltre duemila anni, e anche Michelangelo saliva fino alle cave per scegliere i suoi blocchi. Nei laboratori artigiani della zona potete vedere come un blocco grezzo diventa un’opera.",
+   "cta": "Scopri i laboratori",
+   "caption": "Animazione 3D: figura originale ispirata ai Prigioni di Michelangelo.",
+   "statueAlt": "Una figura in marmo che emerge da un blocco grezzo, ispirata ai Prigioni di Michelangelo"
+  }
  },
  "footer": {
   "tagline": "Marmo italiano di pregio, commercio internazionale ed esperienze di viaggio.",

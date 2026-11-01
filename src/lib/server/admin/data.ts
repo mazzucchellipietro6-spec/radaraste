@@ -8,6 +8,8 @@ import { resource, type FieldDef, type ResourceDef } from './resources';
 
 type Tx = postgres.TransactionSql;
 type Row = Record<string, unknown>;
+/** Valori già convertiti da parseField: accettati dai parametri di postgres.js */
+type DbRow = Record<string, postgres.ParameterOrJSON<never>>;
 export const PAGE_SIZE = 50;
 
 function fixedWhere(tx: Tx, r: ResourceDef) {
@@ -111,12 +113,12 @@ export async function saveRow(user: CurrentUser, profile: Profile, r: ResourceDe
   const cols = Object.keys(data);
   return withUser(user.claims, async (tx) => {
     if (id) {
-      const res = await tx<{ id: string }[]>`update ${tx(r.table)} set ${tx(data, cols)} where id = ${id} and ${fixedWhere(tx, r)} returning id`;
+      const res = await tx<{ id: string }[]>`update ${tx(r.table)} set ${tx(data as DbRow, cols)} where id = ${id} and ${fixedWhere(tx, r)} returning id`;
       if (!res[0]) throw new Error('Elemento non trovato o non modificabile');
       return res[0].id;
     }
     if (r.create === false) throw new Error('Creazione non prevista per questa sezione');
-    const res = await tx<{ id: string }[]>`insert into ${tx(r.table)} ${tx(data, cols)} returning id`;
+    const res = await tx<{ id: string }[]>`insert into ${tx(r.table)} ${tx(data as DbRow, cols)} returning id`;
     return res[0].id;
   });
 }

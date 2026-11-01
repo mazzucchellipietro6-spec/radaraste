@@ -162,6 +162,14 @@
    "title": "Tell us about your project.",
    "lead": "Materials, quantities, destination or a journey to plan: we will reply personally, with no obligation.",
    "contactsTitle": "Direct contacts"
+  },
+  "sculpt": {
+   "eyebrow": "From block to form",
+   "title": "Every sculpture is already in the block.",
+   "text": "Carrara marble has been worked for more than two thousand years, and Michelangelo himself came up to the quarries to choose his blocks. In local artisan workshops you can see a raw block turn into a work of art.",
+   "cta": "Discover the workshops",
+   "caption": "3D animation: an original figure inspired by Michelangelo’s Prisoners.",
+   "statueAlt": "A marble figure emerging from a rough block, inspired by Michelangelo’s Prisoners"
   }
  },
  "footer": {

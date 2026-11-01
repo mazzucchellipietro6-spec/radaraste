@@ -44,8 +44,10 @@ const v = (group: string, key: string) => t(`vocab.${group}.${key}`);
 
 <Base t={tr} title={t('home.seoTitle')} fullTitle description={t('home.seoDescription')} path={path} header="overlay" jsonld={[orgJsonLd(tr, c)]}>
   <!-- Hero -->
-  <section class="hero on-dark relative isolate flex min-h-[100svh] items-end overflow-hidden text-marble">
-    {img.hero && <Img src={img.hero} alt={t('home.heroAlt')} priority class="absolute inset-0 -z-20 h-full w-full object-cover" pictureClass="contents" />}
+  <section class="hero on-dark relative isolate flex min-h-[100svh] items-end overflow-hidden bg-[#0d0d0f] text-marble" data-hero>
+    {img.hero && <Img src={img.hero} alt={t('home.heroAlt')} priority class="hero-img absolute inset-0 -z-30 h-full w-full object-cover" pictureClass="contents" />}
+    <!-- Statua in marmo generata in 3D: compare sopra l'immagine quando il browser la sa disegnare -->
+    <canvas class="hero-statue absolute inset-0 -z-20 h-full w-full" data-statue aria-hidden="true"></canvas>
     <div class="hero-shade absolute inset-0 -z-10" aria-hidden="true"></div>
     <div class="container-page w-full pb-20 pt-40 lg:pb-28">
       <p class="eyebrow flex items-center gap-4" data-reveal><span class="rule" aria-hidden="true"></span>{t('meta.payoff')}</p>
@@ -220,6 +222,21 @@ const v = (group: string, key: string) => t(`vocab.${group}.${key}`);
     </div>
   </section>
 
+  <!-- Dal blocco alla forma: seconda statua, scolpita mentre si scorre -->
+  <section class="sculpt on-dark relative isolate overflow-hidden bg-[#0d0d0f] text-marble" aria-labelledby="sculpt-title" data-sculpt>
+    <canvas class="sculpt-canvas absolute inset-0 -z-20 h-full w-full" data-statue-scroll role="img" aria-label={t('home.sculpt.statueAlt')}></canvas>
+    <div class="sculpt-shade absolute inset-0 -z-10" aria-hidden="true"></div>
+    <div class="container-page flex min-h-[92svh] items-end py-20 lg:items-center lg:py-28">
+      <div class="max-w-xl lg:ms-auto" data-reveal>
+        <p class="eyebrow flex items-center gap-4"><span class="rule" aria-hidden="true"></span>{t('home.sculpt.eyebrow')}</p>
+        <h2 id="sculpt-title" class="display-lg mt-5">{t('home.sculpt.title')}</h2>
+        <p class="lead mt-6 !text-marble/80">{t('home.sculpt.text')}</p>
+        <a href={href('experienceItem', 'marble-workshops')} class="btn btn-light mt-9">{t('home.sculpt.cta')}</a>
+        <p class="mt-10 text-[0.78rem] text-mist">{t('home.sculpt.caption')}</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Italian Tours -->
   <section class="bg-ivory py-24 lg:py-36" aria-labelledby="tours-title">
     <div class="container-page">
@@ -301,7 +318,84 @@ const v = (group: string, key: string) => t(`vocab.${group}.${key}`);
   </section>
 </Base>
 
+<script>
+  import { mountStatue } from '~/scripts/statue';
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-statue]');
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  const go = () => {
+    if (!canvas || !hero) return;
+    const s = mountStatue(canvas, { onReady: () => hero.classList.add('statue-on') });
+    if (!s) canvas.remove();
+  };
+  // parte dopo il caricamento, per non rallentare la prima visualizzazione
+  const idle = (cb: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(cb, { timeout: 900 }) : setTimeout(cb, 300));
+  if (document.readyState === 'complete') idle(go);
+  else addEventListener('load', () => idle(go), { once: true });
+
+  // seconda statua: si prepara solo quando la sezione si avvicina
+  const second = document.querySelector<HTMLCanvasElement>('[data-statue-scroll]');
+  const band = document.querySelector<HTMLElement>('[data-sculpt]');
+  if (second && band && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        const s = mountStatue(second, { mode: 'scroll', mirror: true, side: 'left', onReady: () => band.classList.add('statue-on') });
+        if (!s) second.remove();
+      },
+      { rootMargin: '600px 0px' },
+    );
+    io.observe(band);
+  }
+</script>
+
 <style>
+  .sculpt-canvas {
+    opacity: 0;
+    transition: opacity 1.2s var(--ease-luxe);
+  }
+  .sculpt.statue-on .sculpt-canvas {
+    opacity: 1;
+  }
+  .sculpt-shade {
+    background:
+      radial-gradient(ellipse at 30% 40%, rgb(60 54 46 / 0.35), transparent 60%),
+      linear-gradient(to top, rgb(13 13 15 / 0.9) 0%, rgb(13 13 15 / 0.55) 35%, rgb(13 13 15 / 0) 65%);
+  }
+  @media (min-width: 64rem) {
+    .sculpt-shade {
+      background: linear-gradient(to left, rgb(13 13 15 / 0.7) 0%, rgb(13 13 15 / 0.25) 40%, rgb(13 13 15 / 0) 60%);
+    }
+  }
+  @media (max-width: 47.99rem) {
+    .hero.statue-on .hero-shade {
+      background: linear-gradient(to top, rgb(13 13 15 / 0.94) 0%, rgb(13 13 15 / 0.8) 38%, rgb(13 13 15 / 0.2) 62%, rgb(13 13 15 / 0) 75%);
+    }
+  }
+  .hero-statue {
+    opacity: 0;
+    transition: opacity 1.4s var(--ease-luxe);
+  }
+  .hero :global(.hero-img) {
+    transition: opacity 1.4s var(--ease-luxe);
+  }
+  .statue-on .hero-statue {
+    opacity: 1;
+  }
+  .statue-on :global(.hero-img) {
+    opacity: 0;
+  }
+  /* con la statua lo sfondo è già scuro: basta velare il lato del testo */
+  .statue-on .hero-shade {
+    background:
+      linear-gradient(to top, rgb(13 13 15 / 0.75) 0%, rgb(13 13 15 / 0.2) 35%, rgb(13 13 15 / 0) 60%),
+      linear-gradient(to right, rgb(13 13 15 / 0.55) 0%, rgb(13 13 15 / 0.15) 40%, rgb(13 13 15 / 0) 60%);
+  }
+  :global([dir='rtl']) .statue-on .hero-shade {
+    background:
+      linear-gradient(to top, rgb(13 13 15 / 0.75) 0%, rgb(13 13 15 / 0.2) 35%, rgb(13 13 15 / 0) 60%),
+      linear-gradient(to left, rgb(13 13 15 / 0.55) 0%, rgb(13 13 15 / 0.15) 40%, rgb(13 13 15 / 0) 60%);
+  }
   .hero-shade {
     background:
       linear-gradient(to top, rgb(26 26 28 / 0.82) 0%, rgb(26 26 28 / 0.42) 42%, rgb(26 26 28 / 0.14) 70%, rgb(26 26 28 / 0.42) 100%),
@@ -314,7 +408,7 @@ const v = (group: string, key: string) => t(`vocab.${group}.${key}`);
   }
   /* Lento avvicinamento dell'immagine (effetto "Ken Burns"), solo se l'utente non ha chiesto meno animazioni */
   @media (prefers-reduced-motion: no-preference) {
-    .hero :global(img) {
+    .hero :global(img.hero-img) {
       animation: hero-drift 22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
       transform-origin: 62% 40%;
     }

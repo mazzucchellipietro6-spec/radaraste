@@ -44,7 +44,7 @@ function validate(form: HTMLFormElement) {
   return !first;
 }
 
-function status(form: HTMLFormElement, kind: 'success' | 'error' | 'info', text: string) {
+function setStatus(form: HTMLFormElement, kind: 'success' | 'error' | 'info', text: string) {
   const box = form.querySelector<HTMLElement>('[data-form-status]');
   if (!box) return;
   box.dataset.kind = kind;
@@ -91,7 +91,7 @@ function init(form: HTMLFormElement) {
           location.href = data.redirect;
           return;
         }
-        status(form, 'success', data.message || form.dataset.msgSuccess!);
+        setStatus(form, 'success', data.message || form.dataset.msgSuccess!);
         form.querySelectorAll<HTMLElement>('.field, .cf-turnstile-slot, [data-submit]').forEach((el) => (el.hidden = true));
         form.dispatchEvent(new CustomEvent('wc:success', { detail: data, bubbles: true }));
       } else {
@@ -101,10 +101,10 @@ function init(form: HTMLFormElement) {
           spam: form.dataset.msgSpam,
           not_configured: form.dataset.msgNotconfigured,
         };
-        status(form, 'error', data.message || map[data.code ?? ''] || form.dataset.msgError!);
+        setStatus(form, 'error', data.message || map[data.code ?? ''] || form.dataset.msgError!);
       }
     } catch {
-      status(form, 'error', form.dataset.msgError!);
+      setStatus(form, 'error', form.dataset.msgError!);
     } finally {
       if (btn) {
         btn.disabled = false;
