@@ -87,6 +87,7 @@ createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const p = url.pathname.replace(/^\/auth\/v1/, '');
   try {
+    if (p === '/health') return send(res, 200, { ok: true });
     if (req.method === 'POST' && p === '/admin/generate_link') {
       const b = await body(req);
       let u = [...users.values()].find((x) => x.email === b.email?.toLowerCase());

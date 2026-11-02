@@ -333,16 +333,21 @@ const accountHref = `/${lang}/account/`;
   document.querySelector('[data-menu-close]')?.addEventListener('click', () => dialog?.close());
   dialog?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => dialog.close()));
 
-  // Numero di marmi nella "Mia selezione" (salvata nel browser)
-  try {
-    const sel = JSON.parse(localStorage.getItem('wc-selection') || '[]');
-    if (Array.isArray(sel) && sel.length) {
+  // Numero di marmi nella "Mia selezione" (salvata nel browser): aggiornato subito a ogni modifica,
+  // anche da un'altra scheda del browser
+  const showCount = () => {
+    try {
+      const sel = JSON.parse(localStorage.getItem('wc-selection') || '[]');
+      const n = Array.isArray(sel) ? sel.length : 0;
       document.querySelectorAll<HTMLElement>('[data-selection-count]').forEach((el) => {
-        el.textContent = String(sel.length);
-        el.hidden = false;
+        el.textContent = n ? String(n) : '';
+        el.hidden = !n;
       });
+    } catch {
+      /* archivio del browser non disponibile */
     }
-  } catch {
-    /* archivio del browser non disponibile */
-  }
+  };
+  showCount();
+  window.addEventListener('wc:store', showCount);
+  window.addEventListener('storage', showCount);
 </script>
