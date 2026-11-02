@@ -245,3 +245,10 @@ test('nome accessibile che comincia con il testo visibile (WCAG 2.5.3): ricerca 
   const mappa = await readFile(path.join(RADICE, 'js/pages/mappa.js'), 'utf8');
   assert.match(mappa, /\$\('#mApriZona'\)\.setAttribute\('aria-label', breve\(conta\) \+ ' ' \+ \(conta === 1 \? 'asta' : 'aste'\) \+ ' qui · le migliori/);
 });
+
+test('Stratega, «Il patrimonio nel tempo»: «Cosa non sappiamo» con lo stesso stile delle liste «Ipotesi» e «Fonti»', async () => {
+  const js = await readFile(path.join(RADICE, 'js/pages/stratega.js'), 'utf8');
+  assert.match(js, /'<div class="cb-due">' \+ lista\('Cosa non sappiamo', p\.nonSappiamo\) \+ '<\/div>'/);
+  const css = await readFile(path.join(RADICE, 'assets/css/assistenti.css'), 'utf8');
+  assert.match(css, /\.cb-due ul \{[^}]*font-size: 14px/);
+});

@@ -170,7 +170,8 @@
       var nome = U.esc(f.nome) + (f.uso ? ' <span class="muted">(' + U.esc(f.uso) + ')</span>' : '');
       return '<li>' + (f.url ? '<a href="' + U.esc(f.url) + '" target="_blank" rel="noopener">' + U.esc(f.nome) + '</a>' + (f.uso ? ' <span class="muted">(' + U.esc(f.uso) + ')</span>' : '') : nome) + '</li>';
     }).join('') + '<li>Valore degli immobili: perizia, prima asta o quotazioni OMI, come indicato per ogni asta del piano</li></ul></div></div>' +
-      lista('Cosa non sappiamo', p.nonSappiamo);
+      // nello stesso contenitore delle liste sopra: stesso corpo e colore di "Ipotesi" e "Fonti" (prima era più grande)
+      (p.nonSappiamo && p.nonSappiamo.length ? '<div class="cb-due">' + lista('Cosa non sappiamo', p.nonSappiamo) + '</div>' : '');
     return h;
   }
 
