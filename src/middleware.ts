@@ -4,13 +4,7 @@ import { defineMiddleware } from 'astro:middleware';
 import { authConfigured, currentUser, loadProfile } from '~/lib/server/auth';
 import { dbConfigured } from '~/lib/server/db';
 
-const SECURITY_HEADERS: Record<string, string> = {
-  'x-content-type-options': 'nosniff',
-  'x-frame-options': 'DENY',
-  'referrer-policy': 'strict-origin-when-cross-origin',
-  'permissions-policy': 'camera=(self), microphone=(), geolocation=(), payment=(self "https://checkout.stripe.com"), interest-cohort=()',
-  'cross-origin-opener-policy': 'same-origin',
-};
+import { SECURITY_HEADERS } from '~/lib/security-headers.mjs';
 
 export const onRequest = defineMiddleware(async (ctx, next) => {
   const path = ctx.url.pathname;
@@ -35,8 +29,12 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
 
   const res = await next();
   if (!ctx.isPrerendered) {
-    for (const [k, v] of Object.entries(SECURITY_HEADERS)) if (!res.headers.has(k)) res.headers.set(k, v);
-    if (import.meta.env.PROD) res.headers.set('strict-transport-security', 'max-age=63072000; includeSubDomains; preload');
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+      if (k === 'strict-transport-security' && !import.meta.env.PROD) continue;
+      // in sviluppo Vite usa script e connessioni che la CSP bloccherebbe
+      if (k === 'content-security-policy' && !import.meta.env.PROD) continue;
+      if (!res.headers.has(k)) res.headers.set(k, v);
+    }
     if (isAdmin || isAdminApi || path.includes('/account/')) {
       res.headers.set('cache-control', 'private, no-store');
       res.headers.set('x-robots-tag', 'noindex, nofollow');

@@ -17,7 +17,9 @@
     "check": "astro check",
     "test": "playwright test",
     "test:unit": "node --test tests/unit/*.test.mjs",
-    "test:db": "node scripts/test-db.mjs"
+    "test:db": "node scripts/test-db.mjs",
+    "headers": "node scripts/headers.mjs",
+    "backup": "node scripts/backup.mjs"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
