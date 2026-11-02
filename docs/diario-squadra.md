@@ -4,6 +4,36 @@ Un paragrafo per ogni giro del mattino, il più recente in alto: come sta il sit
 
 ---
 
+## 2/11/2026 – ripresa dopo il limite settimanale
+
+- **Sito pubblicato:** funziona. Le raccolte su GitHub dal 30/10 al 2/11 sono tutte riuscite (n. 23-26). La raccolta locale di oggi: 23.368 aste, 1 affare (Canicattì).
+- **Giro saltato l'1/11:** il limite settimanale era finito il 31/10 (3 agenti al giorno più i 3 lavori in più del 28/10). Da oggi al massimo 2 agenti al giorno.
+- **Lavori:**
+  - Collaudatore ripreso e finito: 412 caricamenti senza errori. La scheda dice "almeno il N° tentativo (stima)" quando i prezzi lo dimostrano, e le card della home non sono più tagliate.
+  - Revisore: pronto. La stima ora guarda anche i prezzi dello storico (129 aste) e la regola dei terreni riconosce più fabbricati.
+- **Test:** 460 su 460.
+
+## 31/10/2026
+
+- Revisione del 30/10 completata. Cinque correzioni:
+  - porzioni di nuovo come più unità;
+  - complessi aziendali come più beni;
+  - niente metri quadri dell'area esterna;
+  - niente superficie del terreno sotto un fabbricato;
+  - tentativo minimo con i ribassi massimi di legge.
+- Regola nuova: nessun valore OMI per i lotti di solo terreno (22 lotti, nessuna casa toccata).
+- Il Collaudatore si è fermato a metà sul limite settimanale.
+
+## 30/10/2026
+
+- **Aste estere:** nessuna fonte consentita e raggiungibile da qui (`docs/fonti-estere.md`).
+- **Controllore dei dati:** 7 regole corrette, tra cui:
+  - capannoni stimati come uffici;
+  - metri quadri non letti;
+  - veicoli senza documento unico;
+  - falsi risparmi "prima casa".
+- Il Revisore si è fermato sul limite di 5 ore ed è stato completato il giorno dopo.
+
 ## 29/10/2026 – Radar 3D e Cloudflare
 
 - **Sito pubblicato:** funziona, la raccolta n. 22 su GitHub è riuscita.

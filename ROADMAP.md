@@ -4,7 +4,7 @@ Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce camb
 
 Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ aspetta una tua decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 29/10/2026 (giro della squadra).
+Ultimo aggiornamento: 2/11/2026 (giro della squadra).
 
 ---
 
@@ -143,7 +143,10 @@ Ultimo aggiornamento: 29/10/2026 (giro della squadra).
   - ripieghi dello sfondo e al 2D;
   - maplibre-gl 5.24.0 e deck.gl 9.3.11 inclusi con le licenze.
   - Oggi solo 114 aste su 12.170 con posizione hanno uno sconto affidabile: le altre sono punti grigi.
-- ⬜ **Aste auto dall'estero**: rilanciate il 28/10 ma fermate subito dal limite d'uso; si riprendono nei prossimi giri.
+- ⛔ **Aste auto dall'estero** (verifica del 30/10, in `docs/fonti-estere.md`):
+  - le fonti ufficiali (VEBEG, Zoll-Auktion, Stato francese, BOE, Finshop) sono bloccate dalla rete di questo ambiente;
+  - le piattaforme private o lo vietano nelle condizioni d'uso (Autorola, Ayvens) o bloccano i programmi (BCA, Copart, OPENLANE).
+  - Nulla raccolto. Vedi "Da decidere".
 - ✅ **Squadra quotidiana** attiva dal 20/10 ([SQUADRA.md](SQUADRA.md)). Dal 26/10 lavora leggera: al massimo 3 agenti al giorno.
 
 ---
@@ -185,6 +188,13 @@ Ultimo aggiornamento: 29/10/2026 (giro della squadra).
 ---
 
 ## Da decidere ⏸ (per te)
+
+**Nuove del 30/10-2/11:**
+- **Aste estere:** per verificare le fonti ufficiali bisogna aprire la rete dell'ambiente a www.vebeg.de, www.zoll-auktion.de, www.encheres-domaine.gouv.fr, subastas.boe.es e finshop.belgium.be (menu dell'ambiente → Edit → Network access → Allowed domains). Va deciso anche come mostrarle: pagina "Estero" o filtro per paese, fuori da OMI, costi italiani e punteggio.
+- **Sconti assurdi:** 150 aste hanno uno sconto oltre il 70% con affidabilità bassa; per esempio un valore di 23,4 milioni su una base di 100.000 €. Nascondere valore e sconto quando i controlli li dicono incoerenti?
+- **Provincia dal tribunale:** 1.957 aste senza comune prendono la provincia dal tribunale; per 7 è sbagliata (4 ville di Settime, AT, risultano in Lombardia). Prenderla dal testo?
+- **Terreni con un piccolo fabbricato:** in alcuni l'OMI si calcola sulla superficie del terreno (Lamezia: 1.540 m² con un deposito di 54 m²). Il punteggio è protetto, ma la scheda mostra quel valore. Abbassare l'affidabilità quando c'è un vero terreno oltre al fabbricato?
+- **Anteprima abbonamenti:** con ?anteprima=abbonamenti le pagine non mostrano ancora i blocchi dei piani (Stratega, affari e combinazioni oltre 3). Aggiungerli?
 
 **Nuove del 29/10:**
 - **Offerta massima dopo molte aste deserte.** Esempio: Sant'Elpidio a Mare, laboratorio di 828 m². Il valore è confermato da OMI e perito, ma dopo 4 ribassi a luglio nessuno ha offerto 169.214 €, mentre il sito consiglia fino a 308.400 €. Vuoi che, dopo molte aste deserte, l'affidabilità scenda o che l'offerta consigliata non superi l'ultimo prezzo andato deserto?
