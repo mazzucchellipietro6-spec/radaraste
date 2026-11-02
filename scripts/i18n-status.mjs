@@ -3,33 +3,13 @@
 //   node scripts/i18n-status.mjs                 -> riepilogo per lingua (mancanti / da aggiornare)
 //   node scripts/i18n-status.mjs --missing de    -> elenco dei testi italiani ancora da tradurre in tedesco (JSON)
 //   node scripts/i18n-status.mjs --lock de fr    -> segna come aggiornate le traduzioni a mano di queste lingue
-import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { collectEntry, flatten, hash, SPECS } from '../src/i18n/core.mjs';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { hash } from '../src/i18n/core.mjs';
 import { MAIN_CODES } from '../src/i18n/languages.mjs';
+import { human, localesDir as loc, readJson, sourceMessages } from './i18n-source.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const loc = join(root, 'src/i18n/locales');
-const readJson = (p, fb = {}) => (existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : fb);
-
-export function sourceMessages() {
-  const out = {};
-  for (const [k, v] of Object.entries(flatten(readJson(join(loc, 'ui/it.json'))))) out[k] = v;
-  for (const col of Object.keys(SPECS)) {
-    const dir = join(root, 'src/content', col);
-    if (!existsSync(dir)) continue;
-    for (const f of readdirSync(dir).filter((f) => f.endsWith('.json'))) {
-      const id = f.replace(/\.json$/, '');
-      for (const m of collectEntry(col, id, readJson(join(dir, f)))) out[m.key] = m.text;
-    }
-  }
-  return out;
-}
-
-function human(lang) {
-  return { ...flatten(readJson(join(loc, `ui/${lang}.json`))), ...readJson(join(loc, `content/${lang}.json`)) };
-}
+export { sourceMessages };
 
 const args = process.argv.slice(2);
 const src = sourceMessages();
