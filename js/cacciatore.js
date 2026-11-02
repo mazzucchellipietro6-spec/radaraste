@@ -84,9 +84,13 @@
     var t = num(a.tentativo), tm = P.tentativoMinimo ? P.tentativoMinimo(a) : null;
     // tentativi intermedi mancanti nell'indice del Portale: il numero dedotto dai prezzi si dice come stima (js/punteggio.js)
     if (tm) {
+      // la stima può venire dal prezzo di un tentativo precedente dello storico (tm.storico: solo se lo storico è stato caricato)
+      var st = tm.storico;
       out.tentativoMinimo = tm.tentativo;
-      out.segnaliAffare.push('È almeno il ' + tm.tentativo + '° tentativo (stima: il prezzo base è quello della prima asta, ' + eur(a.primoPrezzo) + ', ridotto ' +
-        tm.ribassi + ' volte del 25%' + (tm.tentativo < tm.ribassi + 1 ? ', e dopo il quarto tentativo deserto un ribasso può arrivare alla metà' : '') +
+      out.segnaliAffare.push('È almeno il ' + tm.tentativo + '° tentativo (stima: il prezzo base' + (st ? ' del tentativo del ' + dataIt(st.data) + ', ' + eur(st.prezzo) + ', era' : ' è') +
+        ' quello della prima asta, ' + eur(a.primoPrezzo) + ', ridotto ' +
+        tm.ribassi + ' volte del 25%' + ((st ? st.tentativo : tm.tentativo) < tm.ribassi + 1 ? ', e dopo il quarto tentativo deserto un ribasso può arrivare alla metà' : '') +
+        (st ? ', quindi quel tentativo era almeno il ' + st.tentativo + '°' + (st.dopo ? ' e ne ' + (st.dopo === 1 ? 'è seguito un altro' : 'sono seguiti altri ' + st.dopo) + ' prima di questa asta' : '') : '') +
         '; l\'indice del Portale ne mostra ' + t + '): prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo');
     } else if (t >= 3) out.segnaliAffare.push('È il ' + t + '° tentativo' + (num(a.deserte) ? ' (' + a.deserte + ' aste andate deserte)' : '') + (num(a.primoPrezzo) > 0 ? ': prezzo sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) + ' dal primo' : ''));
     else if (t === 2) out.segnaliAffare.push('Secondo tentativo' + (num(a.primoPrezzo) > 0 ? ': prezzo già sceso del ' + pct(1 - a.prezzoBase / a.primoPrezzo) : ''));

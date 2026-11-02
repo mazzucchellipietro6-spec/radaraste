@@ -264,7 +264,9 @@ const LENTINI = {
   fonte: 'Portale Vendite Pubbliche', prezzoBase: 4260, offertaMinima: 3195, dataAsta: '2026-11-17', ora: '11:00', pubblicata: '2026-09-02',
   tentativo: 3, deserte: 2, primoPrezzo: 13462.5, ribasso: 0.25, storico: [['2024-02-16', 13462.5, null], ['2026-05-20', 5679.5, 'deserta']]
 };
-// Porto Recanati (MC): 400.000 € × 0,75⁵ = 94.921,88 €, almeno il 5° (dopo il quarto deserto il ribasso può arrivare alla metà)
+// Porto Recanati (MC): 400.000 € × 0,75⁵ = 94.921,88 €, dal solo prezzo almeno il 5° (dopo il quarto deserto il ribasso può
+// arrivare alla metà); ma nello storico 168.750 € = 400.000 € × 0,75³ era già almeno il 4°, poi 126.562,50 €: almeno il 6°
+// (revisione del 2/11/2026)
 const PORTO_RECANATI = {
   id: 'pvp-4635605', categoria: 'immobile', tipo: 'Altra categoria', provincia: 'MC', comune: 'Porto Recanati', tribunale: 'Ancona',
   fonte: 'Portale Vendite Pubbliche', prezzoBase: 94921.88, offertaMinima: 71191.41, dataAsta: '2026-11-18', ora: '10:00', pubblicata: '2026-09-24',
@@ -300,12 +302,17 @@ test('linea del tempo: tentativo stimato dai prezzi («almeno il N°», come il 
   assert.equal(evento(le, 'asta').titolo, 'Almeno il 5° tentativo (stima): questa asta');
   assert.match(le.note[0], /Con la stessa regola sono stimati, dai loro prezzi, i tentativi precedenti segnati «almeno»\. È una stima, da verificare nell'avviso\.$/);
 
-  // mai oltre la stima di questa asta (la stessa del Cacciatore): i precedenti lasciano posto ai successivi e restano minimi veri
+  // la stima guarda anche i prezzi dello storico (la stessa del Cacciatore) e i precedenti restano minimi veri, in fila
   const pr = SD.lineaTempo(PORTO_RECANATI, { adesso: '2026-10-31T10:00' });
-  assert.equal(P.tentativoMinimo(PORTO_RECANATI).tentativo, 5);
-  assert.deepEqual(titoliTentativi(pr), ['1° tentativo', 'Almeno il 3° tentativo (stima)', 'Almeno il 4° tentativo (stima)']);
-  assert.equal(evento(pr, 'asta').titolo, 'Almeno il 5° tentativo (stima): questa asta');
-  assert.match(pr.note[0], /ridotto 5 volte del 25%, e dopo il quarto tentativo deserto un ribasso può arrivare alla metà, quindi è almeno il 5° tentativo\. L'indice del Portale delle Vendite Pubbliche dice 4°/);
+  assert.deepEqual(P.tentativoMinimo(PORTO_RECANATI), { tentativo: 6, ribassi: 3, storico: { data: '2026-01-15', prezzo: 168750, tentativo: 4, dopo: 1 } });
+  assert.deepEqual(titoliTentativi(pr), ['1° tentativo', 'Almeno il 4° tentativo (stima)', 'Almeno il 5° tentativo (stima)']);
+  assert.equal(evento(pr, 'asta').titolo, 'Almeno il 6° tentativo (stima): questa asta');
+  assert.equal(pr.note[0], 'Numero del tentativo stimato dai prezzi: il prezzo base del tentativo del 15/01/2026 (168.750' + NBSP + '€) era quello della prima asta (400.000' + NBSP +
+    '€) ridotto 3 volte del 25%, quindi quel tentativo era almeno il 4°; dopo ce n\'è stato un altro e poi questa asta, che è almeno il 6° tentativo. ' +
+    'L\'indice del Portale delle Vendite Pubbliche dice 4°: alcuni tentativi intermedi non ci sono. Con la stessa regola sono stimati, dai loro prezzi, ' +
+    'i tentativi precedenti segnati «almeno». È una stima, da verificare nell\'avviso.');
+  // senza storico la stima resta quella del solo prezzo di questa asta
+  assert.equal(SD.tentativo({ ...PORTO_RECANATI, storico: undefined }).numero, 5);
 
   // Ravanusa: i tre tentativi dell'indice tornano con i prezzi, ne manca uno prima di questa asta
   const ra = SD.lineaTempo(RAVANUSA, { adesso: ADESSO });

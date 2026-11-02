@@ -144,3 +144,21 @@ test('tentativo stimato oltre il quarto ribasso: si dice che dopo il quarto tent
   assert.equal(x.tentativoMinimo, 5);
   assert.ok(x.segnaliAffare.some((f) => /^È almeno il 5° tentativo \(stima: .*ridotto 5 volte del 25%, e dopo il quarto tentativo deserto un ribasso può arrivare alla metà; l'indice del Portale ne mostra 4\)/.test(f)));
 });
+
+test('tentativo stimato dal prezzo di un tentativo precedente dello storico, detto come nella scheda (revisione del 2/11/2026)', () => {
+  // pvp-4635605, Porto Recanati: 168.750 € = 400.000 € × 0,75³ (almeno il 4°), poi 126.562,50 €, poi questa asta: almeno il 6°
+  const pr = { categoria: 'immobile', tentativo: 4, deserte: 3, primoPrezzo: 400000, prezzoBase: 94921.88, offertaMinima: 71191.41, stima: 400000,
+    storico: [['2024-04-18', 400000, 'deserta'], ['2026-01-15', 168750, 'deserta'], ['2026-07-15', 126562.5, 'deserta']] };
+  const x = K.analizza({ asta: asta(pr), motivo: 'nuovo-tentativo' }, { T });
+  assert.equal(x.tentativoMinimo, 6);
+  assert.ok(x.segnaliAffare.includes('È almeno il 6° tentativo (stima: il prezzo base del tentativo del 15/01/2026, 168.750 €, era quello della prima asta, 400.000 €, ' +
+    'ridotto 3 volte del 25%, quindi quel tentativo era almeno il 4° e ne è seguito un altro prima di questa asta; l\'indice del Portale ne mostra 4): prezzo sceso del 76% dal primo'));
+  assert.equal(K.compatta(x).tentativoMinimo, 6);
+  // senza storico (elenco leggero) resta la stima del solo prezzo di oggi
+  const y = K.analizza({ asta: asta({ ...pr, storico: undefined }), motivo: 'nuovo-tentativo' }, { T });
+  assert.equal(y.tentativoMinimo, 5);
+  // lo script del mattino carica lo storico dalle schede a pezzi, così la frase è la stessa della scheda
+  const js = require('node:fs').readFileSync(require('node:path').join(__dirname, '../scripts/cacciatore.mjs'), 'utf8');
+  assert.match(js, /const schede = await leggiSchede\(fileCollegati\(fileAste\)\.dettagli\);/);
+  assert.match(js, /a\.storico = s\.storico/);
+});

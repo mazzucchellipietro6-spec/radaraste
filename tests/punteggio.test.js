@@ -265,3 +265,40 @@ test('tentativo minimo dai prezzi quando nell\'indice del Portale mancano aste i
   const a = { provincia: 'FM', tipo: 'Immobile industriale', stato: 'nd', rischi: [], superficieMq: 828, omiMin: 422280, omiMax: 546480, omiMetodo: 'indirizzo', ...base };
   assert.equal(P.valuta(a, { T }).parti.tentativo, 9);
 });
+
+test('tentativo minimo: conta anche i prezzi dei tentativi precedenti dello storico, mai oltre quello che dimostrano (revisione del 2/11/2026)', () => {
+  // casi reali delle schede del 2/11/2026 (data/dettagli/), solo i campi che servono; storico: [data, prezzo, esito]
+  // pvp-4635605, Porto Recanati: 400.000 → 168.750 (× 0,75³: almeno il 4°) → 126.562,50 → 94.921,88. Dal solo prezzo di oggi
+  // almeno il 5°; con lo storico il tentativo di 168.750 € era almeno il 4°, poi un altro, poi questa asta: almeno il 6°
+  const pr = { categoria: 'immobile', tentativo: 4, primoPrezzo: 400000, prezzoBase: 94921.88,
+    storico: [['2024-04-18', 400000, 'deserta'], ['2026-01-15', 168750, 'deserta'], ['2026-07-15', 126562.5, 'deserta']] };
+  assert.deepEqual(P.tentativoMinimo({ ...pr, storico: undefined }), { tentativo: 5, ribassi: 5 });
+  assert.deepEqual(P.tentativoMinimo(pr), { tentativo: 6, ribassi: 3, storico: { data: '2026-01-15', prezzo: 168750, tentativo: 4, dopo: 1 } });
+  // pvp-4638660, Quarto: 16.559,67 → 6.986,10 (× 0,75³, almeno il 4°, deserta) → di nuovo 6.986,10: almeno il 5° (prima 4°)
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 16559.67, prezzoBase: 6986.1,
+    storico: [['2024-09-30', 16559.67, null], ['2026-07-07', 6986.1, 'deserta']] }).tentativo, 5);
+  // pvp-4638654, Quarto, stesso schema: 16.824,33 → 7.097,76 → 7.097,76
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 16824.33, prezzoBase: 7097.76,
+    storico: [['2024-09-30', 16824.33, null], ['2026-07-07', 7097.76, 'deserta']] }).tentativo, 5);
+  // pvp-4644721, Gela: 109.000 → 81.750 → 34.489 (× 0,75⁴ all'euro: almeno il 5°) → 25.867: almeno il 6° (prima 5°)
+  assert.deepEqual(P.tentativoMinimo({ categoria: 'immobile', tentativo: 4, primoPrezzo: 109000, prezzoBase: 25867,
+    storico: [['2024-06-11', 109000, null], ['2024-12-19', 81750, null], ['2026-07-14', 34489, null]] }),
+  { tentativo: 6, ribassi: 4, storico: { data: '2026-07-14', prezzo: 34489, tentativo: 5, dopo: 0 } });
+  // pvp-4622646, Montegranaro: il prezzo di oggi (83.543,75) non è un quarto del precedente, ma 112.725 = 267.200 × 0,75³
+  // dice che quel tentativo era almeno il 4°: questa asta almeno il 5° (l'indice dice 3°)
+  const mg = { categoria: 'immobile', tentativo: 3, primoPrezzo: 267200, prezzoBase: 83543.75, storico: [['2024-12-18', 267200, 'deserta'], ['2026-07-27', 112725, 'deserta']] };
+  assert.deepEqual(P.tentativoMinimo(mg), { tentativo: 5, ribassi: 3, storico: { data: '2026-07-27', prezzo: 112725, tentativo: 4, dopo: 0 } });
+  // una vendita sospesa non conta come tentativo
+  assert.equal(P.tentativoMinimo({ ...mg, storico: [['2024-12-18', 267200, 'deserta'], ['2026-03-01', 112725, 'sospesa']] }), null);
+  // pvp-4625340, Lentini: lo storico (5.679,50 = 13.462,50 × 0,75³, almeno il 4°) dice quanto il prezzo di oggi (almeno il 5°):
+  // resta la spiegazione con il prezzo di oggi
+  assert.deepEqual(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 13462.5, prezzoBase: 4260,
+    storico: [['2024-02-16', 13462.5, null], ['2026-05-20', 5679.5, 'deserta']] }), { tentativo: 5, ribassi: 4 });
+  // indice già coerente con i prezzi (Treia, pvp-4636073: 107.239 → 80.430 → 60.323): nessuna stima
+  assert.equal(P.tentativoMinimo({ categoria: 'immobile', tentativo: 3, primoPrezzo: 107239, prezzoBase: 60323,
+    storico: [['2025-01-01', 107239, 'deserta'], ['2025-06-01', 80430, 'deserta']] }), null);
+  // il punteggio non cambia: la stima si dice, non entra nei calcoli
+  const a = { provincia: 'MC', tipo: 'Immobile residenziale', stato: 'nd', rischi: [], superficieMq: 100, omiMin: 150000, omiMax: 200000, omiMetodo: 'indirizzo' };
+  assert.deepEqual(P.valuta({ ...a, ...pr }, { T }).parti, P.valuta({ ...a, ...pr, storico: undefined }, { T }).parti);
+  assert.equal(P.valuta({ ...a, ...pr }, { T }).parti.tentativo, 12);
+});

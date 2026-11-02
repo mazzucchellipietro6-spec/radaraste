@@ -64,10 +64,14 @@
     if (!t) return null;
     var P = modulo('Punteggio', './punteggio.js'), tm = P && P.tentativoMinimo ? P.tentativoMinimo(a) : null;
     if (!tm || !(tm.tentativo > t)) return { numero: t, indice: t, stima: false };
-    var perche = 'Numero del tentativo stimato dai prezzi: il prezzo base di questa asta (' + eur(a.prezzoBase) + ') è quello della prima asta (' +
-      eur(a.primoPrezzo) + ') ridotto ' + tm.ribassi + ' volte del 25%' +
-      (tm.tentativo < tm.ribassi + 1 ? ', e dopo il quarto tentativo deserto un ribasso può arrivare alla metà' : '') +
-      ', quindi è almeno il ' + tm.tentativo + '° tentativo. L\'indice del Portale delle Vendite Pubbliche dice ' + t + '°: alcuni tentativi intermedi non ci sono.';
+    // dal prezzo di questa asta oppure (tm.storico) da quello di un tentativo precedente dello storico
+    var st = tm.storico, metaPrima = (st ? st.tentativo : tm.tentativo) < tm.ribassi + 1;
+    var perche = 'Numero del tentativo stimato dai prezzi: il prezzo base ' + (st ? 'del tentativo del ' + dataIt(st.data) + ' (' + eur(st.prezzo) + ')' : 'di questa asta (' + eur(a.prezzoBase) + ')') +
+      (st ? ' era' : ' è') + ' quello della prima asta (' + eur(a.primoPrezzo) + ') ridotto ' + tm.ribassi + ' volte del 25%' +
+      (metaPrima ? ', e dopo il quarto tentativo deserto un ribasso può arrivare alla metà' : '') +
+      (st ? ', quindi quel tentativo era almeno il ' + st.tentativo + '°; ' + (st.dopo ? (st.dopo === 1 ? 'dopo ce n\'è stato un altro e poi' : 'dopo ce ne sono stati altri ' + st.dopo + ' e poi') : 'dopo c\'è') +
+        ' questa asta, che è almeno il ' + tm.tentativo + '° tentativo.' : ', quindi è almeno il ' + tm.tentativo + '° tentativo.') +
+      ' L\'indice del Portale delle Vendite Pubbliche dice ' + t + '°: alcuni tentativi intermedi non ci sono.';
     return { numero: tm.tentativo, indice: t, stima: true, ribassi: tm.ribassi, perche: perche, spiegazione: perche + ' ' + VERIFICA };
   }
   var VERIFICA = 'È una stima, da verificare nell\'avviso.';

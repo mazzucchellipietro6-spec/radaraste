@@ -143,22 +143,40 @@
    * del 43,75%, quindi oltre il quarto ribasso il tentativo minimo è quello dei ribassi massimi di legge, non k + 1
    * (revisione del 30/10/2026: pvp-4480064, Augusta, 62.850 € × 0,75⁵ = 14.914,61 €, si diceva "almeno il 6°" ma con un
    * ribasso della metà dopo il quarto tentativo può essere il 5°).
-   * → { tentativo, ribassi } se è più alto del tentativo dell'indice, altrimenti null (nessuna stima). */
-  function tentativoMinimo(a) {
-    var t = num(a.tentativo), primo = num(a.primoPrezzo), base = num(a.prezzoBase);
-    if (a.categoria !== 'immobile' || t < 2 || !(base > 0) || !(primo > base)) return null;
+   * Con lo storico delle vendite (a.storico della scheda: [data, prezzo, esito] dal più vecchio) conta anche il prezzo dei
+   * tentativi precedenti: se un tentativo dello storico era già almeno il M°, questa asta, che viene dopo quello e dopo gli
+   * altri D tentativi dello storico, è almeno la (M + D + 1)ª. Le vendite sospese non contano come tentativi. Revisione del
+   * 2/11/2026, pvp-4635605 Porto Recanati: 400.000 → 168.750 (× 0,75³: almeno il 4°) → 126.562,50 → oggi 94.921,88, almeno
+   * il 6° (dal solo prezzo di oggi almeno il 5°).
+   * → { tentativo, ribassi, storico?: { data, prezzo, tentativo, dopo } } se è più alto del tentativo dell'indice, altrimenti
+   *   null (nessuna stima); "storico" c'è quando la stima viene da un tentativo precedente (ribassi = i suoi). */
+  function daiPrezzi(primo, prezzo) {
+    if (!(prezzo > 0) || !(primo > prezzo)) return null;
     for (var k = 1; k <= 10; k++) {
       var atteso = primo * Math.pow(0.75, k);
-      if (Math.abs(Math.round(atteso * 100) / 100 - base) <= 0.011 || (base === Math.round(base) && Math.abs(atteso - base) < 1)) {
+      if (Math.abs(Math.round(atteso * 100) / 100 - prezzo) <= 0.011 || (prezzo === Math.round(prezzo) && Math.abs(atteso - prezzo) < 1)) {
         // primo tentativo a cui si arriva a questo prezzo con i ribassi massimi: un quarto per volta fino al 4° tentativo,
         // poi fino alla metà
         var n = 1, f = 1, quota = Math.pow(0.75, k) * 1.0001;
         while (f > quota) { n++; f *= n <= 4 ? 0.75 : 0.5; }
-        return n > t ? { tentativo: n, ribassi: k } : null;
+        return { tentativo: n, ribassi: k };
       }
-      if (atteso < base - 1) return null;
+      if (atteso < prezzo - 1) return null;
     }
     return null;
+  }
+  function tentativoMinimo(a) {
+    var t = num(a.tentativo), primo = num(a.primoPrezzo), base = num(a.prezzoBase);
+    if (a.categoria !== 'immobile' || t < 2 || !(base > 0) || !(primo > base)) return null;
+    var out = daiPrezzi(primo, base);
+    var prec = Array.isArray(a.storico) ? a.storico.filter(function (s) { return Array.isArray(s) && s[2] !== 'sospesa'; }) : [];
+    prec.forEach(function (s, i) {
+      var q = daiPrezzi(primo, num(s[1])), dopo = prec.length - 1 - i;
+      if (q && q.tentativo + dopo + 1 > (out ? out.tentativo : 0)) {
+        out = { tentativo: q.tentativo + dopo + 1, ribassi: q.ribassi, storico: { data: s[0] || null, prezzo: num(s[1]), tentativo: q.tentativo, dopo: dopo } };
+      }
+    });
+    return out && out.tentativo > t ? out : null;
   }
 
   function inputCosto(a, valoreMercato) {

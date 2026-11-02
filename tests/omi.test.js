@@ -392,3 +392,17 @@ test('stima: un terreno non ha valore OMI e lo dice; la casa con piano terreno e
   const villa = Omi.stima({ ...zona, tipo: 'Immobile residenziale', superficieMq: 481.75, titolo: 'Villa monofamiliare con terreno' }, ind, { testo: CON_TERRENO[0][2] });
   assert.ok(villa.valore && villa.valore.min > 0);
 });
+
+test('terreni: un fabbricato scritto con parole meno comuni resta un fabbricato (revisione del 2/11/2026, casi reali)', () => {
+  // con queste parole il lotto passava per "solo terreno" e la scheda lo diceva; nel dubbio il lotto resta un fabbricato
+  const casi = [
+    ['pvp-4645462', 'Santo Stefano D\'Aveto', 'I beni oggetto di pignoramento che costituiscono il lotto unico in vendita sono i seguenti:•Bene n°1: struttura assistenziale ubicato a Santo Stefano d’Aveto (GE) – Via Rinaldo Piaggio civ.54.•Bene n°2: terreno seminativo ubicato a Santo Stefano d’Aveto (GE) – Via Rinaldo Piaggio.•Bene n°3: terreno a prato ubicato a Santo Stefano d’Aveto (GE) – Via Rinaldo Piaggio.'],
+    ['pvp-4626545', 'Capoterra', 'Quota 1/1 proprietà del terreno con costruzione non accatastata.'],
+    ['pvp-4653401', 'Bernalda', 'Fondo agricolo con annesse strutture per la funghicultura.']
+  ];
+  for (const [id, comune, testo] of casi) assert.equal(Omi.soloTerreno(testo, comune), false, id);
+  // una struttura vicina resta fuori dal lotto: pvp-4638351, Correzzana, terreni agricoli "vicini ad una struttura di allevamento"
+  assert.equal(Omi.soloTerreno('Il lotto è composto da due terreni agricoli che sono situati nella zona nord-ovest del territorio del Comune di Correzzana. ' +
+    'La zona è raggiungibile dalla strada comunale Via Einaudi – poco fuori dal centro abitato di Correzzana, i terreni sono situati in un ambito a vocazione ' +
+    'agricola e sono vicini ad una struttura di allevamento.', 'Correzzana'), true);
+});
