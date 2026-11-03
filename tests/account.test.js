@@ -459,7 +459,10 @@ test('non configurato: un codice o dei token nell\'indirizzo si tolgono comunque
 
 /* ---- Sincronizzazione dei dati ---- */
 
-const T = (giorno) => '2026-10-' + String(giorno).padStart(2, '0') + 'T10:00:00.000Z';
+// giorni di un mese di poco più di un mese fa: le aste tolte si ricordano per un tempo limitato, quindi le date dei test
+// non possono essere fisse (con date fisse il test scadrebbe da solo)
+const MESE = new Date(Date.now() - 40 * 86400000);
+const T = (giorno) => new Date(Date.UTC(MESE.getUTCFullYear(), MESE.getUTCMonth(), giorno, 10)).toISOString();
 
 test('unione dei dati: aste seguite unite per id con la nota più recente, nessuna voce locale persa', (t) => {
   const { A } = ambiente(t);
@@ -499,7 +502,7 @@ test('unione dei dati: un\'asta tolta su un altro dispositivo sparisce solo se n
   assert.deepEqual(u.valore.map((v) => v.id), ['b', 'd'], 'modificata qui: resta');
   assert.deepEqual(u.rimosse, {}, 'ripresa: la rimozione si dimentica');
   // le rimozioni si dimenticano dopo 180 giorni
-  u = A.unisci(locale({}), remoto, '2027-06-01T00:00:00Z')[K];
+  u = A.unisci(locale({}), remoto, new Date(Date.parse(T(9)) + 181 * 86400000).toISOString())[K];
   assert.deepEqual(u.valore.map((v) => v.id), ['b', 'd']);
   assert.deepEqual(u.rimosse, {});
   // registri di prima (solo l'ora): tolta dopo l'ultima modifica → sparisce

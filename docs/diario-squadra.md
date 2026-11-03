@@ -4,6 +4,15 @@ Un paragrafo per ogni giro del mattino, il più recente in alto: come sta il sit
 
 ---
 
+## 3/11/2026 – URGENTE: raccolta ferma
+
+- **Sito pubblicato:** visibile, ma fermo alle aste del 2/11. La raccolta n. 27 su GitHub è fallita al primo passo, i test.
+  - **Causa:** un test degli abbonamenti su `main` aveva una data fissa (abbonamento di prova che scade il 2/11) e dal 3/11 fallisce da solo. Con i test rossi il workflow non raccoglie e non pubblica.
+  - **Rimedio:** sul branch quel test era già corretto. Il Merge della #4 fa ripartire tutto.
+- **Lavoro:** cercati gli altri test con lo stesso difetto spostando l'orologio avanti. Ne è uscito uno che sarebbe scaduto tra un anno: corretto. Nuovo comando `npm run test:futuro`. Ora tutti i test passano anche con l'orologio avanti di 3 mesi, 1 anno e 2 anni.
+- **Test:** 460 su 460.
+- **Agenti oggi:** nessuno, per non ingrandire ancora la pull request e per risparmiare i limiti d'uso.
+
 ## 2/11/2026 – ripresa dopo il limite settimanale
 
 - **Sito pubblicato:** funziona. Le raccolte su GitHub dal 30/10 al 2/11 sono tutte riuscite (n. 23-26). La raccolta locale di oggi: 23.368 aste, 1 affare (Canicattì).

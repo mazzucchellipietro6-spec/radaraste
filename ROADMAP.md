@@ -4,7 +4,7 @@ Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce camb
 
 Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ aspetta una tua decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 2/11/2026 (giro della squadra).
+Ultimo aggiornamento: 3/11/2026 (giro della squadra).
 
 ---
 
@@ -16,6 +16,8 @@ Ultimo aggiornamento: 2/11/2026 (giro della squadra).
 - **home nuova** con la domanda al consulente in alto;
 - valori di mercato **più prudenti**: con fonti discordanti si usa il valore più basso e il punteggio si ferma a "Da valutare";
 - **README** e documentazione riscritti; **182 test** automatici.
+
+**URGENTE (3/11): il sito pubblicato non si aggiorna più.** La raccolta del 3/11 su GitHub è fallita al primo passo, i test. Su `main` un test degli abbonamenti aveva una data fissa e dal 3/11 fallisce da solo. Il sito resta visibile, ma con le aste del 2/11. La correzione è già nella pull request [#4](https://github.com/mazzucchellipietro6-spec/radaraste/pull/4): con il **Merge** la raccolta riparte subito.
 
 **Pubblicato:**
 - il 13/10 hai unito la pull request [#2](https://github.com/mazzucchellipietro6-spec/radaraste/pull/2);
@@ -279,5 +281,6 @@ Ultimo aggiornamento: 2/11/2026 (giro della squadra).
   - Beni mobili segnati "Ottimo affare" con la sola stima.
   - Stratega con due cifre diverse per la stessa cosa.
   - Accessibilità di alcune pagine.
+- ✅ 3/11: test con date fisse che scadevano da soli. Su `main` uno ha bloccato la raccolta del 3/11 (la correzione è nella #4); sul branch ne è stato trovato e corretto un altro che sarebbe scaduto tra un anno. Nuovo comando `npm run test:futuro` (orologio avanti di 90 giorni); il Guardiano lo lancia ogni settimana.
 - ⬜ Azioni di GitHub su Node 20 (avviso di deprecazione).
 - ✅ 26/10: sigle di provincia diverse tra aste e indice OMI corrette: 252 immobili in più con il valore OMI nei dati locali. Restano 606 "comune non trovato": 326 senza nome del comune; 280 con nomi scritti in modo diverso nell'indice ("S MARIA CAPUA VETERE", "MERANO .MERAN."), da fare.
