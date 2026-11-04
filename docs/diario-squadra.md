@@ -4,6 +4,12 @@ Un paragrafo per ogni giro del mattino, il più recente in alto: come sta il sit
 
 ---
 
+## 4/11/2026 – URGENTE: raccolta ancora ferma
+
+- **Sito pubblicato:** visibile ma fermo alle aste del 2/11. Anche la raccolta n. 28 è fallita per lo stesso test con data fissa su `main`.
+- **Cosa serve:** il Merge della pull request #4, oppure una pull request con la sola correzione del test (va chiesta: la squadra lavora solo sul suo branch).
+- **Agenti oggi:** nessuno, finché la raccolta non riparte.
+
 ## 3/11/2026 – URGENTE: raccolta ferma
 
 - **Sito pubblicato:** visibile, ma fermo alle aste del 2/11. La raccolta n. 27 su GitHub è fallita al primo passo, i test.
