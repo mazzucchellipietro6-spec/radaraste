@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analizzaRobots, consentito } from '../scripts/lib/http.mjs';
+import { analizzaRobots, consentito, richiesta, FonteBloccata, ATTESE } from '../scripts/lib/http.mjs';
 import { provincia, titolo } from '../scripts/lib/luoghi.mjs';
 
 test('robots.txt: regole per tutti gli agenti', () => {
@@ -18,6 +18,54 @@ test('robots.txt: gruppo specifico per il nostro agente', () => {
 test('robots.txt vuoto o "Disallow:" vuoto non vieta nulla', () => {
   assert.equal(consentito(analizzaRobots(''), '/x'), true);
   assert.equal(consentito(analizzaRobots('User-agent: *\nDisallow:\n'), '/x'), true);
+});
+
+// fetch finto: risposte in ordine per ogni indirizzo (un Error = errore di rete); restituisce gli indirizzi chiesti
+function fetchFinto(risposte) {
+  const chiesti = [], vero = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    chiesti.push(String(url));
+    const r = (risposte[String(url)] || []).shift();
+    if (r instanceof Error) throw r;
+    return new Response(r.corpo ?? '', { status: r.stato });
+  };
+  return { chiesti, ripristina: () => { globalThis.fetch = vero; } };
+}
+// stesso errore della raccolta locale del 22/10/2026 sul robots.txt del PVP
+const timeout = () => new TypeError('fetch failed', { cause: { code: 'UND_ERR_CONNECT_TIMEOUT' } });
+
+test('robots.txt: un errore di rete si riprova, non ferma la fonte (raccolta del 22/10/2026)', async () => {
+  const attese = { ...ATTESE }; ATTESE.reteMs = 0; ATTESE.sitoMs = 0;
+  const f = fetchFinto({
+    'https://rete.prova.invalid/robots.txt': [timeout(), { stato: 404, corpo: 'HTTP Status 404 – Not Found' }],
+    'https://rete.prova.invalid/vendite': [{ stato: 200, corpo: 'ok' }],
+    'https://giu.prova.invalid/robots.txt': [timeout(), timeout(), timeout()]
+  });
+  try {
+    assert.equal(await richiesta('https://rete.prova.invalid/vendite', { intervalloMs: 0 }), 'ok');
+    assert.equal(f.chiesti.filter((u) => u.endsWith('/robots.txt')).length, 2);
+    // sempre irraggiungibile: dopo 3 tentativi la fonte si ferma con lo stesso messaggio di prima
+    await assert.rejects(richiesta('https://giu.prova.invalid/vendite', { intervalloMs: 0 }),
+      (e) => e instanceof FonteBloccata && e.stato === 'errore' && e.message === 'sito non raggiungibile (UND_ERR_CONNECT_TIMEOUT)');
+    assert.equal(f.chiesti.filter((u) => u.startsWith('https://giu.')).length, 3);
+  } finally { f.ripristina(); Object.assign(ATTESE, attese); }
+});
+
+test('robots.txt in errore 5xx: si riprova, e se resta in errore la fonte si ferma (regole sconosciute)', async () => {
+  const attese = { ...ATTESE }; ATTESE.reteMs = 0; ATTESE.sitoMs = 0;
+  const f = fetchFinto({
+    'https://cinque.prova.invalid/robots.txt': [{ stato: 503 }, { stato: 200, corpo: 'User-agent: *\nDisallow: /privato\n' }],
+    'https://cinque.prova.invalid/aste': [{ stato: 200, corpo: 'aste' }],
+    'https://sempre.prova.invalid/robots.txt': [{ stato: 500 }, { stato: 502 }, { stato: 503 }]
+  });
+  try {
+    assert.equal(await richiesta('https://cinque.prova.invalid/aste', { intervalloMs: 0 }), 'aste');
+    await assert.rejects(richiesta('https://cinque.prova.invalid/privato/1', { intervalloMs: 0 }), (e) => e.stato === 'vietata');
+    await assert.rejects(richiesta('https://sempre.prova.invalid/aste', { intervalloMs: 0 }),
+      (e) => e instanceof FonteBloccata && e.stato === 'errore' && e.http === 503 && /robots\.txt non disponibile/.test(e.message));
+    assert.ok(!f.chiesti.includes('https://sempre.prova.invalid/aste'), 'nessuna richiesta senza conoscere le regole');
+    assert.ok(!f.chiesti.includes('https://cinque.prova.invalid/privato/1'), 'percorso vietato mai chiesto');
+  } finally { f.ripristina(); Object.assign(ATTESE, attese); }
 });
 
 test('province scritte in modi diversi', () => {

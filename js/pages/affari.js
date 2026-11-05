@@ -6,6 +6,9 @@
   function tile(et, val, nota) { return '<div class="tile"><div class="t-et">' + et + '</div><div class="t-val">' + val + '</div>' + (nota ? '<div class="t-nota">' + nota + '</div>' : '') + '</div>'; }
   function avvia() {
     window.Affari.disegna('#affari', { titolo: 'h1' });
+    // qui il titolo "Affari di oggi" è l'h1 e le card hanno titoli h3: un h2 (solo per i lettori di schermo) evita il salto di livello
+    var griglia = document.querySelector('#affari .aff-griglia, #affari .aff-vuoto');
+    if (griglia) griglia.insertAdjacentHTML('beforebegin', '<h2 class="sr-only">Le aste scelte oggi</h2>');
     var A = window.AFFARI, M = A && A.misure;
     var box = document.getElementById('misure');
     if (!M) { box.innerHTML = '<p class="muted">Storico non ancora disponibile.</p>'; return; }

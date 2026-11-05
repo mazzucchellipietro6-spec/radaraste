@@ -110,3 +110,56 @@ test('saluto, aiuto e domande non capite: suggerimenti che funzionano', () => {
   }
   for (const q of K.ESEMPI) assert.notEqual(K.rispondi(q, ctx).intento, 'non-capito', q);
 });
+
+test('fonti: una fonte ferma dice il giorno dell\'ultima raccolta riuscita, non quello del file (raccolta del 22/10, Portale in errore)', () => {
+  // stato delle fonti scritto in data/aste.js dalla raccolta del 22/10/2026: il Portale non rispondeva, restano le aste del 13/10
+  const raccolta = { aggiornato: '2026-10-22T06:20:24.194Z', fonti: [
+    { nome: 'Portale Vendite Pubbliche', stato: 'errore', aste: 20215, ultimaRaccolta: '2026-10-13T14:45:37.203Z', controllo: '2026-10-22' },
+    { nome: 'Agenzia del Demanio', stato: 'attiva', aste: 3, ultimaRaccolta: '2026-10-22T06:20:04.369Z', controllo: '2026-10-22' }] };
+  const dem = { ...base, id: 'dem-x', fonte: 'Agenzia del Demanio', titolo: 'Appartamento del Demanio', comune: 'Bari', provincia: 'BA', regione: 'Puglia', dataAsta: '2026-11-30' };
+  const voce = (r, re) => blocco(r, 'fonti').voci.find((v) => re.test(v.nome));
+  const r = K.rispondi('appartamenti a Bari', { ...ctx, aste: ASTE.concat([dem]), oggi: '2026-10-22', raccolta });
+  const pvp = voce(r, /Portale delle Vendite Pubbliche/);
+  assert.equal(pvp.data, '2026-10-13');
+  assert.match(pvp.nome, /oggi nessun aggiornamento, aste dell'ultima raccolta riuscita/);
+  assert.deepEqual(voce(r, /Demanio/), { nome: 'Agenzia del Demanio – Gare e aste', url: 'https://www.agenziademanio.it/it/gare-aste/', data: '2026-10-22' });
+  // letto giorni dopo: si dice il giorno della raccolta, non "oggi"
+  const dopo = voce(K.rispondi('appartamenti a Bari', { ...ctx, oggi: '2026-10-26', raccolta }), /Portale/);
+  assert.match(dopo.nome, /il 22\/10\/2026 nessun aggiornamento/);
+  // fonte aggiornata: la data della raccolta, come prima
+  const ok = { ...raccolta, fonti: [{ ...raccolta.fonti[0], stato: 'attiva', ultimaRaccolta: '2026-10-22T06:19:00.000Z' }] };
+  assert.deepEqual(voce(K.rispondi('appartamenti a Bari', { ...ctx, oggi: '2026-10-22', raccolta: ok }), /Portale/),
+    { nome: 'Portale delle Vendite Pubbliche (Ministero della Giustizia)', url: 'https://pvp.giustizia.it/pvp/', data: '2026-10-22' });
+});
+
+test('ricerca con un solo risultato: "Ne ho trovata una. Eccola." (non "Ne ho trovate 1")', () => {
+  const r = K.rispondi('box a Lecce', ctx);
+  assert.equal(blocco(r, 'aste').totale, 1);
+  assert.match(testi(r), /Ne ho trovata una\. Eccola\./);
+  assert.doesNotMatch(testi(r), /trovate 1\b/);
+  assert.match(testi(K.rispondi('appartamenti a Bari', ctx)), /Ne ho trovate 2\. Eccole: prima quelle/);
+});
+
+test('spiega un bene mobile con la sola stima del perito: affidabilità bassa spiegata (pvp-4595365, valori ricalcolati con js/punteggio.js)', () => {
+  const P = require('../js/punteggio.js');
+  const merci = { ...base, categoria: 'beni', tipo: 'Altra categoria m', id: 'pvp-4595365', titolo: 'Merci in giacenza', comune: 'Nuoro', provincia: 'NU', regione: 'Sardegna',
+    tribunale: 'Nuoro', rge: '19', prezzoBase: 114393.6, offertaMinima: 114393.6, dataAsta: '2026-12-03', stato: 'nd', rischi: [], tentativo: 2, primoPrezzo: 142992, stima: 238320.07 };
+  const r = P.valuta(merci, { T });
+  Object.assign(merci, P.compatto(r));
+  const c = blocco(K.rispondi('spiegami l\'asta pvp-4595365', { ...ctx, aste: [merci] }), 'conti');
+  assert.equal(c.affidabilita, 'bassa');
+  assert.match(c.perche, /per un bene mobile c'è solo la stima del perito, senza una seconda fonte che la confermi, per prudenza il punteggio resta al massimo 54/);
+  // senza stima: il valore viene dal prezzo della prima asta, e lo si dice
+  const senzaStima = { ...merci, stima: undefined };
+  Object.assign(senzaStima, P.compatto(P.valuta(senzaStima, { T })));
+  assert.equal(senzaStima.fonteValore, 'primo-prezzo');
+  assert.match(blocco(K.rispondi('spiegami l\'asta pvp-4595365', { ...ctx, aste: [senzaStima] }), 'conti').perche, /c'è solo il prezzo della prima asta, senza una seconda fonte che lo confermi/);
+});
+
+test('affari di oggi: frasi al singolare con un\'asta analizzata e nessuna scelta (data/affari.js del 22/10/2026)', () => {
+  const affari = { aggiornato: '2026-10-22T06:20:28.041Z', oggi: '2026-10-22', analizzate: 1, scartate: { 'prezzo base non indicato': 1 },
+    criteri: { scontoMinimo: 0.15, punteggioMinimo: 50, minimi: 5 }, nota: 'Oggi solo 0 aste superano tutti i criteri: non ne aggiungiamo altre per arrivare a 5.', migliori: [] };
+  const t = testi(K.rispondi('quali sono gli affari di oggi?', { ...ctx, affari }));
+  assert.match(t, /ha analizzato 1 asta nuova o ribassata nelle ultime 24 ore; nessuna supera tutti i criteri/);
+  assert.doesNotMatch(t, /1 aste|0 superano|solo 0/);
+});

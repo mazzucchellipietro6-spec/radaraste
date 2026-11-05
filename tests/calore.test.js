@@ -364,3 +364,15 @@ test('campione reale: il riquadro di ogni cella (link "Apri queste aste") contie
     }
   }
 });
+
+test('pagina della mappa: interruttore accessibile, metodo e fonte spiegati, modulo caricato prima della pagina', () => {
+  const html = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'mappa.html'), 'utf8');
+  // un vero checkbox dentro la sua etichetta, descritto dal riquadro del metodo
+  assert.match(html, /<label class="check"><input type="checkbox" id="mCalore" aria-describedby="mCaloreMetodo"> Mappa di calore degli sconti<\/label>/);
+  const metodo = html.slice(html.indexOf('id="mCaloreMetodo"'), html.indexOf('</fieldset>'));
+  assert.match(metodo, /sconto medio/);
+  assert.match(metodo, /affidabilità media o alta/);
+  assert.match(metodo, /meno di 3 aste/);
+  assert.match(metodo, /Fonte:/);
+  assert.ok(html.indexOf('src="js/calore.js"') > 0 && html.indexOf('src="js/calore.js"') < html.indexOf('src="js/pages/mappa.js"'), 'js/calore.js prima di js/pages/mappa.js');
+});

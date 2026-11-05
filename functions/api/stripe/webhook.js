@@ -30,12 +30,17 @@ async function utenteDi(env, sub) {
   return riga ? riga.utente : null;
 }
 
-// destinatario: email dell'account (Supabase), altrimenti quella del cliente Stripe
-async function destinatario(env, utente, cliente) {
-  const a = utente ? await emailUtente(env, utente) : null;
-  if (a || !cliente) return a;
-  const c = await chiamaStripe(env, 'GET', '/customers/' + encodeURIComponent(cliente), null, { mancanteNull: true });
-  return c && !c.deleted ? c.email || null : null;
+/* destinatario: SOLO l'email di un account del sito (Supabase). Mai quella del cliente Stripe: un abbonamento senza
+ * account (account cancellato, o un altro sito sullo stesso account Stripe) non deve ricevere email da noi. */
+const destinatario = (env, utente) => (utente ? emailUtente(env, utente) : null);
+
+// email di "benvenuto" solo per un abbonamento davvero partito
+const PARTITI = ['active', 'trialing'];
+
+// evento arrivato dopo la cancellazione dell'account: l'abbonamento non si tocca da qui (potrebbe essere di un altro
+// sito sullo stesso account Stripe), ma il proprietario deve saperlo per annullarlo dal pannello di Stripe
+function orfano(sub) {
+  if (sub && IN_CORSO.includes(sub.status)) registra('ATTENZIONE: abbonamento', sub.id, 'ancora attivo per un account che non esiste più: controllalo nel pannello di Stripe');
 }
 
 // piano di un abbonamento per le email (senza errori se non si riconosce)
@@ -54,16 +59,23 @@ const GESTORI = {
   // pagamento concluso: collega cliente e abbonamento all'utente, poi email di benvenuto
   async 'checkout.session.completed'(env, sessione, email) {
     if (sessione.mode !== 'subscription') return;
-    const utente = eUuid(sessione.client_reference_id) ? sessione.client_reference_id.toLowerCase() : utenteDaMetadati(sessione);
-    if (!utente) { registra('checkout completato senza utente del sito: ignorato', sessione.id); return; }
+    // l'utente viene dai metadati scritti dal NOSTRO checkout; client_reference_id, se c'è, deve coincidere (un link
+    // di pagamento di Stripe permette a chiunque di metterci un valore a piacere nell'indirizzo)
+    const utente = utenteDaMetadati(sessione);
+    const rif = sessione.client_reference_id;
+    if (!utente || (rif != null && (!eUuid(rif) || rif.toLowerCase() !== utente))) {
+      registra('checkout completato senza utente del sito (metadati assenti o diversi): ignorato', sessione.id);
+      return;
+    }
     const idAbb = idDi(sessione.subscription);
     const sub = idAbb ? await abbonamentoFresco(env, idAbb) : null;
     const riga = sub
       ? { ...rigaDaAbbonamento(env, sub), utente }
       : { utente, stripe_customer: idCliente(sessione), stripe_subscription: idAbb, aggiornato: new Date().toISOString() };
-    if (!(await salvaAbbonamento(env, riga))) return;
-    const a = (sessione.customer_details && sessione.customer_details.email) || sessione.customer_email || await destinatario(env, utente, riga.stripe_customer);
-    email.push({ a, modello: 'benvenuto', dati: { piano: riga.piano || (sessione.metadata && sessione.metadata.piano), fineProva: riga.fine_prova } });
+    if (!(await salvaAbbonamento(env, riga))) { orfano(sub); return; }
+    if (!PARTITI.includes(riga.stato)) return;
+    const a = (sessione.customer_details && sessione.customer_details.email) || sessione.customer_email || await destinatario(env, utente);
+    email.push({ a, modello: 'benvenuto', dati: { piano: riga.piano, fineProva: riga.fine_prova } });
   },
 
   // nuovo abbonamento o cambio (piano, periodo, stato, prova, fine periodo, disdetta programmata)
@@ -72,7 +84,7 @@ const GESTORI = {
     const utente = await utenteDi(env, fresco);
     if (!utente) { registra('abbonamento senza utente del sito: ignorato', fresco.id); return; }
     if (eVecchio(await leggiAbbonamento(env, utente), fresco)) { registra('evento di un abbonamento precedente: ignorato', fresco.id); return; }
-    await salvaAbbonamento(env, { ...rigaDaAbbonamento(env, fresco), utente });
+    if (!(await salvaAbbonamento(env, { ...rigaDaAbbonamento(env, fresco), utente }))) orfano(fresco);
   },
 
   // abbonamento finito: piano gratis, stato canceled, email (non per la cancellazione dell'account: ha già la sua)
@@ -85,14 +97,16 @@ const GESTORI = {
     if (!(await salvaAbbonamento(env, riga))) return;          // utente già cancellato
     const commento = sub.cancellation_details && sub.cancellation_details.comment;
     if (commento === COMMENTO_CANCELLAZIONE) return;
-    email.push({ a: await destinatario(env, utente, idCliente(sub)), modello: 'abbonamentoDisdetto', dati: { piano: pianoDi(env, sub) || (attuale && attuale.piano) } });
+    email.push({ a: await destinatario(env, utente), modello: 'abbonamentoDisdetto', dati: { piano: pianoDi(env, sub) || (attuale && attuale.piano) } });
   },
 
-  // Stripe avvisa 3 giorni prima della fine della prova
+  // Stripe avvisa 3 giorni prima della fine della prova. Se l'utente ha già disdetto non partirà nessun pagamento:
+  // l'email direbbe il contrario, quindi non si manda
   async 'customer.subscription.trial_will_end'(env, sub, email) {
+    if (sub.status !== 'trialing' || sub.cancel_at_period_end || sub.cancel_at) { registra('prova in scadenza già disdetta: nessuna email', sub.id); return; }
     const utente = await utenteDi(env, sub);
     const fine = typeof sub.trial_end === 'number' ? new Date(sub.trial_end * 1000).toISOString() : null;
-    email.push({ a: await destinatario(env, utente, idCliente(sub)), modello: 'provaInScadenza', dati: { piano: pianoDi(env, sub), fineProva: fine } });
+    email.push({ a: await destinatario(env, utente), modello: 'provaInScadenza', dati: { piano: pianoDi(env, sub), fineProva: fine } });
   },
 
   // pagamento rifiutato: lo stato (past_due) arriva con customer.subscription.updated; qui solo l'email
@@ -100,7 +114,8 @@ const GESTORI = {
     const idAbb = idDi(fattura.subscription) ||
       idDi(fattura.parent && fattura.parent.subscription_details && fattura.parent.subscription_details.subscription);
     const riga = await cercaAbbonamento(env, { abbonamento: idAbb, cliente: idCliente(fattura) });
-    const a = fattura.customer_email || await destinatario(env, riga && riga.utente, idCliente(fattura));
+    if (!riga) { registra('pagamento non riuscito di un cliente che non è un utente del sito: nessuna email', fattura.id); return; }
+    const a = await destinatario(env, riga.utente);
     const link = typeof fattura.hosted_invoice_url === 'string' && /^https:\/\//.test(fattura.hosted_invoice_url) ? fattura.hosted_invoice_url : null;
     email.push({ a, modello: 'pagamentoNonRiuscito', dati: { piano: riga && riga.piano, linkFattura: link } });
   }
@@ -110,12 +125,14 @@ GESTORI['customer.subscription.updated'] = GESTORI['customer.subscription.create
 export async function onRequestPost(context) {
   const { request, env } = context;
   try {
-    if (!env.STRIPE_WEBHOOK_SECRET) throw new ErroreApi(503, NON_CONFIGURATI);
+    // segreto ripulito da spazi e a capo incollati per sbaglio nel pannello (come STRIPE_SECRET_KEY)
+    const segreto = String(env.STRIPE_WEBHOOK_SECRET || '').trim();
+    if (!segreto) throw new ErroreApi(503, NON_CONFIGURATI);
     controllaChiave(env);
     controllaSupabase(env);
     const grezzo = await request.text();
     if (grezzo.length > MASSIMO) return json(413, { errore: 'Evento troppo grande' });
-    const esito = await verificaFirma(grezzo, request.headers.get('Stripe-Signature'), env.STRIPE_WEBHOOK_SECRET);
+    const esito = await verificaFirma(grezzo, request.headers.get('Stripe-Signature'), segreto);
     if (!esito.valida) { registra('webhook rifiutato:', esito.motivo); return json(400, { errore: 'Firma non valida' }); }
 
     let evento;
@@ -125,7 +142,8 @@ export async function onRequestPost(context) {
       registra('evento reale rifiutato: PAGAMENTI_REALI non è impostata a "si"', evento.type);
       return json(400, { errore: 'Pagamenti reali non abilitati: il sito è in modalità test' });
     }
-    const gestore = GESTORI[evento.type];
+    // solo i gestori nostri (mai proprietà ereditate come "constructor" o "toString")
+    const gestore = Object.hasOwn(GESTORI, evento.type) ? GESTORI[evento.type] : null;
     if (!gestore) return json(200, { ricevuto: true, ignorato: true });
     if (!(await registraEvento(env, evento))) return json(200, { ricevuto: true, duplicato: true });
 

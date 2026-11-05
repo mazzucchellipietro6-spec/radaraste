@@ -1,0 +1,88 @@
+{
+ "_nota": "Risposte reali del Portale Vendite Pubbliche lette il 22/10/2026 (vendita 4649172, Tribunale di Prato): record della ricerca (POST /ric-ms/ricerca/vendite, pagina 11) e parte del dettaglio /restricted, senza soggetti, codici fiscali e allegati. La fonte scrive \"NESSUNA\" al posto della descrizione.",
+ "ricerca": {
+  "id": 4649172,
+  "tipoLotto": "MOBILI",
+  "categoriaLotto": "ABBIGLIAMENTO_E_CALZATURE",
+  "categoriaBene": [
+   "ABBIGLIAMENTO_CALZATURE"
+  ],
+  "indirizzo": {
+   "via": "Via Francesco Ferrucci, 203, 59100 Prato PO, Italia",
+   "numeroCivico": "",
+   "cap": "59100",
+   "citta": "Prato",
+   "provincia": "Prato",
+   "coordinate": {
+    "latitudine": 43.865119,
+    "longitudine": 11.114649
+   },
+   "codNazione": null,
+   "codRegione": null,
+   "codProvincia": null,
+   "codComune": null,
+   "idIndirizzo": null,
+   "descComune": null,
+   "descProvincia": null,
+   "descRegione": null,
+   "descNazione": null,
+   "comuneEstero": null
+  },
+  "numeroLotto": "LOTTO UNICO",
+  "procedura": "7",
+  "prezzoBaseAsta": 2500,
+  "dataVendita": "2026-11-23",
+  "orarioVendita": "11:00",
+  "dataOraVendita": "2026-11-23T11:00",
+  "dataPubblicazione": "2026-10-21",
+  "immagine": null,
+  "immagineCover": null,
+  "offertaMinima": 3000,
+  "rialzoMinimo": 500,
+  "disponibilita": [
+   "NON_SPECIFICATA"
+  ],
+  "descLotto": "NESSUNA",
+  "descLottoDE": null,
+  "tribunale": "Tribunale di PRATO",
+  "codiceTribunale": "1000050090",
+  "esito": null
+ },
+ "dettaglio": {
+  "idVendita": 4649172,
+  "descTipoVendita": "Competitiva",
+  "dataVendita": "23/11/2026",
+  "oraVendita": "11:00",
+  "impoOffertaMinima": 3000,
+  "impoOffertaAumento": 500,
+  "impoBaseAsta": 2500,
+  "impoStima": 6500,
+  "descModVendita": "Presso Il Venditore",
+  "dataTermPresOff": "22/11/2026",
+  "oraTermPresOff": "11:00",
+  "dataDiPubblicazione": "21/10/2026",
+  "lotto": {
+   "codLotto": "LOTTO UNICO",
+   "descLotto": "NESSUNA",
+   "codTipoCategLotto": "ABBIGLIAMENTO_E_CALZATURE",
+   "codTipoLotto": "MOBILI"
+  },
+  "beni": [
+   {
+    "descrizione": "NESSUNA",
+    "codTipoLotto": "MOBILI",
+    "codTipoCategLotto": "ABBIGLIAMENTO_E_CALZATURE",
+    "codTipologiaBene": "ABBIGLIAMENTO_CALZATURE"
+   }
+  ],
+  "procedura": {
+   "numeAnnoRg": 2022,
+   "numeRg": "7",
+   "descTipoRito": "Fallimentare (nuovo Rito)"
+  },
+  "datiDeposito": {
+   "depoCauzionale": "250",
+   "depositoContoSpese": "100"
+  }
+ }
+}

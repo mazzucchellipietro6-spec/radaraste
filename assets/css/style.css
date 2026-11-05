@@ -220,7 +220,9 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 6px va
 
 /* ---------- schede asta ---------- */
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
-.card { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); display: grid; grid-template-rows: auto 1fr; overflow: hidden; box-shadow: var(--ombra-1); transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), border-color var(--dur-2); isolation: isolate; min-width: 0; }
+/* una sola colonna che non supera la card: senza minmax(0, 1fr) un luogo lungo ("Sommacampagna (VR)" accanto a "Poco interessante")
+   allargava la colonna oltre la card stretta del nastro e tagliava prezzi e offerta minima a destra (collaudo del 31/10/2026) */
+.card { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; overflow: hidden; box-shadow: var(--ombra-1); transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), border-color var(--dur-2); isolation: isolate; min-width: 0; }
 @media (hover: hover) { .card:hover { box-shadow: var(--ombra-2); border-color: var(--line-2); } }
 .card.cat-immobile { --cop: var(--cop-immobile); } .card.cat-auto { --cop: var(--cop-auto); } .card.cat-moto { --cop: var(--cop-moto); } .card.cat-beni { --cop: var(--cop-beni); }
 /* testata della scheda: punteggio a sinistra, luogo a destra, su fondo neutro (nessuna sfumatura né motivo) */
@@ -228,18 +230,21 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 6px va
 .card .copertina .icona-cat { display: none; }
 .card .copertina .luogo { margin-left: auto; font-weight: 550; font-size: 13px; display: flex; gap: 6px; align-items: center; justify-content: flex-end; min-width: 0; max-width: 55%; color: var(--fg-2); }
 .card .copertina .luogo .icona { display: none; }
-.card .copertina .luogo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* luogo su due righe al massimo: su una riga sola, nelle card strette, la provincia spariva ("Aosta (…") */
+.card .copertina .luogo span { overflow: hidden; text-align: right; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; hyphens: auto; }
 .card .anello-box { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
 .card .anello-box .fascia { font-size: 13px; font-weight: 600; line-height: 1.25; color: var(--fg); }
 .card .anello-box .fascia small { display: block; font-weight: 500; font-size: 11.5px; color: var(--muted); }
 .card .corpo { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .card .top { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.card h4 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.card h4 a { color: inherit; text-decoration: none; }
-.card h4 a:hover { color: var(--accent); }
-.card h4 a::after { content: ""; position: absolute; inset: 0; z-index: 0; }
-.card h4 a:focus-visible { outline: none; }
-.card:has(h4 a:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* titolo della card: h3 nel documento, con l'aspetto di un h4 */
+.card .card-titolo { font-family: var(--f-body); font-size: 16px; font-weight: 600; line-height: 1.4; letter-spacing: -.005em; text-transform: none; color: var(--fg);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.card .card-titolo a { color: inherit; text-decoration: none; }
+.card .card-titolo a:hover { color: var(--accent); }
+.card .card-titolo a::after { content: ""; position: absolute; inset: 0; z-index: 0; }
+.card .card-titolo a:focus-visible { outline: none; }
+.card:has(.card-titolo a:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .card .where { font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; }
 .card .prezzi { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px 14px; flex-wrap: wrap; }
 .card .prezzi > div { display: grid; gap: 1px; min-width: 0; }
@@ -489,7 +494,9 @@ dialog .dbody { padding: 18px; display: grid; gap: 14px; }
 @media (max-width: 899px) {
   .elenco-pagina { gap: 14px; }
   .elenco-pagina .page-head h1 { font-size: 30px; }
-  .elenco-pagina .page-head .sub, .elenco-pagina .toolbar h2, .elenco-pagina .info-raccolta { display: none; }
+  .elenco-pagina .page-head .sub, .elenco-pagina .info-raccolta { display: none; }
+  /* il titolo dell'elenco resta per i lettori di schermo: tra l'h1 e gli h3 delle card non manca un livello */
+  .elenco-pagina .toolbar h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .elenco-pagina .toolbar { margin: 0 0 10px; gap: 8px; }
   .solo-foglio { display: inline-flex !important; }
   .filtri-pannello { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1250; margin: 0 auto; width: min(640px, 100%); max-height: 88vh; max-height: 88dvh; display: flex; flex-direction: column; padding: 0; border-radius: var(--r-4) var(--r-4) 0 0; box-shadow: var(--ombra-3); transform: translateY(105%); visibility: hidden; transition: transform var(--dur-3) var(--ease), visibility 0s linear var(--dur-3); }
@@ -578,7 +585,8 @@ body.con-confronto { padding-bottom: 84px; }
 .foglio .voci .badge { margin-left: auto; min-width: 22px; height: 22px; border-radius: 11px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; }
 .tabbar [aria-current="true"] { color: var(--accent); }
 .piede-colonne { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); gap: 28px; padding-bottom: 6px; }
-.piede-colonne h3 { margin-bottom: 10px; }
+/* titoli delle colonne: h2 nel documento, con l'aspetto degli h3 (piccolo maiuscoletto) */
+.piede-colonne .piede-titolo { font-family: var(--f-body); font-size: 11.5px; font-weight: 600; line-height: normal; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
 .piede-colonne ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .piede-colonne li a { color: var(--fg-2); text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; min-height: 30px; }
 .piede-colonne li a:hover { color: var(--accent); text-decoration: underline; }
@@ -588,7 +596,7 @@ body.con-confronto { padding-bottom: 84px; }
 
 /* ---------- home: domanda al consulente, tre passi ---------- */
 .chiedi { display: flex; gap: 6px; align-items: center; max-width: 640px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-3); padding: 6px; box-shadow: var(--ombra-2); transition: border-color var(--dur-1); }
-.chiedi:focus-within { border-color: var(--accent); }
+.chiedi:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow), var(--ombra-2); }
 .chiedi > .icona { margin-left: 10px; width: 20px; height: 20px; color: var(--accent); }
 .chiedi input { border: 0; background: transparent; box-shadow: none; font-size: 16px; padding: 10px 6px; min-width: 0; }
 .chiedi input:focus { box-shadow: none; background: transparent; }

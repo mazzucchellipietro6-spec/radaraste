@@ -96,3 +96,69 @@ test('scadenza con data e ora dal dettaglio (AAAA-MM-GGTHH:MM) e senza termine',
   const senza = K.riassunto({ ...x, asta: { ...x.asta, termineOfferte: null } });
   assert.match(senza.scadenza.testo, /asta il 04\/12\/2026/);
 });
+
+test('riassunto: senza testo dell\'avviso non dice "nessun rischio" (caso reale pvp-4637293, raccolta del 12/10)', () => {
+  // asta reale del PVP senza testo letto: il campo rischi manca del tutto
+  const reale = { id: 'pvp-4637293', titolo: 'Autoveicoli e cicli', categoria: 'auto', tipo: 'Autoveicoli e cicli', regione: 'Toscana', provincia: 'PT',
+    tribunale: 'Pistoia', rge: '597', fonte: 'Portale Vendite Pubbliche', prezzoBase: 3000, offertaMinima: 3000, dataAsta: '2026-10-22', ora: '10:00',
+    stato: 'nd', linkAvviso: 'https://pvp.giustizia.it/pvp/it/detail_annuncio.page?idAnnuncio=4637293', pubblicata: '2026-09-28', vista: '2026-10-12', numeroLotto: 'Unico' };
+  const x = K.analizza({ asta: reale }, { T });
+  assert.deepEqual(K.riassunto(x).rischi, ['Testo dell\'avviso non disponibile: rischi da verificare nella perizia']);
+  assert.ok(x.nonSappiamo.some((s) => /testo non disponibile/.test(s)));
+  // con altri pericoli la mancanza del testo resta scritta in fondo
+  const occ = K.riassunto(K.analizza({ asta: asta({ stato: 'occupato', rischi: undefined }) }, { T }));
+  assert.match(occ.rischi[0], /Occupato/);
+  assert.equal(occ.rischi[occ.rischi.length - 1], 'Testo dell\'avviso non disponibile: rischi da verificare nella perizia');
+  // testo letto e nessun rischio: la frase di prima
+  assert.deepEqual(K.riassunto(K.analizza({ asta: asta({}) }, { T })).rischi, ['Nessun rischio trovato nel testo dell\'avviso: leggi comunque la perizia']);
+});
+
+test('frasi: con zero affari "nessuna asta", con uno il singolare (data/affari.js del 22/10: 1 analizzata, 0 scelte)', () => {
+  assert.equal(K.nota(0), 'Oggi nessuna asta supera tutti i criteri: meglio aspettare che proporre affari incerti.');
+  assert.equal(K.nota(1), 'Oggi solo 1 asta supera tutti i criteri: non ne aggiungiamo altre per arrivare a 5.');
+  assert.equal(K.nota(3), 'Oggi solo 3 aste superano tutti i criteri: non ne aggiungiamo altre per arrivare a 5.');
+  assert.equal(K.nota(5), null);
+  // giro reale del 22/10: una sola asta nuova, scartata per il prezzo base mancante
+  const r = K.esegui({ aste: [asta({ prezzoBase: null })], oggi: OGGI, T });
+  assert.equal(r.nota, 'Oggi nessuna asta supera tutti i criteri: meglio aspettare che proporre affari incerti.');
+  assert.match(r.telegram, /^1 asta nuova o ribassata analizzata, nessuna supera i criteri\.$/m);
+  const uno = K.esegui({ aste: [asta({})], oggi: OGGI, T });
+  assert.match(uno.telegram, /^1 asta nuova o ribassata analizzata, 1 supera i criteri\.$/m);
+});
+
+test('tentativo stimato dai prezzi nei segnali d\'affare, dichiarato come stima (caso reale pvp-4566904, Sant\'Elpidio a Mare)', () => {
+  const x = K.analizza({ asta: asta({ categoria: 'immobile', tentativo: 3, deserte: 2, primoPrezzo: 534800, prezzoBase: 169214.06, offertaMinima: 126910.54, stima: 484380 }), motivo: 'nuovo-tentativo' }, { T });
+  assert.equal(x.tentativoMinimo, 5);
+  const s = x.segnaliAffare.find((f) => /tentativo/.test(f));
+  assert.match(s, /^È almeno il 5° tentativo \(stima: il prezzo base è quello della prima asta, 534\.800 €, ridotto 4 volte del 25%; l'indice del Portale ne mostra 3\)/);
+  assert.equal(K.compatta(x).tentativoMinimo, 5);
+  // senza aste mancanti la frase resta quella di prima
+  const y = K.analizza({ asta: asta({}), motivo: 'nuova' }, { T });
+  assert.equal(y.tentativoMinimo, undefined);
+  assert.ok(y.segnaliAffare.some((f) => /^È il 3° tentativo \(2 aste andate deserte\)/.test(f)));
+});
+
+test('tentativo stimato oltre il quarto ribasso: si dice che dopo il quarto tentativo il ribasso può arrivare alla metà (revisione del 30/10/2026)', () => {
+  // pvp-4480064, Augusta: 62.850 € × 0,75⁵ = 14.914,61 €, l'indice ne mostra 4: almeno il 5°, non il 6°
+  const x = K.analizza({ asta: asta({ categoria: 'immobile', tentativo: 4, deserte: 3, primoPrezzo: 62850, prezzoBase: 14914.61, offertaMinima: 11185.96, stima: 62850 }), motivo: 'nuovo-tentativo' }, { T });
+  assert.equal(x.tentativoMinimo, 5);
+  assert.ok(x.segnaliAffare.some((f) => /^È almeno il 5° tentativo \(stima: .*ridotto 5 volte del 25%, e dopo il quarto tentativo deserto un ribasso può arrivare alla metà; l'indice del Portale ne mostra 4\)/.test(f)));
+});
+
+test('tentativo stimato dal prezzo di un tentativo precedente dello storico, detto come nella scheda (revisione del 2/11/2026)', () => {
+  // pvp-4635605, Porto Recanati: 168.750 € = 400.000 € × 0,75³ (almeno il 4°), poi 126.562,50 €, poi questa asta: almeno il 6°
+  const pr = { categoria: 'immobile', tentativo: 4, deserte: 3, primoPrezzo: 400000, prezzoBase: 94921.88, offertaMinima: 71191.41, stima: 400000,
+    storico: [['2024-04-18', 400000, 'deserta'], ['2026-01-15', 168750, 'deserta'], ['2026-07-15', 126562.5, 'deserta']] };
+  const x = K.analizza({ asta: asta(pr), motivo: 'nuovo-tentativo' }, { T });
+  assert.equal(x.tentativoMinimo, 6);
+  assert.ok(x.segnaliAffare.includes('È almeno il 6° tentativo (stima: il prezzo base del tentativo del 15/01/2026, 168.750 €, era quello della prima asta, 400.000 €, ' +
+    'ridotto 3 volte del 25%, quindi quel tentativo era almeno il 4° e ne è seguito un altro prima di questa asta; l\'indice del Portale ne mostra 4): prezzo sceso del 76% dal primo'));
+  assert.equal(K.compatta(x).tentativoMinimo, 6);
+  // senza storico (elenco leggero) resta la stima del solo prezzo di oggi
+  const y = K.analizza({ asta: asta({ ...pr, storico: undefined }), motivo: 'nuovo-tentativo' }, { T });
+  assert.equal(y.tentativoMinimo, 5);
+  // lo script del mattino carica lo storico dalle schede a pezzi, così la frase è la stessa della scheda
+  const js = require('node:fs').readFileSync(require('node:path').join(__dirname, '../scripts/cacciatore.mjs'), 'utf8');
+  assert.match(js, /const schede = await leggiSchede\(fileCollegati\(fileAste\)\.dettagli\);/);
+  assert.match(js, /a\.storico = s\.storico/);
+});

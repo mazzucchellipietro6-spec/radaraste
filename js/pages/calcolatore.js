@@ -2,7 +2,17 @@
 (function () {
   'use strict';
   var T = window.TARIFFE, U = window.UI, S = window.Store, C = window.Calcoli, $ = U.$, $$ = U.$$;
-  var astaCorrente = null, stimaCorrente = null, ultimo = { immobile: null, veicolo: null };
+  var astaCorrente = null, ultimo = { immobile: null, veicolo: null };
+  // dall'asta aperta (scheda o card): valore del sito con forchetta, fonte e affidabilità, e offerta minima dell'avviso
+  var valoreSito = null, minimaAvviso = null;
+  // stesse ipotesi della scheda (js/asta.js e js/punteggio.js): seconda casa da privato, spese di procedura, liberazione se occupato
+  var IP = C.IPOTESI_RAPIDE;
+  var FONTI_VALORE = {
+    perizia: 'stima del perito indicata nell\'avviso', 'primo-prezzo': 'prezzo base della prima asta, che di norma coincide con la stima del perito',
+    'prima-asta': 'è la prima asta: il prezzo base di norma coincide con la stima del perito', omi: 'quotazioni OMI della zona (Agenzia delle Entrate) per la superficie indicata',
+    'omi-comune': 'quotazioni OMI usate con cautela (zona non riconosciuta o dati della zona incerti)', manuale: 'valore inserito da te'
+  };
+  var AFFIDABILITA = { alta: 'alta (due fonti indipendenti concordano)', media: 'media (una sola fonte diretta)', bassa: 'bassa (stima indiretta o fonti molto diverse: solo orientativo)' };
 
   function n(id) { var v = parseFloat($('#' + id).value); return isFinite(v) ? v : 0; }
   function riga(etichetta, valore, cls) { return '<div class="line' + (cls ? ' ' + cls : '') + '"><span>' + etichetta + '</span><b>' + valore + '</b></div>'; }
@@ -13,10 +23,49 @@
       '<span class="v-good">Affare ≥ ' + U.pct(T.giudizio.affare, 0) + '</span><span class="v-good">Conviene ' + U.pct(T.giudizio.conviene, 0) + '–' + U.pct(T.giudizio.affare, 0) + '</span>' +
       '<span class="v-warn">Stretto ' + U.pct(T.giudizio.margineStretto, 0) + '–' + U.pct(T.giudizio.conviene, 0) + '</span><span class="v-bad">No &lt; ' + U.pct(T.giudizio.margineStretto, 0) + '</span></div>';
   }
-  function bloccoOffertaMax(max, idInput) {
-    if (!max) return '<div class="callout warn" style="margin-top:12px">Con questi costi non c\'è un\'offerta che resti ' + U.pct(T.giudizio.scontoObiettivo, 0) + ' sotto il mercato.</div>';
-    return '<div class="callout" style="margin-top:12px">Offerta massima consigliata per restare circa il ' + U.pct(T.giudizio.scontoObiettivo, 0) + ' sotto il mercato: <b class="mono">' + U.eur(max) + '</b> ' +
+  // valore su cui si calcola l'offerta massima, con la regola della scheda (js/asta.js): il minimo della forchetta del sito
+  // finché nel campo c'è il valore del sito; un valore scritto da te vale com'è (min = max)
+  function valoreRiferimento(tab, valoreCampo) {
+    var v = valoreSito && valoreSito.tab === tab ? valoreSito : null;
+    if (v && Math.round(valoreCampo) === v.centrale) return { valore: v.min, min: v.min, max: v.max, sito: true };
+    return { valore: valoreCampo, min: valoreCampo, max: valoreCampo, sito: false };
+  }
+  function offertaMaxCon(fn, inp, rif) {
+    var x = {}, k;
+    for (k in inp) x[k] = inp[k];
+    x.valoreMercato = rif.valore;
+    return C.offertaMassima(fn, x, T, T.giudizio.scontoObiettivo);
+  }
+  // offerta minima: quella scritta nell'avviso, se il prezzo base è ancora quello dell'avviso; altrimenti il 75% (art. 571 c.p.c.)
+  function minimaDa(tab, prezzoBase) {
+    var m = minimaAvviso && minimaAvviso.tab === tab && prezzoBase === minimaAvviso.prezzoBase ? minimaAvviso.importo : null;
+    var calc = prezzoBase ? C.offertaMinima(prezzoBase, T) : null;
+    return m ? { importo: m, avviso: true, calcolata: calc } : calc ? { importo: calc, avviso: false } : null;
+  }
+  // immobili: se l'avviso scrive un'offerta minima diversa dal 75% del prezzo base (oltre gli arrotondamenti) lo si dice, va verificata
+  function notaMinima(mn) {
+    if (!mn || !mn.avviso || !mn.calcolata || Math.abs(mn.importo - mn.calcolata) < 1) return '';
+    return '<p class="note">Nell\'avviso l\'offerta minima (' + U.eur(mn.importo) + ') non è il 75% del prezzo base (' + U.eur(mn.calcolata) + '): uso quella dell\'avviso, ma verifica nell\'avviso prezzo base e offerta minima.</p>';
+  }
+  function bloccoOffertaMax(max, idInput, rif) {
+    var obiettivo = U.pct(T.giudizio.scontoObiettivo, 0);
+    var sotto = rif && rif.sito ? 'il valore minimo stimato (' + U.eur(rif.valore) + '), costi compresi' : 'il valore di mercato indicato (' + U.eur(rif ? rif.valore : 0) + '), costi compresi';
+    if (!max) return '<div class="callout warn" style="margin-top:12px">Con questi costi nessuna offerta resta il ' + obiettivo + ' sotto ' + sotto + '.</div>';
+    return '<div class="callout" style="margin-top:12px">Offerta massima consigliata per restare circa il ' + obiettivo + ' sotto ' + sotto + ': <b class="mono">' + U.eur(max) + '</b> ' +
       '<button class="btn small ghost" type="button" data-usa="' + idInput + '" data-valore="' + max + '">Usa questa offerta</button></div>';
+  }
+  // fonte e affidabilità del valore del sito, sotto i campi
+  function notaValore(tab) {
+    var el = $(tab === 'immobile' ? '#iValoreSito' : '#vValoreSito'), v = valoreSito && valoreSito.tab === tab ? valoreSito : null;
+    if (!el) return;
+    if (!v) { el.hidden = true; el.textContent = ''; return; }
+    var forchetta = v.min !== v.max ? ' (forchetta ' + U.eur(v.min) + ' – ' + U.eur(v.max) + ')' : '';
+    el.innerHTML = '<b>Valore di mercato del sito: ' + U.eur(v.centrale) + forchetta + '.</b> Fonte: ' + U.esc(v.etichetta) + '.' +
+      (v.affidabilita ? ' Affidabilità: ' + U.esc(AFFIDABILITA[v.affidabilita] || v.affidabilita) + '.' : ' Affidabilità non indicata.') +
+      (v.fonte === 'manuale' ? '' : ' Come nella scheda, l\'offerta massima resta il ' + U.pct(T.giudizio.scontoObiettivo, 0) + ' sotto il valore minimo' +
+        (tab === 'immobile' ? ' e i costi partono dalle stesse ipotesi: seconda casa da privato, spese di procedura ' + U.eur(IP.speseProcedura) + ', liberazione ' + U.eur(IP.liberazioneOccupato) + ' se occupato' : '') +
+        '. Se hai la stima della perizia o altri dati, cambia i campi.');
+    el.hidden = false;
   }
   function bloccoSalva() {
     if (!astaCorrente) return '<p class="note">Per salvare la valutazione scegli un\'asta del tuo elenco in alto.</p>';
@@ -39,12 +88,14 @@
       ultimo.immobile = null; aggiornaRiepilogo(); return;
     }
     var r = C.costoImmobile(inp, T);
-    var max = C.offertaMassima(C.costoImmobile, inp, T);
-    var imp = r.imposte, reg = imp.regime;
+    var rif = valoreRiferimento('immobile', inp.valoreMercato);
+    var max = offertaMaxCon(C.costoImmobile, inp, rif);
+    var imp = r.imposte, reg = imp.regime, mn = minimaDa('immobile', inp.prezzoBase);
     var h = '<h3>Risultato</h3>';
-    if (inp.prezzoBase) h += riga('Offerta minima ammessa (75%)', U.eur(r.offertaMinima));
+    if (mn) h += riga(mn.avviso ? 'Offerta minima ammessa (dall\'avviso)' : 'Offerta minima ammessa (75% del prezzo base)', U.eur(mn.importo));
+    h += notaMinima(mn);
     h += riga('La tua offerta', U.eur(r.offerta));
-    if (!r.offertaValida) h += '<div class="callout warn">⚠ L\'offerta è sotto il 75% del prezzo base: non sarebbe valida.</div>';
+    if (mn && r.offerta < mn.importo) h += '<div class="callout warn">⚠ L\'offerta è sotto ' + (mn.avviso ? 'l\'offerta minima dell\'avviso' : 'il 75% del prezzo base') + ': non sarebbe valida.</div>';
     h += riga('Imposte (' + U.esc(reg.nome) + ')', U.eur(imp.totale));
     imp.voci.forEach(function (v) { h += riga(U.esc(v.voce), U.eur(v.importo), 'sub'); });
     if (imp.prezzoValore) h += '<p class="note">Registro calcolato con il prezzo-valore: base ' + U.eur(imp.base) + ' (rendita × 1,05 × ' + reg.prezzoValore + ') invece dell\'offerta. Va chiesto prima della registrazione del decreto di trasferimento.</p>';
@@ -52,7 +103,7 @@
     r.extra.forEach(function (v) { if (v.importo) h += riga(U.esc(v.voce), U.eur(v.importo)); });
     h += riga('Costo totale', U.eur(r.totale), 'total');
     h += riga('Valore di mercato', U.eur(r.valoreMercato));
-    h += verdetto(r) + bloccoOffertaMax(max, 'iOfferta');
+    h += verdetto(r) + bloccoOffertaMax(max, 'iOfferta', rif);
     h += riga('Cauzione da versare con l\'offerta (circa ' + U.pct(T.asta.cauzione.quota, 0) + ')', U.eur(r.offerta * T.asta.cauzione.quota));
 
     // Dopo l'acquisto
@@ -70,7 +121,7 @@
       dopo += riga('Guadagno netto stimato', U.eur(vend - r.totale - pv.imposta), 'total');
     }
     if (dopo) h += '<h3 style="margin-top:16px">Dopo l\'acquisto</h3>' + dopo;
-    h += bloccoStrategie(inp);
+    h += bloccoStrategie(inp, rif);
     h += bloccoSalva();
     out.innerHTML = h;
     ultimo.immobile = { tipo: 'immobile', input: inp, totale: r.totale, sconto: r.sconto, giudizio: r.giudizio.etichetta, tono: r.giudizio.tono, offertaMax: max };
@@ -80,19 +131,22 @@
   function forchetta(f, fmt) {
     fmt = fmt || U.eur;
     if (!f) return '—';
-    return Math.round(f.min) === Math.round(f.max) || fmt(f.min) === fmt(f.max) ? fmt(f.min) : fmt(Math.min(f.min, f.max)) + ' – ' + fmt(Math.max(f.min, f.max));
+    // si confrontano i testi: con le percentuali (frazioni) Math.round dava 1 e 1 e la forchetta spariva
+    return fmt(f.min) === fmt(f.max) ? fmt(f.min) : fmt(Math.min(f.min, f.max)) + ' – ' + fmt(Math.max(f.min, f.max));
   }
-  function bloccoStrategie(inp) {
+  function bloccoStrategie(inp, rif) {
     var mq = n('sMq'), canone = n('sCanone');
     var lavoriRiv = n('sLavori') || (mq ? mq * T.rivendita.lavoriEuroMq.medi : 0);
-    var valMin = inp.valoreMercato, valMax = inp.valoreMercato;
-    if (stimaCorrente && stimaCorrente.min && !inp.valoreManuale) { valMin = stimaCorrente.min; valMax = stimaCorrente.max; }
+    // "Ci vivo": con il valore del sito la sua forchetta (min–max); con un valore scritto da te, quello.
+    // "Ristrutturo e rivendo" senza il valore dopo i lavori vende al valore del campo, come dice la nota della pagina
+    // (non al massimo della forchetta, che senza lavori sarebbe ottimista)
+    var valMin = rif.min, valMax = rif.max;
     var dopo = n('sValoreDopo');
     var r = C.strategie({
       prezzoBase: inp.prezzoBase, offerta: inp.offerta, rendita: inp.rendita, condominioCorrente: inp.condominioCorrente, condominioPrecedente: inp.condominioPrecedente,
       liberazione: inp.liberazione, speseProcedura: inp.speseProcedura, altri: inp.altri, lavori: inp.lavori, lavoriRistrutturazione: lavoriRiv,
-      valore: { min: valMin, max: valMax }, valoreDopoLavori: dopo ? { min: dopo, max: dopo } : null,
-      canoneMese: canone ? { min: canone, max: canone } : (stimaCorrente && stimaCorrente.canoneMin ? { min: stimaCorrente.canoneMin, max: stimaCorrente.canoneMax } : null),
+      valore: { min: valMin, max: valMax }, valoreDopoLavori: dopo ? { min: dopo, max: dopo } : inp.valoreMercato > 0 ? { min: inp.valoreMercato, max: inp.valoreMercato } : null,
+      canoneMese: canone ? { min: canone, max: canone } : null,
       contratto: $('#sContratto').value, aliquotaImu: n('iImuAliquota') / 100, mesiOperazione: n('sMesi') || 12
     }, T);
     var pct = function (x) { return U.pct(x, 1); };
@@ -136,9 +190,11 @@
       ultimo.veicolo = null; aggiornaRiepilogo(); return;
     }
     var r = C.costoVeicolo(inp, T);
-    var max = C.offertaMassima(C.costoVeicolo, inp, T);
+    var rif = valoreRiferimento('veicolo', inp.valoreMercato);
+    var max = offertaMaxCon(C.costoVeicolo, inp, rif), mn = minimaDa('veicolo', inp.prezzoBase);
     var h = '<h3>Risultato</h3>';
-    if (inp.prezzoBase) h += riga('Offerta minima indicativa (75% del prezzo base)', U.eur(C.offertaMinima(inp.prezzoBase, T)));
+    // per veicoli e beni la regola del 75% (art. 571 c.p.c.) è solo indicativa: un'offerta minima uguale al prezzo base è normale
+    if (mn) h += riga(mn.avviso ? 'Offerta minima (dall\'avviso)' : 'Offerta minima indicativa (75% del prezzo base)', U.eur(mn.importo));
     h += riga('Aggiudicazione', U.eur(r.offerta));
     r.voci.forEach(function (v) {
       if (!v.importo) return;
@@ -149,7 +205,7 @@
     if (inp.tipo === 'moto' && !inp.iptManuale) h += '<p class="note">Per le moto inserisci l\'IPT indicata dall\'ACI: le tariffe sono diverse da quelle delle auto.</p>';
     h += riga('Costo totale', U.eur(r.totale), 'total');
     h += riga('Valore di mercato', U.eur(r.valoreMercato));
-    h += verdetto(r) + bloccoOffertaMax(max, 'vOfferta');
+    h += verdetto(r) + bloccoOffertaMax(max, 'vOfferta', rif);
     if (inp.tipo === 'auto' && inp.kw) {
       var b = C.bolloAuto({ kw: inp.kw, euro: $('#vEuro').value, regione: $('#vRegione').value, anniVeicolo: n('vEta') }, T);
       h += '<h3 style="margin-top:16px">Costi annuali</h3>' + riga('Bollo auto annuo stimato', U.eur(b.bollo, 2));
@@ -202,28 +258,47 @@
     aggiornaRiepilogo();
   }
 
+  // valore del sito come nella scheda (js/asta.js): prima quello della raccolta, poi quello inserito da te per le aste copiate a mano
+  function valoreDaAsta(a, tab) {
+    if (a.valore > 0) {
+      var c = Math.round(a.valore);
+      return { tab: tab, centrale: c, min: Math.round(a.valoreMin > 0 ? a.valoreMin : c), max: Math.round(a.valoreMax > 0 ? a.valoreMax : c), fonte: a.fonteValore || null,
+        etichetta: a.valoreEtichetta || FONTI_VALORE[a.fonteValore] || 'valore stimato dalla raccolta', affidabilita: a.affidabilita || null };
+    }
+    if (a.valoreMercato > 0) { var m = Math.round(a.valoreMercato); return { tab: tab, centrale: m, min: m, max: m, fonte: 'manuale', etichetta: FONTI_VALORE.manuale, affidabilita: null }; }
+    return null;
+  }
+
   function caricaAsta(id) {
     astaCorrente = id ? S.asta(id) || (S.seguita(id) || {}).copia || null : null;
     var a = astaCorrente, info = $('#infoAsta');
-    if (!a) { info.innerHTML = ''; calcImmobile(); calcVeicolo(); return; }
+    valoreSito = null; minimaAvviso = null;
+    if (!a) { info.innerHTML = ''; notaValore('immobile'); notaValore('veicolo'); calcImmobile(); calcVeicolo(); return; }
     var link = U.linkSicuro(a.linkAvviso);
     info.innerHTML = '<b>' + U.esc(a.titolo) + '</b> · asta del ' + U.dataIt(a.dataAsta) + (link ? ' · <a href="' + U.esc(link) + '" target="_blank" rel="noopener">avviso originale ↗</a>' : '');
     var val = (S.seguita(a.id) || {}).valutazione;
-    if (a.categoria === 'immobile') {
+    var tab = a.categoria === 'immobile' ? 'immobile' : 'veicolo';
+    valoreSito = valoreDaAsta(a, tab);
+    if (a.offertaMinima > 0 && a.prezzoBase > 0) minimaAvviso = { tab: tab, prezzoBase: a.prezzoBase, importo: a.offertaMinima };
+    var mercato = valoreSito ? valoreSito.centrale : '';
+    if (tab === 'immobile') {
       mostraTab('immobile');
-      $('#iBase').value = a.prezzoBase || ''; $('#iMercato').value = a.valoreMercato || '';
+      $('#iBase').value = a.prezzoBase || ''; $('#iMercato').value = mercato;
       $('#iOfferta').value = a.offertaMinima || (a.prezzoBase ? C.offertaMinima(a.prezzoBase, T) : '');
-      var occ = a.stato === 'occupato' ? '1500' : '0'; $('#iOccupazione').value = occ; $('#iLiberazione').value = occ;
+      // stesse ipotesi della scheda, così l'offerta massima di partenza è la stessa
+      $('#iRegime').value = IP.regime; $('#iProcedura').value = IP.speseProcedura;
+      var occ = a.stato === 'occupato' ? String(IP.liberazioneOccupato) : '0'; $('#iOccupazione').value = occ; $('#iLiberazione').value = occ;
       if (val && val.tipo === 'immobile') ripristina(val.input, { prezzoBase: 'iBase', offerta: 'iOfferta', valoreMercato: 'iMercato', regime: 'iRegime', rendita: 'iRendita', condominioCorrente: 'iCondCorr', condominioPrecedente: 'iCondPrec', lavori: 'iLavori', liberazione: 'iLiberazione', speseProcedura: 'iProcedura', altri: 'iAltri' });
     } else {
       mostraTab('veicolo');
-      $('#vTipo').value = a.categoria; $('#vBase').value = a.prezzoBase || ''; $('#vOfferta').value = a.prezzoBase || ''; $('#vMercato').value = a.valoreMercato || '';
+      $('#vTipo').value = a.categoria; $('#vBase').value = a.prezzoBase || ''; $('#vOfferta').value = a.prezzoBase || ''; $('#vMercato').value = mercato;
       if (val && val.tipo === 'veicolo') {
         ripristina(val.input, { tipo: 'vTipo', prezzoBase: 'vBase', offerta: 'vOfferta', valoreMercato: 'vMercato', kw: 'vKw', provincia: 'vProvincia', riparazioni: 'vRiparazioni', trasporto: 'vTrasporto', altri: 'vAltri' });
         $('#vDiritti').value = Math.round(val.input.dirittiQuota * 1000) / 10;
       }
       aggiornaCampiVeicolo();
     }
+    notaValore('immobile'); notaValore('veicolo');
     calcImmobile(); calcVeicolo();
   }
   function ripristina(input, mappa) { Object.keys(mappa).forEach(function (k) { if (input[k] !== undefined && input[k] !== '') $('#' + mappa[k]).value = input[k]; }); }

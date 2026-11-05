@@ -11,6 +11,8 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { leggiSchede } from './lib/arricchimento.mjs';
+import { fileCollegati } from './lib/correzioni.mjs';
 
 const require = createRequire(import.meta.url);
 const RADICE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -56,6 +58,10 @@ async function main() {
   const cartella = path.dirname(fileAste);
   const oggi = opzione('oggi', oggiRoma());
   const { dati, aste } = await leggiAste(fileAste);
+  // storico delle vendite dalle schede a pezzi (se ci sono): la stima "almeno il N° tentativo" (js/punteggio.js) guarda anche
+  // i prezzi dei tentativi precedenti, come nella scheda dell'asta (revisione del 2/11/2026)
+  const schede = await leggiSchede(fileCollegati(fileAste).dettagli);
+  for (const a of aste) { const s = schede.get(a.id); if (a.categoria === 'immobile' && s && Array.isArray(s.storico)) a.storico = s.storico; }
   const zone = Punteggio.indiceZone(aste);
   const t0 = Date.now();
   const r = Cacciatore.esegui({ aste, oggi, T, zone });

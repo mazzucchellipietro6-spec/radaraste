@@ -5,10 +5,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import {
-  pulisci, descrizione, urlRisorsa, termine, mqChiari, catasto, cauzione, estrai, ordina, scarica, nomeFileSicuro, MAX_FOTO, MAX_DESCRIZIONE
+  pulisci, descrizione, urlRisorsa, termine, mqChiari, catasto, cauzione, estrai, ordina, scarica, nomeFileSicuro, segnaposto, MAX_FOTO, MAX_DESCRIZIONE
 } from '../scripts/lib/dettaglio-pvp.mjs';
 import { componi, daVecchia, scriviSchede, leggiSchede, record, valutaTutte, arricchisci } from '../scripts/lib/arricchimento.mjs';
 import { FonteBloccata } from '../scripts/lib/http.mjs';
+import { converti } from '../scripts/fonti/pvp.mjs';
 
 const require = createRequire(import.meta.url);
 const Dettagli = require('../js/dettagli.js');
@@ -212,6 +213,33 @@ test('componi: senza dettaglio, descrizione dalla ricerca, superficie e rischi d
   // testo senza rischi: elenco vuoto (controllato); senza testo: nessun campo
   assert.deepEqual(componi(asta({ _pvp: { id: 77, descLotto: 'Appartamento luminoso' } }), { oggi: OGGI }).corti.rischi, []);
   assert.equal(componi(asta({ _pvp: { id: 77, descLotto: '' } }), { oggi: OGGI }).corti.rischi, undefined);
+});
+
+// caso reale: vendita 4649172 (Prato), tra gli "Affari di oggi" del 22/10/2026 con il titolo "NESSUNA"
+test('descrizione "NESSUNA" della fonte (pvp-4649172): titolo da categoria e comune, niente descrizione né rischi', async () => {
+  const f = JSON.parse(await readFile(new URL('./fixture/pvp-4649172.json', import.meta.url), 'utf8'));
+  const a = converti(f.ricerca);
+  assert.equal(a.titolo, 'Abbigliamento e calzature – Prato');
+  assert.deepEqual([a.comune, a.provincia, a.prezzoBase, a.categoria], ['Prato', 'PO', 2500, 'beni']);
+  const d = estrai(f.dettaglio, { oggi: '2026-10-22', descLotto: f.ricerca.descLotto });
+  assert.equal(d.descrizione, undefined);
+  assert.equal(d.stima, 6500);
+  // né dalla ricerca né dal dettaglio: nessun testo, quindi nessun "controllato, nessun rischio"
+  for (const nuovoDettaglio of [null, f.dettaglio]) {
+    const { scheda, corti } = componi(a, { nuovoDettaglio, oggi: '2026-10-22' });
+    assert.equal(scheda.descrizione, undefined);
+    assert.equal(corti.rischi, undefined);
+  }
+  // scheda letta il 22/10 prima della correzione e conservata nella cache: "NESSUNA." si toglie anche lì
+  const vecchiaScheda = { dettaglio: '2026-10-22', descrizione: 'NESSUNA.', stima: 6500, rischi: [] };
+  const c = componi(a, { vecchiaScheda, oggi: '2026-10-23' });
+  assert.equal(c.scheda.descrizione, undefined);
+  assert.equal(c.corti.rischi, undefined);
+  assert.equal(c.corti.stima, 6500);
+  assert.equal(segnaposto('NESSUNA'), true);
+  assert.equal(segnaposto(' Nessuno. '), true);
+  assert.equal(segnaposto('Nessuna servitù passiva'), false);
+  assert.equal(descrizione('Garage', [{ descrizione: 'NESSUNA' }]), 'Garage.');
 });
 
 test('componi: dettaglio nuovo (superficie dai beni) e dettaglio conservato da un pezzo precedente', () => {
