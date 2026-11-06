@@ -28,6 +28,18 @@ export default function Headquarters({ initial, isAdmin }: { initial: CompanySta
   const timer = useRef<number | undefined>(undefined);
   // contenitore fisso per le etichette HTML della scena (evita di ricrearle quando la tela si monta)
   const labels = useRef<HTMLDivElement>(null) as React.MutableRefObject<HTMLDivElement>;
+  const sceneBox = useRef<HTMLElement>(null);
+  const mobilePanel = useRef<HTMLElement>(null);
+  // dalla control room: seleziona e porta in vista la scheda (sopra la sede su schermi larghi, sotto su telefono)
+  const showAgent = useCallback((id: string) => {
+    setSelected(id);
+    window.requestAnimationFrame(() => {
+      const wide = window.matchMedia('(min-width: 1024px)').matches;
+      const el = wide ? sceneBox.current : mobilePanel.current;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      el?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    });
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -113,7 +125,7 @@ export default function Headquarters({ initial, isAdmin }: { initial: CompanySta
       )}
       {error && <p className="text-[0.85rem] text-danger">Aggiornamento non riuscito: {error}</p>}
 
-      <section aria-label="Sede virtuale 3D" className="relative min-h-[28rem] overflow-hidden rounded border border-stone bg-[#ece6db]" style={{ height: 'min(78vh, 52rem)' }}>
+      <section ref={sceneBox} aria-label="Sede virtuale 3D" className="relative min-h-[28rem] overflow-hidden rounded border border-stone bg-[#ece6db]" style={{ height: 'min(78vh, 52rem)' }}>
         {gl === false ? (
           <div className="grid h-full place-items-center p-6 text-center text-ash">Questo browser non supporta la grafica 3D (WebGL). Gli agenti sono elencati nella control room qui sotto.</div>
         ) : gl ? (
@@ -146,12 +158,12 @@ export default function Headquarters({ initial, isAdmin }: { initial: CompanySta
         )}
       </section>
       {agent && (
-        <aside className="rounded border border-stone bg-marble lg:hidden" aria-live="polite">
+        <aside ref={mobilePanel} className="rounded border border-stone bg-marble lg:hidden" aria-live="polite">
           <AgentPanel agent={agent} connected={connected} isAdmin={isAdmin} onOpenTask={setTask} onClose={() => setSelected(null)} onChanged={refresh} stamp={state.generatedAt} />
         </aside>
       )}
 
-      <ControlRoom state={state} live={live} onSelect={setSelected} onOpenTask={setTask} />
+      <ControlRoom state={state} live={live} onSelect={showAgent} onOpenTask={setTask} />
       {task && <TaskDetail id={task} onClose={() => setTask(null)} onOpenTask={setTask} onChanged={refresh} agents={state.agents} />}
     </div>
   );

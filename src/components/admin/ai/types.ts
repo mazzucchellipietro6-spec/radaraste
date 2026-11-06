@@ -127,7 +127,29 @@ export const since = (s: string | null | undefined) => {
   return h < 48 ? `${h} h fa` : `${Math.round(h / 24)} g fa`;
 };
 
+/** Solo per l'anteprima statica (pagina dimostrativa): risposte di esempio al posto delle API del pannello. */
+export interface DemoData {
+  state: CompanyState;
+  agents: Record<string, unknown>;
+  tasks: Record<string, unknown>;
+}
+declare global {
+  interface Window {
+    __WC_DEMO__?: DemoData;
+  }
+}
+function demoApi(demo: DemoData, url: string, init?: RequestInit): unknown {
+  if (init?.method && init.method !== 'GET') throw new Error('Anteprima: qui non si assegnano incarichi. Nel pannello pubblicato l’incarico va in coda e l’agente lo esegue.');
+  if (url.endsWith('/api/admin/ai/state')) return { ...demo.state, generatedAt: demo.state.generatedAt };
+  const a = /\/api\/admin\/ai\/agents\/([^/?]+)/.exec(url);
+  if (a) return demo.agents[a[1]] ?? { agent: {}, tasks: [], memory: [], shared: [], notes: [], usage: { usd: '0', input: '0', output: '0', calls: 0 } };
+  const t = /\/api\/admin\/ai\/tasks\/([^/?]+)/.exec(url);
+  if (t && demo.tasks[t[1]]) return demo.tasks[t[1]];
+  throw new Error('Non disponibile nell’anteprima');
+}
+
 export async function api<T = unknown>(url: string, init?: RequestInit): Promise<T> {
+  if (typeof window !== 'undefined' && window.__WC_DEMO__) return demoApi(window.__WC_DEMO__, url, init) as T;
   const r = await fetch(url, { credentials: 'same-origin', ...init, headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) } });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((data as { message?: string }).message ?? `Errore ${r.status}`);
