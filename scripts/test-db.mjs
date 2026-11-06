@@ -18,9 +18,13 @@ const psql = (db, args) => {
 psql(url.pathname.slice(1) || 'postgres', ['-c', `create database ${name}`]);
 try {
   psql(name, ['-f', 'supabase/tests/local-auth-stub.sql']);
-  psql(name, ['-f', 'supabase/migrations/20261101000000_init.sql']);
-  psql(name, ['-f', 'supabase/migrations/20261101000000_init.sql']);
+  // ogni migrazione due volte: devono essere rieseguibili
+  for (const m of ['20261101000000_init.sql', '20261106000000_ai_company.sql']) {
+    psql(name, ['-f', `supabase/migrations/${m}`]);
+    psql(name, ['-f', `supabase/migrations/${m}`]);
+  }
   psql(name, ['-f', 'supabase/tests/rls.test.sql']);
+  psql(name, ['-f', 'supabase/tests/ai-rls.test.sql']);
 } finally {
   psql(url.pathname.slice(1) || 'postgres', ['-c', `drop database if exists ${name}`]);
 }

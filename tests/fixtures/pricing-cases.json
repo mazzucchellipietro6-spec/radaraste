@@ -1,0 +1,189 @@
+[
+ {
+  "name": "RESALE CIF Dubai, costi verificati e margine 25%",
+  "model": "resale",
+  "inputs": {
+   "incoterm": "CIF",
+   "currency": "EUR",
+   "quantity": {
+    "value": 100,
+    "status": "verified"
+   },
+   "unit": "m2",
+   "purchase_unit_cost": {
+    "value": 120,
+    "status": "verified"
+   },
+   "processing_cost": {
+    "value": 500,
+    "status": "verified"
+   },
+   "packaging_cost": {
+    "value": 300,
+    "status": "verified"
+   },
+   "freight_cost": {
+    "value": 1800,
+    "status": "estimated"
+   },
+   "insurance_rate": {
+    "value": 0.5,
+    "status": "estimated"
+   },
+   "duties_rate": {
+    "value": 5,
+    "status": "estimated"
+   },
+   "payment_fee_rate": {
+    "value": 1,
+    "status": "verified"
+   },
+   "target_margin_rate": {
+    "value": 25,
+    "status": "verified"
+   }
+  },
+  "expect": {
+   "landed_cost": 14669.0,
+   "sale_price_total": 19822.97,
+   "unit_price": 198.23,
+   "gross_margin": 4955.74,
+   "data_status": "estimated",
+   "breakdown": {
+    "goods": 12000.0,
+    "freight": 1800.0,
+    "insurance": 69.0,
+    "duties": 0.0
+   }
+  }
+ },
+ {
+  "name": "RESALE DDP con dazi e IVA all'importazione",
+  "model": "resale",
+  "inputs": {
+   "incoterm": "DDP",
+   "quantity": {
+    "value": 50,
+    "status": "verified"
+   },
+   "purchase_unit_cost": {
+    "value": 200,
+    "status": "verified"
+   },
+   "freight_cost": {
+    "value": 1000,
+    "status": "verified"
+   },
+   "insurance_cost": {
+    "value": 100,
+    "status": "verified"
+   },
+   "duties_rate": {
+    "value": 10,
+    "status": "verified"
+   },
+   "taxes_rate": {
+    "value": 5,
+    "status": "verified"
+   },
+   "target_margin_rate": {
+    "value": 20,
+    "status": "verified"
+   },
+   "processing_cost": {
+    "value": 0,
+    "status": "verified"
+   },
+   "packaging_cost": {
+    "value": 0,
+    "status": "verified"
+   },
+   "payment_fee_rate": {
+    "value": 0,
+    "status": "verified"
+   }
+  },
+  "expect": {
+   "landed_cost": 12820.5,
+   "sale_price_total": 16025.63,
+   "gross_margin": 3205.13,
+   "data_status": "verified",
+   "breakdown": {
+    "goods": 10000.0,
+    "duties": 1110.0,
+    "taxes": 610.5
+   }
+  }
+ },
+ {
+  "name": "BROKERAGE 3% pagata dal fornitore",
+  "model": "brokerage",
+  "inputs": {
+   "deal_value": {
+    "value": 80000,
+    "status": "verified"
+   },
+   "commission_rate": {
+    "value": 3,
+    "status": "verified"
+   },
+   "travel_cost": {
+    "value": 400,
+    "status": "estimated"
+   },
+   "payment_fee_rate": {
+    "value": 0.5,
+    "status": "verified"
+   },
+   "fixed_fee": {
+    "value": 0,
+    "status": "verified"
+   },
+   "samples_cost": {
+    "value": 0,
+    "status": "verified"
+   },
+   "other_costs": {
+    "value": 0,
+    "status": "verified"
+   }
+  },
+  "expect": {
+   "gmv_intermediated": 80000.0,
+   "commission_revenue": 2400.0,
+   "payment_fees": 12.0,
+   "net_contribution": 1988.0,
+   "data_status": "estimated"
+  }
+ },
+ {
+  "name": "RESALE FOB senza costi opzionali: risultato ipotetico",
+  "model": "resale",
+  "inputs": {
+   "incoterm": "FOB",
+   "quantity": {
+    "value": 10,
+    "status": "verified"
+   },
+   "purchase_unit_cost": {
+    "value": 100,
+    "status": "verified"
+   },
+   "freight_cost": {
+    "value": 999,
+    "status": "verified"
+   },
+   "target_margin_rate": {
+    "value": 30,
+    "status": "verified"
+   }
+  },
+  "expect": {
+   "landed_cost": 1000.0,
+   "sale_price_total": 1428.57,
+   "unit_price": 142.86,
+   "gross_margin": 428.57,
+   "data_status": "assumed"
+  }
+ }
+]

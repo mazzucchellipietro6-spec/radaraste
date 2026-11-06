@@ -12,3 +12,9 @@ playwright-report/
 *.log
 .DS_Store
 backups/
+
+# Servizio agenti (Python)
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

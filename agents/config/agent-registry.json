@@ -1,0 +1,883 @@
+[
+ {
+  "id": "01-ai-ceo",
+  "name": "AI CEO",
+  "department": "direzione",
+  "title": "Amministratore delegato AI",
+  "prompt_file": "config/agents/01-ai-ceo.md",
+  "effort": "high",
+  "monthly_budget_usd": 40,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "delegate_task",
+   "wait_for_delegates",
+   "list_agents",
+   "company_overview",
+   "finance_summary",
+   "pipeline_summary",
+   "approvals_list",
+   "ai_stats",
+   "advisory_doc_search",
+   "process_metrics"
+  ],
+  "can_delegate_to": [
+   "*"
+  ],
+  "objectives": [
+   "Tradurre gli obiettivi del fondatore in piani eseguibili",
+   "Coordinare i 19 specialisti e raccogliere i risultati",
+   "Riferire al fondatore con fatti verificati, stime e rischi separati"
+  ],
+  "kpis": [
+   "tasks_completed_30d",
+   "success_rate",
+   "approvals_pending",
+   "revenue_month"
+  ]
+ },
+ {
+  "id": "02-chief-sales-officer",
+  "name": "Chief Sales Officer",
+  "department": "vendite",
+  "title": "Direttore commerciale",
+  "prompt_file": "config/agents/02-chief-sales-officer.md",
+  "effort": "medium",
+  "monthly_budget_usd": 25,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "delegate_task",
+   "wait_for_delegates",
+   "lead_search",
+   "opportunity_save",
+   "pipeline_summary",
+   "crm_add_activity",
+   "quote_draft",
+   "material_search",
+   "catalog_search"
+  ],
+  "can_delegate_to": [
+   "03-lead-generation",
+   "04-export-manager",
+   "05-crm-follow-up",
+   "13-pricing-manager",
+   "16-customer-success",
+   "17-sample-kit-manager",
+   "18-cfo"
+  ],
+  "objectives": [
+   "Gestire la pipeline commerciale",
+   "Qualificare le opportunità",
+   "Coordinare vendite export e preventivi"
+  ],
+  "kpis": [
+   "opportunities_open",
+   "pipeline_value",
+   "quotes_drafted_30d"
+  ]
+ },
+ {
+  "id": "03-lead-generation",
+  "name": "Lead Generation Agent",
+  "department": "vendite",
+  "title": "Ricerca nuovi clienti",
+  "prompt_file": "config/agents/03-lead-generation.md",
+  "effort": "medium",
+  "monthly_budget_usd": 25,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "web_search",
+   "web_fetch",
+   "lead_search",
+   "lead_save",
+   "lead_update",
+   "suppression_check"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Trovare importatori, distributori, architetti e aziende lapidee da fonti pubbliche lecite",
+   "Registrare fonte e data di ogni informazione",
+   "Evitare doppioni e contatti esclusi"
+  ],
+  "kpis": [
+   "leads_created_30d",
+   "leads_qualified_30d"
+  ]
+ },
+ {
+  "id": "04-export-manager",
+  "name": "Export Manager",
+  "department": "vendite",
+  "title": "Responsabile export",
+  "prompt_file": "config/agents/04-export-manager.md",
+  "effort": "medium",
+  "monthly_budget_usd": 20,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "web_search",
+   "web_fetch",
+   "market_analysis_save",
+   "market_analysis_search",
+   "shipment_search",
+   "lead_search",
+   "delegate_task",
+   "wait_for_delegates"
+  ],
+  "can_delegate_to": [
+   "14-logistics-manager",
+   "24-legal-counsel",
+   "25-tax-accounting-advisor"
+  ],
+  "objectives": [
+   "Analizzare i Paesi obiettivo",
+   "Preparare requisiti di importazione, documenti e logistica",
+   "Segnalare rischi doganali e di sanzioni"
+  ],
+  "kpis": [
+   "market_analyses_30d"
+  ]
+ },
+ {
+  "id": "05-crm-follow-up",
+  "name": "CRM & Follow-up Agent",
+  "department": "vendite",
+  "title": "Gestione CRM e follow-up",
+  "prompt_file": "config/agents/05-crm-follow-up.md",
+  "effort": "low",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "lead_search",
+   "lead_update",
+   "crm_add_activity",
+   "opportunity_save",
+   "pipeline_summary",
+   "email_draft",
+   "suppression_check"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Tenere pulito il CRM",
+   "Programmare follow-up consentiti",
+   "Preparare email da approvare, nel rispetto dei consensi"
+  ],
+  "kpis": [
+   "followups_done_30d",
+   "opportunities_open"
+  ]
+ },
+ {
+  "id": "06-marketing-director",
+  "name": "Marketing Director",
+  "department": "marketing",
+  "title": "Direttore marketing",
+  "prompt_file": "config/agents/06-marketing-director.md",
+  "effort": "medium",
+  "monthly_budget_usd": 20,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "delegate_task",
+   "wait_for_delegates",
+   "marketing_asset_save",
+   "marketing_search",
+   "web_search",
+   "catalog_search",
+   "market_analysis_search"
+  ],
+  "can_delegate_to": [
+   "07-content-creator",
+   "08-seo-website-manager",
+   "09-advertising-agent"
+  ],
+  "objectives": [
+   "Definire strategie per mercato e segmento",
+   "Coordinare contenuti, SEO e campagne"
+  ],
+  "kpis": [
+   "marketing_assets_30d"
+  ]
+ },
+ {
+  "id": "07-content-creator",
+  "name": "Content Creator",
+  "department": "marketing",
+  "title": "Contenuti",
+  "prompt_file": "config/agents/07-content-creator.md",
+  "effort": "low",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "marketing_asset_save",
+   "marketing_search",
+   "catalog_search"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Scrivere testi, schede e materiali commerciali basati solo su dati documentati"
+  ],
+  "kpis": [
+   "marketing_assets_30d"
+  ]
+ },
+ {
+  "id": "08-seo-website-manager",
+  "name": "SEO & Website Manager",
+  "department": "marketing",
+  "title": "SEO e sito",
+  "prompt_file": "config/agents/08-seo-website-manager.md",
+  "effort": "low",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "web_search",
+   "web_fetch",
+   "marketing_asset_save",
+   "marketing_search",
+   "catalog_search"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Proporre miglioramenti SEO per lingua e mercato",
+   "Analizzare parole chiave e concorrenza"
+  ],
+  "kpis": [
+   "marketing_assets_30d"
+  ]
+ },
+ {
+  "id": "09-advertising-agent",
+  "name": "Advertising Agent",
+  "department": "marketing",
+  "title": "Pubblicità",
+  "prompt_file": "config/agents/09-advertising-agent.md",
+  "effort": "low",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "web_search",
+   "marketing_asset_save",
+   "marketing_search"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Preparare campagne pubblicitarie da approvare; nessuna spesa senza approvazione"
+  ],
+  "kpis": [
+   "marketing_assets_30d",
+   "approvals_requested_30d"
+  ]
+ },
+ {
+  "id": "10-product-manager",
+  "name": "Product Manager",
+  "department": "prodotto",
+  "title": "Catalogo e prodotto",
+  "prompt_file": "config/agents/10-product-manager.md",
+  "effort": "low",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "catalog_search",
+   "material_search",
+   "supplier_search"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Mantenere il catalogo coerente con i materiali documentati dai fornitori",
+   "Segnalare dati mancanti"
+  ],
+  "kpis": [
+   "materials_to_recheck"
+  ]
+ },
+ {
+  "id": "11-supplier-manager",
+  "name": "Supplier Manager",
+  "department": "prodotto",
+  "title": "Fornitori e acquisti",
+  "prompt_file": "config/agents/11-supplier-manager.md",
+  "effort": "medium",
+  "monthly_budget_usd": 20,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "supplier_search",
+   "supplier_detail",
+   "material_search",
+   "certification_list",
+   "purchase_order_draft"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Gestire anagrafiche, condizioni e certificazioni",
+   "Preparare ordini di acquisto da approvare"
+  ],
+  "kpis": [
+   "purchase_orders_drafted_30d",
+   "certifications_expiring"
+  ]
+ },
+ {
+  "id": "12-quality-control",
+  "name": "Quality Control Agent",
+  "department": "prodotto",
+  "title": "Controllo qualità",
+  "prompt_file": "config/agents/12-quality-control.md",
+  "effort": "low",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "material_search",
+   "supplier_detail",
+   "certification_list",
+   "supplier_search"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Verificare prove di disponibilità, lotti e certificazioni",
+   "Segnalare dati scaduti o non verificati"
+  ],
+  "kpis": [
+   "materials_to_recheck",
+   "certifications_expiring"
+  ]
+ },
+ {
+  "id": "13-pricing-manager",
+  "name": "Pricing Manager",
+  "department": "prodotto",
+  "title": "Prezzi e margini",
+  "prompt_file": "config/agents/13-pricing-manager.md",
+  "effort": "medium",
+  "monthly_budget_usd": 20,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "pricing_simulate",
+   "material_search",
+   "supplier_detail",
+   "catalog_search",
+   "delegate_task",
+   "wait_for_delegates",
+   "tax_simulate"
+  ],
+  "can_delegate_to": [
+   "23-business-analyst",
+   "25-tax-accounting-advisor"
+  ],
+  "objectives": [
+   "Calcolare prezzi RESALE e commissioni BROKERAGE separati",
+   "Rendere esplicite le ipotesi su trasporto, dazi e margini"
+  ],
+  "kpis": [
+   "pricing_sims_30d"
+  ]
+ },
+ {
+  "id": "14-logistics-manager",
+  "name": "Logistics Manager",
+  "department": "operazioni",
+  "title": "Logistica",
+  "prompt_file": "config/agents/14-logistics-manager.md",
+  "effort": "low",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "shipment_search",
+   "order_search",
+   "web_search"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Stimare trasporto e tempi",
+   "Seguire le spedizioni in corso"
+  ],
+  "kpis": [
+   "shipments_in_transit"
+  ]
+ },
+ {
+  "id": "15-order-manager",
+  "name": "Order Manager",
+  "department": "operazioni",
+  "title": "Ordini",
+  "prompt_file": "config/agents/15-order-manager.md",
+  "effort": "low",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "order_search",
+   "order_detail",
+   "shipment_search",
+   "purchase_order_draft",
+   "supplier_detail"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Seguire ordini, acconti, conferme dei fornitori e consegne"
+  ],
+  "kpis": [
+   "orders_open",
+   "purchase_orders_drafted_30d"
+  ]
+ },
+ {
+  "id": "16-customer-success",
+  "name": "Customer Success Agent",
+  "department": "vendite",
+  "title": "Assistenza clienti",
+  "prompt_file": "config/agents/16-customer-success.md",
+  "effort": "low",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "lead_search",
+   "order_search",
+   "crm_add_activity",
+   "opportunity_save"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Seguire i clienti dopo la vendita",
+   "Raccogliere riscontri e nuove opportunità"
+  ],
+  "kpis": [
+   "followups_done_30d"
+  ]
+ },
+ {
+  "id": "17-sample-kit-manager",
+  "name": "Sample Kit Manager",
+  "department": "operazioni",
+  "title": "Campionature",
+  "prompt_file": "config/agents/17-sample-kit-manager.md",
+  "effort": "low",
+  "monthly_budget_usd": 10,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "catalog_search",
+   "material_search",
+   "crm_add_activity",
+   "lead_search"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Preparare kit di campioni per lead qualificati; prenotazioni di stock solo con approvazione"
+  ],
+  "kpis": [
+   "approvals_requested_30d"
+  ]
+ },
+ {
+  "id": "18-cfo",
+  "name": "CFO / Controller",
+  "department": "direzione",
+  "title": "Finanza",
+  "prompt_file": "config/agents/18-cfo.md",
+  "effort": "high",
+  "monthly_budget_usd": 25,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "finance_summary",
+   "pricing_simulate",
+   "order_search",
+   "commission_search",
+   "pipeline_summary",
+   "delegate_task",
+   "wait_for_delegates",
+   "tax_simulate",
+   "advisory_doc_search"
+  ],
+  "can_delegate_to": [
+   "13-pricing-manager",
+   "23-business-analyst",
+   "25-tax-accounting-advisor"
+  ],
+  "objectives": [
+   "Separare ricavi di rivendita, commissioni, valore intermediato, margini e incassi",
+   "Preparare previsioni e simulazioni economiche"
+  ],
+  "kpis": [
+   "revenue_month",
+   "pricing_sims_30d"
+  ]
+ },
+ {
+  "id": "19-business-intelligence",
+  "name": "Business Intelligence Analyst",
+  "department": "direzione",
+  "title": "Analisi dati",
+  "prompt_file": "config/agents/19-business-intelligence.md",
+  "effort": "medium",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "finance_summary",
+   "pipeline_summary",
+   "company_overview",
+   "ai_stats",
+   "lead_search",
+   "process_metrics"
+  ],
+  "can_delegate_to": [],
+  "objectives": [
+   "Analizzare andamento commerciale e costi degli agenti",
+   "Individuare colli di bottiglia"
+  ],
+  "kpis": [
+   "tasks_completed_30d"
+  ]
+ },
+ {
+  "id": "20-compliance-risk",
+  "name": "Compliance & Risk Manager",
+  "department": "direzione",
+  "title": "Conformità e rischi",
+  "prompt_file": "config/agents/20-compliance-risk.md",
+  "effort": "high",
+  "monthly_budget_usd": 20,
+  "daily_task_limit": 40,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "approvals_list",
+   "web_search",
+   "web_fetch",
+   "market_analysis_search",
+   "lead_search",
+   "suppression_check",
+   "delegate_task",
+   "wait_for_delegates",
+   "advisory_doc_search"
+  ],
+  "can_delegate_to": [
+   "24-legal-counsel",
+   "25-tax-accounting-advisor"
+  ],
+  "objectives": [
+   "Verificare consensi, privacy, sanzioni e requisiti legali",
+   "Segnalare rischi prima di impegni o comunicazioni"
+  ],
+  "kpis": [
+   "approvals_pending"
+  ]
+ },
+ {
+  "id": "21-operations-manager",
+  "name": "Operations Manager",
+  "department": "advisory",
+  "team": "Ingegneria gestionale",
+  "title": "Processi e coordinamento dei reparti",
+  "effort": "medium",
+  "monthly_budget_usd": 20,
+  "daily_task_limit": 30,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "delegate_task",
+   "wait_for_delegates",
+   "process_metrics",
+   "process_doc_save",
+   "advisory_doc_search",
+   "schedule_propose",
+   "order_search",
+   "shipment_search",
+   "supplier_search",
+   "company_overview",
+   "list_agents",
+   "ai_stats"
+  ],
+  "can_delegate_to": [
+   "11-supplier-manager",
+   "14-logistics-manager",
+   "15-order-manager",
+   "17-sample-kit-manager",
+   "22-business-process-engineer",
+   "23-business-analyst"
+  ],
+  "objectives": [
+   "Organizzare i processi e coordinare i reparti",
+   "Ottimizzare tempi e risorse",
+   "Individuare inefficienze e proporre miglioramenti operativi"
+  ],
+  "kpis": [
+   "tasks_completed_30d",
+   "improvements_proposed_30d",
+   "overdue_followups",
+   "approvals_waiting_hours"
+  ],
+  "prompt_file": "config/agents/21-operations-manager.md"
+ },
+ {
+  "id": "22-business-process-engineer",
+  "name": "Business Process Engineer",
+  "department": "advisory",
+  "team": "Ingegneria gestionale",
+  "title": "Flussi, procedure e KPI",
+  "effort": "medium",
+  "monthly_budget_usd": 15,
+  "daily_task_limit": 30,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "delegate_task",
+   "wait_for_delegates",
+   "process_metrics",
+   "process_doc_save",
+   "advisory_doc_search",
+   "schedule_propose",
+   "company_overview",
+   "ai_stats"
+  ],
+  "can_delegate_to": [
+   "23-business-analyst"
+  ],
+  "objectives": [
+   "Analizzare i flussi di lavoro e progettare procedure",
+   "Automatizzare i processi ripetitivi",
+   "Definire KPI e migliorare l'organizzazione interna"
+  ],
+  "kpis": [
+   "tasks_completed_30d",
+   "procedures_30d",
+   "kpis_defined",
+   "schedules_proposed"
+  ],
+  "prompt_file": "config/agents/22-business-process-engineer.md"
+ },
+ {
+  "id": "23-business-analyst",
+  "name": "Business Analyst",
+  "department": "advisory",
+  "team": "Ingegneria gestionale",
+  "title": "Ricavi, costi, margini e previsioni",
+  "effort": "medium",
+  "monthly_budget_usd": 20,
+  "daily_task_limit": 30,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "delegate_task",
+   "wait_for_delegates",
+   "finance_summary",
+   "revenue_history",
+   "revenue_forecast",
+   "profitability_analysis",
+   "sales_performance",
+   "pricing_simulate",
+   "pipeline_summary",
+   "process_doc_save",
+   "advisory_doc_search",
+   "commission_search"
+  ],
+  "can_delegate_to": [
+   "13-pricing-manager",
+   "19-business-intelligence"
+  ],
+  "objectives": [
+   "Analizzare ricavi, costi e margini, separando RESALE e BROKERAGE",
+   "Studiare la redditività dei prodotti e le performance commerciali",
+   "Elaborare previsioni e report per il CEO"
+  ],
+  "kpis": [
+   "tasks_completed_30d",
+   "reports_30d",
+   "forecasts_30d",
+   "revenue_month"
+  ],
+  "prompt_file": "config/agents/23-business-analyst.md"
+ },
+ {
+  "id": "24-legal-counsel",
+  "name": "Legal Counsel Agent",
+  "department": "advisory",
+  "team": "Avvocato aziendale AI",
+  "title": "Contratti, normativa e rischi legali",
+  "effort": "high",
+  "monthly_budget_usd": 25,
+  "daily_task_limit": 20,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "delegate_task",
+   "wait_for_delegates",
+   "web_search",
+   "web_fetch",
+   "legal_doc_save",
+   "advisory_doc_search",
+   "supplier_detail",
+   "order_detail",
+   "market_analysis_search",
+   "approvals_list"
+  ],
+  "can_delegate_to": [
+   "20-compliance-risk",
+   "25-tax-accounting-advisor"
+  ],
+  "objectives": [
+   "Analizzare contratti con fornitori e clienti, di distribuzione, intermediazione e commissione",
+   "Indicare giurisdizione e fonti normative aggiornate, con i punti da far verificare a un avvocato",
+   "Preparare bozze contrattuali e analisi dei rischi legali, privacy e compliance"
+  ],
+  "kpis": [
+   "tasks_completed_30d",
+   "legal_docs_30d",
+   "legal_reviews_pending"
+  ],
+  "prompt_file": "config/agents/24-legal-counsel.md"
+ },
+ {
+  "id": "25-tax-accounting-advisor",
+  "name": "Tax & Accounting Advisor",
+  "department": "advisory",
+  "team": "Commercialista AI",
+  "title": "IVA, fiscalità, contabilità e cash flow",
+  "effort": "high",
+  "monthly_budget_usd": 25,
+  "daily_task_limit": 20,
+  "tools": [
+   "submit_result",
+   "memory_search",
+   "memory_save",
+   "send_note",
+   "request_approval",
+   "delegate_task",
+   "wait_for_delegates",
+   "web_search",
+   "web_fetch",
+   "tax_simulate",
+   "tax_doc_save",
+   "advisory_doc_search",
+   "finance_summary",
+   "revenue_history",
+   "revenue_forecast",
+   "profitability_analysis",
+   "pricing_simulate",
+   "commission_search",
+   "order_search"
+  ],
+  "can_delegate_to": [
+   "23-business-analyst",
+   "24-legal-counsel"
+  ],
+  "objectives": [
+   "Analizzare IVA e imposte delle operazioni RESALE e BROKERAGE, italiane e internazionali",
+   "Seguire contabilità, costi, cash flow, bilancio e previsioni",
+   "Distinguere sempre dati contabili effettivi, stime e simulazioni"
+  ],
+  "kpis": [
+   "tasks_completed_30d",
+   "tax_docs_30d",
+   "tax_reviews_pending",
+   "revenue_month"
+  ],
+  "prompt_file": "config/agents/25-tax-accounting-advisor.md"
+ }
+]
