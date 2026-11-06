@@ -33,6 +33,14 @@ const k = await withUser(admin.user.claims, async (tx) => {
       (select count(*) from public.deals where stage in ('lead', 'negotiation'))::int as open_deals,
       (select count(*) from public.shipments where status in ('booked', 'in_transit'))::int as shipping`)[0]);
   }
+  if (has('ai')) {
+    Object.assign(out, (await tx<K[]>`select
+      (select count(*) from public.approvals where status = 'pending')::int as ai_approvals,
+      (select count(*) from public.ai_tasks where status in ('queued', 'running', 'waiting'))::int as ai_active,
+      (select count(*) from public.ai_tasks where status in ('failed', 'blocked') and finished_at > now() - interval '7 days')::int as ai_problems,
+      (select count(*) from public.ai_runtime where last_seen > now() - interval '45 seconds' and (info ->> 'llm_configured')::boolean)::int as ai_online,
+      (select count(*) from public.ai_agents where enabled)::int as ai_agents`)[0]);
+  }
   return out;
 });
 type Recent = { at: Date; actor: string; action: string; table_name: string };
@@ -42,6 +50,19 @@ const n = (v: unknown) => Number(v ?? 0);
 
 <Admin title="Dashboard generale" active="dashboard">
   <p class="mt-2 text-ash">Benvenuto. Qui trovi ciò che richiede attenzione oggi.</p>
+  {
+    has('ai') && (
+      <section class="mt-8">
+        <h2 class="font-display text-xl">Azienda AI</h2>
+        <div class="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatTile label="Agenti" value={n(k.ai_online) ? `${n(k.ai_agents)} collegati` : 'Non collegati'} note={n(k.ai_online) ? 'Servizio agenti attivo' : 'Servizio agenti spento o senza chiave Claude'} href="/admin/ai/" />
+          <StatTile label="Approvazioni da decidere" value={String(n(k.ai_approvals))} href="/admin/approvals/" />
+          <StatTile label="Incarichi in corso o in coda" value={String(n(k.ai_active))} href="/admin/ai/" />
+          <StatTile label="Incarichi falliti o bloccati (7 gg)" value={String(n(k.ai_problems))} href="/admin/ai/" />
+        </div>
+      </section>
+    )
+  }
   {
     has('customers') && (
       <section class="mt-8">

@@ -86,6 +86,17 @@ Netlify: Build & deploy → Build hooks) e mettetelo in `DEPLOY_HOOK_URL`.
   completa delle 14 lingue costa pochi euro; le successive solo i testi cambiati.
 - **Statistiche**: `PUBLIC_PLAUSIBLE_DOMAIN` e/o `PUBLIC_GA4_ID`. Si attivano solo dopo il consenso.
 
+## 8-bis. Azienda AI (servizio agenti)
+
+1. Applicate anche `supabase/migrations/20261106000000_ai_company.sql`.
+2. Pubblicate il servizio agenti come container sempre acceso (`docker build -f agents/Dockerfile .`, poi
+   Railway, Fly.io, Render o una VM) con `ANTHROPIC_API_KEY`, `AGENTS_DATABASE_URL` (Supabase → Database →
+   Connection string, modalità **session**, porta 5432), `AGENTS_API_TOKEN`, `AGENTS_WS_SECRET`,
+   `RESEND_API_KEY` ed `EMAIL_FROM`. Non usate funzioni serverless: gli incarichi durano minuti.
+3. Sul sito impostate lo stesso `AGENTS_WS_SECRET` e `AGENTS_PUBLIC_URL` (indirizzo https del servizio).
+4. Nel pannello: Azienda AI → Sede 3D. Con servizio e chiave attivi gli agenti risultano «Disponibile».
+   Dettagli, costi e limiti: [docs/AI-COMPANY.md](docs/AI-COMPANY.md).
+
 ## 9. Controlli dopo la pubblicazione
 
 - [ ] La home si apre in italiano, inglese, arabo (da destra a sinistra) e giapponese.

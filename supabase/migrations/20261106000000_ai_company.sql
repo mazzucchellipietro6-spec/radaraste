@@ -646,3 +646,42 @@ end $$;
 drop trigger if exists advisory_documents_guard on public.advisory_documents;
 create trigger advisory_documents_guard before update on public.advisory_documents
   for each row execute function public.advisory_documents_guard();
+
+-- Un ordine al fornitore diventa "approvato", "inviato" o "confermato" solo dopo l'approvazione del
+-- fondatore registrata in approvals (dal pannello nessuno può saltare questo passaggio).
+create or replace function public.purchase_orders_guard() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if current_user not in ('authenticated', 'anon') then return new; end if;
+  if new.status in ('approved', 'sent', 'confirmed') and (tg_op = 'INSERT' or old.status in ('draft', 'pending_approval')) then
+    if not exists (select 1 from public.approvals a where a.id = new.approval_id and a.kind = 'supplier_purchase'
+                   and a.status in ('approved', 'executed')) then
+      raise exception 'Serve l''approvazione del fondatore prima di approvare o inviare un ordine al fornitore' using errcode = '42501';
+    end if;
+  end if;
+  if tg_op = 'UPDATE' and (new.total is distinct from old.total or new.lines is distinct from old.lines or new.supplier_id is distinct from old.supplier_id)
+     and old.status <> 'draft' then
+    raise exception 'Righe, totale e fornitore non si cambiano dopo la richiesta di approvazione' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+drop trigger if exists purchase_orders_guard on public.purchase_orders;
+create trigger purchase_orders_guard before insert or update on public.purchase_orders
+  for each row execute function public.purchase_orders_guard();
+
+-- Chi verifica una certificazione resta registrato
+create or replace function public.certifications_verify_stamp() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if new.verified and (tg_op = 'INSERT' or not old.verified) then
+    new.verified_at := now();
+    new.verified_by := auth.uid();
+  elsif not new.verified then
+    new.verified_at := null;
+    new.verified_by := null;
+  end if;
+  return new;
+end $$;
+drop trigger if exists supplier_certifications_verify on public.supplier_certifications;
+create trigger supplier_certifications_verify before insert or update on public.supplier_certifications
+  for each row execute function public.certifications_verify_stamp();

@@ -5,6 +5,20 @@ import { authConfigured, currentUser, loadProfile } from '~/lib/server/auth';
 import { dbConfigured } from '~/lib/server/db';
 
 import { SECURITY_HEADERS } from '~/lib/security-headers.mjs';
+import { env } from '~/lib/server/env';
+
+/** Nel pannello la CSP permette anche il WebSocket del servizio agenti (AGENTS_PUBLIC_URL). */
+function cspFor(isAdmin: boolean, csp: string) {
+  const base = isAdmin ? env('AGENTS_PUBLIC_URL') : undefined;
+  if (!base) return csp;
+  try {
+    const u = new URL(base);
+    const ws = `${u.protocol === 'https:' ? 'wss' : 'ws'}://${u.host}`;
+    return csp.replace(/connect-src ([^;]+)/, `connect-src $1 ${ws}`);
+  } catch {
+    return csp;
+  }
+}
 
 export const onRequest = defineMiddleware(async (ctx, next) => {
   const path = ctx.url.pathname;
@@ -33,7 +47,7 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
       if (k === 'strict-transport-security' && !import.meta.env.PROD) continue;
       // in sviluppo Vite usa script e connessioni che la CSP bloccherebbe
       if (k === 'content-security-policy' && !import.meta.env.PROD) continue;
-      if (!res.headers.has(k)) res.headers.set(k, v);
+      if (!res.headers.has(k)) res.headers.set(k, k === 'content-security-policy' ? cspFor(isAdmin, v) : v);
     }
     if (isAdmin || isAdminApi || path.includes('/account/')) {
       res.headers.set('cache-control', 'private, no-store');

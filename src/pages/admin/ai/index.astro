@@ -1,0 +1,20 @@
+---
+// Azienda AI: sede virtuale 3D con i 25 dipendenti, scheda di ogni agente e control room.
+import Admin from '~/layouts/Admin.astro';
+import Headquarters from '~/components/admin/ai/Headquarters';
+import { canSeeAi, companyState } from '~/lib/server/company';
+export const prerender = false;
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect('/it/account/login/?next=/admin/ai/');
+if (!canSeeAi(admin.profile)) return Astro.redirect('/admin/?denied=ai');
+const initial = await companyState(admin.user, admin.profile);
+---
+
+<Admin title="Sede dell'azienda AI" active="ai" wide>
+  <p class="mt-2 max-w-3xl text-ash">
+    {initial.agents.length} agenti AI in {initial.departments.length} reparti, coordinati dall'AI CEO. Ogni personaggio è un agente reale del
+    servizio agenti: lo stato che vedi è quello registrato nel database. Gli agenti preparano e analizzano; acquisti, pagamenti, contratti,
+    preventivi vincolanti, sconti, prenotazioni di stock, operazioni legali e comunicazioni commerciali partono solo dopo la tua approvazione.
+  </p>
+  <Headquarters client:only="react" initial={initial} isAdmin={admin.profile.role === 'admin'} />
+</Admin>

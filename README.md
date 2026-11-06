@@ -19,6 +19,8 @@ brokerage, ordini, spedizioni e pagamenti.
 | [TRANSLATIONS.md](TRANSLATIONS.md) | Come funzionano e come si correggono le traduzioni |
 | [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) | Cosa è stato fatto, cosa resta, cosa serve dal committente |
 | [IMMAGINI.md](IMMAGINI.md) | Elenco delle foto da scattare, con nomi e dimensioni |
+| [docs/AI-COMPANY.md](docs/AI-COMPANY.md) | Azienda AI: 25 agenti, sede 3D, approvazioni, avvio, costi, sicurezza |
+| [agents/README.md](agents/README.md) | Servizio agenti (Python): avvio, variabili, test |
 
 ## Tecnologie
 
@@ -102,12 +104,16 @@ npm test                                # pagine pubbliche, desktop e telefono
 I test completi (prenotazione, registrazione con email, area clienti, pannello con verifica in due
 passaggi) usano un ambiente di prova locale, **mai il database vero**:
 
-1. un PostgreSQL locale con lo schema: `psql "$DATABASE_URL" -f supabase/tests/local-auth-stub.sql -f supabase/migrations/20261101000000_init.sql`
+1. un PostgreSQL locale con lo schema: `psql "$DATABASE_URL" -f supabase/tests/local-auth-stub.sql -f supabase/migrations/20261101000000_init.sql -f supabase/migrations/20261106000000_ai_company.sql`
 2. nel `.env`: `DATABASE_URL` del Postgres locale, `PUBLIC_SUPABASE_URL=http://localhost:54330`,
    chiavi Supabase di prova qualsiasi, `EMAIL_OUTBOX_DIR=./outbox`
 3. `E2E_DB=1 npm test` (Playwright avvia da solo il finto servizio di accesso `tests/support/mock-gotrue.mjs`)
 
 Il test di Stripe parte solo con una chiave di test (`sk_test_...`).
+
+Azienda AI: `TEST_DATABASE_URL=postgres://… npm run test:db` (permessi del database) e, nella cartella
+`agents/`, `TEST_DATABASE_URL=postgres://… python -m pytest` (servizio agenti, con un modello finto: non
+chiama Claude e non spende nulla). Dettagli in [docs/AI-COMPANY.md](docs/AI-COMPANY.md).
 
 ## Prima della pubblicazione
 

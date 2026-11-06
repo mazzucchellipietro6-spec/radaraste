@@ -27,6 +27,7 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/three": "0.186.0",
     "typescript": "^6.0.3"
   },
   "dependencies": {
@@ -56,6 +57,8 @@
     "@keystatic/astro": "^6.0.0",
     "@keystatic/core": "^0.6.9",
     "@pdf-lib/fontkit": "^1.1.1",
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.2",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
     "@tailwindcss/vite": "^4.3.3",
@@ -69,6 +72,7 @@
     "sharp": "^0.35.5",
     "stripe": "^23.1.0",
     "tailwindcss": "^4.3.3",
+    "three": "0.186.1",
     "zod": "^4.6.7"
   }
 }

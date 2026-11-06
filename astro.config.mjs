@@ -35,9 +35,9 @@ export default defineConfig({
   trailingSlash: 'ignore',
   build: { format: 'directory', inlineStylesheets: 'auto' },
   integrations: [
-    // Preact per le parti interattive del sito (leggero), React solo per il pannello Keystatic
+    // Preact per le parti interattive del sito (leggero), React per Keystatic e per la sede 3D dell'azienda AI
     preact({ include: ['**/islands/**'] }),
-    react({ include: ['**/keystatic.config.*', '**/node_modules/@keystatic/**'] }),
+    react({ include: ['**/keystatic.config.*', '**/node_modules/@keystatic/**', '**/components/admin/ai/**'] }),
     ...(keystaticEnabled ? [keystatic()] : []),
   ],
   vite: {

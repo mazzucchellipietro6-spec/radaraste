@@ -212,9 +212,9 @@ class Empty(Args):
     pass
 
 
-@tool("list_agents", "Elenco dei 20 agenti con ruolo, reparto e stato.", Empty, "coordination")
+@tool("list_agents", "Elenco dei 25 agenti con ruolo, reparto, team e stato.", Empty, "coordination")
 async def list_agents(ctx: ToolContext, a: Empty) -> dict:
-    rows = await ctx.db.fetch("select id, name, title, department, enabled from public.ai_agents order by id")
+    rows = await ctx.db.fetch("select id, name, title, department, team, enabled from public.ai_agents order by id")
     return {"agents": rows}
 
 

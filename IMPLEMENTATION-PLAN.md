@@ -26,6 +26,16 @@ Stato del progetto rispetto alle fasi richieste nel brief "WHITE CARRARA – Com
 | 20 | Test | ✅ test end-to-end (desktop e telefono, it/en/ar/ja), percorsi completi con database, test dei permessi, test veloci |
 | 21 | Documentazione | ✅ questi documenti |
 
+### Azienda AI (docs/AI-COMPANY.md)
+- [x] 25 agenti in 6 reparti, compreso Executive & Professional Advisory (Operations Manager, Business
+      Process Engineer, Business Analyst, Legal Counsel Agent, Tax & Accounting Advisor)
+- [x] Servizio agenti (Python/FastAPI): coda, deleghe con dipendenze, memoria, costi, budget, tentativi,
+      approvazioni, attività ricorrenti, API e WebSocket — 42 test
+- [x] Sede 3D, control room, approvazioni, simulatore prezzi, lead/CRM/opportunità, mercati, marketing,
+      ordini ai fornitori, certificazioni, documenti advisory nel pannello
+- [ ] Chiave Claude sul servizio e prima esecuzione reale (non verificata in sviluppo: nessuna chiave)
+- [ ] Revisione dei documenti legali e fiscali da parte di professionisti abilitati
+
 ## Serve dal committente
 
 Il sito non inventa dati: finché mancano, compaiono segnaposto visibili.
@@ -44,7 +54,8 @@ Il sito non inventa dati: finché mancano, compaiono segnaposto visibili.
 
 **Account e chiavi** (procedura in DEPLOYMENT.md)
 - [ ] Supabase, Vercel o Netlify, Resend con il dominio verificato, Cloudflare Turnstile
-- [ ] Facoltativi: Stripe, Anthropic (AI), Google Cloud (traduzioni), Plausible o Google Analytics
+- [ ] Facoltativi: Stripe, Anthropic (AI, necessaria per gli agenti), Google Cloud (traduzioni), Plausible o Google Analytics
+- [ ] Hosting del servizio agenti (container sempre acceso) e budget mensili degli agenti
 - [ ] Dominio
 
 ## Dopo la pubblicazione (consigliato)

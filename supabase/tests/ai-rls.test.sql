@@ -20,7 +20,8 @@ insert into public.ai_tasks (id, agent_id, title, instructions, status) values
 insert into public.approvals (id, kind, title, summary, requested_by_agent) values
   ('60000000-0000-0000-0000-000000000001', 'supplier_purchase', 'Acquisto di prova', 'Prova', '01-ai-ceo');
 insert into public.leads (company_name, dedupe_key) values ('Importatore Prova', 'importatore-prova|AE');
-insert into public.purchase_orders (supplier_id) select id from public.suppliers limit 1;
+insert into public.suppliers (id, name) values ('80000000-0000-0000-0000-000000000001', 'Fornitore di prova');
+insert into public.purchase_orders (supplier_id, status) values ('80000000-0000-0000-0000-000000000001', 'pending_approval');
 insert into public.advisory_documents (id, category, kind, title, body) values
   ('70000000-0000-0000-0000-000000000001', 'operations', 'procedure', 'Procedura preventivi', 'Passi');
 insert into public.advisory_documents (id, category, kind, title, body, jurisdiction, review_required, review_status, points_to_verify) values
@@ -150,6 +151,29 @@ do $$ begin
     where id = '70000000-0000-0000-0000-000000000002';
   update public.advisory_documents set status = 'final' where id = '70000000-0000-0000-0000-000000000002';
   assert (select reviewed_by from public.advisory_documents where id = '70000000-0000-0000-0000-000000000002') = '00000000-0000-0000-0000-0000000000a3', 'revisore non registrato';
+end $$;
+reset role;
+
+-- Ordini ai fornitori: dal pannello non si approvano senza l'approvazione del fondatore
+update public.profiles set permissions = '{ai,trade}' where email = 'staff.ai@example.com';
+select pg_temp.login('00000000-0000-0000-0000-0000000000a1', 'aal2');
+do $$ begin
+  begin
+    update public.purchase_orders set status = 'approved';
+    raise exception 'ordine al fornitore approvato senza il fondatore';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+do $$
+declare ap uuid;
+begin
+  insert into public.approvals (kind, title, summary, status) values ('supplier_purchase', 'Ordine', 'x', 'approved') returning id into ap;
+  update public.purchase_orders set approval_id = ap;
+end $$;
+select pg_temp.login('00000000-0000-0000-0000-0000000000a1', 'aal2');
+update public.purchase_orders set status = 'approved';
+do $$ begin
+  assert (select count(*) from public.purchase_orders where status = 'approved') = 1, 'ordine approvato non registrato';
 end $$;
 reset role;
 

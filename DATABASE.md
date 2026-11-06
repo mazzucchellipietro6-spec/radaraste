@@ -19,7 +19,11 @@ sono solo i dati **commerciali e personali**.
 
 Permessi dello staff: `customers` (clienti, richieste, preventivi, messaggi, documenti), `trade`
 (fornitori, materiali, costi, trading e brokerage, commissioni, ordini, spedizioni), `tours`
-(prenotazioni, partner turistici, note interne), `content` (traduzioni, pubblicazione).
+(prenotazioni, partner turistici, note interne), `content` (traduzioni, pubblicazione), `ai` (sede degli
+agenti, incarichi, approvazioni in lettura), `advisory` (documenti legali e fiscali del reparto advisory, per
+chi li rivede). Le tabelle dell'azienda AI (`ai_*`, `approvals`, `leads`, `opportunities`, `crm_activities`,
+`market_analyses`, `marketing_assets`, `pricing_simulations`, `supplier_certifications`, `purchase_orders`,
+`quote_versions`, `advisory_documents`) sono descritte in [docs/AI-COMPANY.md](docs/AI-COMPANY.md).
 
 **Staff e amministratori valgono solo dopo la verifica in due passaggi** (livello `aal2` di Supabase):
 anche con la password giusta, senza codice dell'app di autenticazione il database non mostra nulla.

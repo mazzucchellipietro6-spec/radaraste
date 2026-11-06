@@ -1,4 +1,4 @@
-"""Registro dei 20 agenti: definizioni in config/agent-registry.json e prompt in config/agents/*.md.
+"""Registro dei 25 agenti: definizioni in config/agent-registry.json e prompt in config/agents/*.md.
 
 All'avvio il servizio sincronizza il registro nella tabella ai_agents. Nel database restano
 modificabili dal pannello: attivo/disattivo, modello, livello di ragionamento, budget e limiti.

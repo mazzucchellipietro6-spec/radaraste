@@ -7,8 +7,11 @@ const baseHeaders = {
   'x-content-type-options': 'nosniff',
 };
 
+// I numeri bigint del database (contatori, token) diventano numeri normali nel JSON
+const replacer = (_k: string, v: unknown) => (typeof v === 'bigint' ? Number(v) : v);
+
 export function json(data: unknown, status = 200, extra: Record<string, string> = {}) {
-  return new Response(JSON.stringify(data), { status, headers: { ...baseHeaders, ...extra } });
+  return new Response(JSON.stringify(data, replacer), { status, headers: { ...baseHeaders, ...extra } });
 }
 
 export function ok(data: Record<string, unknown> = {}) {

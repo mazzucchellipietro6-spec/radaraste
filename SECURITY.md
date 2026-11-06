@@ -64,6 +64,16 @@ aggiungetelo in `src/lib/security-headers.mjs` e lanciate `npm run headers`.
 - Le foto inviate all'AI non vengono salvate dal sito.
 - Limiti di frequenza e di spesa giornalieri.
 
+### Azienda AI (25 agenti)
+- Gli agenti non eseguono nulla di vincolante: acquisti, pagamenti, contratti, impegni, preventivi
+  vincolanti, sconti, prenotazioni di stock, operazioni legali e comunicazioni commerciali richiedono
+  l'approvazione dell'amministratore (con verifica in due passaggi), controllata anche dal database.
+- Ogni agente usa solo gli strumenti del suo registro; ogni azione è registrata (eventi, costi, registro
+  modifiche con attore `agente:<id>`). Budget per agente, tetto giornaliero e costo massimo per incarico.
+- Il pannello non può dichiarare completato un incarico né approvare un ordine al fornitore senza
+  approvazione; i documenti legali e fiscali sono bozze con revisione professionale obbligatoria.
+- API del servizio con token, WebSocket con token firmati a breve scadenza. Dettagli: docs/AI-COMPANY.md.
+
 ## Copie di sicurezza
 Vedi DATABASE.md, sezione "Copie di sicurezza" (`npm run backup` più le copie automatiche di Supabase).
 

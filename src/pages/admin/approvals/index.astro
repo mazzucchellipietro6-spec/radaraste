@@ -1,0 +1,86 @@
+---
+// Approvazioni del fondatore: ogni azione vincolante preparata dagli agenti aspetta qui la decisione.
+// Solo l'amministratore decide (controllato anche dal database); ogni decisione è registrata.
+import Admin from '~/layouts/Admin.astro';
+import { withUser } from '~/lib/server/db';
+import { canSeeAi } from '~/lib/server/company';
+export const prerender = false;
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect('/it/account/login/?next=/admin/approvals/');
+if (!canSeeAi(admin.profile) && admin.profile.role !== 'admin') return Astro.redirect('/admin/?denied=ai');
+const isAdmin = admin.profile.role === 'admin';
+const view = Astro.url.searchParams.get('view') === 'history' ? 'history' : 'pending';
+type A = {
+  id: string; number: string; kind: string; title: string; summary: string; payload: Record<string, unknown>; amount: string | null; currency: string | null;
+  requested_by_agent: string | null; agent_name: string | null; task_id: string | null; status: string; decision_note: string | null; decided_at: Date | null;
+  created_at: Date; expires_at: Date | null; executed_at: Date | null; execution_result: Record<string, unknown> | null;
+};
+const rows = await withUser(admin.user.claims, (tx) =>
+  view === 'pending'
+    ? tx<A[]>`select a.*, g.name as agent_name from public.approvals a left join public.ai_agents g on g.id = a.requested_by_agent where a.status = 'pending' order by a.created_at`
+    : tx<A[]>`select a.*, g.name as agent_name from public.approvals a left join public.ai_agents g on g.id = a.requested_by_agent where a.status <> 'pending' order by coalesce(a.decided_at, a.updated_at) desc limit 100`,
+);
+const KIND: Record<string, string> = {
+  supplier_purchase: 'Acquisto dal fornitore', payment: 'Pagamento', contract: 'Contratto', financial_commitment: 'Impegno finanziario',
+  binding_quote: 'Preventivo vincolante', discount: 'Sconto eccezionale', stock_reservation: 'Prenotazione di stock', legal: 'Operazione legale',
+  outbound_message: 'Comunicazione commerciale', other: 'Altro',
+};
+const STATUS: Record<string, string> = { pending: 'In attesa', approved: 'Approvata', rejected: 'Rifiutata', expired: 'Scaduta', executed: 'Eseguita', failed: 'Esecuzione non riuscita' };
+const fmt = (d: Date | null) => (d ? new Date(d).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' }) : '—');
+const ok = Astro.url.searchParams.get('ok');
+const error = Astro.url.searchParams.get('error');
+---
+
+<Admin title="Approvazioni del fondatore" active="approvals">
+  <p class="mt-2 max-w-3xl text-ash">
+    Gli agenti preparano le richieste ma non eseguono nulla di vincolante: acquisti dai fornitori, pagamenti, contratti, impegni finanziari,
+    preventivi vincolanti, sconti eccezionali, prenotazioni di stock, operazioni legali e invio di comunicazioni commerciali. Dopo l'approvazione il
+    servizio agenti esegue solo ciò che è automatizzabile (per esempio l'invio di un'email approvata); il resto resta a una persona.
+  </p>
+  <nav class="mt-5 flex gap-2 text-[0.9rem]">
+    <a href="/admin/approvals/" class:list={['rounded px-3 py-1.5 no-underline', view === 'pending' ? 'bg-graphite text-marble' : 'bg-marble']}>In attesa</a>
+    <a href="/admin/approvals/?view=history" class:list={['rounded px-3 py-1.5 no-underline', view === 'history' ? 'bg-graphite text-marble' : 'bg-marble']}>Storico</a>
+  </nav>
+  {ok && <p class="mt-4 rounded bg-success/10 px-4 py-2 text-success" role="status">Decisione registrata: {ok === 'approved' ? 'approvata' : 'rifiutata'}.</p>}
+  {error && <p class="mt-4 rounded bg-danger/10 px-4 py-2 text-danger" role="alert">{error === 'note' ? 'Per rifiutare scrivi il motivo: l’agente lo leggerà.' : 'La richiesta non è più in attesa o i dati non sono validi.'}</p>}
+  {!isAdmin && <p class="mt-4 text-ash">Puoi vedere le richieste; decidere spetta solo all'amministratore.</p>}
+  {!rows.length && <p class="mt-6 text-ash">{view === 'pending' ? 'Nessuna richiesta in attesa.' : 'Nessuna decisione registrata.'}</p>}
+  <ul class="mt-6 space-y-4">
+    {rows.map((a) => {
+      const p = a.payload ?? {};
+      return (
+        <li id={a.id} class="rounded border border-stone bg-marble p-5">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <p class="text-[0.72rem] uppercase tracking-[0.18em] text-brass-deep">{KIND[a.kind] ?? a.kind} · {a.number}</p>
+            <p class="text-[0.8rem] text-ash">{STATUS[a.status] ?? a.status} · richiesta {fmt(a.created_at)}{a.expires_at && a.status === 'pending' ? ` · scade ${fmt(a.expires_at)}` : ''}</p>
+          </div>
+          <h2 class="mt-1 font-display text-xl">{a.title}</h2>
+          <p class="mt-1 text-[0.85rem] text-ash">Preparata da {a.agent_name ?? 'sistema'}{a.task_id && <> · <a href={`/admin/ai/?task=${a.task_id}`}>incarico</a></>}{a.amount && <> · importo <strong>{Number(a.amount).toLocaleString('it-IT', { minimumFractionDigits: 2 })} {a.currency}</strong></>}</p>
+          <p class="mt-3 whitespace-pre-line">{a.summary}</p>
+          {a.kind === 'outbound_message' && typeof p.body === 'string' && (
+            <div class="mt-3 rounded border border-stone bg-white p-4 text-[0.9rem]">
+              <p><span class="text-ash">A:</span> {String(p.to ?? '')} · <span class="text-ash">base giuridica:</span> {String(p.legal_basis ?? '—')}</p>
+              <p class="mt-1"><span class="text-ash">Oggetto:</span> {String(p.subject ?? '')}</p>
+              <pre class="mt-2 whitespace-pre-wrap font-sans">{p.body}</pre>
+            </div>
+          )}
+          {a.kind !== 'outbound_message' && Object.keys(p).length > 0 && (
+            <details class="mt-3"><summary class="cursor-pointer text-[0.85rem] text-ash">Dettagli tecnici</summary><pre class="mt-2 overflow-x-auto text-[0.8rem]">{JSON.stringify(p, null, 2)}</pre></details>
+          )}
+          {a.decision_note && <p class="mt-3 text-[0.9rem]"><span class="text-ash">Nota della decisione:</span> {a.decision_note}</p>}
+          {a.execution_result && <p class="mt-1 text-[0.85rem] text-ash">Esecuzione: {String((a.execution_result as Record<string, unknown>).message ?? (a.execution_result as Record<string, unknown>).error ?? (a.execution_result as Record<string, unknown>).next ?? JSON.stringify(a.execution_result))}</p>}
+          {isAdmin && a.status === 'pending' && (
+            <form method="post" action="/api/admin/ai/approvals" class="mt-4 flex flex-wrap items-end gap-3">
+              <input type="hidden" name="id" value={a.id} />
+              <label class="min-w-[16rem] flex-1 text-[0.85rem]">Nota (obbligatoria per rifiutare)
+                <input name="note" maxlength="2000" class="mt-1 w-full rounded border border-stone bg-white px-3 py-2" />
+              </label>
+              <button class="btn btn-primary btn-sm" name="decision" value="approved" type="submit">Approva</button>
+              <button class="btn btn-outline btn-sm" name="decision" value="rejected" type="submit">Rifiuta</button>
+            </form>
+          )}
+        </li>
+      );
+    })}
+  </ul>
+</Admin>

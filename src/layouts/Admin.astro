@@ -42,6 +42,24 @@ const groups: { label: string; items: { key: string; label: string; href: string
     ],
   },
   {
+    label: 'Azienda AI',
+    items: [
+      { key: 'ai', label: 'Sede 3D e control room', href: '/admin/ai/', show: has('ai') },
+      { key: 'approvals', label: 'Approvazioni', href: '/admin/approvals/', show: has('ai') },
+      { key: 'leads', label: 'Lead', href: '/admin/leads/', show: can('leads') },
+      { key: 'opportunities', label: 'Opportunità', href: '/admin/opportunities/', show: can('opportunities') },
+      { key: 'crmActivities', label: 'Attività CRM', href: '/admin/crmActivities/', show: can('crmActivities') },
+      { key: 'marketAnalyses', label: 'Mercati ed export', href: '/admin/marketAnalyses/', show: can('marketAnalyses') },
+      { key: 'marketingAssets', label: 'Materiali marketing', href: '/admin/marketingAssets/', show: can('marketingAssets') },
+      { key: 'pricing', label: 'Simulatore prezzi', href: '/admin/ai/pricing/', show: has('trade') },
+      { key: 'purchaseOrders', label: 'Ordini ai fornitori', href: '/admin/purchaseOrders/', show: can('purchaseOrders') },
+      { key: 'certifications', label: 'Certificazioni', href: '/admin/certifications/', show: can('certifications') },
+      { key: 'advisoryDocs', label: 'Documenti advisory', href: '/admin/advisoryDocs/', show: can('advisoryDocs') },
+      { key: 'aiSchedules', label: 'Attività ricorrenti', href: '/admin/aiSchedules/', show: can('aiSchedules') },
+      { key: 'suppression', label: 'Lista di esclusione', href: '/admin/suppression/', show: can('suppression') },
+    ],
+  },
+  {
     label: 'Turismo',
     items: [
       { key: 'bookings', label: 'Prenotazioni', href: '/admin/bookings/', show: can('bookings') },
