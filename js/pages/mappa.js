@@ -421,12 +421,13 @@
     }
     return null;
   }
-  // prima foto della scheda a pezzi (solo se l'asta dice di averne: niente richieste inutili)
+  // foto di copertina dell'elenco (js/formato.js: solo resource-pvp.giustizia.it), altrimenti la prima foto della scheda a pezzi
+  // (solo se l'asta dice di averne: niente richieste inutili)
   function caricaFoto(a) {
-    var fig = $('#mFoto'), D = window.Dettagli;
+    var fig = $('#mFoto'), D = window.Dettagli, F = window.Formato;
     if (!fig) return;
-    var subito = primaFoto(a);
-    var attesa = subito ? Promise.resolve({ foto: [subito] }) : D && Number(a.nFoto) > 0 ? D.carica(a.id) : null;
+    var cop = F && F.copertina ? F.copertina(a.copertina) : null, subito = cop || primaFoto(a);
+    var attesa = subito ? Promise.resolve({ foto: [subito], fotoTotali: Number(a.nFoto) || 1 }) : D && Number(a.nFoto) > 0 ? D.carica(a.id) : null;
     if (!attesa) return;
     fig.classList.add('in-carico');
     attesa.then(function (d) {
@@ -434,7 +435,7 @@
       var u = primaFoto(d), tot = d && (d.fotoTotali || (d.foto && d.foto.length)) || Number(a.nFoto) || 0;
       if (!u) { fig.classList.remove('in-carico'); return; }
       var img = document.createElement('img');
-      img.alt = 'Foto dall\'avviso: ' + String(a.titolo || '').slice(0, 80);
+      img.alt = 'Foto dall\'avviso dell\'asta: ' + (U.titoloBreve ? U.titoloBreve(a.titolo) : String(a.titolo || '').slice(0, 80));
       img.loading = 'lazy'; img.decoding = 'async';
       img.referrerPolicy = 'no-referrer'; img.setAttribute('referrerpolicy', 'no-referrer');
       img.addEventListener('load', function () { fig.classList.remove('in-carico'); fig.classList.add('con-foto'); });

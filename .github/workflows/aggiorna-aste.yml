@@ -23,7 +23,9 @@ concurrency:
 jobs:
   aggiorna:
     runs-on: ubuntu-latest
-    # raccolta (~5 min) + storico (~2 min) + fino a 600 dettagli del PVP, uno ogni 3 s (~35 min) + OMI e assistenti (~1 min)
+    # raccolta (~5 min) + storico (~2 min) + fino a 1000 dettagli del PVP, uno ogni 3 s di pausa (circa 3,1 s l'uno con la
+    # risposta: ~52 min) + OMI e assistenti (~1 min) = circa 60 min. --tempo-max 85 smette di leggere dettagli 85 minuti dopo
+    # l'avvio della raccolta anche se il Portale rallenta: resta margine per punteggio, pubblicazione e Cloudflare.
     timeout-minutes: 110
     environment:
       name: github-pages
@@ -96,10 +98,12 @@ jobs:
           done
           echo "Schede recuperate: $(ls data/dettagli | wc -l)"
 
+      # fino a 1000 schede di dettaglio al giorno (dal 6/11/2026; prima 600): più foto e documenti letti ogni giorno.
+      # Le pause tra le richieste restano quelle di scripts/lib/http.mjs e scripts/lib/dettaglio-pvp.mjs (una ogni 3 s).
       - id: raccolta
         name: Raccogli le aste dalle fonti ufficiali
         continue-on-error: true
-        run: node scripts/raccogli.mjs --max-dettagli 600 --tempo-max 85
+        run: node scripts/raccogli.mjs --max-dettagli 1000 --tempo-max 85
 
       # Agente Cacciatore: affari di oggi (data/affari.js), storico delle segnalate, testo per Telegram
       - name: Cacciatore di affari

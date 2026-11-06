@@ -63,13 +63,14 @@ export function argomenti(a = process.argv.slice(2)) {
 //   'primo-prezzo', 'prima-asta'), affidabilita, costoTotale, sconto, offertaMax, punteggio, punteggioCompleto
 //   (js/punteggio.js); deserte, primoPrezzo, ribasso (1 − prezzo / prezzo del tentativo precedente) solo se ci sono
 //   tentativi precedenti; dettaglio (data di lettura della scheda /restricted), termineOfferte ('AAAA-MM-GGTHH:MM'),
-//   stima, nFoto, annoProcedura (dal dettaglio); prezzoPrecedente e dataRibasso (prezzo base sceso rispetto alla
+//   stima, nFoto, annoProcedura, copertina (dal dettaglio; copertina = prima foto della scheda, salvata senza
+//   "https://resource-pvp.giustizia.it/": js/formato.js); prezzoPrecedente e dataRibasso (prezzo base sceso rispetto alla
 //   raccolta precedente); anomalia ('offerta-minima-sopra-base'). I dati lunghi sono in dettagli/XX.js.
 export const CAMPI = ['id', 'titolo', 'categoria', 'tipo', 'regione', 'provincia', 'comune', 'indirizzo', 'tribunale', 'rge', 'fonte',
   'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'stato', 'linkAvviso', 'linkPerizia', 'linkPdf', 'lat', 'lng', 'descrizione', 'altriLink', 'pubblicata', 'vista',
   'numeroLotto', 'rialzo', 'rischi', 'tentativo', 'superficieMq',
   'valore', 'valoreMin', 'valoreMax', 'fonteValore', 'affidabilita', 'costoTotale', 'sconto', 'offertaMax', 'punteggio', 'punteggioCompleto',
-  'deserte', 'primoPrezzo', 'ribasso', 'dettaglio', 'termineOfferte', 'stima', 'nFoto', 'annoProcedura',
+  'deserte', 'primoPrezzo', 'ribasso', 'dettaglio', 'termineOfferte', 'stima', 'nFoto', 'annoProcedura', 'copertina',
   'prezzoPrecedente', 'dataRibasso', 'anomalia',
   'omiMin', 'omiMax', 'omiAffMin', 'omiAffMax', 'omiMetodo', 'omiZona', 'rendimento'];
 

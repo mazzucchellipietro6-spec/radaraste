@@ -132,6 +132,10 @@ test('tentativo stimato dai prezzi nei segnali d\'affare, dichiarato come stima 
   const s = x.segnaliAffare.find((f) => /tentativo/.test(f));
   assert.match(s, /^È almeno il 5° tentativo \(stima: il prezzo base è quello della prima asta, 534\.800 €, ridotto 4 volte del 25%; l'indice del Portale ne mostra 3\)/);
   assert.equal(K.compatta(x).tentativoMinimo, 5);
+  // data/affari.js: la foto di copertina passa alla card degli affari di oggi, solo se l'asta ce l'ha
+  assert.equal('copertina' in K.compatta(x), false);
+  const conFoto = K.analizza({ asta: asta({ copertina: 'https://resource-pvp.giustizia.it/immagini-beni/1/2/f.jpg' }), motivo: 'nuova' }, { T });
+  assert.equal(K.compatta(conFoto).copertina, 'https://resource-pvp.giustizia.it/immagini-beni/1/2/f.jpg');
   // senza aste mancanti la frase resta quella di prima
   const y = K.analizza({ asta: asta({}), motivo: 'nuova' }, { T });
   assert.equal(y.tentativoMinimo, undefined);

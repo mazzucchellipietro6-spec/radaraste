@@ -7,7 +7,10 @@
  *   (l'elenco vuoto è un valore: rischi [] = testo controllato, nessun rischio; campo assente = non controllato);
  * - gli altri valori (numeri, testi, array) sono salvati così come sono;
  * - i link sono salvati come "~N" + resto, dove N è l'indice del prefisso comune in "prefissi";
- * - i valori null in fondo alla riga sono omessi.
+ * - i valori null in fondo alla riga sono omessi;
+ * - la foto di copertina (prima foto della scheda del Portale delle Vendite Pubbliche) è salvata senza
+ *   "https://resource-pvp.giustizia.it/" e ricostruita alla lettura solo con quel dominio: un valore che non è il percorso
+ *   di un'immagine di quel sito non si scrive e non si legge (nessun indirizzo arbitrario nelle pagine).
  * Il formato precedente (campi + righe senza dizionari) resta leggibile.
  * Formato.date(a) dice come leggere le date di un record (giorno dell'asta e termine per le offerte, Demanio compreso). */
 (function (root) {
@@ -16,6 +19,21 @@
   var DIZIONARIO = ['categoria', 'tipo', 'regione', 'provincia', 'comune', 'tribunale', 'fonte', 'dataAsta', 'ora', 'stato', 'pubblicata', 'vista',
     'termineOfferte', 'dettaglio', 'dataRibasso', 'rischi', 'fonteValore', 'affidabilita', 'anomalia', 'numeroLotto', 'annoProcedura'];
   var LINK = ['linkAvviso', 'linkPerizia', 'linkPdf'];
+
+  /* Foto di copertina: solo immagini di resource-pvp.giustizia.it (lo stesso dominio è in img-src della CSP, _headers).
+   * Il percorso ammesso è quello che scrive urlRisorsa (scripts/lib/dettaglio-pvp.mjs): parti codificate, estensione
+   * d'immagine e, se c'è, il versionId. Niente "//", ".." o ":" (che porterebbero fuori dal dominio o dal sito). */
+  var RISORSE = 'https://resource-pvp.giustizia.it/';
+  var PERCORSO_FOTO = /^[A-Za-z0-9._~%()!*'-]+(?:\/[A-Za-z0-9._~%()!*'-]+)*\.(?:jpe?g|png|webp|gif)(?:\?[A-Za-z0-9_.~=&%-]*)?$/i;
+  // percorso dopo il dominio (es. 'immagini-beni/1/2/foto.jpg?versionId=…') o null; accetta l'indirizzo completo o il solo percorso
+  function percorsoCopertina(v) {
+    if (typeof v !== 'string') return null;
+    var p = v.indexOf(RISORSE) === 0 ? v.slice(RISORSE.length) : v;
+    if (p.length > 400 || !PERCORSO_FOTO.test(p) || /(?:^|\/)\.\.?(?:\/|\?|$)/.test(p)) return null;
+    return p;
+  }
+  // indirizzo completo della copertina (sempre https://resource-pvp.giustizia.it/…) o null
+  function copertina(v) { var p = percorsoCopertina(v); return p ? RISORSE + p : null; }
 
   function prefisso(url) {
     var i = Math.max(url.lastIndexOf('/'), url.lastIndexOf('='));
@@ -34,6 +52,7 @@
           if (!(k in pos[c])) { pos[c][k] = diz[c].length; diz[c].push(v); }
           return pos[c][k];
         }
+        if (c === 'copertina') return percorsoCopertina(v);
         if (LINK.indexOf(c) >= 0 && typeof v === 'string') {
           var p = prefisso(v);
           if (p) {
@@ -54,7 +73,7 @@
     if (!dati) return [];
     if (!Array.isArray(dati.righe)) return Array.isArray(dati.aste) ? dati.aste : [];
     var c = dati.campi, diz = dati.dizionari || {}, pref = dati.prefissi || [];
-    var tipo = c.map(function (k) { return diz[k] ? 1 : LINK.indexOf(k) >= 0 ? 2 : 0; });
+    var tipo = c.map(function (k) { return diz[k] ? 1 : LINK.indexOf(k) >= 0 ? 2 : k === 'copertina' ? 3 : 0; });
     return dati.righe.map(function (r) {
       var o = {};
       for (var i = 0; i < r.length; i++) {
@@ -64,7 +83,7 @@
         else if (tipo[i] === 2 && typeof v === 'string' && v.charAt(0) === '~') {
           var j = v.indexOf('~', 1);
           v = pref[+v.slice(1, j)] + v.slice(j + 1);
-        }
+        } else if (tipo[i] === 3 && !(v = copertina(v))) continue;
         o[c[i]] = v;
       }
       return o;
@@ -90,7 +109,7 @@
     return { asta: asta, termine: termine };
   }
 
-  var Formato = { codifica: codifica, decodifica: decodifica, date: date };
+  var Formato = { codifica: codifica, decodifica: decodifica, date: date, copertina: copertina, percorsoCopertina: percorsoCopertina, RISORSE: RISORSE };
   if (typeof module !== 'undefined' && module.exports) module.exports = Formato;
   else root.Formato = Formato;
 })(typeof window !== 'undefined' ? window : globalThis);

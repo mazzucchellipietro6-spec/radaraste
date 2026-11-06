@@ -1,7 +1,8 @@
 /* Scheda di un'asta in elenco (home, elenco, mappa, confronto).
- * Componenti del design system: .copertina (sfumatura per categoria con icona), .corpo, .anello (punteggio),
- * .preferito (stella "Segui"). I campi arricchiti (punteggio, sconto, affidabilità, valore…) possono mancare:
- * in quel caso la scheda lo dice ("Senza punteggio", "non indicato nell'avviso") e non inventa nulla. */
+ * Componenti del design system: .foto-cop (foto dall'avviso, solo se l'asta ha la copertina: UI.fotoCopertina),
+ * .copertina (testata con punteggio e luogo), .corpo, .anello (punteggio), .preferito (stella "Segui").
+ * I campi arricchiti (punteggio, sconto, affidabilità, valore, foto…) possono mancare: in quel caso la scheda lo dice
+ * ("Senza punteggio", "non indicato nell'avviso") o resta senza foto, e non inventa nulla. */
 (function (root) {
   'use strict';
   var U = root.UI, C = root.Calcoli, T = root.TARIFFE;
@@ -114,6 +115,8 @@
     var dove = luogoBreve(a);
     var manuale = a.origine === 'manuale';
 
+    // foto dall'avviso in alto, con l'icona della categoria se non si apre; senza copertina la card resta com'era
+    var foto = U.fotoCopertina ? U.fotoCopertina(a) : '';
     var copertina = '<div class="copertina">' + U.icona(ICONE_CAT[cat], 'icona-cat') + anello(a) +
       '<div class="luogo">' + U.icona('luogo') + '<span>' + (dove ? U.esc(dove) : 'Luogo non indicato') + '</span></div></div>';
 
@@ -134,7 +137,7 @@
       (manuale && !opz.compatta ? '<button class="btn small ghost" type="button" data-modifica="' + id + '">Modifica</button><button class="btn small danger" type="button" data-elimina="' + id + '">Elimina</button>' : '') +
       '<a class="btn small ghost" href="calcolatore.html?id=' + encodeURIComponent(a.id) + '"' + passa + '>Conviene?</a></div>';
 
-    return '<article class="card cat-' + cat + (opz.nuova ? ' nuova' : '') + (opz.compatta ? ' compatta' : '') + '">' + copertina +
+    return '<article class="card cat-' + cat + (foto ? ' con-foto' : '') + (opz.nuova ? ' nuova' : '') + (opz.compatta ? ' compatta' : '') + '">' + foto + copertina +
       '<div class="corpo">' + top +
       // h3: le card stanno sotto un h2 (home, elenco aste); l'aspetto è quello di prima (.card-titolo in style.css)
       '<h3 class="card-titolo"><a href="scheda.html?id=' + encodeURIComponent(a.id) + '"' + passa + '>' + U.esc(a.titolo || 'Asta senza titolo') + '</a></h3>' +

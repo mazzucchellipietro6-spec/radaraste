@@ -127,3 +127,30 @@ test('formato compatto: andata e ritorno senza perdite', () => {
   assert.match(enc.righe[0][6], /^~\d+~1$/);
   assert.deepEqual(Formato.decodifica(JSON.parse(JSON.stringify(enc))), aste);
 });
+
+test('formato compatto: copertina salvata senza "https://resource-pvp.giustizia.it/" e ricostruita solo con quel dominio', async () => {
+  const { RISORSE } = await import('../scripts/lib/dettaglio-pvp.mjs');
+  const { CAMPI } = await import('../scripts/raccogli.mjs');
+  assert.equal(Formato.RISORSE, RISORSE + '/', 'stesso dominio delle foto lette dal dettaglio');
+  assert.ok(CAMPI.includes('copertina'), 'la raccolta scrive la copertina in data/aste.js');
+  const foto = 'https://resource-pvp.giustizia.it/immagini-beni/4635330/3222253/LOTTO%201%20(1).jpg?versionId=efecf346-a6b5-4886-9a3f-13c7c90797cb';
+  const aste = [{ id: 'pvp-1', titolo: 'Casa', copertina: foto }, { id: 'pvp-2', titolo: 'Box' }];
+  const campi = ['id', 'titolo', 'copertina'];
+  const enc = Formato.codifica(aste, campi);
+  // nel file solo il percorso: il dominio non si ripete in ogni riga
+  assert.equal(enc.righe[0][2], 'immagini-beni/4635330/3222253/LOTTO%201%20(1).jpg?versionId=efecf346-a6b5-4886-9a3f-13c7c90797cb');
+  assert.doesNotMatch(JSON.stringify(enc), /resource-pvp/);
+  assert.deepEqual(enc.righe[1], ['pvp-2', 'Box']);
+  assert.deepEqual(Formato.decodifica(JSON.parse(JSON.stringify(enc))), aste);
+  // in scrittura: indirizzi di altri siti, http, non immagini o con caratteri strani non si salvano
+  const rifiutati = ['https://esempio.invalid/a.jpg', 'http://resource-pvp.giustizia.it/a.jpg', 'https://resource-pvp.giustizia.it.esempio.invalid/a.jpg',
+    'https://resource-pvp.giustizia.it/allegati/1/perizia.pdf', 'https://resource-pvp.giustizia.it/immagini-beni/1/a b.jpg', 'https://resource-pvp.giustizia.it/../x.jpg',
+    'javascript:alert(1)//a.jpg', '//esempio.invalid/a.jpg', 'immagini-beni/1/a.jpg"onerror="x', 42, { url: foto }];
+  for (const v of rifiutati) assert.deepEqual(Formato.codifica([{ id: 'x', copertina: v }], ['id', 'copertina']).righe[0], ['x'], 'scritta: ' + JSON.stringify(v));
+  // in lettura: un file modificato a mano con un indirizzo completo di un altro sito non passa
+  const letto = Formato.decodifica({ versione: 2, campi: ['id', 'copertina'], dizionari: {}, prefissi: [],
+    righe: [['a', 'https://esempio.invalid/a.jpg'], ['b', '//esempio.invalid/b.jpg'], ['c', 'immagini-beni/../../c.jpg'], ['d', 'immagini-beni/1/d.webp'], ['e', foto]] });
+  assert.deepEqual(letto, [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd', copertina: 'https://resource-pvp.giustizia.it/immagini-beni/1/d.webp' }, { id: 'e', copertina: foto }]);
+  assert.equal(Formato.copertina('https://esempio.invalid/a.jpg'), null);
+  assert.equal(Formato.copertina(foto), foto);
+});

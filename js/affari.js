@@ -22,7 +22,9 @@
   function card(a, i) {
     var r = a.riassunto || {}, avviso = U.linkSicuro(a.linkAvviso);
     var motivo = { ribasso: 'Ribassata ieri', 'nuovo-tentativo': 'Nuovo tentativo', nuova: 'Nuova' }[a.motivo] || 'Nuova';
-    return '<article class="aff-card rivela" style="--i:' + i + '">' +
+    // foto dall'avviso in alto (solo se l'asta ha la copertina; se non si apre resta l'icona della categoria: js/ui.js)
+    var foto = U.fotoCopertina ? U.fotoCopertina(a) : '';
+    return '<article class="aff-card rivela' + (foto ? ' con-foto' : '') + '" style="--i:' + i + '">' + foto +
       '<header class="aff-testa">' + anello(a.punteggio) + '<div class="aff-tit"><span class="aff-motivo">' + U.esc(motivo) + (a.affidabilita ? ' · affidabilità ' + U.esc(a.affidabilita) : '') + '</span>' +
         '<h3>' + linkScheda(a, U.esc(a.titolo)) + '</h3><p class="aff-luogo">' + U.esc(luogo(a)) + '</p></div></header>' +
       '<dl class="aff-numeri"><div><dt>Prezzo base</dt><dd>' + U.eur(a.prezzoBase) + '</dd></div>' +
@@ -112,5 +114,5 @@
     if (U.osservaComparsa) U.osservaComparsa(el);
   }
 
-  root.Affari = { disegna: disegna, preferenze: preferenze };
+  root.Affari = { disegna: disegna, preferenze: preferenze, card: card };
 })(window);

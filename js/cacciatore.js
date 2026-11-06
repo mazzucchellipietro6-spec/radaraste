@@ -209,7 +209,7 @@
     var a = x.asta, o = {
       id: a.id, titolo: a.titolo, categoria: a.categoria, tipo: a.tipo, regione: a.regione, provincia: a.provincia, comune: a.comune,
       tribunale: a.tribunale, rge: a.rge, prezzoBase: a.prezzoBase, offertaMinima: a.offertaMinima, dataAsta: a.dataAsta, ora: a.ora,
-      termineOfferte: a.termineOfferte, stato: a.stato, linkAvviso: a.linkAvviso, nFoto: a.nFoto, lat: a.lat, lng: a.lng,
+      termineOfferte: a.termineOfferte, stato: a.stato, linkAvviso: a.linkAvviso, nFoto: a.nFoto, copertina: a.copertina, lat: a.lat, lng: a.lng,
       tentativo: a.tentativo, tentativoMinimo: x.tentativoMinimo, rischi: a.rischi, motivo: x.motivo, punteggio: x.punteggio, sconto: x.sconto, costoTotale: x.costoTotale,
       offertaMax: x.offertaMax, affidabilita: x.affidabilita, valore: x.valore, rango: Math.round(x.rango * 10) / 10, scarto: x.scarto || undefined
     };

@@ -103,7 +103,7 @@ Ultimo aggiornamento: 6/11/2026 (giro della squadra).
   - Somme dai lotti, risparmio fiscale "prima casa" sulle pertinenze calcolato con le aliquote, avvisi su quote e occupati.
   - Il 13/10: 1.042 combinazioni tra 2.106 procedure con più lotti.
 - ✅ **Agente di arricchimento** (`arricchimento.html`).
-  - Ogni giorno legge fino a 600 schede di dettaglio del Portale (descrizione, foto, documenti, stima, termine), ricostruisce i tentativi e legge rischi e metri quadri dal testo.
+  - Ogni giorno legge fino a 1000 schede di dettaglio del Portale (600 fino al 6/11) (descrizione, foto, documenti, stima, termine), ricostruisce i tentativi e legge rischi e metri quadri dal testo.
   - Collega la zona OMI.
   - La pagina mostra a che punto è e da dove vengono i valori.
 
@@ -149,6 +149,10 @@ Ultimo aggiornamento: 6/11/2026 (giro della squadra).
   - le fonti ufficiali (VEBEG, Zoll-Auktion, Stato francese, BOE, Finshop) sono bloccate dalla rete di questo ambiente;
   - le piattaforme private o lo vietano nelle condizioni d'uso (Autorola, Ayvens) o bloccano i programmi (BCA, Copart, OPENLANE).
   - Nulla raccolto. Vedi "Da decidere".
+- ✅ **Foto nelle card** (6/11, su richiesta, in attesa del Merge):
+  - quando l'avviso ha delle foto, la prima compare in alto nelle card di home, elenco, affari e mappa; se non si apre torna l'icona;
+  - le schede lette ogni giorno passano da 600 a 1000, con le stesse pause;
+  - oggi le foto sono pubblicate per circa metà delle aste di cui si legge il dettaglio.
 - ✅ **Squadra quotidiana** attiva dal 20/10 ([SQUADRA.md](SQUADRA.md)). Dal 26/10 lavora leggera: al massimo 3 agenti al giorno.
 
 ---

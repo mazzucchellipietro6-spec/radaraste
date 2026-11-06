@@ -217,7 +217,7 @@ async function risorseNelCodice() {
 // indirizzi che arrivano dai dati o dalla configurazione, non scritti nel codice delle pagine
 async function risorseDinamiche() {
   const { RISORSE } = await import('../scripts/lib/dettaglio-pvp.mjs');
-  const r = [{ host: new URL(RISORSE).hostname, direttive: ['img-src'], dove: 'foto delle aste (scripts/lib/dettaglio-pvp.mjs → data/dettagli/)' }];
+  const r = [{ host: new URL(RISORSE).hostname, direttive: ['img-src'], dove: 'foto delle aste (scripts/lib/dettaglio-pvp.mjs → data/dettagli/, e la copertina in data/aste.js: js/formato.js)' }];
   const abb = require('../config/abbonamenti.js');
   const sb = abb.supabase && abb.supabase.url;
   // senza configurazione vale l'indirizzo che Supabase dà a ogni progetto: https://<id>.supabase.co

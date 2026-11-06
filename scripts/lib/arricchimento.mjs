@@ -18,6 +18,7 @@ const Dettagli = require('../../js/dettagli.js');
 const Estrai = require('../../js/estrai.js');
 const Punteggio = require('../../js/punteggio.js');
 const Omi = require('../../js/omi.js');
+const Formato = require('../../js/formato.js');
 
 // rischi che hanno senso per ogni categoria
 const RISCHI_PER = {
@@ -40,7 +41,19 @@ export const CAMPI_PUNTEGGIO = ['valore', 'valoreMin', 'valoreMax', 'fonteValore
 export const CAMPI_OMI = ['omiMin', 'omiMax', 'omiAffMin', 'omiAffMax', 'omiMetodo', 'omiZona'];
 // campi corti calcolati dall'arricchimento (si azzerano e si ricalcolano per le aste raccolte ora)
 const CORTI = ['tentativo', 'rischi', 'superficieMq', 'deserte', 'primoPrezzo', 'ribasso', 'annoProcedura', 'dettaglio', 'termineOfferte', 'stima', 'nFoto',
-  'prezzoPrecedente', 'dataRibasso'];
+  'copertina', 'prezzoPrecedente', 'dataRibasso'];
+// campi dell'elenco che non si ripetono nel pezzo: la copertina è già la prima delle foto della scheda
+const SOLO_ELENCO = ['copertina'];
+
+// Foto di copertina per l'elenco e le card: la prima foto della scheda che sia un'immagine di resource-pvp.giustizia.it
+// (js/formato.js), o null. Mai una foto che la scheda non ha.
+export function copertinaDa(foto) {
+  for (const f of Array.isArray(foto) ? foto : []) {
+    const u = Formato.copertina(typeof f === 'string' ? f : f && (f.url || f.src));
+    if (u) return u;
+  }
+  return null;
+}
 
 const PEZZO = /^([0-9a-f]{2})\.js$/;
 
@@ -155,6 +168,7 @@ export function componi(a, { vecchiaScheda = null, nuovoDettaglio = null, prima 
     corti.stima = det.stima;
     corti.termineOfferte = det.termineOfferte;
     corti.nFoto = det.fotoTotali || (det.foto ? det.foto.length : 0);
+    corti.copertina = copertinaDa(det.foto);
     corti.annoProcedura = det.annoProcedura;
     corti.dettaglio = det.dettaglio;
     if (det.rialzo > 0) corti.rialzo = det.rialzo;
@@ -279,6 +293,7 @@ export function valutaTutte(aste, T, opz = {}) {
 export function record(a, campi, lunghi = null, punteggio = null) {
   const o = {};
   for (const c of campi) {
+    if (SOLO_ELENCO.includes(c)) continue;
     const v = a[c];
     if (v === undefined || v === null || v === '') continue;
     if (Array.isArray(v) && !v.length && c !== 'rischi') continue;

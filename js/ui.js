@@ -147,6 +147,38 @@
   function ciclaTema() { var ord = ['auto', 'light', 'dark']; applicaTema(ord[(ord.indexOf(temaCorrente()) + 1) % 3]); toast('Tema ' + NOME_TEMA[temaCorrente()]); }
   function icona(n, cls) { return root.Icone ? root.Icone.svg(n, cls) : ''; }
 
+  /* Foto di copertina di un'asta nelle card (elenchi, home, affari di oggi): la prima foto della scheda letta dal Portale
+   * delle Vendite Pubbliche, solo da resource-pvp.giustizia.it (Formato.copertina) e scaricata senza referrer.
+   * Riquadro con proporzioni fisse (niente salti dell'impaginazione) e, sotto la foto, l'icona della categoria: si vede
+   * mentre la foto arriva e resta, con "Foto non disponibile", se la foto non si apre. Mai un riquadro vuoto e mai una foto
+   * che l'avviso non ha: senza copertina restituisce '' e la card resta com'era. */
+  var ICONE_CATEGORIA = { immobile: 'casa', auto: 'auto', moto: 'moto', beni: 'beni' };
+  function titoloBreve(t, n) {
+    t = String(t == null ? '' : t).replace(/\s+/g, ' ').trim(); n = n || 70;
+    if (t.length <= n) return t;
+    var c = t.slice(0, n), i = c.lastIndexOf(' ');
+    return (i > n * 0.6 ? c.slice(0, i) : c).replace(/[\s,.;:(–-]+$/, '') + '…';
+  }
+  function fotoCopertina(a) {
+    var F = root.Formato, u = a && F && F.copertina ? F.copertina(a.copertina) : null;
+    if (!u) return '';
+    var t = titoloBreve(a.titolo);
+    return '<div class="foto-cop">' + icona(ICONE_CATEGORIA[a.categoria] || 'beni', 'icona-cat') +
+      '<img src="' + esc(u) + '" alt="' + esc('Foto dall\'avviso dell\'asta' + (t ? ': ' + t : '')) + '" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-copertina>' +
+      '<span class="foto-ko">Foto non disponibile</span></div>';
+  }
+  // foto arrivata: l'icona sotto non serve più; foto che non si apre: via l'immagine rotta, resta l'icona della categoria
+  // (gli eventi load ed error delle immagini non risalgono: si ascoltano in cattura su tutta la pagina)
+  function statoFoto(e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG' || !img.hasAttribute || !img.hasAttribute('data-copertina')) return;
+    var box = img.parentNode;
+    if (e.type === 'load') { if (box) box.classList.add('caricata'); return; }
+    img.parentNode && img.parentNode.removeChild(img);
+    if (box) box.classList.add('senza-foto');
+  }
+  if (document.addEventListener) { document.addEventListener('error', statoFoto, true); document.addEventListener('load', statoFoto, true); }
+
   /* ---- Struttura del sito: intestazione, barra in basso, foglio "Menu", piè di pagina ----
    * Sei sezioni, sempre nello stesso ordine: Home, Aste, Mappa, Assistenti, Strumenti, Le mie aste.
    * Assistenti e Strumenti hanno una pagina indice e, su computer, una tendina con le loro pagine. */
@@ -419,7 +451,7 @@
   root.UI = {
     $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando, oggi: oggi,
     linkSicuro: linkSicuro, esempioCheEntra: esempioCheEntra, esempioAdattivo: esempioAdattivo, fontiFerme: fontiFerme, abbonamentiVisibili: abbonamentiVisibili, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
-    icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI, SERVIZIO: SERVIZIO,
+    icona: icona, fotoCopertina: fotoCopertina, titoloBreve: titoloBreve, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI, SERVIZIO: SERVIZIO,
     finestra: finestra, apriFinestra: apriFinestra, chiudiFinestra: chiudiFinestra, focusabili: focusabili, menoMovimento: function () { return menoMovimento.matches; },
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,
     csvParse: csvParse, csvStringify: csvStringify, scarica: scarica, leggiFile: leggiFile,

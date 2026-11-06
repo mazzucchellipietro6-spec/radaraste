@@ -7,7 +7,7 @@ import { createRequire } from 'node:module';
 import {
   pulisci, descrizione, urlRisorsa, termine, mqChiari, catasto, cauzione, estrai, ordina, scarica, nomeFileSicuro, segnaposto, MAX_FOTO, MAX_DESCRIZIONE
 } from '../scripts/lib/dettaglio-pvp.mjs';
-import { componi, daVecchia, scriviSchede, leggiSchede, record, valutaTutte, arricchisci } from '../scripts/lib/arricchimento.mjs';
+import { componi, daVecchia, scriviSchede, leggiSchede, record, valutaTutte, arricchisci, copertinaDa } from '../scripts/lib/arricchimento.mjs';
 import { FonteBloccata } from '../scripts/lib/http.mjs';
 import { converti } from '../scripts/fonti/pvp.mjs';
 
@@ -356,6 +356,30 @@ test('punteggio nella raccolta: campi corti uniti all\'asta, dettaglio per il pe
   assert.ok(r.parti && r.mancanti && r.zona);
 });
 
+test('copertina: la prima foto della scheda letta (solo resource-pvp.giustizia.it), nell\'elenco e non ripetuta nel pezzo', () => {
+  const { scheda, corti } = componi(asta(), { nuovoDettaglio: corpo(), oggi: OGGI });
+  assert.equal(corti.copertina, scheda.foto[0]);
+  assert.equal(corti.copertina, 'https://resource-pvp.giustizia.it/immagini-beni/77/1/foto0.jpg?versionId=v0');
+  // il pezzo ha già tutte le foto: la copertina resta solo nell'elenco (data/aste.js)
+  const salvato = record({ ...asta(), ...corti }, ['id', 'dettaglio', 'nFoto', 'copertina'], scheda);
+  assert.equal(salvato.copertina, undefined);
+  assert.equal(salvato.nFoto, 11);
+  assert.deepEqual(salvato.foto, scheda.foto);
+  // il giorno dopo, con il dettaglio conservato nel pezzo, la copertina è la stessa (nessuna nuova richiesta)
+  assert.equal(componi(asta(), { vecchiaScheda: JSON.parse(JSON.stringify(salvato)), oggi: '2026-10-14' }).corti.copertina, corti.copertina);
+  // dettaglio senza foto: nessuna copertina, nemmeno una "di repertorio"
+  const senza = corpo();
+  senza.beni[0].allegati = [];
+  const c = componi(asta(), { nuovoDettaglio: senza, oggi: OGGI });
+  assert.equal(c.corti.nFoto, 0);
+  assert.equal('copertina' in c.corti, false);
+  // si salta tutto ciò che non è un'immagine di resource-pvp.giustizia.it
+  assert.equal(copertinaDa(['https://esempio.invalid/a.jpg', 'http://resource-pvp.giustizia.it/b.jpg', 'https://resource-pvp.giustizia.it/allegati/1/perizia.pdf',
+    'https://resource-pvp.giustizia.it/immagini-beni/1/2/c.JPG?versionId=x-1']), 'https://resource-pvp.giustizia.it/immagini-beni/1/2/c.JPG?versionId=x-1');
+  assert.equal(copertinaDa([{ url: 'https://resource-pvp.giustizia.it/immagini-beni/1/2/d.png' }]), 'https://resource-pvp.giustizia.it/immagini-beni/1/2/d.png');
+  for (const v of [undefined, null, [], ['javascript:alert(1)//x.jpg'], ['//esempio.invalid/x.jpg'], 'https://resource-pvp.giustizia.it/x.jpg']) assert.equal(copertinaDa(v), null, JSON.stringify(v));
+});
+
 test('arricchisci senza rete: storico dall\'indice, dettagli conservati, aste di altre fonti con i dati di prima', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'radar-arr-'));
   try {
@@ -375,6 +399,8 @@ test('arricchisci senza rete: storico dall\'indice, dettagli conservati, aste di
     assert.equal(aste[0].stima, 150000);       // dal dettaglio salvato nel pezzo
     assert.equal(aste[0].dettaglio, '2026-10-10');
     assert.equal(aste[0].nFoto, 1);
+    assert.equal(aste[0].copertina, 'https://resource-pvp.giustizia.it/x.jpg'); // prima foto del pezzo salvato
+    assert.equal(aste[1].copertina, undefined);
     assert.equal(aste[0].superficieMq, 70);
     assert.equal(aste[0]._pvp !== undefined, true); // _pvp lo toglie la raccolta
     assert.equal(schede.get('dem-1').descrizione, 'Terreno demaniale');

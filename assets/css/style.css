@@ -267,6 +267,20 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 6px va
 .card .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); padding-top: 12px; margin-top: auto; }
 .card.nuova { border-color: color-mix(in srgb, var(--signal) 55%, var(--line)); }
 .card.compatta .copertina { min-height: 60px; }
+/* foto dall'avviso in alto nella card (UI.fotoCopertina): tre righe, foto, testata e corpo */
+.card.con-foto { grid-template-rows: auto auto 1fr; }
+/* dove almeno una card ha la foto ogni card tiene la sua altezza: allungate come la card con la foto, quelle senza
+   avrebbero un vuoto alto quanto la foto sopra i pulsanti */
+.cards:has(.card.con-foto), .nastro:has(.card.con-foto) { align-items: start; }
+/* Foto di copertina (card dell'elenco e degli affari di oggi): proporzioni fisse, quindi niente salti mentre arriva.
+   Sotto la foto c'è l'icona della categoria: si vede mentre la foto si carica e resta se non si apre (js/ui.js toglie
+   l'immagine rotta), così non compare mai un riquadro vuoto o bianco. */
+.foto-cop { position: relative; aspect-ratio: 16 / 9; overflow: hidden; display: grid; place-content: center; justify-items: center; gap: 4px; background: var(--surface-2); color: var(--faint); border-bottom: 1px solid var(--line); }
+.foto-cop .icona-cat { width: 36px; height: 36px; stroke-width: 1.3; }
+.foto-cop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto-cop.caricata .icona-cat { visibility: hidden; }
+.foto-cop .foto-ko { display: none; font-size: 12.5px; font-weight: 550; color: var(--muted); }
+.foto-cop.senza-foto .foto-ko { display: block; }
 .check.confronta { font-size: 13.5px; font-weight: 550; padding: 0 6px; border-radius: var(--r-ctrl); }
 .check.confronta:hover { color: var(--accent); }
 .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin: 0; }
