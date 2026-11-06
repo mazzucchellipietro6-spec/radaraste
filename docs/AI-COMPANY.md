@@ -187,8 +187,13 @@ rischi e le approvazioni necessarie. Il flusso è coperto da `agents/tests/test_
    `RESEND_API_KEY` ed `EMAIL_FROM`.
 4. Sito: `AGENTS_WS_SECRET` (lo stesso del servizio) e `AGENTS_PUBLIC_URL` per il tempo reale; senza, la
    sede si aggiorna ogni 4 secondi.
-5. Verifica: `python -m wc_agents check`, poi Azienda AI → Sede 3D: con servizio e chiave attivi gli agenti
-   risultano «Disponibile»; assegnare un incarico all'AI CEO.
+5. Verifica: `python -m wc_agents check`, poi `python -m wc_agents smoke` (prima prova reale con Claude: un
+   piccolo incarico al Business Intelligence Analyst, massimo 4 passi e 0,50 USD; mostra esito, costo e
+   risultato). Poi Azienda AI → Sede 3D: con servizio e chiave attivi gli agenti risultano «Disponibile».
+6. Attività ricorrenti: al primo avvio il servizio aggiunge 7 attività consigliate (`agents/config/schedules.json`:
+   follow-up giornaliero, pipeline settimanale, controllo disponibilità e certificazioni, misure dei processi,
+   rapporto economico, nota IVA e cash flow, indicatori mensili), tutte **disattivate**: si attivano da
+   Azienda AI → Attività ricorrenti.
 
 ## 8. Costi e limiti
 
@@ -218,7 +223,7 @@ rischi e le approvazioni necessarie. Il flusso è coperto da `agents/tests/test_
 
 ## 10. Test
 
-- `agents/`: `python -m pytest` — 42 test con Postgres reale e un modello finto (flusso CEO → colleghi →
+- `agents/`: `python -m pytest` — 44 test con Postgres reale e un modello finto (flusso CEO → colleghi →
   sintesi, deleghe e dipendenze, strumenti non autorizzati, budget, tentativi, approvazioni ed email,
   strumenti advisory, IVA, redditività, API e WebSocket).
 - `npm run test:db` — permessi del database, comprese approvazioni, ordini ai fornitori e documenti advisory.

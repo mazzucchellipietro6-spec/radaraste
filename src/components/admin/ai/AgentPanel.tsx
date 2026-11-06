@@ -158,6 +158,11 @@ export default function AgentPanel({ agent, connected, isAdmin, onOpenTask, onCl
                   </label>
                   <button type="submit" className="btn btn-primary btn-sm ml-auto" disabled={busy || !agent.enabled}>Assegna</button>
                 </div>
+                <p className="text-[0.75rem] text-ash">
+                  {agent.avgTaskCost !== null
+                    ? `Costo medio di un incarico negli ultimi 30 giorni: ${usd(agent.avgTaskCost)} (le deleghe ai colleghi costano a parte).`
+                    : 'Nessun incarico completato negli ultimi 30 giorni: il costo dipende da lunghezza e ricerche web (massimo 3 USD per incarico).'}
+                </p>
                 {!agent.enabled && <p className="text-[0.78rem] text-danger">Agente disattivato: riattivalo nelle impostazioni.</p>}
               </form>
             </section>

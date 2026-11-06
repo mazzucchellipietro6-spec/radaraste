@@ -15,6 +15,7 @@ cd agents
 python -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 python -m wc_agents check      # configurazione, database, registro, strumenti
+python -m wc_agents smoke      # prima prova reale con Claude (massimo 0,50 USD)
 python -m wc_agents serve      # API su http://localhost:8787 + orchestratore
 ```
 
@@ -56,7 +57,8 @@ TEST_DATABASE_URL=postgres://postgres@localhost:5432/postgres python -m pytest
 
 ```
 config/agent-registry.json   25 agenti: reparto, ruolo, strumenti, deleghe, obiettivi, KPI, budget
-config/agents/*.md           prompt specializzati
+config/agents/*.md           prompt specializzati (in italiano, con flusso di lavoro e strumenti)
+config/schedules.json        attività ricorrenti consigliate, inserite disattivate
 wc_agents/orchestrator.py    coda, dipendenze, risveglio dei genitori, recupero, pianificazioni
 wc_agents/runtime.py         esecuzione di un incarico: budget, ciclo degli strumenti, registri, esito
 wc_agents/llm.py             chiamata a Claude (streaming, cache, fallback lato server, costi)

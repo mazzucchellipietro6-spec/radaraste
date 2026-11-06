@@ -4,6 +4,7 @@
     python -m wc_agents worker     solo orchestratore (per avere più processi sulla stessa coda)
     python -m wc_agents sync       sincronizza il registro dei 25 agenti nel database ed esce
     python -m wc_agents check      verifica configurazione, database, registro e strumenti
+    python -m wc_agents smoke      prima prova reale con Claude (un piccolo incarico, massimo 0,50 USD)
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("worker")
     sub.add_parser("sync")
     sub.add_parser("check")
+    sub.add_parser("smoke")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     settings = get_settings()
@@ -44,7 +46,7 @@ async def _run(cmd: str, settings) -> int:
     from .db import Database
     from .llm import ClaudeLLM
     from .orchestrator import Orchestrator
-    from .registry import load_registry, sync_registry
+    from .registry import load_registry, sync_default_schedules, sync_registry
     from .tools import SERVER_TOOLS, TOOLS
 
     db = Database(settings.database_url, max_size=settings.worker_concurrency + 4)
@@ -53,7 +55,8 @@ async def _run(cmd: str, settings) -> int:
     try:
         if cmd == "sync":
             await sync_registry(db, agents, settings.ai_model)
-            print(f"Registro sincronizzato: {len(agents)} agenti")
+            n = await sync_default_schedules(db, settings.config_dir)
+            print(f"Registro sincronizzato: {len(agents)} agenti; attività ricorrenti consigliate aggiunte: {n} (disattivate)")
             return 0
         if cmd == "check":
             missing = {t for a in agents.values() for t in a.tools if t not in TOOLS and t not in SERVER_TOOLS}
@@ -65,6 +68,18 @@ async def _run(cmd: str, settings) -> int:
             print(f"API: token {'impostato' if settings.agents_api_token else 'NON impostato'}, "
                   f"WebSocket {'attivo' if settings.agents_ws_secret else 'disattivato'}")
             return 1 if missing else 0
+        if cmd == "smoke":
+            from .smoke import run_smoke
+
+            if not settings.llm_configured:
+                print("Manca ANTHROPIC_API_KEY: impostala nel .env o nelle variabili del servizio e riprova.")
+                return 2
+            out = await run_smoke(db, settings, agents, ClaudeLLM(settings.anthropic_api_key))
+            print(f"Esito: {out['status']} — incarico {out['task_id']}")
+            print(f"Chiamate a Claude: {out['calls']} ({out['models']}) — costo {out['cost_usd']:.4f} USD — "
+                  f"token {out['input_tokens']} in ingresso, {out['output_tokens']} in uscita")
+            print(f"Risultato: {out['summary'] or out['error']}")
+            return 0 if out["status"] == "completed" else 1
         llm = ClaudeLLM(settings.anthropic_api_key) if settings.llm_configured else None
         orch = Orchestrator(db, settings, agents, llm)
         loop = asyncio.get_running_loop()

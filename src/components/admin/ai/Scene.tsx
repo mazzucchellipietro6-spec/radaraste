@@ -3,7 +3,7 @@
 // Ogni personaggio rappresenta un agente reale: postura, schermo e anello luminoso seguono lo stato
 // letto dal database (al lavoro, in attesa, in coda, completato, errore, non collegato, disattivato).
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Html, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { ACTIVITY_LABEL, STATUS_COLOR, STATUS_LABEL, type AgentView, type CompanyState } from './types';
@@ -17,6 +17,16 @@ const ZONES: Record<string, { x: number; z: number; tint: string; glass?: boolea
   marketing: { x: 0, z: 4.6, tint: '#efeae1' },
   operazioni: { x: 10.5, z: 4.6, tint: '#ece7dd' },
 };
+// Su schermi verticali (telefono) i reparti si dispongono su due colonne e tre file
+const ZONES_PORTRAIT: Record<string, { x: number; z: number; tint: string; glass?: boolean }> = {
+  direzione: { ...ZONES.direzione, x: -5.0, z: -9.0 },
+  advisory: { ...ZONES.advisory, x: 5.0, z: -9.0 },
+  vendite: { ...ZONES.vendite, x: -5.0, z: 0 },
+  marketing: { ...ZONES.marketing, x: 5.0, z: 0 },
+  prodotto: { ...ZONES.prodotto, x: -5.0, z: 9.0 },
+  operazioni: { ...ZONES.operazioni, x: 5.0, z: 9.0 },
+};
+const zonesFor = (portrait: boolean) => (portrait ? ZONES_PORTRAIT : ZONES);
 const ZONE_W = 9.2;
 const ZONE_D = 7.4;
 
@@ -94,8 +104,8 @@ function Floor() {
 
 type Portal = React.MutableRefObject<HTMLElement>;
 
-function Zone({ id, label, count, portal }: { id: string; label: string; count: number; portal?: Portal }) {
-  const z = ZONES[id];
+function Zone({ id, label, count, portal, portrait }: { id: string; label: string; count: number; portal?: Portal; portrait: boolean }) {
+  const z = zonesFor(portrait)[id];
   if (!z) return null;
   return (
     <group position={[z.x, 0, z.z]}>
@@ -402,9 +412,11 @@ function StatusRing({ status, selected }: { status: AgentView['status']; selecte
   );
 }
 
-function Workstation({ agent, position, selected, onSelect, reduced, portal }: { agent: AgentView; position: [number, number, number]; selected: boolean; onSelect: (id: string) => void; reduced: boolean; portal?: Portal }) {
+function Workstation({ agent, position, selected, onSelect, reduced, portal, compact }: { agent: AgentView; position: [number, number, number]; selected: boolean; onSelect: (id: string) => void; reduced: boolean; portal?: Portal; compact: boolean }) {
   const [hover, setHover] = useState(false);
   const big = agent.id === '01-ai-ceo';
+  // sugli schermi piccoli il nome si vede solo per chi è selezionato, indicato o sta lavorando
+  const showName = selected || hover || ['working', 'waiting', 'failed', 'blocked'].includes(agent.status);
   const click = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     onSelect(agent.id);
@@ -433,7 +445,7 @@ function Workstation({ agent, position, selected, onSelect, reduced, portal }: {
         <button
           type="button"
           onClick={() => onSelect(agent.id)}
-          className="whitespace-nowrap rounded-full border px-2.5 py-1 text-left shadow-sm"
+          className={`whitespace-nowrap rounded-full border text-left shadow-sm ${compact && !showName ? 'px-1.5 py-1.5' : 'px-2.5 py-1'}`}
           style={{
             background: selected ? '#1a1a1c' : 'rgba(248,246,241,0.94)',
             color: selected ? '#f8f6f1' : '#1a1a1c',
@@ -445,8 +457,8 @@ function Workstation({ agent, position, selected, onSelect, reduced, portal }: {
           }}
           aria-label={`${agent.name}: ${STATUS_LABEL[agent.status]}`}
         >
-          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 99, background: STATUS_COLOR[agent.status], marginRight: 6 }} />
-          <strong style={{ fontWeight: 600 }}>{agent.name}</strong>
+          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 99, background: STATUS_COLOR[agent.status], marginRight: compact && !showName ? 0 : 6 }} />
+          {(!compact || showName) && <strong style={{ fontWeight: 600 }}>{agent.name}</strong>}
           {(selected || hover || agent.status === 'working') && (
             <span style={{ display: 'block', fontSize: 10.5, opacity: 0.75, marginTop: 2 }}>
               {agent.status === 'working' && agent.activity ? `${ACTIVITY_LABEL[agent.activity] ?? agent.activity} · ` : ''}
@@ -468,12 +480,12 @@ function deskSlots(n: number): [number, number][] {
   return out;
 }
 
-export function positionsFor(agents: AgentView[]): Record<string, [number, number, number]> {
+export function positionsFor(agents: AgentView[], portrait = false): Record<string, [number, number, number]> {
   const pos: Record<string, [number, number, number]> = {};
   const byDept: Record<string, AgentView[]> = {};
   for (const a of agents) (byDept[a.department] ??= []).push(a);
   for (const [dept, list] of Object.entries(byDept)) {
-    const z = ZONES[dept] ?? { x: 0, z: 12 };
+    const z = zonesFor(portrait)[dept] ?? { x: 0, z: 12 };
     const sorted = [...list].sort((a, b) => (a.id === '01-ai-ceo' ? -1 : b.id === '01-ai-ceo' ? 1 : a.id.localeCompare(b.id)));
     // il CEO al centro della direzione
     const slots = deskSlots(sorted.length);
@@ -481,6 +493,20 @@ export function positionsFor(agents: AgentView[]): Record<string, [number, numbe
     sorted.forEach((a, i) => (pos[a.id] = [z.x + slots[i][0], 0, z.z + slots[i][1]]));
   }
   return pos;
+}
+
+/** Inquadratura iniziale: su telefono (disposizione verticale) la camera sale per vedere tutti i reparti. */
+function FitCamera({ portrait }: { portrait: boolean }) {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    const aspect = size.width / Math.max(1, size.height);
+    if (portrait) camera.position.set(0, Math.min(40, 18 / Math.max(aspect, 0.45)), Math.min(34, 15.5 / Math.max(aspect, 0.45)));
+    else if (aspect < 1.25) camera.position.set(0, 18, 19);
+    else camera.position.set(0, 14, 15.5);
+    camera.updateProjectionMatrix();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portrait]);
+  return null;
 }
 
 function CameraRig({ target }: { target: [number, number, number] | null }) {
@@ -516,14 +542,32 @@ function CameraRig({ target }: { target: [number, number, number] | null }) {
   );
 }
 
-export default function Scene({ state, selected, onSelect, portal }: { state: CompanyState; selected: string | null; onSelect: (id: string | null) => void; portal?: Portal }) {
-  const pos = useMemo(() => positionsFor(state.agents), [state.agents]);
+function Office({ state, selected, onSelect, portal }: { state: CompanyState; selected: string | null; onSelect: (id: string | null) => void; portal?: Portal }) {
+  const { size } = useThree();
+  const portrait = size.width / Math.max(1, size.height) < 0.9;
+  const compact = size.width < 700;
+  const pos = useMemo(() => positionsFor(state.agents, portrait), [state.agents, portrait]);
   const reduced = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
     for (const a of state.agents) c[a.department] = (c[a.department] ?? 0) + 1;
     return c;
   }, [state.agents]);
+  return (
+    <>
+      {state.departments.map((d) => (
+        <Zone key={d.id} id={d.id} label={d.label} count={counts[d.id] ?? 0} portal={portal} portrait={portrait} />
+      ))}
+      {state.agents.map((a) => (
+        <Workstation key={a.id} agent={a} position={pos[a.id] ?? [0, 0, 12]} selected={selected === a.id} onSelect={onSelect} reduced={reduced} portal={portal} compact={compact} />
+      ))}
+      <FitCamera portrait={portrait} />
+      <CameraRig target={selected ? pos[selected] ?? null : null} />
+    </>
+  );
+}
+
+export default function Scene({ state, selected, onSelect, portal }: { state: CompanyState; selected: string | null; onSelect: (id: string | null) => void; portal?: Portal }) {
   return (
     <Canvas
       shadows
@@ -533,7 +577,7 @@ export default function Scene({ state, selected, onSelect, portal }: { state: Co
       gl={{ antialias: true, preserveDrawingBuffer: false }}
     >
       <color attach="background" args={['#ece6db']} />
-      <fog attach="fog" args={['#ece6db', 28, 70]} />
+      <fog attach="fog" args={['#ece6db', 28, 80]} />
       <ambientLight intensity={0.8} />
       <hemisphereLight args={['#fffaf0', '#cbbfa8', 0.75]} />
       <directionalLight
@@ -544,18 +588,12 @@ export default function Scene({ state, selected, onSelect, portal }: { state: Co
         shadow-mapSize-height={1536}
         shadow-camera-left={-26}
         shadow-camera-right={26}
-        shadow-camera-top={16}
-        shadow-camera-bottom={-16}
+        shadow-camera-top={18}
+        shadow-camera-bottom={-18}
         shadow-bias={-0.0004}
       />
       <Floor />
-      {state.departments.map((d) => (
-        <Zone key={d.id} id={d.id} label={d.label} count={counts[d.id] ?? 0} portal={portal} />
-      ))}
-      {state.agents.map((a) => (
-        <Workstation key={a.id} agent={a} position={pos[a.id] ?? [0, 0, 12]} selected={selected === a.id} onSelect={onSelect} reduced={reduced} portal={portal} />
-      ))}
-      <CameraRig target={selected ? pos[selected] ?? null : null} />
+      <Office state={state} selected={selected} onSelect={onSelect} portal={portal} />
     </Canvas>
   );
 }

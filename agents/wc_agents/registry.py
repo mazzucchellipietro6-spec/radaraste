@@ -89,3 +89,24 @@ async def load_live(db: Database, agents: dict[str, AgentDef], agent_id: str) ->
         a.monthly_budget_usd = float(row["monthly_budget_usd"])
         a.daily_task_limit = row["daily_task_limit"]
     return a
+
+
+async def sync_default_schedules(db: Database, config_dir: Path) -> int:
+    """Attività ricorrenti consigliate (config/schedules.json): inserite DISATTIVATE, una volta sola.
+    Il fondatore le attiva dal pannello; quelle già presenti (anche modificate) non vengono toccate."""
+    path = config_dir / "schedules.json"
+    if not path.exists():
+        return 0
+    added = 0
+    for s in json.loads(path.read_text(encoding="utf-8")):
+        row = await db.fetchone(
+            """insert into public.ai_schedules (agent_id, title, instructions, every_hours, enabled, reason)
+               select %s, %s, %s, %s, false, 'Attività ricorrente consigliata: si attiva dal pannello'
+               where exists (select 1 from public.ai_agents where id = %s)
+                 and not exists (select 1 from public.ai_schedules where agent_id = %s and lower(title) = lower(%s))
+               returning id""",
+            (s["agent_id"], s["title"], s["instructions"], s["every_hours"], s["agent_id"], s["agent_id"], s["title"]),
+        )
+        added += 1 if row else 0
+    return added
+

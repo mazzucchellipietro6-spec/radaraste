@@ -20,6 +20,7 @@ export interface AgentView {
   queued: number;
   waiting: number;
   costMonth: number;
+  avgTaskCost: number | null;
   last: { id: string; title: string; status: string; finishedAt: string | null; summary: string | null } | null;
 }
 

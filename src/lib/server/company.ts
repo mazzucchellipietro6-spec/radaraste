@@ -203,6 +203,7 @@ export interface AgentView {
   queued: number;
   waiting: number;
   costMonth: number;
+  avgTaskCost: number | null;
   last: { id: string; title: string; status: string; finishedAt: string | null; summary: string | null } | null;
 }
 
@@ -220,7 +221,8 @@ export async function companyState(user: CurrentUser, profile: Profile): Promise
         (select count(*) from public.ai_tasks t where t.agent_id = a.id and t.status = 'waiting')::int as waiting,
         (select json_build_object('id', t.id, 'title', t.title, 'status', t.status, 'finished_at', t.finished_at, 'summary', t.result_summary)
            from public.ai_tasks t where t.agent_id = a.id and t.status in ('completed', 'failed', 'blocked') order by t.finished_at desc nulls last limit 1) as last,
-        (select coalesce(sum(u.cost_usd), 0) from public.ai_usage u where u.agent_id = a.id and u.at >= date_trunc('month', now())) as cost_month
+        (select coalesce(sum(u.cost_usd), 0) from public.ai_usage u where u.agent_id = a.id and u.at >= date_trunc('month', now())) as cost_month,
+        (select avg(t.cost_usd) from public.ai_tasks t where t.agent_id = a.id and t.status = 'completed' and t.finished_at > now() - interval '30 days') as avg_cost
       from public.ai_agents a order by a.id`;
     const kpi = await kpiValues(tx);
     const fin = finance ? await financeMonth(tx) : null;
@@ -257,6 +259,7 @@ export async function companyState(user: CurrentUser, profile: Profile): Promise
         queued: Number(a.queued),
         waiting: Number(a.waiting),
         costMonth: Number(a.cost_month),
+        avgTaskCost: a.avg_cost === null || a.avg_cost === undefined ? null : Number(a.avg_cost),
         last: last ? { id: last.id, title: last.title, status: last.status, finishedAt: last.finished_at, summary: last.summary } : null,
       };
     });

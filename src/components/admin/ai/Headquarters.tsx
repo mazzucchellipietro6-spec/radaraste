@@ -131,7 +131,7 @@ export default function Headquarters({ initial, isAdmin }: { initial: CompanySta
           ))}
         </div>
         <div className="pointer-events-none absolute bottom-3 left-3 z-30 rounded bg-marble/85 px-2 py-1 text-[0.7rem] text-ash">
-          {state.agents.length} agenti · {live === 'ws' ? 'tempo reale' : 'aggiornamento ogni 4 s'} · trascina per ruotare, rotella per lo zoom, clic su un dipendente
+          {state.agents.length} agenti · {live === 'ws' ? 'tempo reale' : 'aggiornamento ogni 4 s'} · trascina per ruotare, zoom con la rotella o due dita, tocca un dipendente
         </div>
         {/* su schermi larghi la scheda dell'agente si apre sopra la sede, a destra */}
         <aside className="absolute bottom-3 right-3 top-3 z-30 hidden w-[25rem] overflow-hidden rounded border border-stone bg-marble/95 shadow-lg backdrop-blur lg:block" aria-live="polite" style={{ display: agent ? undefined : 'none' }}>

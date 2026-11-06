@@ -172,3 +172,26 @@ def test_registry_has_25_agents_and_advisory_department(agents):
 async def test_registry_synced_to_database(clean):
     rows = await clean.fetch("select id, department, team from public.ai_agents order by id")
     assert len(rows) == 25 and sum(1 for r in rows if r["department"] == "advisory") == 5
+
+
+async def test_default_schedules_are_added_disabled_once(clean, settings):
+    from wc_agents.registry import sync_default_schedules
+
+    n = await sync_default_schedules(clean, settings.config_dir)
+    assert n >= 5
+    assert await sync_default_schedules(clean, settings.config_dir) == 0
+    rows = await clean.fetch("select enabled from public.ai_schedules")
+    assert rows and not any(r["enabled"] for r in rows)
+    assert await Orchestrator(clean, settings, {}, None).run_schedules() == 0
+
+
+async def test_smoke_command(clean, settings, agents):
+    from wc_agents.smoke import run_smoke
+
+    from .fake_llm import FakeLLM, tool_use
+
+    def bi(call):
+        return [tool_use("company_overview")] if call.turn == 1 else [tool_use("submit_result", summary="Gestionale vuoto: nessun ordine.")]
+
+    out = await run_smoke(clean, settings, agents, FakeLLM({"Business Intelligence Analyst": bi}))
+    assert out["status"] == "completed" and out["calls"] == 2 and out["cost_usd"] > 0 and "Gestionale" in out["summary"]

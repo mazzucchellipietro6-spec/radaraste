@@ -15,7 +15,7 @@ from . import __version__
 from .approvals import ApprovalExecutor
 from .db import Database, jsonb
 from .llm import LLM
-from .registry import AgentDef, sync_registry
+from .registry import AgentDef, sync_default_schedules, sync_registry
 from .runtime import AgentRuntime
 
 log = logging.getLogger("wc_agents.orchestrator")
@@ -215,6 +215,7 @@ class Orchestrator:
 
     async def serve(self) -> None:
         await sync_registry(self.db, self.agents, self.settings.ai_model)
+        await sync_default_schedules(self.db, self.settings.config_dir)
         log.info("servizio agenti %s avviato: %d agenti, modello predefinito %s, chiave Claude %s", self.worker_id, len(self.agents),
                  self.settings.ai_model, "configurata" if self.llm else "NON configurata")
         listener = asyncio.create_task(self.listen())
