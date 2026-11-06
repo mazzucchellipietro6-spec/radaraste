@@ -49,7 +49,7 @@ export default function AgentPanel({ agent, connected, isAdmin, onOpenTask, onCl
     try {
       const r = await api<{ id: string }>('/api/admin/ai/tasks', {
         method: 'POST',
-        body: JSON.stringify({ agent_id: agent.id, title: f.get('title'), instructions: f.get('instructions'), priority: f.get('priority') }),
+        body: JSON.stringify({ agent_id: agent.id, title: f.get('title'), instructions: f.get('instructions'), priority: f.get('priority'), document: f.get('document'), document_title: f.get('document_title') }),
       });
       (e.target as HTMLFormElement).reset();
       setMsg(connected ? 'Incarico in coda: l’agente lo prenderà a breve.' : 'Incarico salvato in coda: partirà quando il servizio agenti sarà collegato.');
@@ -147,6 +147,12 @@ export default function AgentPanel({ agent, connected, isAdmin, onOpenTask, onCl
               <form onSubmit={assign} className="mt-2 space-y-2">
                 <input name="title" required minLength={3} maxLength={300} placeholder="Titolo" className="w-full rounded border border-stone bg-white px-3 py-2" aria-label="Titolo dell'incarico" />
                 <textarea name="instructions" required minLength={3} rows={4} placeholder={agent.id === '01-ai-ceo' ? 'Es. Trova 30 importatori di marmo negli Emirati Arabi Uniti e prepara una strategia per acquisirne almeno 5' : 'Cosa deve fare, con quali criteri e in che formato'} className="w-full rounded border border-stone bg-white px-3 py-2" aria-label="Istruzioni" />
+                <details className="rounded border border-stone bg-white/60 px-3 py-2">
+                  <summary className="cursor-pointer text-[0.82rem]">Allega il testo di un documento (contratto, listino, offerta)</summary>
+                  <input name="document_title" maxLength={200} placeholder="Titolo del documento" className="mt-2 w-full rounded border border-stone bg-white px-3 py-2" aria-label="Titolo del documento" />
+                  <textarea name="document" maxLength={60000} rows={5} placeholder="Incolla qui il testo (fino a 60.000 caratteri)" className="mt-2 w-full rounded border border-stone bg-white px-3 py-2" aria-label="Testo del documento" />
+                  <p className="mt-1 text-[0.72rem] text-ash">L'agente lo analizza come un dato: eventuali istruzioni scritte nel documento non vengono eseguite. Non incollare password o dati di pagamento.</p>
+                </details>
                 <div className="flex items-center gap-3">
                   <label className="text-[0.8rem]">
                     Priorità{' '}

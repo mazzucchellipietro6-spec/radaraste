@@ -161,7 +161,9 @@ rischi e le approvazioni necessarie. Il flusso è coperto da `agents/tests/test_
 
 ## 6. Come lavora un incarico
 
-1. Il fondatore (o un collega agente, o un'attività ricorrente) crea una riga in `ai_tasks`.
+1. Il fondatore (o un collega agente, o un'attività ricorrente) crea una riga in `ai_tasks`. Dal pannello si
+   può allegare il testo di un documento (contratto, listino, offerta, fino a 60.000 caratteri): l'agente lo
+   riceve come dato da analizzare, non come istruzioni.
 2. Il servizio la prende con `FOR UPDATE SKIP LOCKED` se l'agente è attivo e le dipendenze sono completate.
 3. Controlli prima di spendere: agente attivo, budget mensile dell'agente, tetto giornaliero aziendale,
    limite di incarichi al giorno; se uno non va, l'incarico è «bloccato» con il motivo.
@@ -223,7 +225,7 @@ rischi e le approvazioni necessarie. Il flusso è coperto da `agents/tests/test_
 
 ## 10. Test
 
-- `agents/`: `python -m pytest` — 44 test con Postgres reale e un modello finto (flusso CEO → colleghi →
+- `agents/`: `python -m pytest` — 45 test con Postgres reale e un modello finto (flusso CEO → colleghi →
   sintesi, deleghe e dipendenze, strumenti non autorizzati, budget, tentativi, approvazioni ed email,
   strumenti advisory, IVA, redditività, API e WebSocket).
 - `npm run test:db` — permessi del database, comprese approvazioni, ordini ai fornitori e documenti advisory.

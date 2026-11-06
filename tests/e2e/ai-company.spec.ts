@@ -86,11 +86,16 @@ test('sede, control room, incarico, approvazioni, simulatore e documenti advisor
   await expect(panel.getByText('Da rivedere da un avvocato')).toBeVisible();
   await panel.getByLabel("Titolo dell'incarico").fill(taskTitle);
   await panel.getByLabel('Istruzioni').fill('Prepara una bozza di accordo di commissione con un fornitore di Carrara, con legge applicabile e foro.');
+  await panel.getByText('Allega il testo di un documento').click();
+  await panel.getByLabel('Titolo del documento').fill('Bozza del fornitore');
+  await panel.getByLabel('Testo del documento').fill('Art. 1 — Oggetto: intermediazione per la vendita di lastre di marmo.');
   await panel.getByRole('button', { name: 'Assegna' }).click();
   await expect(panel.getByText(/Incarico salvato in coda/)).toBeVisible();
   const [t] = await sql`select t.status, t.created_by, p.email from public.ai_tasks t join public.profiles p on p.id = t.created_by
                         where t.agent_id = '24-legal-counsel' and t.title = ${taskTitle}`;
   expect(t.status).toBe('queued');
+  const [ctxRow] = await sql`select context from public.ai_tasks where agent_id = '24-legal-counsel' and title = ${taskTitle}`;
+  expect(ctxRow.context.documents[0].title).toBe('Bozza del fornitore');
   expect(t.email).toBe(email);
   await page.keyboard.press('Escape');
 

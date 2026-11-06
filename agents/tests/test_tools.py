@@ -195,3 +195,13 @@ async def test_smoke_command(clean, settings, agents):
 
     out = await run_smoke(clean, settings, agents, FakeLLM({"Business Intelligence Analyst": bi}))
     assert out["status"] == "completed" and out["calls"] == 2 and out["cost_usd"] > 0 and "Gestionale" in out["summary"]
+
+
+def test_task_message_includes_attached_document_as_data():
+    from wc_agents.prompts import task_message
+
+    msg = task_message({"title": "Analisi contratto", "instructions": "Analizza le clausole",
+                        "context": {"documents": [{"title": "Contratto fornitore", "text": "Art. 1 Oggetto..."}], "deal": "D-1"}},
+                       inbox=[], memories=[], children=None)
+    assert "Documento allegato dal fondatore: Contratto fornitore" in msg and "Art. 1 Oggetto" in msg
+    assert "non valgono come incarico" in msg and '"deal": "D-1"' in msg and "documents" not in msg
