@@ -5,6 +5,7 @@
 //   3. traduzione automatica (auto/L.json, creata da `npm run translate`)
 //   4. inglese, poi italiano
 import { marked } from 'marked';
+import { safeHtml } from '~/lib/safe-html';
 import { flatten, hash, splitBlocks, SPECS } from './core.mjs';
 import { MAIN_CODES, SOURCE_LANG, describe } from './languages.mjs';
 import { pathFor } from './routes.mjs';
@@ -76,8 +77,9 @@ function interpolate(s: string, vars?: Vars) {
 
 export function renderMd(block: string) {
   const b = block.trim();
-  if (b.startsWith('<')) return b;
-  return marked.parse(b, { async: false }) as string;
+  // i blocchi possono arrivare dalle correzioni fatte nel pannello: sempre filtrati
+  if (b.startsWith('<')) return safeHtml(b);
+  return safeHtml(marked.parse(b, { async: false }) as string);
 }
 
 export type Translator = Awaited<ReturnType<typeof getTranslator>>;

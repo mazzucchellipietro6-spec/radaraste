@@ -95,7 +95,7 @@ async def test_ceo_delegates_waits_and_synthesizes(clean, settings, agents):
     llm = FakeLLM({"AI CEO": ceo, "Lead Generation Agent": lead_gen, "Export Manager": export,
                    "Legal Counsel Agent": legal, "Tax & Accounting Advisor": tax})
     root = await new_task(db, "01-ai-ceo", "Importatori EAU", "Trova 30 importatori di marmo negli Emirati Arabi Uniti e prepara una strategia.")
-    orch = Orchestrator(db, settings, agents, llm)
+    orch = Orchestrator(db.agent, settings, agents, llm)
     await orch.run_until_idle()
 
     tasks = await db.fetch("select id, agent_id, status, phase, depth, parent_id, depends_on, started_at, finished_at, result from public.ai_tasks order by created_at")

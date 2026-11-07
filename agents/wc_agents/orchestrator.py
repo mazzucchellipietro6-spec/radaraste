@@ -16,6 +16,7 @@ from .approvals import ApprovalExecutor
 from .db import Database, jsonb
 from .llm import LLM
 from .registry import AgentDef, sync_default_schedules, sync_registry
+from .guard import system_paused
 from .runtime import AgentRuntime
 
 log = logging.getLogger("wc_agents.orchestrator")
@@ -52,8 +53,9 @@ class Orchestrator:
 
     # ------------------------------------------------------------------ manutenzione della coda
     async def heartbeat(self) -> None:
+        paused, _ = await system_paused(self.db)
         info = {"llm_configured": self.llm is not None, "model": self.settings.ai_model, "concurrency": self.settings.worker_concurrency,
-                "running": len(self.running), "agents": len(self.agents), "env": self.settings.app_env}
+                "running": len(self.running), "agents": len(self.agents), "env": self.settings.app_env, "paused": paused}
         await self.db.execute(
             """insert into public.ai_runtime (id, version, info) values (%s, %s, %s)
                on conflict (id) do update set last_seen = now(), version = excluded.version, info = excluded.info""",
@@ -158,6 +160,9 @@ class Orchestrator:
     async def claim(self) -> dict | None:
         if self.llm is None:
             return None  # senza chiave gli incarichi restano in coda: la sede mostra gli agenti come non collegati
+        paused, _ = await system_paused(self.db)
+        if paused:
+            return None  # sistema sospeso dal proprietario: nessun nuovo incarico
         return await self.db.fetchone(CLAIM_SQL, {"w": self.worker_id})
 
     async def execute(self, task: dict) -> None:

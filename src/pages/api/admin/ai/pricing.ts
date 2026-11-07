@@ -4,6 +4,8 @@ import { withUser } from '~/lib/server/db';
 import { fail, json, readBody } from '~/lib/server/http';
 import { PricingError, simulate, type Inputs } from '~/lib/pricing';
 
+import { rateLimit } from '~/lib/server/rate-limit';
+
 export const prerender = false;
 
 export const POST: APIRoute = async (ctx) => {
@@ -11,6 +13,7 @@ export const POST: APIRoute = async (ctx) => {
   if (!admin) return fail('unauthorized');
   const p = admin.profile;
   if (p.role !== 'admin' && !p.permissions.includes('trade')) return fail('forbidden');
+  if (!(await rateLimit(`ai-pricing:${admin.user.id}`, 120, 3600))) return fail('rate_limited');
   const b = await readBody(ctx.request);
   const model = String(b.model);
   const inputs = (b.inputs && typeof b.inputs === 'object' ? b.inputs : {}) as Inputs;

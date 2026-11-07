@@ -74,6 +74,31 @@ aggiungetelo in `src/lib/security-headers.mjs` e lanciate `npm run headers`.
   approvazione; i documenti legali e fiscali sono bozze con revisione professionale obbligatoria.
 - API del servizio con token, WebSocket con token firmati a breve scadenza. Dettagli: docs/AI-COMPANY.md.
 
+### Correzioni dell'audit del 7 novembre 2026 (docs/AUDIT.md)
+- **Testi editoriali e traduzioni**: l'HTML che arriva dal Markdown o dalle correzioni del pannello passa
+  da un filtro con elenco di tag ammessi (`src/lib/safe-html.ts`): niente script, gestori di eventi, iframe,
+  link `javascript:`. Il JSON-LD non può chiudere il proprio `<script>`.
+- **Registro delle modifiche a prova di alterazione**: ogni riga ha un numero progressivo e un hash SHA-256
+  concatenato alla precedente; modifiche e cancellazioni sono vietate (anche via SQL) e `audit_verify()`
+  segnala la prima riga alterata. La cancellazione dei dati personali usa `audit_redact()` e resta registrata.
+- **Eventi di sicurezza** (`security_events`): accessi falliti, codici MFA errati, limiti superati, accessi
+  negati al pannello, strumenti non autorizzati, sospetti di prompt injection, budget esauriti, rifiuti del
+  modello, sospensioni. IP solo come impronta con sale, email mascherate. Visibili solo all'amministratore.
+- **Servizio agenti con ruolo database dedicato** (`wc_agents_runtime`): accesso solo alle tabelle dei suoi
+  strumenti; nessun accesso a profili dei clienti, autenticazione, registro delle modifiche, impostazioni
+  (in sola lettura), identificativi Stripe. Cancellazioni non consentite. Connessione TLS obbligatoria in
+  staging e produzione.
+- **Prompt injection**: i contenuti di pagine web, documenti allegati e argomenti degli strumenti vengono
+  controllati; se contengono istruzioni rivolte agli agenti l'agente viene avvisato che sono dati, l'evento è
+  registrato e nulla di sospetto viene salvato nella memoria persistente.
+- **Sospensione immediata**: l'intero sistema degli agenti o il singolo agente si fermano al passo successivo
+  (gli incarichi tornano in coda senza consumare tentativi).
+- **Limiti di frequenza** anche sulle API del pannello che creano incarichi, decidono approvazioni o
+  cambiano impostazioni degli agenti.
+- **Dipendenze**: aggiornate dove possibile senza modifiche distruttive; restano 3 avvisi alti negli strumenti
+  di build dell'adattatore Vercel (non presenti nel sito pubblicato), controllati a ogni CI.
+- `/api/health` per il monitoraggio (nessun dato di configurazione esposto).
+
 ## Copie di sicurezza
 Vedi DATABASE.md, sezione "Copie di sicurezza" (`npm run backup` più le copie automatiche di Supabase).
 

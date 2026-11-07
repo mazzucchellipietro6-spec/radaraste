@@ -3,12 +3,15 @@ import type { APIRoute } from 'astro';
 import { canSeeAi, createTask } from '~/lib/server/company';
 import { fail, json, readBody } from '~/lib/server/http';
 
+import { rateLimit } from '~/lib/server/rate-limit';
+
 export const prerender = false;
 
 export const POST: APIRoute = async (ctx) => {
   const admin = ctx.locals.admin;
   if (!admin) return fail('unauthorized');
   if (!canSeeAi(admin.profile)) return fail('forbidden');
+  if (!(await rateLimit(`ai-task:${admin.user.id}`, 60, 3600))) return fail('rate_limited');
   const b = await readBody(ctx.request);
   const agent_id = String(b.agent_id ?? '').trim();
   const title = String(b.title ?? '').trim().slice(0, 300);

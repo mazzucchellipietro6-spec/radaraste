@@ -7,7 +7,7 @@ import socket
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT = Path(__file__).resolve().parents[1]  # cartella agents/
@@ -45,6 +45,15 @@ class Settings(BaseSettings):
 
     content_dir: Path = REPO / "src" / "content"
     config_dir: Path = ROOT / "config"
+
+    @model_validator(mode="after")
+    def require_tls(self) -> "Settings":
+        """Fuori dallo sviluppo la connessione al database deve essere cifrata (TLS)."""
+        local = any(h in self.database_url for h in ("localhost", "127.0.0.1", "@db:", "/tmp/"))
+        if self.app_env in ("production", "staging") and not local and "sslmode=" not in self.database_url:
+            sep = "&" if "?" in self.database_url else "?"
+            self.database_url = f"{self.database_url}{sep}sslmode=require"
+        return self
 
     @property
     def llm_configured(self) -> bool:

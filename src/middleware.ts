@@ -5,6 +5,7 @@ import { authConfigured, currentUser, loadProfile } from '~/lib/server/auth';
 import { dbConfigured } from '~/lib/server/db';
 
 import { SECURITY_HEADERS } from '~/lib/security-headers.mjs';
+import { maskEmail, securityEvent } from '~/lib/server/security';
 import { env } from '~/lib/server/env';
 
 /** Nel pannello la CSP permette anche il WebSocket del servizio agenti (AGENTS_PUBLIC_URL). */
@@ -34,7 +35,11 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
       const user = await currentUser(ctx);
       if (!user) return deny(401, `/it/account/login/?next=${encodeURIComponent(path)}`);
       const profile = await loadProfile(user);
-      if (!profile || (profile.role !== 'admin' && profile.role !== 'staff')) return deny(403, '/it/account/');
+      if (!profile || (profile.role !== 'admin' && profile.role !== 'staff')) {
+        await securityEvent({ kind: 'access_denied', severity: 'medium', message: 'Accesso al pannello da un account non autorizzato',
+          actor: maskEmail(user.email), userId: user.id, ip: (() => { try { return ctx.clientAddress; } catch { return null; } })(), path });
+        return deny(403, '/it/account/');
+      }
       const onMfaPage = path.startsWith('/admin/mfa') || path.startsWith('/api/admin/mfa');
       if (user.aal !== 'aal2' && !onMfaPage) return deny(403, '/admin/mfa/');
       ctx.locals.admin = { user, profile };

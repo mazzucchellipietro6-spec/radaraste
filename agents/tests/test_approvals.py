@@ -37,7 +37,7 @@ async def test_email_is_sent_only_after_approval(clean, settings, agents):
         sent.append(msg)
         return {"provider_id": "re_test_1"}
 
-    ex = ApprovalExecutor(clean, settings, sender=sender)
+    ex = ApprovalExecutor(clean.agent, settings, sender=sender)
     await ex.run_once()
     assert not sent, "inviata senza approvazione"
     await clean.execute("update public.approvals set status = 'approved', decided_at = now() where id = %s", (appr["id"],))
@@ -64,7 +64,7 @@ async def test_suppressed_at_send_time_is_not_sent(clean, settings, agents):
         sent.append(msg)
         return {}
 
-    await ApprovalExecutor(clean, settings, sender=sender).run_once()
+    await ApprovalExecutor(clean.agent, settings, sender=sender).run_once()
     a = await clean.fetchone("select status, execution_result from public.approvals where id = %s", (appr["id"],))
     assert not sent and a["status"] == "failed" and "esclusione" in a["execution_result"]["error"]
 
@@ -72,7 +72,7 @@ async def test_suppressed_at_send_time_is_not_sent(clean, settings, agents):
 async def test_email_waits_for_configuration(clean, settings, agents):
     _, appr = await draft_email(clean, settings, agents)
     await clean.execute("update public.approvals set status = 'approved', decided_at = now() where id = %s", (appr["id"],))
-    await ApprovalExecutor(clean, settings).run_once()  # nessuna chiave Resend nei test
+    await ApprovalExecutor(clean.agent, settings).run_once()  # nessuna chiave Resend nei test
     a = await clean.fetchone("select status, execution_result from public.approvals where id = %s", (appr["id"],))
     assert a["status"] == "approved" and a["execution_result"]["waiting_config"] is True
 
@@ -87,20 +87,20 @@ async def test_supplier_purchase_rejected_cancels_po(clean, settings, agents):
         return [tool_use("submit_result", summary="Ordine al fornitore preparato", approval_required=True)]
 
     await new_task(clean, "11-supplier-manager", "Acquisto Calacatta")
-    await Orchestrator(clean, settings, agents, FakeLLM({"Supplier Manager": sm})).run_until_idle()
+    await Orchestrator(clean.agent, settings, agents, FakeLLM({"Supplier Manager": sm})).run_until_idle()
     po = await clean.fetchone("select id, status, total, approval_id from public.purchase_orders")
     assert po["status"] == "pending_approval" and float(po["total"]) == 9000 and po["approval_id"]
     appr = await clean.fetchone("select summary, amount from public.approvals where id = %s", (po["approval_id"],))
     assert "non ancora verificato" in appr["summary"] and float(appr["amount"]) == 9000
     await clean.execute("update public.approvals set status = 'rejected', decision_note = 'Prezzo da rinegoziare' where id = %s", (po["approval_id"],))
-    await ApprovalExecutor(clean, settings).run_once()
+    await ApprovalExecutor(clean.agent, settings).run_once()
     assert (await clean.fetchone("select status from public.purchase_orders where id = %s", (po["id"],)))["status"] == "cancelled"
 
 
 async def test_manual_kinds_are_authorized_not_executed(clean, settings, agents):
     await clean.execute(
         "insert into public.approvals (kind, title, summary, requested_by_agent, status) values ('payment', 'Acconto fornitore', 'x', '18-cfo', 'approved')")
-    await ApprovalExecutor(clean, settings).run_once()
+    await ApprovalExecutor(clean.agent, settings).run_once()
     a = await clean.fetchone("select status, execution_result from public.approvals")
     assert a["status"] == "approved" and a["execution_result"]["action"] == "manual"
 
@@ -108,5 +108,5 @@ async def test_manual_kinds_are_authorized_not_executed(clean, settings, agents)
 async def test_pending_approvals_expire(clean, settings, agents):
     await clean.execute(
         "insert into public.approvals (kind, title, summary, requested_by_agent, expires_at) values ('discount', 'Sconto', 'x', '13-pricing-manager', now() - interval '1 day')")
-    await ApprovalExecutor(clean, settings).run_once()
+    await ApprovalExecutor(clean.agent, settings).run_once()
     assert (await clean.fetchone("select status from public.approvals"))["status"] == "expired"

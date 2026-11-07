@@ -83,7 +83,7 @@ async def seed_business(db):
 async def test_finance_and_profitability_keep_models_separate(clean, settings, agents):
     await seed_business(clean)
     tid = await new_task(clean, "23-business-analyst", "Redditività")
-    ctx = ctx_for(clean, settings, agents, "23-business-analyst", tid)
+    ctx = ctx_for(clean.agent, settings, agents, "23-business-analyst", tid)
     fin = await call(ctx, "finance_summary")
     assert fin["resale"]["revenue_eur"] == 10000 and fin["resale"]["gross_margin_known_eur"] == 3000
     assert fin["brokerage"]["commission_revenue_eur"] == 1500
@@ -109,7 +109,7 @@ async def test_finance_and_profitability_keep_models_separate(clean, settings, a
 
 async def test_advisory_documents_rules(clean, settings, agents):
     tid = await new_task(clean, "25-tax-accounting-advisor", "Cash flow")
-    ctx = ctx_for(clean, settings, agents, "25-tax-accounting-advisor", tid)
+    ctx = ctx_for(clean.agent, settings, agents, "25-tax-accounting-advisor", tid)
     with pytest.raises(ToolError, match="effettivi ma senza fonte"):
         await call(ctx, "tax_doc_save", kind="cash_flow_forecast", title="Cash flow Q1", body="x" * 60,
                    figures=[{"label": "Incassi", "value": 1000, "basis": "actual"}], points_to_verify=["Saldo banca"])
@@ -121,7 +121,7 @@ async def test_advisory_documents_rules(clean, settings, agents):
                               {"label": "Pagamenti fornitori", "value": 600, "basis": "estimate"}], points_to_verify=["Saldo banca"])
     doc = await clean.fetchone("select category, review_required, figures from public.advisory_documents where id = %s", (out["id"],))
     assert doc["category"] == "tax" and doc["review_required"] and doc["figures"][1]["basis"] == "estimate"
-    lctx = ctx_for(clean, settings, agents, "24-legal-counsel", tid)
+    lctx = ctx_for(clean.agent, settings, agents, "24-legal-counsel", tid)
     with pytest.raises(Exception):  # senza fonti normative: rifiutato già dallo schema
         await call(lctx, "legal_doc_save", kind="legal_memo", title="Privacy", body="y" * 60, jurisdiction="Italia",
                    applicable_law="GDPR", sources=[], points_to_verify=["DPO"])
@@ -132,12 +132,12 @@ async def test_advisory_documents_rules(clean, settings, agents):
 
 async def test_proposed_automation_runs_only_after_activation(clean, settings, agents):
     tid = await new_task(clean, "22-business-process-engineer", "Automazioni")
-    ctx = ctx_for(clean, settings, agents, "22-business-process-engineer", tid)
+    ctx = ctx_for(clean.agent, settings, agents, "22-business-process-engineer", tid)
     out = await call(ctx, "schedule_propose", agent_id="05-crm-follow-up", title="Follow-up settimanale",
                      instructions="Controlla i follow-up scaduti e prepara le bozze", every_hours=168,
                      reason="Oggi i follow-up scaduti si accumulano senza un controllo periodico")
     assert out["enabled"] is False
-    orch = Orchestrator(clean, settings, agents, None)
+    orch = Orchestrator(clean.agent, settings, agents, None)
     await clean.execute("update public.ai_schedules set next_run_at = now() - interval '1 minute'")
     assert await orch.run_schedules() == 0
     await clean.execute("update public.ai_schedules set enabled = true")
@@ -182,7 +182,7 @@ async def test_default_schedules_are_added_disabled_once(clean, settings):
     assert await sync_default_schedules(clean, settings.config_dir) == 0
     rows = await clean.fetch("select enabled from public.ai_schedules")
     assert rows and not any(r["enabled"] for r in rows)
-    assert await Orchestrator(clean, settings, {}, None).run_schedules() == 0
+    assert await Orchestrator(clean.agent, settings, {}, None).run_schedules() == 0
 
 
 async def test_smoke_command(clean, settings, agents):
@@ -193,7 +193,7 @@ async def test_smoke_command(clean, settings, agents):
     def bi(call):
         return [tool_use("company_overview")] if call.turn == 1 else [tool_use("submit_result", summary="Gestionale vuoto: nessun ordine.")]
 
-    out = await run_smoke(clean, settings, agents, FakeLLM({"Business Intelligence Analyst": bi}))
+    out = await run_smoke(clean.agent, settings, agents, FakeLLM({"Business Intelligence Analyst": bi}))
     assert out["status"] == "completed" and out["calls"] == 2 and out["cost_usd"] > 0 and "Gestionale" in out["summary"]
 
 

@@ -1,4 +1,5 @@
 // Controlli comuni dei moduli pubblici: antispam, limiti di frequenza, consenso privacy, validazione.
+import { securityEvent } from './security';
 import type { APIContext } from 'astro';
 import { z } from 'zod';
 import { LANGS } from '~/i18n';
@@ -24,7 +25,10 @@ export async function guard(ctx: APIContext, opts: { bucket: string; max: number
   const wantsJson = (request.headers.get('accept') ?? '').includes('application/json');
   const lang = typeof body.lang === 'string' && LANGS.includes(body.lang) ? body.lang : 'en';
   if (looksLikeBot(body)) return fail('spam');
-  if (!(await rateLimit(`${opts.bucket}:${ip}`, opts.max, opts.windowSeconds))) return fail('rate_limited');
+  if (!(await rateLimit(`${opts.bucket}:${ip}`, opts.max, opts.windowSeconds))) {
+    await securityEvent({ kind: 'rate_limited', severity: 'low', message: `Limite di frequenza superato (${opts.bucket})`, ip, path: new URL(request.url).pathname });
+    return fail('rate_limited');
+  }
   if (!(await verifyTurnstile(body['cf-turnstile-response'], ip))) return fail('spam');
   if (body.privacy !== 'yes' && body.privacy !== true && body.privacy !== 'on') return fail('invalid', { errors: { privacy: 'privacy' } });
   return { body, ip, lang, wantsJson };

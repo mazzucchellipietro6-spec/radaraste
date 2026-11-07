@@ -14,6 +14,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from .db import Database, jsonb
+from .guard import INJECTION_NOTICE, scan_values, security_event, system_paused
 from .llm import LLM, FatalLLMError, LLMResponse, TransientLLMError
 from .prompts import system_prompt, task_message
 from .registry import AgentDef, load_live
@@ -140,10 +141,16 @@ class AgentRuntime:
                 return await self.finish(task, "failed", error=f"Agente sconosciuto: {task['agent_id']}")
             if self.llm is None:
                 raise Blocked("Chiave API di Claude non configurata (ANTHROPIC_API_KEY): l'agente non può lavorare")
+            paused, reason = await system_paused(self.db)
+            if paused:
+                return await self.suspend(task, f"Sistema degli agenti sospeso dal proprietario{': ' + reason if reason else ''}")
             await self.check_limits(agent, task)
             return await self.loop(agent, task)
         except Blocked as e:
             await self.event(task, "blocked", str(e))
+            if "Budget" in str(e) or "Tetto" in str(e) or "Costo massimo" in str(e):
+                await security_event(self.db, "budget_exceeded", "low", str(e), actor=f"agente:{task['agent_id']}",
+                                     details={"task_id": str(task["id"])})
             return await self.finish(task, "blocked", error=str(e))
         except FatalLLMError as e:
             log.error("errore del modello non recuperabile per %s: %s", task["id"], e)
@@ -154,6 +161,20 @@ class AgentRuntime:
         except Exception as e:  # errore inatteso: registrato e ritentato come gli errori temporanei
             log.exception("errore durante l'incarico %s", task["id"])
             return await self.retry_or_fail(task, f"Errore interno: {type(e).__name__}: {e}")
+
+    async def suspend(self, task: dict, reason: str) -> str:
+        """Sospensione dal pannello (sistema o agente): l'incarico torna in coda, senza consumare tentativi."""
+        await self.db.execute(
+            """update public.ai_tasks set status = 'queued', attempts = greatest(attempts - 1, 0), locked_by = null, locked_at = null,
+                 activity = null, run_after = now() + interval '30 seconds' where id = %s and status = 'running'""",
+            (task["id"],),
+        )
+        await self.event(task, "paused", reason)
+        return "queued"
+
+    async def agent_enabled(self, agent_id: str) -> bool:
+        row = await self.db.fetchone("select enabled and autonomy <> 'disabled' as on from public.ai_agents where id = %s", (agent_id,))
+        return bool(row and row["on"])
 
     async def retry_or_fail(self, task: dict, error: str) -> str:
         row = await self.db.fetchone("select attempts, max_attempts, status from public.ai_tasks where id = %s", (task["id"],))
@@ -194,7 +215,13 @@ class AgentRuntime:
         system = system_prompt(agent, colleagues)
         tools = self.tool_schemas(agent)
         messages: list[dict] = await self.build_messages(agent, task)
+        found = scan_values([task.get("instructions"), task.get("context")])
+        if found:
+            messages[0]["content"] += "\n\n" + INJECTION_NOTICE
+            await security_event(self.db, "prompt_injection", "medium", f"Istruzioni sospette nel materiale dell'incarico «{task['title'][:120]}»",
+                                 actor=f"agente:{agent.id}", details={"task_id": str(task["id"]), "found": found})
         ctx = ToolContext(db=self.db, settings=self.settings, agent=agent, task=task, agents=self.agents)
+        injection_alert = False
         web_sources: list[dict] = []
         nudges = 0
         model = agent.model or self.settings.ai_model
@@ -206,6 +233,11 @@ class AgentRuntime:
             if await self.cancelled(task):
                 await self.event(task, "cancelled", "Incarico annullato durante l'esecuzione")
                 return "cancelled"
+            paused, reason = await system_paused(self.db)
+            if paused:
+                return await self.suspend(task, f"Sistema degli agenti sospeso dal proprietario{': ' + reason if reason else ''}")
+            if turn > 1 and not await self.agent_enabled(agent.id):
+                return await self.suspend(task, f"{agent.name} sospeso dal proprietario")
             spent = await self.db.fetchone("select cost_usd from public.ai_tasks where id = %s", (task["id"],))
             if spent and float(spent["cost_usd"]) >= self.settings.max_cost_per_task_usd:
                 raise Blocked(f"Costo massimo per incarico raggiunto ({self.settings.max_cost_per_task_usd:.2f} USD)")
@@ -215,6 +247,11 @@ class AgentRuntime:
             await self.record_usage(task, agent, resp)
             messages.append({"role": "assistant", "content": resp.content})
             self.collect_web(resp, web_sources)
+            web_found = scan_values([b for b in resp.blocks if b.get("type") in ("web_fetch_tool_result", "web_search_tool_result")])
+            if web_found:
+                injection_alert = True
+                await security_event(self.db, "prompt_injection", "medium", "Pagina web con istruzioni rivolte agli agenti",
+                                     actor=f"agente:{agent.id}", details={"task_id": str(task["id"]), "found": web_found})
             text = " ".join(b.get("text", "") for b in resp.blocks if b.get("type") == "text").strip()
             await self.event(task, "llm", text[:600] or f"Passo {turn}", None,
                              {"turn": turn, "stop_reason": resp.stop_reason, "model": resp.model, "cost_usd": round(resp.cost_usd, 6),
@@ -222,6 +259,8 @@ class AgentRuntime:
 
             if resp.stop_reason == "refusal":
                 await self.event(task, "refusal", "Il modello ha rifiutato la richiesta", data={"details": resp.stop_details})
+                await security_event(self.db, "model_refusal", "low", f"Il modello ha rifiutato l'incarico «{task['title'][:120]}»",
+                                     actor=f"agente:{agent.id}", details={"task_id": str(task["id"]), "stop_details": resp.stop_details})
                 return await self.finish(task, "failed", error="Il modello ha rifiutato di svolgere l'incarico")
             if resp.stop_reason == "pause_turn":
                 continue  # ricerca web lunga: si riprende con la stessa conversazione
@@ -238,9 +277,12 @@ class AgentRuntime:
                 continue
 
             if uses:
-                results = []
+                results: list[dict] = []
                 for u in uses:
                     results.append(await self.run_tool(ctx, task, u))
+                if injection_alert:
+                    results.append({"type": "text", "text": INJECTION_NOTICE})
+                    injection_alert = False
                 messages.append({"role": "user", "content": results})
                 if ctx.finished:
                     return await self.complete(task, ctx, web_sources)
@@ -274,6 +316,8 @@ class AgentRuntime:
         tool = TOOLS.get(name)
         if tool is None or name not in ctx.agent.tools:
             await self.event(task, "unauthorized_tool", f"Strumento non autorizzato: {name}", "review", {"tool": name})
+            await security_event(self.db, "unauthorized_tool", "medium", f"{ctx.agent.name} ha tentato di usare {name}",
+                                 actor=f"agente:{ctx.agent.id}", details={"task_id": str(task["id"]), "tool": name})
             return {"type": "tool_result", "tool_use_id": use["id"], "is_error": True,
                     "content": f"Strumento non autorizzato per {ctx.agent.name}: {name}"}
         await self.set_activity(task, tool.activity)
@@ -284,6 +328,15 @@ class AgentRuntime:
             await self.event(task, "tool_error", f"{name}: dati non validi", tool.activity, {"tool": name, "errors": errs})
             return {"type": "tool_result", "tool_use_id": use["id"], "is_error": True,
                     "content": json.dumps({"INVALID_INPUT": errs}, ensure_ascii=False)}
+        found = scan_values(raw) if name != "submit_result" else []
+        if found:
+            await security_event(self.db, "prompt_injection", "medium" if name == "memory_save" else "low",
+                                 f"Testo sospetto negli argomenti di {name}", actor=f"agente:{ctx.agent.id}",
+                                 details={"task_id": str(task["id"]), "tool": name, "found": found})
+            if name == "memory_save":
+                return {"type": "tool_result", "tool_use_id": use["id"], "is_error": True,
+                        "content": "Contenuto non salvato in memoria: contiene frasi che sembrano istruzioni per gli agenti. "
+                                   "Salva solo fatti, con la fonte."}
         before = len(ctx.created)
         try:
             out = await tool.handler(ctx, args)

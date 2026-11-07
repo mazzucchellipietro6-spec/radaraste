@@ -4,12 +4,15 @@ import type { APIRoute } from 'astro';
 import { decideApproval } from '~/lib/server/company';
 import { fail, readBody } from '~/lib/server/http';
 
+import { rateLimit } from '~/lib/server/rate-limit';
+
 export const prerender = false;
 
 export const POST: APIRoute = async (ctx) => {
   const admin = ctx.locals.admin;
   if (!admin) return fail('unauthorized');
   if (admin.profile.role !== 'admin') return fail('forbidden');
+  if (!(await rateLimit(`ai-approval:${admin.user.id}`, 120, 3600))) return fail('rate_limited');
   const b = await readBody(ctx.request);
   const id = String(b.id ?? '');
   const decision = String(b.decision);
