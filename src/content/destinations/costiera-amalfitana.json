@@ -1,0 +1,34 @@
+{
+  "name": "Costiera Amalfitana",
+  "active": true,
+  "featured": true,
+  "order": 170,
+  "region": "campania",
+  "tagline": "Strade a picco sul mare, limoni e borghi.",
+  "description": "La Costiera Amalfitana, patrimonio UNESCO, è uno dei paesaggi più spettacolari del Mediterraneo: borghi come Amalfi, Ravello, Positano e Atrani si affacciano su terrazzamenti di limoni e su un mare profondo.\n\nAmalfi custodisce il Duomo di Sant'Andrea, Ravello le ville Rufolo e Cimbrone con i loro giardini sospesi.",
+  "attractions": [
+    "Amalfi e il Duomo di Sant'Andrea",
+    "Ravello: Villa Rufolo e Villa Cimbrone",
+    "Positano",
+    "Atrani",
+    "Fiordo di Furore"
+  ],
+  "experiences": [
+    "Tour privato con autista",
+    "Escursione in barca",
+    "Visita a una limonaia"
+  ],
+  "itineraries": [
+    {
+      "title": "La Costiera in un giorno",
+      "text": "Positano al mattino, pranzo ad Amalfi, pomeriggio nei giardini di Ravello."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/costiera-amalfitana.jpg",
+  "imageAlt": "La strada panoramica della Costiera Amalfitana a picco sul mare",
+  "seoTitle": "",
+  "seoDescription": ""
+}

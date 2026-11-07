@@ -1,0 +1,67 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import Status from '~/components/account/Status.astro';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+import { withUser } from '~/lib/server/db';
+import { VOCAB } from '~/data/vocab.mjs';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t, fmt } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const session = 'user' in s ? s : null;
+type P = { id: string; name: string; type: string | null; location: string | null; description: string | null; status: string; marbles: string[]; updated_at: Date };
+const rows = session ? await withUser(session.user.claims, (tx) => tx<P[]>`select id, name, type, location, description, status, marbles, updated_at from public.projects order by updated_at desc`) : [];
+const types = Object.keys(VOCAB.projectType);
+const statuses = ['open', 'in_progress', 'on_hold', 'completed', 'archived'];
+---
+
+<Account t={tr} path={`/${lang}/account/projects/`} section="projects" title={t('account.nav.projects')} profile={session?.profile}>
+  {
+    !session ? (
+      <NotConfigured t={tr} />
+    ) : (
+      <div class="space-y-10">
+        <details class="border border-stone bg-ivory p-6" open={rows.length === 0}>
+          <summary class="cursor-pointer font-display text-xl">{t('account.projects.new')}</summary>
+          <form method="post" action="/api/me/projects" class="mt-6 grid gap-5 sm:grid-cols-2">
+            <input type="hidden" name="action" value="create" />
+            <label class="field sm:col-span-2"><span class="field-label">{t('account.projects.name')}</span><input class="input" name="name" required maxlength="160" /></label>
+            <label class="field"><span class="field-label">{t('account.projects.type')}</span><select class="input" name="type">{types.map((k) => <option value={k}>{t(`vocab.projectType.${k}`)}</option>)}</select></label>
+            <label class="field"><span class="field-label">{t('account.projects.location')}</span><input class="input" name="location" maxlength="160" /></label>
+            <label class="field sm:col-span-2"><span class="field-label">{t('account.projects.marbles')}</span><input class="input" name="marbles" placeholder="statuario, calacatta" /></label>
+            <label class="field sm:col-span-2"><span class="field-label">{t('account.projects.description')}</span><textarea class="input" name="description" rows="4" maxlength="5000" /></label>
+            <div><button class="btn btn-primary btn-sm" type="submit">{t('account.projects.save')}</button></div>
+          </form>
+        </details>
+        {rows.length === 0 && <p class="text-ash">{t('account.projects.empty')}</p>}
+        {rows.map((p) => (
+          <details class="border-t border-stone pt-6">
+            <summary class="flex cursor-pointer flex-wrap items-center justify-between gap-3">
+              <span class="font-display text-2xl">{p.name}</span>
+              <span class="flex items-center gap-3 text-[0.85rem] text-ash">{p.type && t(`vocab.projectType.${p.type}`)} · {fmt.date(p.updated_at, { dateStyle: 'medium' })} <Status label={t(`account.projects.statuses.${p.status}`)} tone={p.status === 'completed' ? 'ok' : 'neutral'} /></span>
+            </summary>
+            <form method="post" action="/api/me/projects" class="mt-6 grid gap-5 sm:grid-cols-2">
+              <input type="hidden" name="action" value="update" />
+              <input type="hidden" name="id" value={p.id} />
+              <label class="field sm:col-span-2"><span class="field-label">{t('account.projects.name')}</span><input class="input" name="name" value={p.name} required maxlength="160" /></label>
+              <label class="field"><span class="field-label">{t('account.projects.type')}</span><select class="input" name="type">{types.map((k) => <option value={k} selected={p.type === k}>{t(`vocab.projectType.${k}`)}</option>)}</select></label>
+              <label class="field"><span class="field-label">{t('account.projects.status')}</span><select class="input" name="status">{statuses.map((k) => <option value={k} selected={p.status === k}>{t(`account.projects.statuses.${k}`)}</option>)}</select></label>
+              <label class="field"><span class="field-label">{t('account.projects.location')}</span><input class="input" name="location" value={p.location ?? ''} maxlength="160" /></label>
+              <label class="field"><span class="field-label">{t('account.projects.marbles')}</span><input class="input" name="marbles" value={p.marbles.join(', ')} /></label>
+              <label class="field sm:col-span-2"><span class="field-label">{t('account.projects.description')}</span><textarea class="input" name="description" rows="4" maxlength="5000">{p.description ?? ''}</textarea></label>
+              <div class="flex gap-3"><button class="btn btn-primary btn-sm" type="submit">{t('account.projects.save')}</button></div>
+            </form>
+            <form method="post" action="/api/me/projects" class="mt-3">
+              <input type="hidden" name="action" value="delete" />
+              <input type="hidden" name="id" value={p.id} />
+              <button class="text-[0.85rem] text-danger underline" type="submit">{t('account.projects.delete')}</button>
+            </form>
+          </details>
+        ))}
+      </div>
+    )
+  }
+</Account>

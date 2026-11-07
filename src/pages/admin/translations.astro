@@ -1,0 +1,56 @@
+---
+// Correzioni delle traduzioni, lingua per lingua. Hanno la precedenza su traduzioni a mano e automatiche.
+import Admin from '~/layouts/Admin.astro';
+import { LANGS, LANG_INFO, getTranslator } from '~/i18n';
+import { allMessages } from '~/lib/server/admin/messages';
+import { withUser } from '~/lib/server/db';
+export const prerender = false;
+const admin = Astro.locals.admin;
+if (!admin || !(admin.profile.role === 'admin' || admin.profile.permissions.includes('content'))) return Astro.redirect('/admin/');
+const sp = Astro.url.searchParams;
+const lang = LANGS.includes(sp.get('lang') ?? '') ? sp.get('lang')! : 'en';
+const section = sp.get('section') ?? 'home';
+const q = (sp.get('q') ?? '').toLowerCase();
+const all = await allMessages();
+const sections = Array.from(new Set(all.map((m) => (m.kind === 'ui' ? m.key.split('.')[0] : m.key.split('/')[0])))).sort();
+const tr = await getTranslator(lang);
+const overrides = new Map(
+  (await withUser(admin.user.claims, (tx) => tx<{ key: string; text: string }[]>`select key, text from public.translation_overrides where lang = ${lang}`)).map((r) => [r.key, r.text]),
+);
+const list = all
+  .filter((m) => (q ? m.key.toLowerCase().includes(q) || m.src.toLowerCase().includes(q) : m.kind === 'ui' ? m.key.split('.')[0] === section : m.key.split('/')[0] === section))
+  .slice(0, 150)
+  .map((m) => ({ ...m, current: m.kind === 'ui' ? tr.t(m.key) : tr.c(m.key, m.src), override: overrides.get(m.key) ?? '' }));
+---
+
+<Admin title="Traduzioni" active="translations" wide>
+  <p class="mt-2 max-w-3xl text-ash">Scegli la lingua e la sezione, poi correggi i testi. Le correzioni valgono subito per email, area clienti e pagine dinamiche; per le pagine statiche usa «Pubblica le modifiche» nella sezione <a class="text-brass-deep" href="/admin/content/">Contenuti</a>. Lascia il campo vuoto per tornare alla traduzione originale.</p>
+  {sp.get('ok') && <p class="mt-4 border border-success px-4 py-2 text-success" role="status">Correzioni salvate.</p>}
+  <form method="get" class="mt-6 flex flex-wrap items-end gap-3">
+    <label class="field"><span class="field-label">Lingua</span><select class="input !min-h-10" name="lang">{LANGS.map((l) => <option value={l} selected={l === lang}>{LANG_INFO[l].name} ({l})</option>)}</select></label>
+    <label class="field"><span class="field-label">Sezione</span><select class="input !min-h-10" name="section">{sections.map((s) => <option value={s} selected={s === section}>{s}</option>)}</select></label>
+    <label class="field"><span class="field-label">Oppure cerca</span><input class="input !min-h-10 w-64" name="q" value={sp.get('q') ?? ''} /></label>
+    <button class="btn btn-outline btn-sm" type="submit">Mostra</button>
+  </form>
+  <form method="post" action="/api/admin/translations" class="mt-6">
+    <input type="hidden" name="_lang" value={lang} />
+    <input type="hidden" name="_back" value={Astro.url.pathname + Astro.url.search} />
+    <div class="overflow-x-auto">
+      <table class="adm-table">
+        <thead><tr><th class="w-[18%]">Chiave</th><th class="w-[27%]">Italiano (originale)</th><th class="w-[27%]">Testo attuale</th><th>Correzione</th></tr></thead>
+        <tbody>
+          {list.map((m) => (
+            <tr>
+              <td class="break-all text-[0.75rem] text-ash">{m.key}</td>
+              <td class="text-[0.85rem]">{m.src}</td>
+              <td class="text-[0.85rem]" lang={lang} dir={tr.dir}>{m.current}</td>
+              <td><textarea class="input !min-h-10 text-[0.85rem]" name={`t:${m.key}`} rows={m.src.length > 120 ? 4 : 2} lang={lang} dir={tr.dir}>{m.override}</textarea><input type="hidden" name={`o:${m.key}`} value={m.override ? '1' : ''} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    {list.length === 150 && <p class="mt-2 text-[0.82rem] text-ash">Mostrati i primi 150 testi: usa la ricerca per restringere.</p>}
+    <button class="btn btn-primary mt-4" type="submit">Salva le correzioni</button>
+  </form>
+</Admin>

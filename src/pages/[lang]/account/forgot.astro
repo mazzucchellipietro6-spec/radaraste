@@ -1,0 +1,27 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import { pageLang } from '~/lib/server/page';
+import { authConfigured } from '~/lib/server/auth';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t } = tr;
+const sent = Astro.url.searchParams.get('sent');
+---
+
+<Account t={tr} path={`/${lang}/account/forgot/`} section="forgot" title={t('account.forgot.title')}>
+  {
+    !authConfigured() ? (
+      <NotConfigured t={tr} />
+    ) : sent ? (
+      <p class="lead max-w-xl" role="status">{t('account.login.magicSent')}</p>
+    ) : (
+      <form method="post" action="/api/auth/forgot" class="max-w-md space-y-5">
+        <p class="text-ash">{t('account.forgot.lead')}</p>
+        <input type="hidden" name="lang" value={lang} />
+        <label class="field"><span class="field-label">{t('forms.email')}</span><input class="input" type="email" name="email" required autocomplete="email" dir="ltr" /></label>
+        <button class="btn btn-primary" type="submit">{t('account.forgot.submit')}</button>
+      </form>
+    )
+  }
+</Account>

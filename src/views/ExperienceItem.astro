@@ -1,0 +1,99 @@
+---
+import { getImage } from 'astro:assets';
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Img from '~/components/Img.astro';
+import Icon from '~/components/Icon.astro';
+import Facts from '~/components/Facts.astro';
+import CtaBand from '~/components/CtaBand.astro';
+import type { Translator } from '~/i18n';
+import { experiences } from '~/lib/site';
+import { absUrl, breadcrumbJsonLd } from '~/lib/seo';
+
+interface Props {
+  t: Translator;
+  path: string;
+  id: string;
+}
+const { t: tr, path, id } = Astro.props;
+const { t, href } = tr;
+const all = await experiences();
+const e = tr.localize('experiences', id, all.find((x) => x.id === id)!.data);
+const others = all.filter((x) => x.id !== id).slice(0, 3).map((x) => ({ ...x, data: tr.localize('experiences', x.id, x.data) }));
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.experience'), href: href('experience') }, { label: e.title }];
+const bookHref = `${href('booking')}?experience=${id}`;
+const og = await getImage({ src: e.image, width: 1200, height: 630, fit: 'cover', format: 'jpg' });
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'TouristTrip',
+  name: e.title,
+  description: e.summary,
+  image: absUrl(og.src),
+  url: absUrl(path),
+  touristType: t(`vocab.experienceCategory.${e.category}`),
+  provider: { '@type': 'Organization', name: 'WHITE CARRARA' },
+  itinerary: { '@type': 'Place', name: 'Carrara', address: { '@type': 'PostalAddress', addressLocality: 'Carrara', addressRegion: 'MS', addressCountry: 'IT' } },
+  ...(e.price != null ? { offers: { '@type': 'Offer', price: e.price, priceCurrency: 'EUR', availability: 'https://schema.org/PreOrder' } } : {}),
+};
+---
+
+<Base t={tr} title={e.seoTitle || `${e.title} — ${t('nav.experience')}`} description={e.seoDescription || e.summary} path={path} header="overlay" image={e.image} jsonld={[ld, breadcrumbJsonLd(crumbs.map((c) => ({ name: c.label, url: c.href ?? path })))]}>
+  <PageHero eyebrow={t(`vocab.experienceCategory.${e.category}`)} title={e.title} lead={e.summary} image={e.image} alt={e.imageAlt} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+
+  <section class="py-20 lg:py-28">
+    <div class="container-page grid gap-14 lg:grid-cols-12">
+      <div class="lg:col-span-7">
+        <div class="prose-luxe text-[1.08rem]" set:html={e.description} />
+        {
+          e.highlights.length > 0 && (
+            <>
+              <h2 class="eyebrow mt-14">{t('experience.highlights')}</h2>
+              <ul class="mt-6 grid gap-4 sm:grid-cols-2">
+                {e.highlights.map((h) => (
+                  <li class="flex gap-3 border-t border-stone pt-4">
+                    <Icon name="check" size={18} class="mt-1 shrink-0 text-brass-deep" />
+                    {h}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )
+        }
+        {e.meetingPoint && <p class="mt-10 flex gap-3"><Icon name="pin" class="mt-1 text-brass-deep" /><span><strong class="font-medium">{t('experience.meetingPoint')}:</strong> {e.meetingPoint}</span></p>}
+        <p class="mt-10 flex gap-3 text-[0.9rem] text-ash"><Icon name="shield" size={18} class="mt-0.5 shrink-0 text-brass-deep" />{t('experience.authorizedNote')}</p>
+      </div>
+      <aside class="lg:col-span-4 lg:col-start-9">
+        <div class="border border-stone bg-ivory p-8 lg:sticky lg:top-36">
+          <Facts t={tr} d={e} />
+          <div class="mt-8 grid gap-3">
+            <a href={bookHref} class="btn btn-primary w-full">{e.price != null && e.onlinePayment ? t('experience.book') : t('experience.requestInfo')}</a>
+            {e.onlinePayment && e.price != null && <p class="text-center text-[0.8rem] text-ash">{t('experience.paymentOnline')}</p>}
+          </div>
+          <ol class="mt-8 space-y-3 border-t border-stone pt-6 text-[0.88rem] text-ash">
+            {['1', '2', '3'].map((n) => <li class="flex gap-3"><span class="font-display text-brass-deep">0{n}</span>{t(`experience.steps.${n}`)}</li>)}
+          </ol>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="bg-ivory py-20 lg:py-24" aria-labelledby="other-title">
+    <div class="container-page">
+      <h2 id="other-title" class="display-md">{t('experience.other')}</h2>
+      <ul class="mt-10 grid gap-6 md:grid-cols-3">
+        {
+          others.map((o) => (
+            <li>
+              <a href={href('experienceItem', o.id)} class="card-hover group block no-underline">
+                <div class="overflow-hidden bg-stone"><Img src={o.data.image} alt={o.data.imageAlt} sizes="(min-width: 768px) 31vw, 100vw" widths={[400, 640, 900]} class="aspect-[4/3] w-full object-cover" /></div>
+                <p class="eyebrow mt-5">{t(`vocab.experienceCategory.${o.data.category}`)}</p>
+                <h3 class="mt-2 font-display text-2xl text-graphite">{o.data.title}</h3>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+  <CtaBand t={tr} href={bookHref} label={t('experience.requestInfo')} />
+</Base>

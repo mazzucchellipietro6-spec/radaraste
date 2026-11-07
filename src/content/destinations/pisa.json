@@ -1,0 +1,34 @@
+{
+  "name": "Pisa",
+  "active": true,
+  "featured": false,
+  "order": 20,
+  "region": "toscana",
+  "tagline": "Piazza dei Miracoli e una città universitaria sull'Arno.",
+  "description": "La Piazza del Duomo, detta dei Miracoli, riunisce Cattedrale, Battistero, Camposanto e la celebre Torre pendente, patrimonio UNESCO.\n\nOltre la piazza, Pisa è una vivace città universitaria, con i lungarni, Piazza dei Cavalieri e la Scuola Normale Superiore.",
+  "attractions": [
+    "Torre pendente",
+    "Cattedrale e Battistero",
+    "Camposanto monumentale",
+    "Piazza dei Cavalieri",
+    "I lungarni"
+  ],
+  "experiences": [
+    "Salita sulla Torre con biglietto a orario",
+    "Passeggiata nel centro storico",
+    "Cucina tradizionale pisana"
+  ],
+  "itineraries": [
+    {
+      "title": "Mezza giornata a Pisa",
+      "text": "Piazza dei Miracoli con salita sulla Torre, poi Piazza dei Cavalieri e i lungarni. Facile da abbinare a Lucca o al rientro in aeroporto."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/pisa.jpg",
+  "imageAlt": "Piazza dei Miracoli a Pisa con la Torre pendente",
+  "seoTitle": "",
+  "seoDescription": ""
+}

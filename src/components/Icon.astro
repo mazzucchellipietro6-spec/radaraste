@@ -1,0 +1,80 @@
+---
+// Icone a tratto sottile, disegnate per il sito (nessuna emoji, nessuna libreria esterna).
+interface Props {
+  name: keyof typeof ICONS;
+  size?: number;
+  class?: string;
+  label?: string;
+  stroke?: number;
+}
+
+const ICONS = {
+  arrow: '<path d="M4 12h15M14 7l5 5-5 5"/>',
+  'arrow-down': '<path d="M12 4v15M7 14l5 5 5-5"/>',
+  'chevron-down': '<path d="M6 9l6 6 6-6"/>',
+  'chevron-left': '<path d="M15 6l-6 6 6 6"/>',
+  'chevron-right': '<path d="M9 6l6 6-6 6"/>',
+  menu: '<path d="M3 7h18M3 12h18M3 17h18"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+  heart: '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>',
+  compare: '<rect x="3.5" y="4.5" width="7" height="15"/><rect x="13.5" y="4.5" width="7" height="15"/>',
+  zoom: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M11 8v6M8 11h6"/>',
+  upload: '<path d="M12 16V4M7 9l5-5 5 5M4 15v4.5h16V15"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-4 4.1-6 7.5-6s6.3 2 7.5 6"/>',
+  layers: '<path d="M12 3.5l9 4.5-9 4.5-9-4.5 9-4.5z"/><path d="M3 12.5l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5"/>',
+  slab: '<rect x="3.5" y="5.5" width="17" height="13"/><path d="M6 15c3-1 4-5 7-5.5s4 1.5 5.5 1"/>',
+  mountain: '<path d="M2.5 19.5l6.5-12 4 6.5 2.5-3.5 6 9z"/><path d="M7.4 10.5l1.6 1.4 1.6-1.2"/>',
+  ship: '<path d="M3 15.5l1.8 4h14.4l1.8-4z"/><path d="M5.5 15.5v-5h13v5M9 10.5v-4h6v4M12 3v3.5"/>',
+  compass: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+  map: '<path d="M3.5 6.5l5.5-2 6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/>',
+  sparkle: '<path d="M12 3.5l1.7 5.3 5.3 1.7-5.3 1.7L12 17.5l-1.7-5.3L5 10.5l5.3-1.7z"/><path d="M18.5 16.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+  diamond: '<path d="M6.5 4.5h11l3.5 5-9 10-9-10z"/><path d="M3 9.5h18M9.5 4.5l-1.5 5 4 10M14.5 4.5l1.5 5-4 10"/>',
+  chat: '<path d="M4.5 5.5h15v10h-8l-4.5 4v-4h-2.5z"/>',
+  car: '<path d="M4 15.5v-3.2l1.8-4.8h12.4l1.8 4.8v3.2z"/><circle cx="7.5" cy="16.5" r="1.6"/><circle cx="16.5" cy="16.5" r="1.6"/><path d="M4 12.3h16"/>',
+  mail: '<rect x="3.5" y="5.5" width="17" height="13"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>',
+  phone: '<path d="M6.5 3.5h3l1.5 4.5-2 1.5c1 2.2 2.8 4 5 5l1.5-2 4.5 1.5v3c0 1-1 2-2 2C10.5 19 5 13.5 4.5 5.5c0-1 1-2 2-2z"/>',
+  pin: '<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  minus: '<path d="M5 12h14"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  people: '<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.8-3 3-4.5 5.5-4.5s4.7 1.5 5.5 4.5"/><circle cx="16.5" cy="9" r="2.5"/><path d="M15.5 14.5c2.3 0 4.2 1.4 5 4"/>',
+  language: '<path d="M4 6.5h9M8.5 4v2.5M6 6.5c.5 3.5 3 6 6 7.5M11 6.5c-.6 3.6-3.2 6.5-7 8"/><path d="M13.5 20l3.5-8.5 3.5 8.5M14.8 17h4.4"/>',
+  document: '<path d="M6.5 3.5h7l4 4v13h-11z"/><path d="M13.5 3.5v4h4M9 12h6M9 15.5h6"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="10"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+  instagram: '<rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".6" fill="currentColor"/>',
+  whatsapp: '<path d="M4 20l1.2-4A8.3 8.3 0 1 1 8.2 19z"/><path d="M9 8.6c.2-.4.5-.5.8-.5h.5c.2 0 .4.1.5.4l.6 1.5c.1.2 0 .4-.1.6l-.5.6c.6 1.2 1.6 2.2 2.8 2.8l.6-.5c.2-.1.4-.2.6-.1l1.5.6c.3.1.4.3.4.5v.5c0 .3-.1.6-.5.8-.5.3-1.2.5-1.9.3-2.6-.7-4.7-2.8-5.4-5.4-.2-.7 0-1.4.3-1.9z"/>',
+  info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.4"/>',
+  shield: '<path d="M12 3.5l7.5 3v5.5c0 4.5-3.2 7.8-7.5 9-4.3-1.2-7.5-4.5-7.5-9V6.5z"/>',
+  euro: '<path d="M17.5 6.5a6.5 6.5 0 1 0 0 11M4.5 10.5h9M4.5 13.5h9"/>',
+  grid: '<rect x="4" y="4" width="6.5" height="6.5"/><rect x="13.5" y="4" width="6.5" height="6.5"/><rect x="4" y="13.5" width="6.5" height="6.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5"/>',
+  external: '<path d="M13.5 4.5h6v6M19.5 4.5l-8 8M18 14v5.5H4.5V6H10"/>',
+  trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>',
+  filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
+  folder: '<path d="M3.5 6.5h6l2 2h9v11h-17z"/>',
+} as const;
+
+const { name, size = 20, class: cls = '', label, stroke = 1.25 } = Astro.props;
+const body = ICONS[name];
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  width={size}
+  height={size}
+  fill="none"
+  stroke="currentColor"
+  stroke-width={stroke}
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class={cls}
+  aria-hidden={label ? undefined : 'true'}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  focusable="false"
+  set:html={body}
+/>

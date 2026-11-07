@@ -1,0 +1,27 @@
+---
+// Diario della trattativa: offerte, controfferte, chiamate, note (solo staff "trade").
+import { withUser } from '~/lib/server/db';
+interface Props {
+  dealId: string;
+}
+const { dealId } = Astro.props;
+const admin = Astro.locals.admin!;
+type E = { id: string; kind: string; body: string; amount: string | null; created_at: Date; author: string | null };
+const events = await withUser(admin.user.claims, (tx) => tx<E[]>`select e.id, e.kind, e.body, e.amount, e.created_at, p.email as author
+  from public.deal_events e left join public.profiles p on p.id = e.created_by where e.deal_id = ${dealId} order by e.created_at desc`);
+const KIND: Record<string, string> = { note: 'Nota', call: 'Telefonata', email: 'Email', offer: 'Offerta', counter_offer: 'Controfferta', meeting: 'Incontro', stage: 'Cambio fase' };
+---
+
+<section class="mt-10">
+  <h2 class="font-display text-2xl">Trattativa</h2>
+  <form method="post" action="/api/admin/deal-event" class="adm-card mt-3 grid gap-3 md:grid-cols-[10rem_1fr_9rem_auto] md:items-end">
+    <input type="hidden" name="deal_id" value={dealId} />
+    <label class="field"><span class="field-label">Tipo</span><select class="input" name="kind">{Object.entries(KIND).filter(([k]) => k !== 'stage').map(([k, l]) => <option value={k}>{l}</option>)}</select></label>
+    <label class="field"><span class="field-label">Descrizione</span><input class="input" name="body" required maxlength="4000" /></label>
+    <label class="field"><span class="field-label">Importo</span><input class="input" name="amount" type="number" step="0.01" /></label>
+    <button class="btn btn-primary btn-sm" type="submit">Aggiungi</button>
+  </form>
+  <ol class="mt-4 space-y-2">
+    {events.map((e) => <li class="adm-card !py-3 text-[0.9rem]"><span class="text-ash">{new Date(e.created_at).toLocaleString('it-IT', { timeZone: 'Europe/Rome' })} · {KIND[e.kind] ?? e.kind}{e.author && ` · ${e.author}`}</span><br />{e.body}{e.amount && <strong class="ms-2">{Number(e.amount).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong>}</li>)}
+  </ol>
+</section>

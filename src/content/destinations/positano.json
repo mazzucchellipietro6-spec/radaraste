@@ -1,0 +1,33 @@
+{
+  "name": "Positano",
+  "active": true,
+  "featured": false,
+  "order": 160,
+  "region": "campania",
+  "tagline": "Il paese verticale della Costiera.",
+  "description": "Positano scende a cascata verso il mare, con le case color pastello aggrappate alla roccia e la cupola maiolicata della chiesa di Santa Maria Assunta.\n\nTra boutique, spiagge e terrazze panoramiche, è il punto di partenza ideale per scoprire la Costiera in barca.",
+  "attractions": [
+    "Spiaggia Grande",
+    "Chiesa di Santa Maria Assunta",
+    "Sentiero degli Dei",
+    "Spiaggia di Fornillo"
+  ],
+  "experiences": [
+    "Escursione in barca lungo la Costiera",
+    "Trekking sul Sentiero degli Dei",
+    "Cena in terrazza"
+  ],
+  "itineraries": [
+    {
+      "title": "Positano e il Sentiero degli Dei",
+      "text": "Trekking al mattino da Bomerano a Nocelle, discesa a Positano e pomeriggio in spiaggia."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/positano.jpg",
+  "imageAlt": "Positano con le case color pastello che scendono verso il mare",
+  "seoTitle": "",
+  "seoDescription": ""
+}

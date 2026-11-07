@@ -1,0 +1,353 @@
+---
+import Icon from './Icon.astro';
+import LanguagePicker from './LanguagePicker.astro';
+import type { Translator } from '~/i18n';
+
+interface Props {
+  t: Translator;
+  path: string;
+  variant?: 'overlay' | 'solid';
+}
+const { t: tr, path, variant = 'solid' } = Astro.props;
+const { t, href, lang } = tr;
+
+const items = [
+  { key: 'home', label: t('nav.home'), href: href('home') },
+  { key: 'marbles', label: t('nav.marbles'), href: href('marbles') },
+  { key: 'showroom', label: t('nav.showroom'), href: href('showroom') },
+  { key: 'experience', label: t('nav.experience'), href: href('experience') },
+  { key: 'tours', label: t('nav.tours'), href: href('tours') },
+  { key: 'projects', label: t('nav.projects'), href: href('projects') },
+  { key: 'about', label: t('nav.about'), href: href('about') },
+  { key: 'contact', label: t('nav.contact'), href: href('contact') },
+];
+const isActive = (h: string, key: string) => (key === 'home' ? path === h : path.startsWith(h));
+const accountHref = `/${lang}/account/`;
+---
+
+<header data-site-header data-variant={variant} data-scrolled="false" class="site-header">
+  <!-- Computer: riga alta con logo centrato -->
+  <div class="hdr-top hidden lg:block">
+    <div class="hdr-top-inner">
+      <div class="container-page grid h-16 grid-cols-[1fr_auto_1fr] items-center">
+        <div class="flex items-center gap-6 justify-self-start text-[0.72rem] font-medium tracking-luxe uppercase">
+          <LanguagePicker t={tr} path={path} />
+          <a href={href('b2b')} class="hdr-link">{t('nav.b2b')}</a>
+          <a href={accountHref} class="hdr-link inline-flex items-center gap-2"><Icon name="user" size={16} />{t('nav.account')}</a>
+        </div>
+        <a href={href('home')} class="logo text-center" aria-label={t('a11y.home')}>
+          <span class="logo-word">WHITE CARRARA</span>
+          <span class="logo-payoff">{t('meta.payoff')}</span>
+        </a>
+        <div class="flex items-center gap-5 justify-self-end">
+          <a href={href('selection')} class="hdr-link relative inline-flex items-center" aria-label={t('nav.selection')}>
+            <Icon name="heart" size={20} />
+            <span class="selection-count" data-selection-count hidden></span>
+          </a>
+          <a href={href('quote')} class="btn btn-sm hdr-cta">{t('nav.quote')}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Computer: menu principale -->
+  <nav class="hdr-nav hidden lg:block" aria-label={t('nav.mainNav')}>
+    <div class="container-page flex h-12 items-center gap-6">
+      <a href={href('home')} class="logo-mini" tabindex="-1" aria-hidden="true">WHITE CARRARA</a>
+      <ul class="nav-list flex flex-1 flex-wrap items-center justify-center gap-x-5 gap-y-1 xl:gap-x-7">
+        {
+          items.map((it) => (
+            <li data-nav-key={it.key}>
+              <a href={it.href} class="nav-item" aria-current={isActive(it.href, it.key) ? 'page' : undefined}>
+                {it.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <a href={href('quote')} class="quote-mini btn btn-sm" tabindex="-1" aria-hidden="true">{t('nav.quote')}</a>
+    </div>
+  </nav>
+
+  <!-- Telefono e tablet -->
+  <div class="hdr-mobile lg:hidden">
+    <div class="container-page flex h-16 items-center justify-between gap-4">
+      <a href={href('home')} class="logo-mini !block" aria-label={t('a11y.home')}>WHITE CARRARA</a>
+      <div class="flex items-center gap-1">
+        <a href={href('selection')} class="relative inline-flex h-11 w-11 items-center justify-center" aria-label={t('nav.selection')}>
+          <Icon name="heart" size={21} />
+          <span class="selection-count" data-selection-count hidden></span>
+        </a>
+        <button type="button" class="inline-flex h-11 w-11 items-center justify-center" data-menu-open aria-haspopup="dialog" aria-controls="mobile-menu">
+          <Icon name="menu" size={24} />
+          <span class="visually-hidden">{t('nav.menu')}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="mobile-menu" class="mobile-menu" aria-label={t('nav.menu')}>
+    <div class="flex h-full flex-col">
+      <div class="container-page flex h-16 shrink-0 items-center justify-between">
+        <span class="logo-mini !block">WHITE CARRARA</span>
+        <button type="button" class="inline-flex h-11 w-11 items-center justify-center" data-menu-close>
+          <Icon name="close" size={24} />
+          <span class="visually-hidden">{t('nav.close')}</span>
+        </button>
+      </div>
+      <nav class="container-page flex-1 overflow-y-auto pb-10" aria-label={t('nav.mainNav')}>
+        <ul class="border-t border-stone">
+          {
+            items.map((it) => (
+              <li class="border-b border-stone">
+                <a href={it.href} class="flex items-center justify-between py-4 font-display text-[1.65rem] leading-tight" aria-current={isActive(it.href, it.key) ? 'page' : undefined}>
+                  {it.label}
+                  <Icon name="arrow" size={18} class="text-brass rtl:-scale-x-100" />
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="mt-8 grid gap-3">
+          <a href={href('quote')} class="btn btn-primary w-full">{t('nav.quote')}</a>
+          <div class="grid grid-cols-2 gap-3">
+            <a href={accountHref} class="btn btn-outline btn-sm">{t('nav.account')}</a>
+            <a href={href('b2b')} class="btn btn-outline btn-sm">{t('nav.b2b')}</a>
+          </div>
+        </div>
+        <div class="mt-8 flex items-center gap-3 text-sm">
+          <LanguagePicker t={tr} path={path} id="mobile" />
+        </div>
+      </nav>
+    </div>
+  </dialog>
+</header>
+
+<style>
+  .site-header {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 50;
+    color: var(--color-graphite);
+    background: color-mix(in srgb, var(--color-marble) 96%, transparent);
+    border-bottom: 1px solid var(--color-stone);
+    transition:
+      background-color 0.45s var(--ease-luxe),
+      color 0.45s var(--ease-luxe),
+      border-color 0.45s var(--ease-luxe);
+  }
+  @supports (backdrop-filter: blur(8px)) {
+    .site-header {
+      backdrop-filter: saturate(1.1) blur(10px);
+    }
+  }
+  .site-header[data-variant='overlay'][data-scrolled='false'] {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-marble);
+    backdrop-filter: none;
+  }
+  .site-header[data-variant='overlay'][data-scrolled='false'] .hdr-cta {
+    background: transparent;
+    color: var(--color-marble);
+    border-color: color-mix(in srgb, var(--color-marble) 70%, transparent);
+  }
+  .site-header[data-variant='overlay'][data-scrolled='false'] .hdr-cta:hover {
+    background: var(--color-marble);
+    color: var(--color-graphite);
+  }
+  .hdr-cta {
+    background: var(--color-graphite);
+    color: var(--color-marble);
+  }
+  .hdr-cta:hover {
+    background: var(--color-brass-deep);
+  }
+
+  /* La riga alta si chiude scorrendo la pagina */
+  .hdr-top {
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 0.5s var(--ease-luxe);
+  }
+  .hdr-top-inner {
+    overflow: hidden;
+  }
+  .site-header[data-scrolled='true'] .hdr-top {
+    grid-template-rows: 0fr;
+  }
+  @media (min-width: 64rem) {
+    .site-header .hdr-top {
+      display: grid;
+    }
+  }
+
+  .logo {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    text-decoration: none;
+    color: inherit;
+  }
+  .logo-word {
+    font-family: var(--font-display);
+    font-size: 1.32rem;
+    font-weight: 500;
+    letter-spacing: 0.34em;
+    margin-inline-end: -0.34em;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .logo-payoff {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    white-space: nowrap;
+  }
+  .logo-mini {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    white-space: nowrap;
+    text-decoration: none;
+    color: inherit;
+    display: none;
+  }
+  .site-header[data-scrolled='true'] .hdr-nav .logo-mini {
+    display: block;
+  }
+  .quote-mini {
+    display: none;
+    background: var(--color-graphite);
+    color: var(--color-marble);
+  }
+  @media (min-width: 90rem) {
+    .site-header[data-scrolled='true'] .quote-mini {
+      display: inline-flex;
+    }
+  }
+  /* Riga compatta: il logo fa da "Home" e le voci si stringono */
+  .site-header[data-scrolled='true'] [data-nav-key='home'] {
+    display: none;
+  }
+  .site-header[data-scrolled='true'] .nav-list {
+    column-gap: 1.25rem;
+  }
+  .site-header[data-scrolled='true'] .nav-item {
+    letter-spacing: 0.12em;
+  }
+  .hdr-nav {
+    border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  }
+  .site-header[data-scrolled='true'] .hdr-nav {
+    border-top-color: transparent;
+  }
+  .nav-item,
+  .hdr-link {
+    position: relative;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: inherit;
+    padding-block: 0.6rem;
+    white-space: nowrap;
+  }
+  .nav-item::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0.3rem;
+    height: 1px;
+    background: var(--color-brass);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.4s var(--ease-luxe);
+  }
+  .nav-item:hover::after,
+  .nav-item[aria-current='page']::after {
+    transform: scaleX(1);
+  }
+  .selection-count {
+    position: absolute;
+    top: 2px;
+    inset-inline-end: -6px;
+    min-width: 1.05rem;
+    height: 1.05rem;
+    padding-inline: 0.2rem;
+    border-radius: 999px;
+    background: var(--color-brass-deep);
+    color: #fff;
+    font-size: 0.62rem;
+    line-height: 1.05rem;
+    text-align: center;
+  }
+  .mobile-menu {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--color-marble);
+    color: var(--color-graphite);
+  }
+  .mobile-menu::backdrop {
+    background: rgb(26 26 28 / 0.4);
+  }
+  html[data-script]:not([data-script='Latn']):not([data-script='Cyrl']):not([data-script='Grek']) :is(.nav-item, .hdr-link, .logo-payoff) {
+    letter-spacing: 0;
+  }
+</style>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-site-header]');
+  if (header) {
+    let ticking = false;
+    const update = () => {
+      header.dataset.scrolled = String(window.scrollY > 24);
+      ticking = false;
+    };
+    update();
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(update);
+        }
+      },
+      { passive: true },
+    );
+  }
+
+  const dialog = document.getElementById('mobile-menu') as HTMLDialogElement | null;
+  document.querySelector('[data-menu-open]')?.addEventListener('click', () => dialog?.showModal());
+  document.querySelector('[data-menu-close]')?.addEventListener('click', () => dialog?.close());
+  dialog?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => dialog.close()));
+
+  // Numero di marmi nella "Mia selezione" (salvata nel browser): aggiornato subito a ogni modifica,
+  // anche da un'altra scheda del browser
+  const showCount = () => {
+    try {
+      const sel = JSON.parse(localStorage.getItem('wc-selection') || '[]');
+      const n = Array.isArray(sel) ? sel.length : 0;
+      document.querySelectorAll<HTMLElement>('[data-selection-count]').forEach((el) => {
+        el.textContent = n ? String(n) : '';
+        el.hidden = !n;
+      });
+    } catch {
+      /* archivio del browser non disponibile */
+    }
+  };
+  showCount();
+  window.addEventListener('wc:store', showCount);
+  window.addEventListener('storage', showCount);
+</script>

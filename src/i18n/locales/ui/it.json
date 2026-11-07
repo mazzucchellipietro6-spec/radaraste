@@ -1,0 +1,1171 @@
+{
+ "meta": {
+  "siteName": "WHITE CARRARA",
+  "payoff": "From Carrara to the World.",
+  "defaultDescription": "Marmo italiano di pregio, commercio internazionale ed esperienze di viaggio: da Carrara al mondo.",
+  "titleSuffix": "WHITE CARRARA"
+ },
+ "nav": {
+  "home": "Home",
+  "marbles": "Marmi",
+  "showroom": "Digital Showroom",
+  "experience": "Experience Carrara",
+  "tours": "Italian Tours",
+  "projects": "Progetti",
+  "about": "Chi siamo",
+  "contact": "Contatti",
+  "quote": "Richiedi un preventivo",
+  "menu": "Menu",
+  "close": "Chiudi",
+  "mainNav": "Navigazione principale",
+  "account": "Area clienti",
+  "selection": "La mia selezione",
+  "b2b": "Area B2B",
+  "trade": "Commercio internazionale",
+  "glossary": "Glossario del marmo",
+  "matching": "Marble Matching",
+  "concierge": "Marble Concierge",
+  "customTrip": "Viaggio su misura",
+  "booking": "Prenota"
+ },
+ "a11y": {
+  "skip": "Vai al contenuto",
+  "home": "WHITE CARRARA, pagina iniziale",
+  "newTab": "(si apre in una nuova scheda)",
+  "breadcrumb": "Percorso",
+  "external": "sito esterno",
+  "whatsapp": "Scrivici su WhatsApp",
+  "loading": "Caricamento in corso"
+ },
+ "common": {
+  "toBeEntered": "[DA INSERIRE]",
+  "toBeVerified": "da verificare",
+  "onRequest": "su richiesta",
+  "toBeAgreed": "da concordare",
+  "learnMore": "Scopri di più",
+  "back": "Indietro",
+  "next": "Avanti",
+  "send": "Invia",
+  "sending": "Invio in corso…",
+  "cancel": "Annulla",
+  "save": "Salva",
+  "close": "Chiudi",
+  "remove": "Rimuovi",
+  "search": "Cerca",
+  "all": "Tutti",
+  "yes": "Sì",
+  "no": "No",
+  "or": "oppure",
+  "optional": "facoltativo",
+  "required": "obbligatorio",
+  "seeAll": "Vedi tutto",
+  "placeholderImage": "Immagine segnaposto",
+  "notConfigured": "Servizio non ancora configurato",
+  "availabilityNote": "WHITE CARRARA reperisce i materiali attraverso fornitori e partner selezionati: disponibilità, formati e prezzi vengono verificati prima di ogni proposta definitiva."
+ },
+ "home": {
+  "seoTitle": "WHITE CARRARA — Marmo italiano, export e viaggi da Carrara",
+  "seoDescription": "Marmi di Carrara di pregio, Digital Showroom, ricerca con AI, esperienze nelle cave e tour privati in tutta Italia. Da Carrara al mondo.",
+  "heroAlt": "Le cave di marmo di Carrara sulle Alpi Apuane all'alba",
+  "heroTitle": "Più del marmo. Scopri l'Italia.",
+  "heroSubtitle": "Scopri, seleziona e vivi la pietra naturale italiana più preziosa. Dalle nostre cave al mondo.",
+  "heroCtaMarbles": "Scopri i nostri marmi",
+  "heroCtaCarrara": "Visita Carrara",
+  "scroll": "Scorri",
+  "pillarsTitle": "Che cosa facciamo",
+  "pillars": {
+   "marble": {
+    "title": "Marmo italiano di pregio",
+    "text": "Marmi apuani e italiani selezionati lotto per lotto."
+   },
+   "export": {
+    "title": "Export internazionale",
+    "text": "Documenti, imballi e spedizioni seguiti fino a destinazione."
+   },
+   "showroom": {
+    "title": "Digital Showroom",
+    "text": "Lastre in alta definizione, confronti e raccolte personali."
+   },
+   "experience": {
+    "title": "Experience Carrara",
+    "text": "Cave, laboratori e sapori del territorio con partner autorizzati."
+   },
+   "tours": {
+    "title": "Italian Tours",
+    "text": "Tour privati nelle destinazioni più belle d'Italia."
+   },
+   "consultancy": {
+    "title": "Consulenza su misura",
+    "text": "Un referente dedicato, dal progetto alla consegna."
+   }
+  },
+  "marbles": {
+   "eyebrow": "I nostri marmi",
+   "title": "I grandi marmi di Carrara, scelti uno per uno.",
+   "lead": "Dal Bianco Carrara allo Statuario, una selezione dei marmi più rappresentativi delle Alpi Apuane. Li reperiamo attraverso fornitori e partner: ogni lotto viene verificato prima della proposta.",
+   "cta": "Vedi il catalogo",
+   "view": "Scheda"
+  },
+  "showroom": {
+   "eyebrow": "Digital Showroom",
+   "title": "Lo showroom, ovunque voi siate.",
+   "lead": "Esplorate le lastre in alta definizione, ingrandite le venature, confrontate fino a tre marmi e salvate le raccolte per ogni progetto.",
+   "f1": "Zoom sulle venature",
+   "f2": "Confronto fino a tre marmi",
+   "f3": "Filtri per colore, tipologia e finitura",
+   "f4": "Preferiti e raccolte personali",
+   "cta": "Entra nello showroom",
+   "imageAlt": "Lastre di marmo esposte su cavalletti in uno showroom"
+  },
+  "matching": {
+   "eyebrow": "Marble Matching AI",
+   "title": "Avete una foto? Troviamo il marmo più simile.",
+   "lead": "Caricate l'immagine di un marmo che vi piace: analizziamo colori e venature e vi proponiamo i tre materiali più vicini del nostro catalogo, spiegando le somiglianze.",
+   "s1": "Caricate una foto",
+   "s2": "Analisi di colori e venature",
+   "s3": "Tre proposte dal catalogo",
+   "note": "Una fotografia non basta per stabilire con certezza l'identità di un marmo: il risultato è un suggerimento da verificare su campioni reali.",
+   "cta": "Prova il Marble Matching",
+   "conciergeTitle": "Non sapete da dove partire?",
+   "conciergeText": "Il Marble Concierge vi guida in pochi passi verso il materiale adatto al vostro progetto.",
+   "conciergeCta": "Apri il Marble Concierge",
+   "imageAlt": "Mano che fotografa con lo smartphone un piano in marmo venato"
+  },
+  "experience": {
+   "eyebrow": "Experience Carrara",
+   "title": "Carrara, da vivere.",
+   "lead": "Le cave, i laboratori, la scultura e i sapori del territorio, con operatori autorizzati e partner selezionati. Ogni richiesta viene confermata solo dopo la verifica della disponibilità.",
+   "cta": "Tutte le esperienze",
+   "imageAlt": "Ospiti con una guida nel cuore di una cava di marmo"
+  },
+  "tours": {
+   "eyebrow": "Italian Tours",
+   "title": "L'Italia più bella, su misura.",
+   "lead": "Da Firenze alla Costiera Amalfitana, da Venezia a Taormina: tour privati, guide e transfer organizzati intorno a voi.",
+   "cta": "Tutte le destinazioni",
+   "custom": "Viaggio su misura in più città"
+  },
+  "trade": {
+   "eyebrow": "International Trade",
+   "title": "Dal fornitore giusto al vostro cantiere.",
+   "lead": "Lavoriamo come trader, acquistando e rivendendo il materiale, oppure come broker, mettendo in contatto acquirenti e fornitori selezionati. In entrambi i casi seguiamo trattativa, documenti e spedizione.",
+   "cta": "Come lavoriamo",
+   "imageAlt": "Blocchi di marmo al porto pronti per la spedizione",
+   "tradingTitle": "Trading",
+   "trading": "Acquistiamo dal fornitore e rivendiamo al cliente: un unico interlocutore per qualità, documenti e consegna.",
+   "brokerageTitle": "Brokerage",
+   "brokerage": "Mettiamo in contatto acquirenti e fornitori selezionati e seguiamo la trattativa fino all'accordo."
+  },
+  "quote": {
+   "eyebrow": "Request a Quote",
+   "title": "Raccontateci il vostro progetto.",
+   "lead": "Materiali, quantità, destinazione o un viaggio da organizzare: vi risponderemo personalmente, senza impegno.",
+   "contactsTitle": "Contatti diretti"
+  },
+  "coordinates": "Alpi Apuane · 44°04′ N · 10°05′ E",
+  "sculpt": {
+   "eyebrow": "Dal blocco alla forma",
+   "title": "Ogni scultura è già nel blocco.",
+   "text": "Il marmo di Carrara si lavora da oltre duemila anni, e anche Michelangelo saliva fino alle cave per scegliere i suoi blocchi. Nei laboratori artigiani della zona potete vedere come un blocco grezzo diventa un’opera.",
+   "cta": "Scopri i laboratori",
+   "caption": "Animazione 3D: figura originale ispirata ai Prigioni di Michelangelo.",
+   "statueAlt": "Una figura in marmo che emerge da un blocco grezzo, ispirata ai Prigioni di Michelangelo"
+  }
+ },
+ "footer": {
+  "tagline": "Marmo italiano di pregio, commercio internazionale ed esperienze di viaggio.",
+  "explore": "Esplora",
+  "company": "Azienda",
+  "contacts": "Contatti",
+  "legal": "Informazioni legali",
+  "legalName": "Ragione sociale",
+  "vat": "Partita IVA",
+  "rea": "REA",
+  "pec": "PEC",
+  "privacy": "Privacy Policy",
+  "cookies": "Cookie Policy",
+  "terms": "Termini e condizioni",
+  "legalNotice": "Note legali",
+  "cookiePrefs": "Preferenze cookie",
+  "rights": "Tutti i diritti riservati.",
+  "language": "Lingua",
+  "followUs": "Seguici su Instagram",
+  "travel": "Esperienze e viaggi"
+ },
+ "lang": {
+  "label": "Lingua",
+  "choose": "Scegli la lingua",
+  "search": "Cerca una lingua",
+  "noResults": "Nessuna lingua trovata",
+  "main": "Lingue principali",
+  "others": "Altre lingue (traduzione automatica)",
+  "machineNote": "Questa pagina è stata tradotta automaticamente.",
+  "promptQuestion": "Vuoi vedere il sito in {language}?",
+  "promptYes": "Sì, continua in {language}",
+  "promptNo": "No, grazie"
+ },
+ "cookie": {
+  "title": "La vostra privacy",
+  "text": "Usiamo solo cookie tecnici, necessari al funzionamento del sito. Con il vostro consenso attiveremo anche strumenti di statistica anonima per migliorare il servizio. Nessun dato di tracciamento viene raccolto prima della vostra scelta.",
+  "acceptAll": "Accetta tutti",
+  "rejectAll": "Solo necessari",
+  "customize": "Personalizza",
+  "save": "Salva le preferenze",
+  "necessary": "Necessari",
+  "necessaryText": "Sessione, sicurezza, lingua e preferenze. Sempre attivi.",
+  "analytics": "Statistiche",
+  "analyticsText": "Dati aggregati sulle visite, per capire come migliorare il sito.",
+  "policy": "Leggi la Cookie Policy"
+ },
+ "vocab": {
+  "category": {
+   "bianco-carrara": "Bianco Carrara",
+   "statuario": "Statuario",
+   "calacatta": "Calacatta",
+   "arabescato": "Arabescato",
+   "bardiglio": "Bardiglio",
+   "altro": "Altro"
+  },
+  "baseColor": {
+   "bianco-puro": "Bianco puro",
+   "bianco-caldo": "Bianco caldo",
+   "bianco-grigio": "Bianco grigio",
+   "avorio": "Avorio",
+   "grigio-chiaro": "Grigio chiaro",
+   "grigio-azzurro": "Grigio azzurro",
+   "grigio": "Grigio"
+  },
+  "veinColor": {
+   "grigio": "Grigio",
+   "grigio-scuro": "Grigio scuro",
+   "oro": "Oro e ambra",
+   "beige": "Beige",
+   "antracite": "Antracite",
+   "bianco": "Bianco"
+  },
+  "veinIntensity": {
+   "leggera": "Leggera",
+   "media": "Media",
+   "marcata": "Marcata"
+  },
+  "veinPattern": {
+   "fine": "Fine e diffusa",
+   "nuvolata": "Nuvolata",
+   "lineare": "Lineare",
+   "ampia": "Ampia e scenografica",
+   "rete": "A rete"
+  },
+  "finish": {
+   "lucida": "Lucida",
+   "levigata": "Levigata",
+   "spazzolata": "Spazzolata",
+   "bocciardata": "Bocciardata",
+   "sabbiata": "Sabbiata",
+   "anticata": "Anticata"
+  },
+  "application": {
+   "pavimenti": "Pavimenti",
+   "rivestimenti": "Rivestimenti",
+   "bagni": "Bagni",
+   "cucine": "Piani cucina",
+   "scale": "Scale",
+   "arredo": "Arredo e design",
+   "scultura": "Scultura",
+   "esterni": "Esterni"
+  },
+  "projectType": {
+   "residenziale": "Residenziale",
+   "hospitality": "Hotel e hospitality",
+   "retail": "Retail e boutique",
+   "uffici": "Uffici",
+   "pubblico": "Spazi pubblici",
+   "arte": "Arte e scultura",
+   "yacht": "Yacht e nautica"
+  },
+  "experienceCategory": {
+   "cave": "Cave",
+   "laboratori": "Laboratori",
+   "gusto": "Food & Wine",
+   "cultura": "Cultura",
+   "panorama": "Panorami",
+   "privato": "Su misura",
+   "transfer": "Transfer"
+  },
+  "region": {
+   "toscana": "Toscana",
+   "liguria": "Liguria",
+   "veneto": "Veneto",
+   "lazio": "Lazio",
+   "campania": "Campania",
+   "lombardia": "Lombardia",
+   "sardegna": "Sardegna",
+   "sicilia": "Sicilia"
+  }
+ },
+ "forms": {
+  "name": "Nome e cognome",
+  "firstName": "Nome",
+  "lastName": "Cognome",
+  "email": "Email",
+  "phone": "Telefono",
+  "company": "Azienda",
+  "country": "Paese",
+  "nationality": "Nazionalità",
+  "message": "Messaggio",
+  "messagePlaceholder": "Materiale, quantità, destinazione, date…",
+  "interest": "Mi interessa",
+  "interestOptions": {
+   "marble": "Marmi e materiali",
+   "experience": "Experience Carrara",
+   "tour": "Italian Tours",
+   "trade": "Trading e brokerage",
+   "other": "Altro"
+  },
+  "privacy": "Ho letto l'{link} e acconsento al trattamento dei dati per ricevere una risposta.",
+  "privacyLink": "informativa sulla privacy",
+  "submitQuote": "Invia la richiesta",
+  "success": "Grazie: abbiamo ricevuto la vostra richiesta e vi abbiamo inviato una email di conferma. Vi risponderemo personalmente.",
+  "errorGeneric": "Non è stato possibile inviare la richiesta. Riprovate tra poco oppure scriveteci a {email}.",
+  "errorRequired": "Campo obbligatorio.",
+  "errorEmail": "Inserite un indirizzo email valido.",
+  "errorPrivacy": "Per continuare serve il consenso al trattamento dei dati.",
+  "errorInvalid": "Valore non valido.",
+  "notConfigured": "Il modulo online non è ancora attivo: scriveteci a {email}.",
+  "rateLimited": "Troppe richieste in poco tempo. Riprovate tra qualche minuto.",
+  "spam": "Verifica antispam non superata. Ricaricate la pagina e riprovate.",
+  "choose": "Scegliete…",
+  "successNoEmail": "Grazie: abbiamo ricevuto la vostra richiesta (riferimento {ref}). Vi risponderemo personalmente."
+ },
+ "marbles": {
+  "seoTitle": "Catalogo dei marmi",
+  "seoDescription": "Bianco Carrara, Statuario, Calacatta, Arabescato e Bardiglio: schede, fotografie e caratteristiche visive dei grandi marmi di Carrara.",
+  "eyebrow": "Marble Catalogue",
+  "title": "Il catalogo dei marmi",
+  "lead": "Le grandi famiglie dei marmi apuani, con fotografie, caratteristiche visive e schede. Ogni proposta definitiva parte dalla verifica dei lotti disponibili presso i nostri fornitori.",
+  "count": {
+   "one": "{count} marmo",
+   "other": "{count} marmi"
+  },
+  "toolsTitle": "Quattro modi per trovare il marmo giusto",
+  "tools": {
+   "showroom": "Sfogliate le lastre, filtrate per colore e finitura, confrontate fino a tre marmi.",
+   "matching": "Caricate la foto di un marmo: vi proponiamo i tre materiali più simili.",
+   "concierge": "Rispondete a poche domande sul progetto: vi suggeriamo i materiali adatti.",
+   "glossary": "I termini tecnici del marmo, spiegati in modo semplice."
+  }
+ },
+ "marble": {
+  "addSelection": "Aggiungi alla mia selezione",
+  "inSelection": "Nella mia selezione",
+  "compare": "Confronta",
+  "inCompare": "Nel confronto",
+  "compareFull": "Potete confrontare al massimo tre marmi.",
+  "zoom": "Ingrandisci",
+  "zoomIn": "Ingrandisci",
+  "zoomOut": "Riduci",
+  "zoomReset": "Adatta",
+  "zoomHint": "Rotellina o pulsanti per ingrandire, trascinate per spostarvi.",
+  "description": "Descrizione",
+  "visual": "Caratteristiche visive",
+  "baseColor": "Colore di fondo",
+  "veinColor": "Colore delle venature",
+  "veinIntensity": "Intensità delle venature",
+  "veinPattern": "Disegno delle venature",
+  "finishes": "Finiture",
+  "thicknesses": "Spessori",
+  "applications": "Applicazioni",
+  "toVerify": "Da verificare con i fornitori",
+  "techSheets": "Schede tecniche",
+  "techVerified": "Verificata il {date}",
+  "techSource": "Fonte: {source}",
+  "techNone": "Le schede tecniche verificate di questo materiale non sono ancora pubblicate: le inviamo su richiesta, riferite al lotto proposto.",
+  "techRequest": "Richiedi la scheda tecnica",
+  "techReserved": "Riservata ai professionisti B2B",
+  "download": "Scarica il PDF",
+  "gallery": "Fotografie",
+  "b2bTitle": "Prezzi riservati",
+  "b2bText": "I professionisti approvati nell'area B2B trovano qui i prezzi indicativi riservati e i documenti tecnici.",
+  "b2bCta": "Accedi all'area B2B",
+  "b2bNone": "Nessun prezzo riservato pubblicato per questo materiale: chiedeteci un'offerta.",
+  "b2bPriceNote": "Prezzi indicativi, IVA esclusa, soggetti a conferma di disponibilità.",
+  "related": "Altri marmi",
+  "disclaimer": "Le fotografie mostrano un esempio del materiale: colore e disegno variano da blocco a blocco. Il lotto definitivo viene scelto e approvato prima dell'ordine.",
+  "specs": "Scheda",
+  "photoSlab": "Lastra",
+  "photoDetail": "Dettaglio",
+  "photoAmbient": "Ambiente"
+ },
+ "selection": {
+  "seoTitle": "La mia selezione",
+  "eyebrow": "My Selection",
+  "title": "La mia selezione",
+  "lead": "I marmi che avete salvato. La selezione resta in questo browser; accedendo all'area clienti la ritrovate su ogni dispositivo e potete organizzarla in collezioni.",
+  "empty": "La vostra selezione è vuota. Aggiungete i marmi dal catalogo o dallo showroom.",
+  "request": "Richiedi un preventivo per la selezione",
+  "clear": "Svuota la selezione",
+  "browse": "Sfoglia il catalogo",
+  "saved": "Salvata nel vostro account"
+ },
+ "showroom": {
+  "seoTitle": "Digital Showroom",
+  "seoDescription": "Lastre di marmo in alta definizione, zoom sulle venature, confronto fino a tre marmi, filtri, preferiti e raccolte personali.",
+  "eyebrow": "Digital Showroom",
+  "title": "Lo showroom, ovunque voi siate.",
+  "lead": "Lastre in alta definizione, zoom sulle venature, confronto fino a tre marmi, preferiti e raccolte personali per ogni progetto.",
+  "filters": "Filtri",
+  "filterColor": "Colore",
+  "filterType": "Tipologia",
+  "filterFinish": "Finitura",
+  "filterVein": "Venature",
+  "reset": "Azzera i filtri",
+  "results": {
+   "one": "{count} marmo",
+   "other": "{count} marmi"
+  },
+  "noResults": "Nessun marmo corrisponde ai filtri scelti.",
+  "finishNote": "Sono indicate solo le finiture già confermate dai fornitori: molti materiali si possono lavorare anche in altre finiture, su richiesta.",
+  "viewGrid": "Griglia",
+  "viewSlab": "Lastre intere",
+  "view": "Vista",
+  "compareBar": {
+   "one": "{count} marmo nel confronto",
+   "other": "{count} marmi nel confronto"
+  },
+  "compareNow": "Confronta",
+  "compareTitle": "Confronto",
+  "compareClear": "Svuota",
+  "compareMax": "Potete confrontare al massimo tre marmi.",
+  "compareHint": "Aggiungete almeno due marmi per confrontarli.",
+  "collections": "Le mie raccolte",
+  "newCollection": "Nuova raccolta",
+  "collectionName": "Nome della raccolta",
+  "addTo": "Aggiungi a una raccolta",
+  "create": "Crea",
+  "collectionsLocal": "Le raccolte sono salvate in questo browser. Accedete all'area clienti per conservarle nel vostro account.",
+  "collectionsSynced": "Raccolte salvate nel vostro account.",
+  "deleteCollection": "Elimina la raccolta",
+  "emptyCollection": "Raccolta vuota",
+  "noCollections": "Non avete ancora creato raccolte.",
+  "requestQuote": "Richiedi un preventivo",
+  "open": "Apri la scheda",
+  "zoom": "Zoom",
+  "favorite": "Preferito",
+  "favorites": "Preferiti"
+ },
+ "matching": {
+  "seoTitle": "Marble Matching AI",
+  "seoDescription": "Caricate la foto di un marmo: analizziamo colori e venature e vi proponiamo i tre materiali più simili del catalogo WHITE CARRARA.",
+  "eyebrow": "Marble Matching AI",
+  "title": "Il marmo giusto, partendo da una foto.",
+  "lead": "Caricate l'immagine di un marmo che vi piace: analizziamo colori e venature e vi proponiamo i tre materiali più vicini del catalogo, spiegando le somiglianze.",
+  "upload": "Caricate una foto",
+  "uploadHint": "JPG, PNG o WebP, fino a 15 MB. Meglio una foto frontale, con luce naturale e senza riflessi.",
+  "dropHere": "Trascinate qui la foto oppure",
+  "choose": "scegliete un file",
+  "analyze": "Analizza la foto",
+  "analyzing": "Analisi in corso…",
+  "another": "Prova con un'altra foto",
+  "privacy": "La foto non viene salvata. Quando l'analisi con intelligenza artificiale è attiva, la foto viene inviata al fornitore del servizio solo per l'analisi.",
+  "resultsTitle": "I tre marmi più simili",
+  "yourPhoto": "La vostra foto",
+  "analysisTitle": "Cosa vediamo nella foto",
+  "background": "Fondo",
+  "veins": "Venature",
+  "pattern": "Disegno",
+  "notes": "Note",
+  "engineAi": "Analisi con intelligenza artificiale",
+  "engineLocal": "Analisi automatica di colori e venature",
+  "engineLocalNote": "L'analisi con intelligenza artificiale non è attiva in questo momento: il confronto si basa su colori, contrasto e disegno delle venature misurati direttamente nel vostro browser.",
+  "similarity": {
+   "high": "Somiglianza visiva alta",
+   "medium": "Somiglianza visiva media",
+   "low": "Somiglianza visiva bassa"
+  },
+  "reason": {
+   "bg": "fondo di colore molto simile",
+   "bgTone": "tono del fondo simile",
+   "veinColor": "venature di colore simile",
+   "contrast": "contrasto simile tra fondo e venature",
+   "coverage": "quantità di venature simile",
+   "linearity": "disegno delle venature simile"
+  },
+  "difference": {
+   "bgLighter": "il fondo della vostra foto è più chiaro",
+   "bgDarker": "il fondo della vostra foto è più scuro",
+   "moreVeins": "nella vostra foto ci sono più venature",
+   "fewerVeins": "nella vostra foto ci sono meno venature",
+   "moreContrast": "le venature della vostra foto sono più marcate",
+   "lessContrast": "le venature della vostra foto sono più tenui",
+   "moreLinear": "le venature della vostra foto sono più lineari",
+   "lessLinear": "le venature della vostra foto sono più irregolari"
+  },
+  "common": "In comune",
+  "differences": "Differenze",
+  "noReasons": "Somiglianza generale di colori e disegno.",
+  "notStone": "La foto non sembra mostrare marmo o pietra naturale. Provate con un'immagine ravvicinata della superficie.",
+  "caveat": "Una fotografia non basta per stabilire con certezza l'identità di un marmo: il risultato è un suggerimento da verificare su campioni reali.",
+  "error": "Non è stato possibile analizzare la foto. Riprovate con un'altra immagine.",
+  "tooBig": "La foto è troppo grande (massimo 15 MB).",
+  "invalidType": "Formato non supportato: usate JPG, PNG o WebP.",
+  "requestQuote": "Richiedi un preventivo per questi marmi",
+  "tipsTitle": "Consigli per una buona foto",
+  "tip1": "Inquadrate solo la superficie del marmo, senza oggetti intorno.",
+  "tip2": "Usate luce naturale diffusa, evitando riflessi e ombre nette.",
+  "tip3": "Fotografate frontalmente, il più vicino possibile alla superficie."
+ },
+ "concierge": {
+  "seoTitle": "Marble Concierge",
+  "seoDescription": "Un assistente guidato per scegliere il marmo adatto al vostro progetto: tipo di progetto, colore, venature, finitura, quantità e destinazione.",
+  "eyebrow": "Marble Concierge",
+  "title": "Il marmo adatto al vostro progetto, in pochi passi.",
+  "lead": "Rispondete ad alcune domande: vi proponiamo i materiali più pertinenti del catalogo e prepariamo una richiesta per il nostro ufficio commerciale.",
+  "step": "Passo {n} di {total}",
+  "noPreference": "Nessuna preferenza",
+  "dontKnow": "Non lo so ancora",
+  "seeProposals": "Vedi le proposte",
+  "q": {
+   "project": "Che tipo di progetto è?",
+   "use": "Dove verrà usato il marmo?",
+   "color": "Quale colore di fondo preferite?",
+   "veins": "Come immaginate le venature?",
+   "intensity": "Intensità",
+   "pattern": "Disegno",
+   "material": "Avete già in mente un materiale?",
+   "quantity": "Quantità indicativa",
+   "finish": "Quale finitura vi interessa?",
+   "destination": "Dove va consegnato il materiale?",
+   "budget": "Budget indicativo",
+   "contact": "A chi inviamo la proposta?"
+  },
+  "hint": {
+   "use": "Potete scegliere più risposte.",
+   "quantity": "Anche una stima va bene: la verifichiamo insieme.",
+   "budget": "Facoltativo. Ci aiuta a proporvi le alternative più sensate.",
+   "destination": "Paese e città: servono per valutare trasporto e documenti."
+  },
+  "units": {
+   "m2": "m²",
+   "slabs": "lastre",
+   "pieces": "pezzi",
+   "blocks": "blocchi"
+  },
+  "quantityValue": "Quantità",
+  "unit": "Unità",
+  "country": "Paese",
+  "city": "Città",
+  "budgetPlaceholder": "es. 20.000 €",
+  "proposalsTitle": "Le nostre proposte",
+  "proposalsLead": "In base alle vostre risposte, questi sono i materiali più pertinenti del catalogo.",
+  "why": {
+   "color": "il colore di fondo corrisponde alla vostra preferenza",
+   "intensity": "l'intensità delle venature è quella che cercate",
+   "pattern": "il disegno delle venature corrisponde",
+   "material": "è il materiale che avete indicato",
+   "finish": "la finitura scelta è già confermata dai fornitori",
+   "use": "è indicato per l'uso che avete descritto",
+   "general": "è una scelta coerente con il carattere del progetto"
+  },
+  "aiNote": "Commento del nostro assistente AI",
+  "proposalsNote": "Le proposte sono indicative: disponibilità, finiture, formati e prezzi vengono verificati da WHITE CARRARA con i fornitori prima dell'offerta.",
+  "noMatch": "Nessun materiale del catalogo corrisponde esattamente: inviateci comunque la richiesta, cercheremo presso i nostri fornitori.",
+  "send": "Invia la richiesta",
+  "success": "Richiesta inviata. Riferimento: {ref}. Vi abbiamo mandato una email di riepilogo e vi contatteremo personalmente.",
+  "restart": "Ricomincia",
+  "summary": "Riepilogo",
+  "successNoEmail": "Richiesta inviata. Riferimento: {ref}. Vi contatteremo personalmente."
+ },
+ "emails": {
+  "greeting": "Gentile {name},",
+  "greetingNoName": "Buongiorno,",
+  "signature": "Il team WHITE CARRARA",
+  "autoNote": "Questa è un'email automatica: per qualsiasi necessità potete rispondere direttamente a questo messaggio.",
+  "reference": "Riferimento",
+  "summary": "Riepilogo della richiesta",
+  "openAccount": "Apri l'area clienti",
+  "requestReceived": {
+   "subject": "Abbiamo ricevuto la vostra richiesta {ref}",
+   "body": "grazie per aver contattato WHITE CARRARA. Abbiamo ricevuto la vostra richiesta e la stiamo esaminando: vi risponderemo personalmente al più presto.",
+   "materialsNote": "Ricordiamo che disponibilità, formati e prezzi dei materiali vengono verificati con i nostri fornitori prima di ogni proposta definitiva."
+  },
+  "bookingReceived": {
+   "subject": "Richiesta di prenotazione {ref} ricevuta",
+   "body": "grazie per la vostra richiesta. Ogni esperienza è organizzata con operatori autorizzati e partner disponibili: stiamo verificando la disponibilità per la data indicata.",
+   "pending": "La prenotazione sarà valida solo dopo la nostra conferma scritta. Fino ad allora non vi viene addebitato nulla."
+  },
+  "bookingConfirmed": {
+   "subject": "Prenotazione {ref} confermata",
+   "body": "siamo lieti di confermare la vostra prenotazione. Trovate qui sotto i dettagli.",
+   "pay": "Per completare la prenotazione potete pagare online in modo sicuro:",
+   "payButton": "Paga online"
+  },
+  "bookingDeclined": {
+   "subject": "Aggiornamento sulla richiesta {ref}",
+   "body": "purtroppo non possiamo confermare la prenotazione alle condizioni richieste. Vi contatteremo per proporvi un'alternativa."
+  },
+  "paymentReceived": {
+   "subject": "Pagamento ricevuto — {ref}",
+   "body": "abbiamo ricevuto il vostro pagamento. Grazie: vi aspettiamo."
+  },
+  "quoteSent": {
+   "subject": "Il vostro preventivo {number} è pronto",
+   "body": "abbiamo preparato il preventivo richiesto. Potete consultarlo, scaricarlo e accettarlo dall'area clienti.",
+   "validUntil": "Valido fino al {date}."
+  },
+  "b2bReceived": {
+   "subject": "Richiesta di accesso all'area B2B ricevuta",
+   "body": "abbiamo ricevuto la vostra richiesta di accesso all'area professionisti. La esamineremo e vi scriveremo appena il vostro account sarà approvato."
+  },
+  "b2bApproved": {
+   "subject": "Il vostro account B2B è attivo",
+   "body": "il vostro account professionale è stato approvato: da ora potete vedere i prezzi riservati e i documenti tecnici nell'area B2B."
+  },
+  "b2bRejected": {
+   "subject": "Aggiornamento sulla vostra richiesta B2B",
+   "body": "al momento non possiamo approvare il vostro account professionale. Per chiarimenti potete rispondere a questa email."
+  },
+  "newMessage": {
+   "subject": "Nuovo messaggio da WHITE CARRARA",
+   "body": "avete ricevuto un nuovo messaggio nell'area clienti."
+  },
+  "authConfirm": {
+   "subject": "Confermate il vostro indirizzo email",
+   "body": "per completare la registrazione a WHITE CARRARA confermate il vostro indirizzo email.",
+   "button": "Conferma l'email"
+  },
+  "authMagic": {
+   "subject": "Il vostro link di accesso",
+   "body": "ecco il link per accedere all'area clienti WHITE CARRARA. È valido per un'ora e si può usare una sola volta.",
+   "button": "Accedi"
+  },
+  "authReset": {
+   "subject": "Reimpostate la password",
+   "body": "abbiamo ricevuto una richiesta di reimpostazione della password. Se non siete stati voi, ignorate questa email.",
+   "button": "Scegli una nuova password"
+  },
+  "fields": {
+   "name": "Nome",
+   "email": "Email",
+   "phone": "Telefono",
+   "company": "Azienda",
+   "interest": "Interesse",
+   "message": "Messaggio",
+   "marbles": "Marmi",
+   "experience": "Esperienza",
+   "destination": "Destinazione",
+   "date": "Data preferita",
+   "altDate": "Data alternativa",
+   "participants": "Partecipanti",
+   "language": "Lingua",
+   "transfer": "Transfer",
+   "notes": "Note",
+   "price": "Importo",
+   "nationality": "Nazionalità",
+   "quantity": "Quantità",
+   "finish": "Finitura",
+   "project": "Progetto",
+   "destinationShipping": "Destinazione della merce",
+   "budget": "Budget"
+  }
+ },
+ "experience": {
+  "seoTitle": "Experience Carrara — cave, laboratori e sapori",
+  "seoDescription": "Visite alle cave di marmo, laboratori di scultura, Food & Wine, esperienze private e transfer a Carrara, con operatori autorizzati.",
+  "eyebrow": "Experience Carrara",
+  "title": "Carrara, da vivere.",
+  "lead": "Le cave delle Alpi Apuane, i laboratori dove il marmo prende forma, la scultura e i sapori del territorio. Ogni esperienza è organizzata con operatori autorizzati e partner disponibili, e diventa definitiva solo dopo la nostra conferma.",
+  "all": "Tutte",
+  "duration": "Durata",
+  "languages": "Lingue disponibili",
+  "participants": "Partecipanti",
+  "price": "Prezzo",
+  "priceOnRequest": "Su richiesta",
+  "perPerson": "a persona",
+  "perGroup": "per gruppo",
+  "participantsRange": "da {min} a {max}",
+  "participantsMin": "almeno {min}",
+  "participantsMax": "fino a {max}",
+  "meetingPoint": "Punto di ritrovo",
+  "highlights": "Cosa vivrete",
+  "book": "Prenota",
+  "requestInfo": "Richiedi informazioni",
+  "howItWorks": "Come funziona la prenotazione",
+  "steps": {
+   "1": "Inviate la richiesta con la data preferita e il numero di partecipanti.",
+   "2": "Verifichiamo la disponibilità con operatori autorizzati e partner.",
+   "3": "Ricevete la conferma scritta e, se previsto, il link per il pagamento online."
+  },
+  "authorizedNote": "Le visite alle cave e ai laboratori si svolgono solo con operatori autorizzati, nel rispetto delle norme di sicurezza, e possono cambiare in base all'attività delle cave.",
+  "other": "Altre esperienze",
+  "paymentOnline": "Pagamento online dopo la conferma"
+ },
+ "tours": {
+  "seoTitle": "Italian Tours — tour privati in tutta Italia",
+  "seoDescription": "Firenze, Cinque Terre, Venezia, Roma, Costiera Amalfitana, Taormina e altre destinazioni: tour privati, guide e transfer su misura.",
+  "eyebrow": "Italian Tours",
+  "title": "L'Italia più bella, su misura.",
+  "lead": "Dalle città d'arte alle coste più famose: progettiamo tour privati con guide, autisti e transfer, intorno ai vostri tempi e ai vostri interessi.",
+  "regions": "Regioni",
+  "attractions": "Attrazioni principali",
+  "experiences": "Esperienze possibili",
+  "itineraries": "Idee di itinerario",
+  "services": "Servizi su richiesta",
+  "privateTours": "Tour privati",
+  "transfer": "Transfer",
+  "guides": "Guide",
+  "onRequest": "Su richiesta",
+  "request": "Richiedi questo tour",
+  "customTitle": "Più città, un solo viaggio",
+  "customText": "Combinate più destinazioni in un itinerario su misura: pensiamo noi a spostamenti, guide e tempi.",
+  "customCta": "Progetta un viaggio su misura",
+  "other": "Altre destinazioni",
+  "noInvent": "Non pubblichiamo prezzi, hotel o partner non confermati: ogni proposta viene preparata su richiesta, dopo aver verificato la disponibilità."
+ },
+ "customTrip": {
+  "seoTitle": "Viaggio su misura in più città",
+  "seoDescription": "Richiedete un itinerario privato su misura che unisce più destinazioni italiane, con guide, transfer ed esperienze.",
+  "eyebrow": "Tailor-made",
+  "title": "Un viaggio su misura, in più città.",
+  "lead": "Scegliete le destinazioni, indicate date, numero di persone e interessi: prepariamo una proposta di itinerario con guide, transfer ed esperienze, da verificare insieme.",
+  "destinations": "Destinazioni",
+  "destinationsHint": "Scegliete una o più destinazioni.",
+  "start": "Data di arrivo",
+  "end": "Data di partenza",
+  "interests": "Interessi",
+  "interestsPlaceholder": "Arte, gastronomia, mare, shopping, marmo…",
+  "pace": "Ritmo del viaggio",
+  "paceOptions": {
+   "relaxed": "Rilassato",
+   "balanced": "Equilibrato",
+   "intense": "Intenso"
+  },
+  "budget": "Budget indicativo (facoltativo)",
+  "submit": "Invia la richiesta di itinerario"
+ },
+ "booking": {
+  "seoTitle": "Richiesta di prenotazione",
+  "seoDescription": "Prenotate un'esperienza a Carrara o un tour in Italia: richiesta con data preferita, partecipanti, lingua e transfer.",
+  "eyebrow": "Booking",
+  "title": "Richiesta di prenotazione",
+  "lead": "Compilate la richiesta: verifichiamo la disponibilità con operatori e partner autorizzati e vi confermiamo per iscritto. Nessun addebito prima della conferma.",
+  "what": "Cosa desiderate prenotare",
+  "experience": "Esperienza a Carrara",
+  "destination": "Destinazione in Italia",
+  "chooseExperience": "Scegliete un'esperienza",
+  "chooseDestination": "Scegliete una destinazione",
+  "or": "oppure",
+  "date": "Data preferita",
+  "altDate": "Data alternativa",
+  "participants": "Numero di partecipanti",
+  "guideLanguage": "Lingua richiesta",
+  "transfer": "Desidero il transfer",
+  "transferDetails": "Da dove e verso dove (hotel, aeroporto, stazione…)",
+  "notes": "Note",
+  "notesPlaceholder": "Esigenze particolari, accessibilità, occasioni speciali…",
+  "submit": "Invia la richiesta di prenotazione",
+  "success": "Richiesta inviata. Riferimento: {ref}. Vi abbiamo mandato un'email di riepilogo: la prenotazione sarà valida dopo la nostra conferma.",
+  "dateInPast": "Scegliete una data futura.",
+  "summaryTitle": "Prima di inviare",
+  "summary1": "La richiesta non è ancora una prenotazione confermata.",
+  "summary2": "Vi rispondiamo dopo aver verificato operatori e partner disponibili.",
+  "summary3": "Il pagamento online, quando previsto, avviene solo dopo la conferma.",
+  "successNoEmail": "Richiesta inviata. Riferimento: {ref}. La prenotazione sarà valida dopo la nostra conferma."
+ },
+ "about": {
+  "seoTitle": "Chi siamo",
+  "seoDescription": "WHITE CARRARA: marmo italiano di pregio, commercio internazionale ed esperienze di viaggio, da Carrara al mondo.",
+  "eyebrow": "About",
+  "title": "Da Carrara, verso il mondo.",
+  "lead": "WHITE CARRARA nasce a Carrara, la città del marmo, e unisce due mondi: la pietra naturale italiana e l'ospitalità di un territorio unico.",
+  "p1": "Selezioniamo marmi italiani per architetti, designer, imprese e privati in tutto il mondo, lavorando con fornitori e partner che conosciamo. Non possediamo necessariamente i materiali che presentiamo: li cerchiamo, li verifichiamo e seguiamo ogni fornitura fino alla consegna.",
+  "p2": "Accanto al marmo, accompagniamo i nostri ospiti alla scoperta di Carrara e dell'Italia: cave, laboratori, città d'arte e coste, sempre con operatori autorizzati.",
+  "whatTitle": "Che cosa facciamo",
+  "what": {
+   "trade": "Commercio e rivendita di marmo",
+   "brokerage": "Intermediazione commerciale",
+   "sourcing": "Ricerca e selezione dei materiali",
+   "export": "Esportazione internazionale",
+   "tourism": "Turismo a Carrara",
+   "tours": "Tour ed esperienze in tutta Italia"
+  },
+  "valuesTitle": "Il nostro modo di lavorare",
+  "values": {
+   "selection": {
+    "title": "Selezione",
+    "text": "Ogni materiale viene scelto lotto per lotto, con fotografie e campioni del materiale reale."
+   },
+   "transparency": {
+    "title": "Trasparenza",
+    "text": "Disponibilità, formati e prezzi vengono verificati prima di ogni proposta definitiva. Nessuna promessa che non possiamo mantenere."
+   },
+   "hospitality": {
+    "title": "Ospitalità",
+    "text": "Esperienze organizzate con partner autorizzati, confermate solo quando tutto è pronto."
+   }
+  },
+  "carraraTitle": "Carrara, la città del marmo",
+  "carraraText": "Il marmo delle Alpi Apuane si estrae dall'epoca romana. Ancora oggi i bacini di Colonnata, Fantiscritti e Torano disegnano il paesaggio sopra la città, tra laboratori, scultori e una tradizione che continua a parlare al mondo."
+ },
+ "trade": {
+  "seoTitle": "Commercio internazionale del marmo: trading e brokerage",
+  "seoDescription": "Sourcing, trading, brokerage ed export di marmo italiano: ricerca dei fornitori, offerte, trattative, documenti e spedizioni in tutto il mondo.",
+  "eyebrow": "International Trade",
+  "title": "Il marmo giusto, dal fornitore giusto.",
+  "lead": "Cerchiamo e selezioniamo i materiali presso fornitori e partner, prepariamo le offerte e seguiamo trattativa, documenti e spedizione fino al vostro cantiere.",
+  "servicesTitle": "Servizi",
+  "services": {
+   "sourcing": {
+    "title": "Ricerca e sourcing",
+    "text": "Troviamo il materiale adatto al progetto presso cave, segherie e depositi, con foto e campioni del lotto reale."
+   },
+   "trading": {
+    "title": "Trading",
+    "text": "Acquistiamo dal fornitore e rivendiamo a voi: un unico interlocutore, un unico contratto, qualità verificata."
+   },
+   "brokerage": {
+    "title": "Brokerage",
+    "text": "Mettiamo in contatto acquirente e fornitore selezionato e seguiamo la trattativa fino all'accordo, con una provvigione concordata in anticipo."
+   },
+   "export": {
+    "title": "Export e logistica",
+    "text": "Imballi, documenti, certificazioni richieste e spedizioni via mare o via terra, secondo l'Incoterm concordato."
+   }
+  },
+  "processTitle": "Come funziona",
+  "process": {
+   "1": "Ci inviate la richiesta: materiale, quantità, finitura, destinazione.",
+   "2": "Verifichiamo disponibilità e lotti presso i fornitori.",
+   "3": "Vi inviamo un'offerta, come trader o come broker.",
+   "4": "Trattativa e accordo, con condizioni chiare.",
+   "5": "Ordine, produzione e controllo del materiale.",
+   "6": "Spedizione e consegna, con tutti i documenti."
+  },
+  "modelsTitle": "Trading o brokerage?",
+  "modelsText": "Nel trading WHITE CARRARA acquista e rivende il materiale ed è il vostro unico fornitore. Nel brokerage vi mette in contatto con il fornitore e vi assiste nella trattativa; il contratto di fornitura è tra voi e il fornitore. Vi diremo sempre con chiarezza quale modello si applica a ogni offerta.",
+  "note": "WHITE CARRARA non possiede necessariamente i materiali presentati: i prodotti sono reperiti attraverso fornitori e partner e la disponibilità viene verificata prima di ogni proposta definitiva.",
+  "b2bCta": "Siete professionisti? Accedete all'area B2B"
+ },
+ "projects": {
+  "seoTitle": "Progetti",
+  "seoDescription": "Residenze, hotel, boutique, spazi pubblici, yacht e opere d'arte: come seguiamo i progetti in marmo italiano.",
+  "eyebrow": "Projects",
+  "title": "Progetti in marmo, dal concept alla posa.",
+  "lead": "Affianchiamo architetti, interior designer, imprese e privati nella scelta e nella fornitura dei materiali per progetti in tutto il mondo.",
+  "typesTitle": "Per ogni tipo di progetto",
+  "caseStudies": "Progetti realizzati",
+  "empty": "In questa sezione pubblicheremo i progetti realizzati, sempre con il consenso dei clienti.",
+  "processTitle": "Come seguiamo un progetto",
+  "process": {
+   "1": "Analisi del progetto e delle esigenze tecniche ed estetiche.",
+   "2": "Proposta di materiali, con foto e campioni dei lotti disponibili.",
+   "3": "Offerta, approvazione dei lotti e pianificazione.",
+   "4": "Lavorazione, controllo e spedizione fino al cantiere."
+  },
+  "materials": "Materiali",
+  "year": "Anno",
+  "location": "Luogo"
+ },
+ "contact": {
+  "seoTitle": "Contatti",
+  "seoDescription": "Contattate WHITE CARRARA a Carrara: email, telefono, WhatsApp e modulo di contatto.",
+  "eyebrow": "Contact",
+  "title": "Parliamo del vostro progetto.",
+  "lead": "Per marmi, tour ed esperienze scriveteci o chiamateci: vi risponderemo personalmente.",
+  "details": "Recapiti",
+  "formTitle": "Scriveteci",
+  "map": "Mappa",
+  "showMap": "Mostra la mappa",
+  "mapNote": "La mappa viene caricata da OpenStreetMap solo dopo il vostro clic.",
+  "openMaps": "Apri in Google Maps",
+  "whatsappText": "Scriveteci su WhatsApp"
+ },
+ "quotePage": {
+  "seoTitle": "Richiedi un preventivo",
+  "seoDescription": "Richiedete un preventivo per marmi italiani, forniture internazionali, esperienze a Carrara o tour in Italia.",
+  "eyebrow": "Request a Quote",
+  "title": "Richiedi un preventivo",
+  "lead": "Raccontateci di cosa avete bisogno: materiale, quantità, finitura, destinazione o il viaggio che avete in mente. Vi risponderemo personalmente.",
+  "selected": "Marmi selezionati",
+  "next": "Cosa succede dopo",
+  "steps": {
+   "1": "Riceviamo la richiesta e vi inviamo una conferma con il riferimento.",
+   "2": "Verifichiamo materiali, disponibilità e partner.",
+   "3": "Vi inviamo una proposta chiara, senza impegno."
+  }
+ },
+ "glossaryPage": {
+  "seoTitle": "Glossario del marmo",
+  "seoDescription": "I termini tecnici del marmo spiegati in modo semplice: blocco, lastra, finiture, venature, macchia aperta e altri.",
+  "eyebrow": "Marble Glossary",
+  "title": "Glossario del marmo",
+  "lead": "Le parole del marmo, dalla cava alla posa. Accanto a ogni voce trovate il termine italiano usato nel settore.",
+  "italianTerm": "Termine italiano"
+ },
+ "b2b": {
+  "seoTitle": "Area B2B per professionisti",
+  "seoDescription": "Area riservata per architetti, interior designer, importatori, rivenditori, imprese e contractor: prezzi riservati, documenti tecnici, progetti e storico preventivi.",
+  "eyebrow": "B2B",
+  "title": "L'area riservata ai professionisti.",
+  "lead": "Per architetti, interior designer, importatori, rivenditori, imprese e contractor: prezzi riservati, documenti tecnici e un referente dedicato.",
+  "forTitle": "Per chi è",
+  "who": {
+   "architect": "Architetti",
+   "interior": "Interior designer",
+   "importer": "Importatori",
+   "reseller": "Rivenditori",
+   "company": "Imprese",
+   "contractor": "Contractor"
+  },
+  "benefitsTitle": "Cosa trovate",
+  "benefits": {
+   "prices": "Prezzi indicativi riservati sui materiali del catalogo",
+   "docs": "Documenti e schede tecniche",
+   "projects": "Gestione dei vostri progetti",
+   "quotes": "Storico di preventivi e richieste",
+   "requests": "Richieste commerciali dirette",
+   "contact": "Un referente dedicato"
+  },
+  "howTitle": "Come accedere",
+  "how": {
+   "1": "Create un account e compilate i dati professionali.",
+   "2": "Verifichiamo la richiesta e approviamo l'account.",
+   "3": "Accedete a prezzi riservati e documenti tecnici."
+  },
+  "register": "Richiedi l'accesso B2B",
+  "login": "Accedi"
+ },
+ "legal": {
+  "italianPrevails": "Questo testo è una traduzione di cortesia: in caso di differenze prevale la versione italiana.",
+  "updated": "Ultimo aggiornamento: {date}"
+ },
+ "notFound": {
+  "title": "Pagina non trovata",
+  "text": "La pagina che cercate non esiste o è stata spostata.",
+  "home": "Torna alla home"
+ },
+ "account": {
+  "title": "Area clienti",
+  "notConfigured": "L'area clienti non è ancora attiva su questo sito.",
+  "signInRequired": "Accedete per continuare.",
+  "nav": {
+   "overview": "Panoramica",
+   "profile": "Profilo",
+   "favorites": "Preferiti e collezioni",
+   "projects": "Progetti",
+   "requests": "Richieste",
+   "quotes": "Preventivi",
+   "bookings": "Prenotazioni",
+   "documents": "Documenti",
+   "messages": "Comunicazioni",
+   "b2b": "Area B2B",
+   "logout": "Esci",
+   "admin": "Pannello amministratore"
+  },
+  "login": {
+   "title": "Accedi",
+   "lead": "Accedete per ritrovare marmi salvati, collezioni, richieste, preventivi e prenotazioni.",
+   "email": "Email",
+   "password": "Password",
+   "submit": "Accedi",
+   "magic": "Ricevi un link di accesso via email",
+   "magicSubmit": "Invia il link",
+   "magicSent": "Se l'indirizzo è registrato, riceverete a breve un'email con il link di accesso.",
+   "noAccount": "Non avete un account?",
+   "register": "Registratevi",
+   "forgot": "Password dimenticata?",
+   "invalid": "Email o password non corretti.",
+   "unconfirmed": "Confermate prima l'indirizzo email: aprite il link che vi abbiamo inviato."
+  },
+  "register": {
+   "title": "Create un account",
+   "lead": "Salvate marmi e collezioni e seguite richieste, preventivi e prenotazioni da un unico posto.",
+   "name": "Nome e cognome",
+   "password": "Password",
+   "passwordHint": "Almeno 10 caratteri.",
+   "submit": "Crea l'account",
+   "sent": "Vi abbiamo inviato un'email: aprite il link per confermare l'indirizzo e attivare l'account.",
+   "haveAccount": "Avete già un account?",
+   "b2bTitle": "Dati professionali",
+   "b2bLead": "Compilate questi dati per richiedere l'accesso all'area B2B: verificheremo la richiesta prima dell'approvazione.",
+   "b2bType": "Attività",
+   "vat": "Partita IVA / VAT",
+   "website": "Sito web",
+   "country": "Paese",
+   "company": "Azienda",
+   "b2bNotes": "Presentate brevemente la vostra attività",
+   "b2bSubmit": "Crea l'account e richiedi l'accesso B2B",
+   "passwordWeak": "La password deve avere almeno 10 caratteri."
+  },
+  "b2bTypes": {
+   "architect": "Studio di architettura",
+   "interior": "Interior design",
+   "importer": "Importatore",
+   "reseller": "Rivenditore",
+   "company": "Impresa",
+   "contractor": "Contractor",
+   "other": "Altro"
+  },
+  "forgot": {
+   "title": "Password dimenticata",
+   "lead": "Indicate la vostra email: vi invieremo un link per scegliere una nuova password.",
+   "submit": "Inviami il link"
+  },
+  "reset": {
+   "title": "Nuova password",
+   "submit": "Salva la nuova password",
+   "done": "Password aggiornata.",
+   "expired": "Il link non è più valido: richiedetene uno nuovo."
+  },
+  "overview": {
+   "welcome": "Benvenuti, {name}",
+   "welcomeNoName": "Benvenuti",
+   "lead": "Da qui gestite i vostri marmi, progetti, richieste e viaggi con WHITE CARRARA."
+  },
+  "profile": {
+   "saved": "Dati salvati.",
+   "language": "Lingua preferita",
+   "marketing": "Desidero ricevere comunicazioni da WHITE CARRARA",
+   "exportTitle": "I vostri dati",
+   "exportText": "Potete scaricare in qualsiasi momento una copia dei dati che conserviamo nel vostro account.",
+   "export": "Scarica i miei dati",
+   "deleteTitle": "Eliminare l'account",
+   "deleteText": "L'eliminazione è definitiva: cancelleremo account, preferiti, collezioni, progetti e messaggi. Le richieste, i preventivi e i documenti che dobbiamo conservare per legge resteranno archiviati per il tempo previsto, senza collegamento al vostro account.",
+   "deleteConfirm": "Per confermare scrivete il vostro indirizzo email",
+   "deleteButton": "Elimina definitivamente l'account",
+   "deleted": "Il vostro account è stato eliminato."
+  },
+  "projects": {
+   "new": "Nuovo progetto",
+   "name": "Nome del progetto",
+   "type": "Tipo",
+   "location": "Luogo",
+   "description": "Descrizione",
+   "marbles": "Marmi (separati da virgola)",
+   "status": "Stato",
+   "save": "Salva",
+   "delete": "Elimina",
+   "empty": "Non avete ancora progetti.",
+   "statuses": {
+    "open": "Aperto",
+    "in_progress": "In corso",
+    "on_hold": "In pausa",
+    "completed": "Completato",
+    "archived": "Archiviato"
+   }
+  },
+  "requests": {
+   "empty": "Nessuna richiesta.",
+   "statuses": {
+    "new": "Ricevuta",
+    "in_progress": "In lavorazione",
+    "waiting_customer": "In attesa di vostre informazioni",
+    "quoted": "Preventivo inviato",
+    "won": "Conclusa",
+    "lost": "Non conclusa",
+    "closed": "Chiusa",
+    "spam": "Chiusa"
+   },
+   "kinds": {
+    "quote": "Preventivo",
+    "concierge": "Marble Concierge",
+    "matching": "Marble Matching",
+    "contact": "Contatto",
+    "b2b": "B2B",
+    "tech_sheet": "Scheda tecnica",
+    "custom_trip": "Viaggio su misura",
+    "trade": "Trading e brokerage"
+   }
+  },
+  "quotes": {
+   "empty": "Nessun preventivo.",
+   "number": "Numero",
+   "date": "Data",
+   "total": "Totale",
+   "validUntil": "Valido fino al",
+   "status": "Stato",
+   "statuses": {
+    "sent": "Da valutare",
+    "accepted": "Accettato",
+    "rejected": "Rifiutato",
+    "expired": "Scaduto",
+    "cancelled": "Annullato",
+    "draft": "In preparazione"
+   },
+   "accept": "Accetta il preventivo",
+   "reject": "Rifiuta",
+   "accepted": "Preventivo accettato: vi contatteremo per i passi successivi.",
+   "rejected": "Preventivo rifiutato.",
+   "models": {
+    "trading": "Fornitura WHITE CARRARA (trading)",
+    "brokerage": "Intermediazione (brokerage)"
+   },
+   "brokerageNote": "Offerta di intermediazione: il contratto di fornitura sarà stipulato con il fornitore indicato al momento dell'accordo.",
+   "description": "Descrizione",
+   "quantity": "Quantità",
+   "unitPrice": "Prezzo unitario",
+   "amount": "Importo",
+   "incoterm": "Resa (Incoterm)",
+   "delivery": "Consegna",
+   "payment": "Pagamento",
+   "notes": "Note",
+   "print": "Stampa o salva in PDF",
+   "vatNote": "Importi IVA esclusa, salvo diversa indicazione.",
+   "open": "Apri"
+  },
+  "bookings": {
+   "empty": "Nessuna prenotazione.",
+   "statuses": {
+    "requested": "Richiesta inviata",
+    "checking": "Verifica della disponibilità",
+    "confirmed": "Confermata",
+    "awaiting_payment": "In attesa di pagamento",
+    "paid": "Pagata",
+    "completed": "Completata",
+    "declined": "Non disponibile",
+    "cancelled": "Annullata"
+   },
+   "pay": "Paga ora",
+   "date": "Data",
+   "participants": "Partecipanti",
+   "amount": "Importo"
+  },
+  "documents": {
+   "empty": "Nessun documento disponibile.",
+   "download": "Scarica"
+  },
+  "messages": {
+   "empty": "Nessun messaggio. Scriveteci per qualsiasi domanda.",
+   "placeholder": "Scrivete un messaggio…",
+   "send": "Invia",
+   "you": "Voi",
+   "staff": "WHITE CARRARA",
+   "sent": "Messaggio inviato."
+  },
+  "b2b": {
+   "none": "Non avete ancora richiesto l'accesso all'area professionisti.",
+   "pending": "La vostra richiesta di accesso B2B è in verifica: vi scriveremo appena sarà approvata.",
+   "approved": "Il vostro account professionale è attivo.",
+   "rejected": "La richiesta di accesso B2B non è stata approvata. Per chiarimenti scriveteci.",
+   "apply": "Richiedi l'accesso B2B",
+   "applied": "Richiesta inviata: la verificheremo al più presto.",
+   "pricesTitle": "Prezzi riservati",
+   "pricesEmpty": "Nessun prezzo riservato pubblicato al momento.",
+   "docsTitle": "Documenti tecnici",
+   "docsEmpty": "Nessun documento tecnico pubblicato al momento.",
+   "marble": "Materiale",
+   "finish": "Finitura",
+   "thickness": "Spessore",
+   "price": "Prezzo",
+   "validUntil": "Validità"
+  },
+  "mfa": {
+   "title": "Verifica in due passaggi",
+   "lead": "Per proteggere il pannello amministratore serve un codice generato da un'app di autenticazione (ad esempio Google Authenticator, 1Password, Authy).",
+   "enrollTitle": "Attiva l'app di autenticazione",
+   "enrollText": "Inquadrate il codice QR con l'app, poi inserite il codice di 6 cifre che compare.",
+   "secret": "Oppure inserite questa chiave",
+   "code": "Codice di 6 cifre",
+   "verify": "Verifica",
+   "invalid": "Codice non valido, riprovate."
+  }
+ }
+}

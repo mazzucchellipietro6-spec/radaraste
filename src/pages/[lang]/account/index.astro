@@ -1,0 +1,64 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import Icon from '~/components/Icon.astro';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+import { withUser } from '~/lib/server/db';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const session = 'user' in s ? s : null;
+const counts = session
+  ? (
+      await withUser(session.user.claims, (tx) => tx<Record<string, number>[]>`select
+        (select count(*) from public.favorites)::int as favorites,
+        (select count(*) from public.projects)::int as projects,
+        (select count(*) from public.requests)::int as requests,
+        (select count(*) from public.quotes where status = 'sent')::int as quotes,
+        (select count(*) from public.bookings)::int as bookings,
+        (select count(*) from public.messages where sender = 'staff' and read_at is null)::int as messages`)
+    )[0]
+  : null;
+const cards = [
+  ['favorites', 'heart'],
+  ['projects', 'folder'],
+  ['requests', 'chat'],
+  ['quotes', 'document'],
+  ['bookings', 'calendar'],
+  ['messages', 'mail'],
+] as const;
+const name = session?.profile.full_name?.split(' ')[0];
+---
+
+<Account t={tr} path={`/${lang}/account/`} section="overview" title={name ? t('account.overview.welcome', { name }) : t('account.overview.welcomeNoName')} profile={session?.profile}>
+  {
+    !session ? (
+      <NotConfigured t={tr} />
+    ) : (
+      <>
+        <p class="lead max-w-2xl">{t('account.overview.lead')}</p>
+        <ul class="mt-10 grid gap-px border border-stone bg-stone sm:grid-cols-2 xl:grid-cols-3">
+          {cards.map(([k, icon]) => (
+            <li class="bg-marble">
+              <a href={`/${lang}/account/${k}/`} class="flex h-full items-center justify-between gap-4 p-7 no-underline hover:bg-ivory">
+                <span class="flex items-center gap-4">
+                  <Icon name={icon} size={24} class="text-brass" stroke={1.1} />
+                  <span class="font-display text-xl text-graphite">{t(`account.nav.${k}`)}</span>
+                </span>
+                <span class="font-display text-3xl text-brass-deep">{counts?.[k] ?? 0}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        {session.profile.b2b_status !== 'none' && (
+          <p class="mt-8 text-ash">
+            <a href={`/${lang}/account/b2b/`} class="text-brass-deep">{t('account.nav.b2b')}</a>: {t(`account.b2b.${session.profile.b2b_status}`)}
+          </p>
+        )}
+      </>
+    )
+  }
+</Account>

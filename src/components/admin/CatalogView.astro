@@ -1,0 +1,73 @@
+---
+// Marmi, tour/esperienze e destinazioni: i testi e le foto si modificano nel pannello contenuti (Keystatic),
+// qui si vedono insieme ai dati commerciali e turistici collegati.
+import Admin from '~/layouts/Admin.astro';
+import { withUser } from '~/lib/server/db';
+import { destinations, experiences, marbles } from '~/lib/site';
+const admin = Astro.locals.admin;
+
+interface Props {
+  kind: 'marbles' | 'experiences' | 'destinations';
+}
+const { kind } = Astro.props;
+const p = admin!.profile;
+const has = (x: string) => p.role === 'admin' || p.permissions.includes(x);
+const ks = import.meta.env.KEYSTATIC_ENABLED;
+const TITLES = { marbles: 'Marmi', experiences: 'Tour ed esperienze', destinations: 'Destinazioni' };
+const site = { marbles: '/it/marmi/', experiences: '/it/esperienze-carrara/', destinations: '/it/tour-italia/' }[kind];
+type Row = { id: string; name: string; active: boolean; extra: string[] };
+let rows: Row[] = [];
+if (kind === 'marbles') {
+  const ids = (await marbles()).map((m) => m.id);
+  const stats = has('trade')
+    ? await withUser(admin!.user.claims, (tx) => tx<{ slug: string; materials: number; prices: number }[]>`select s.slug,
+        (select count(*) from public.materials m where m.marble_slug = s.slug and m.active)::int as materials,
+        (select count(*) from public.b2b_prices b where b.marble_slug = s.slug and b.active)::int as prices
+        from unnest(${ids}::text[]) as s(slug)`)
+    : [];
+  const req = has('customers') ? await withUser(admin!.user.claims, (tx) => tx<{ slug: string; n: number }[]>`select unnest(marbles) as slug, count(*)::int as n from public.requests group by 1`) : [];
+  rows = (await marbles()).map((m) => {
+    const s = stats.find((x) => x.slug === m.id);
+    return { id: m.id, name: m.data.name, active: m.data.active, extra: [s ? `${s.materials} lotti dai fornitori` : '', s ? `${s.prices} prezzi B2B` : '', `${req.find((x) => x.slug === m.id)?.n ?? 0} richieste`, m.data.finishes.length ? '' : 'finiture da verificare', m.data.techSheets.length ? '' : 'nessuna scheda tecnica'].filter(Boolean) };
+  });
+} else {
+  const list = kind === 'experiences' ? await experiences() : await destinations();
+  const counts = has('tours') ? await withUser(admin!.user.claims, (tx) => tx<{ slug: string; n: number }[]>`select item_slug as slug, count(*)::int as n from public.bookings where item_slug is not null group by 1`) : [];
+  rows = list.map((e) => {
+    const d = e.data as Record<string, unknown>;
+    return {
+      id: e.id,
+      name: String(d.title ?? d.name),
+      active: Boolean(d.active),
+      extra: [
+        `${counts.find((c) => c.slug === e.id)?.n ?? 0} prenotazioni`,
+        kind === 'experiences' ? (d.price != null ? `prezzo ${d.price} €` : 'prezzo su richiesta') : String(d.region ?? ''),
+        kind === 'experiences' && !d.duration ? 'durata da verificare' : '',
+        kind === 'experiences' && !(d.languages as string[]).length ? 'lingue da confermare' : '',
+        kind === 'experiences' && d.onlinePayment ? 'pagamento online autorizzato' : '',
+      ].filter(Boolean),
+    };
+  });
+}
+---
+
+<Admin title={TITLES[kind]} active={kind}>
+  <p class="adm-note mt-4">Testi, foto, prezzi pubblici e disattivazione si modificano nel <strong>pannello contenuti</strong>{ks ? '' : ' (non attivo su questo sito: vedi DEPLOYMENT.md, sezione Keystatic)'}. Dopo il salvataggio il sito si aggiorna con il nuovo pubblicazione automatica.</p>
+  <div class="mt-6 flex flex-wrap gap-3">
+    {ks && <a class="btn btn-primary btn-sm" href={`/keystatic/collection/${kind}/create`}>Aggiungi</a>}
+    <a class="btn btn-outline btn-sm" href={site} target="_blank" rel="noopener">Vedi sul sito ↗</a>
+  </div>
+  <table class="adm-table mt-6">
+    <thead><tr><th>Nome</th><th>Stato</th><th>Dati collegati</th><th></th></tr></thead>
+    <tbody>
+      {rows.map((r) => (
+        <tr>
+          <td class="font-medium">{r.name}</td>
+          <td>{r.active ? 'Visibile' : 'Disattivato'}</td>
+          <td class="text-[0.85rem] text-ash">{r.extra.join(' · ')}</td>
+          <td class="text-end whitespace-nowrap">{ks && <a class="text-brass-deep" href={`/keystatic/collection/${kind}/item/${r.id}`}>Modifica</a>}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</Admin>

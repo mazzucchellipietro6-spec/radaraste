@@ -1,0 +1,49 @@
+---
+import Icon from './Icon.astro';
+import type { Translator } from '~/i18n';
+import { company, whatsappHref } from '~/lib/site';
+interface Props {
+  t: Translator;
+}
+const { t } = Astro.props;
+const c = await company();
+---
+
+{
+  c.whatsapp && (
+    <a
+      href={whatsappHref(c.whatsapp)}
+      class="wa-btn no-print"
+      target="_blank"
+      rel="noopener"
+      aria-label={`${t.t('a11y.whatsapp')} ${t.t('a11y.newTab')}`}
+    >
+      <Icon name="whatsapp" size={26} stroke={1.4} />
+    </a>
+  )
+}
+
+<style>
+  .wa-btn {
+    position: fixed;
+    inset-inline-end: clamp(1rem, 2.5vw, 1.75rem);
+    bottom: clamp(1rem, 2.5vw, 1.75rem);
+    z-index: 40;
+    display: inline-flex;
+    width: 3.4rem;
+    height: 3.4rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--color-graphite);
+    color: var(--color-marble);
+    box-shadow: 0 10px 30px -12px rgb(26 26 28 / 0.6);
+    transition:
+      background-color 0.3s,
+      transform 0.3s var(--ease-luxe);
+  }
+  .wa-btn:hover {
+    background: var(--color-brass-deep);
+    transform: translateY(-2px);
+  }
+</style>

@@ -1,0 +1,26 @@
+{
+  "title": "Esperienze private",
+  "active": true,
+  "order": 6,
+  "category": "privato",
+  "summary": "Una giornata costruita intorno a voi: cave, arte, gusto e paesaggio.",
+  "description": "Per chi desidera un'esperienza riservata, progettiamo giornate private che uniscono cave, laboratori, cultura e gastronomia, con guide e autisti dedicati.\n\nRaccontateci interessi, date e numero di ospiti: vi proporremo un programma su misura, che diventa definitivo solo dopo la conferma dei partner coinvolti.",
+  "highlights": [
+    "Programma su misura",
+    "Guida e autista dedicati",
+    "Orari flessibili"
+  ],
+  "duration": "",
+  "languages": [],
+  "minParticipants": null,
+  "maxParticipants": null,
+  "price": null,
+  "priceUnit": "persona",
+  "priceNote": "",
+  "onlinePayment": false,
+  "meetingPoint": "",
+  "image": "../../assets/images/experiences/esperienze-private.jpg",
+  "imageAlt": "Ospiti con una guida su una terrazza panoramica sopra le cave",
+  "seoTitle": "",
+  "seoDescription": ""
+}

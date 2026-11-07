@@ -1,0 +1,99 @@
+---
+// Contenitore comune dei moduli: antispam (campo trappola + Cloudflare Turnstile),
+// messaggi tradotti, invio senza ricaricare la pagina (funziona anche senza JavaScript).
+import type { Translator } from '~/i18n';
+import { company } from '~/lib/site';
+
+interface Props {
+  t: Translator;
+  action: string;
+  submitLabel: string;
+  successMessage?: string;
+  id?: string;
+  class?: string;
+  privacy?: boolean;
+  hidden?: Record<string, string>;
+}
+const { t: tr, action, submitLabel, successMessage, id, class: cls = '', privacy = true, hidden = {} } = Astro.props;
+const { t, lang, href } = tr;
+const c = await company();
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+const privacyText = t('forms.privacy', { link: '§' }).split('§');
+---
+
+<form
+  method="post"
+  action={action}
+  id={id}
+  class:list={['wc-form space-y-6', cls]}
+  novalidate
+  data-wc-form
+  data-msg-required={t('forms.errorRequired')}
+  data-msg-email={t('forms.errorEmail')}
+  data-msg-privacy={t('forms.errorPrivacy')}
+  data-msg-error={t('forms.errorGeneric', { email: c.email })}
+  data-msg-ratelimit={t('forms.rateLimited')}
+  data-msg-spam={t('forms.spam')}
+  data-msg-notconfigured={t('forms.notConfigured', { email: c.email })}
+  data-msg-success={successMessage ?? t('forms.success')}
+  data-msg-sending={t('common.sending')}
+>
+  <input type="hidden" name="lang" value={lang} />
+  <input type="hidden" name="_ts" value="" data-ts />
+  {Object.entries(hidden).map(([k, v]) => <input type="hidden" name={k} value={v} />)}
+  <div class="hp" aria-hidden="true">
+    <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+  </div>
+  <slot />
+  {
+    privacy && (
+      <div class="field" data-field="privacy">
+        <label class="flex gap-3 text-[0.92rem] leading-relaxed text-ash">
+          <input type="checkbox" name="privacy" value="yes" class="checkbox" required aria-describedby={`${id ?? 'form'}-privacy-err`} />
+          <span>
+            {privacyText[0]}
+            <a href={href('privacy')} class="text-brass-deep" target="_blank" rel="noopener">
+              {t('forms.privacyLink')}
+            </a>
+            {privacyText[1]}
+          </span>
+        </label>
+        <p id={`${id ?? 'form'}-privacy-err`} class="field-error" data-error-for="privacy" hidden />
+      </div>
+    )
+  }
+  {siteKey && <div class="cf-turnstile-slot" data-sitekey={siteKey} data-language={lang} />}
+  <div class="flex flex-wrap items-center gap-5">
+    <button type="submit" class="btn btn-primary" data-submit>{submitLabel}</button>
+  </div>
+  <div class="form-status" role="status" aria-live="polite" data-form-status hidden></div>
+</form>
+
+<style>
+  .hp {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .form-status {
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--color-stone);
+    background: #fff;
+    font-size: 0.95rem;
+  }
+  .form-status[data-kind='success'] {
+    border-color: var(--color-success);
+    color: var(--color-success);
+  }
+  .form-status[data-kind='error'] {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+  }
+</style>
+
+<script>
+  import '~/scripts/forms';
+</script>

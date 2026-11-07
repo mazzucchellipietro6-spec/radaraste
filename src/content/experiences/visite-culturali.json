@@ -1,0 +1,26 @@
+{
+  "title": "Visite culturali",
+  "active": true,
+  "order": 7,
+  "category": "cultura",
+  "summary": "Il centro storico di Carrara, tra marmo, arte e storia.",
+  "description": "Una passeggiata nel centro storico di Carrara: il Duomo di Sant'Andrea con la facciata in marmo e il rosone, Piazza Alberica, le vie dei laboratori e i luoghi legati agli scultori.\n\nSu richiesta la visita può includere i musei della città dedicati al marmo e all'arte.",
+  "highlights": [
+    "Il Duomo di Sant'Andrea e il rosone in marmo",
+    "Piazza Alberica e il centro storico",
+    "I luoghi degli scultori"
+  ],
+  "duration": "",
+  "languages": [],
+  "minParticipants": null,
+  "maxParticipants": null,
+  "price": null,
+  "priceUnit": "persona",
+  "priceNote": "",
+  "onlinePayment": false,
+  "meetingPoint": "",
+  "image": "../../assets/images/experiences/visite-culturali.jpg",
+  "imageAlt": "Facciata in marmo del Duomo di Carrara con il rosone",
+  "seoTitle": "",
+  "seoDescription": ""
+}

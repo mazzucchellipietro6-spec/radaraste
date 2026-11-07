@@ -1,0 +1,58 @@
+---
+import Admin from '~/layouts/Admin.astro';
+import BarList from '~/components/admin/BarList.astro';
+import { withUser } from '~/lib/server/db';
+import { env } from '~/lib/server/env';
+export const prerender = false;
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect('/admin/');
+const p = admin.profile;
+const has = (x: string) => p.role === 'admin' || p.permissions.includes(x);
+const KIND: Record<string, string> = { quote: 'Preventivo', concierge: 'Concierge', matching: 'Matching', contact: 'Contatto', b2b: 'B2B', tech_sheet: 'Scheda tecnica', custom_trip: 'Viaggio su misura', trade: 'Trading/brokerage' };
+type M = { month: string; kind: string; n: number };
+const data = await withUser(admin.user.claims, async (tx) => ({
+  months: has('customers') ? await tx<M[]>`select to_char(date_trunc('month', created_at), 'YYYY-MM') as month, kind, count(*)::int as n from public.requests where created_at > now() - interval '12 months' and status <> 'spam' group by 1, 2 order by 1` : [],
+  marbles: has('customers') ? await tx<{ slug: string; n: number }[]>`select unnest(marbles) as slug, count(*)::int as n from public.requests where created_at > now() - interval '12 months' group by 1 order by 2 desc limit 10` : [],
+  bookings: has('tours') ? await tx<{ item: string; n: number }[]>`select coalesce(item_title, kind) as item, count(*)::int as n from public.bookings where created_at > now() - interval '12 months' group by 1 order by 2 desc limit 15` : [],
+  conversion: has('customers') ? (await tx<{ sent: number; accepted: number }[]>`select count(*) filter (where status in ('sent', 'accepted', 'rejected', 'expired'))::int as sent, count(*) filter (where status = 'accepted')::int as accepted from public.quotes where created_at > now() - interval '12 months'`)[0] : null,
+  langs: has('customers') ? await tx<{ lang: string; n: number }[]>`select coalesce(lang, '—') as lang, count(*)::int as n from public.requests where created_at > now() - interval '12 months' group by 1 order by 2 desc limit 16` : [],
+}));
+const months = Array.from(new Set(data.months.map((m) => m.month)));
+const kinds = Array.from(new Set(data.months.map((m) => m.kind)));
+const cell = (month: string, kind: string) => data.months.find((m) => m.month === month && m.kind === kind)?.n ?? 0;
+const monthLabel = (m: string) => new Date(`${m}-01T12:00:00`).toLocaleDateString('it-IT', { month: 'short', year: 'numeric' });
+const plausible = env('PUBLIC_PLAUSIBLE_DOMAIN');
+---
+
+<Admin title="Statistiche" active="stats">
+  <p class="mt-2 text-ash">Ultimi 12 mesi, dai dati del sito. {plausible && <>Statistiche di visita: <a class="text-brass-deep" href={`https://plausible.io/${plausible}`} target="_blank" rel="noopener">Plausible ↗</a></>}</p>
+  {
+    months.length > 0 && (
+      <section class="adm-card mt-8">
+        <h2 class="font-display text-xl">Richieste ricevute per mese</h2>
+        <BarList caption="Richieste per mese" rows={months.map((m) => ({ label: monthLabel(m), value: kinds.reduce((s, k) => s + cell(m, k), 0) }))} />
+        <details class="mt-4">
+          <summary class="cursor-pointer text-[0.88rem] text-brass-deep">Dettaglio per tipo (tabella)</summary>
+          <div class="mt-3 overflow-x-auto">
+            <table class="adm-table"><thead><tr><th>Mese</th>{kinds.map((k) => <th>{KIND[k] ?? k}</th>)}</tr></thead>
+              <tbody>{months.map((m) => <tr><td>{monthLabel(m)}</td>{kinds.map((k) => <td class="tabular-nums">{cell(m, k)}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+    )
+  }
+  <div class="mt-6 grid gap-6 lg:grid-cols-2">
+    {data.marbles.length > 0 && <section class="adm-card"><h2 class="font-display text-xl">Marmi più richiesti</h2><BarList caption="Marmi più richiesti" rows={data.marbles.map((m) => ({ label: m.slug, value: m.n }))} /></section>}
+    {data.bookings.length > 0 && <section class="adm-card"><h2 class="font-display text-xl">Prenotazioni per esperienza e destinazione</h2><BarList caption="Prenotazioni per esperienza e destinazione" rows={data.bookings.map((b) => ({ label: b.item, value: b.n }))} /></section>}
+    {data.langs.length > 0 && <section class="adm-card"><h2 class="font-display text-xl">Lingua dei clienti</h2><BarList caption="Lingua dei clienti" rows={data.langs.map((l) => ({ label: l.lang, value: l.n }))} /></section>}
+    {data.conversion && (
+      <section class="adm-card">
+        <h2 class="font-display text-xl">Preventivi accettati</h2>
+        <p class="mt-3 text-[2rem] font-semibold tabular-nums">{data.conversion.sent ? Math.round((data.conversion.accepted / data.conversion.sent) * 100) : 0}%</p>
+        <p class="text-[0.85rem] text-ash">{data.conversion.accepted} accettati su {data.conversion.sent} inviati</p>
+      </section>
+    )}
+  </div>
+  {months.length === 0 && data.bookings.length === 0 && <p class="adm-note mt-8">Ancora nessun dato: le statistiche compariranno con le prime richieste e prenotazioni.</p>}
+</Admin>

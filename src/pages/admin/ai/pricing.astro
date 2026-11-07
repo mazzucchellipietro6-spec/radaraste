@@ -1,0 +1,18 @@
+---
+// Simulatore prezzi RESALE / BROKERAGE (stesse formule degli agenti, casi di prova condivisi).
+import Admin from '~/layouts/Admin.astro';
+import PricingSimulator from '~/components/admin/ai/PricingSimulator';
+export const prerender = false;
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect('/it/account/login/?next=/admin/ai/pricing/');
+const p = admin.profile;
+if (p.role !== 'admin' && !p.permissions.includes('trade')) return Astro.redirect('/admin/?denied=trade');
+---
+
+<Admin title="Simulatore prezzi" active="pricing">
+  <p class="mt-2 max-w-3xl text-ash">
+    RESALE: WHITE CARRARA compra e rivende, il ricavo è il prezzo di vendita. BROKERAGE: WHITE CARRARA intermedia, il ricavo è solo la
+    commissione. Il simulatore non sostituisce le offerte dei fornitori: un prezzo calcolato da costi stimati resta una stima.
+  </p>
+  <PricingSimulator client:only="react" />
+</Admin>

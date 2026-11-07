@@ -1,0 +1,48 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Icon from '~/components/Icon.astro';
+import type { Translator } from '~/i18n';
+import b2bImg from '~/assets/images/pages/b2b.jpg';
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href, lang } = tr;
+const who = ['architect', 'interior', 'importer', 'reseller', 'company', 'contractor'];
+const benefits = [['prices', 'euro'], ['docs', 'document'], ['projects', 'folder'], ['quotes', 'layers'], ['requests', 'chat'], ['contact', 'user']] as const;
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.b2b') }];
+---
+
+<Base t={tr} title={t('b2b.seoTitle')} description={t('b2b.seoDescription')} path={path} header="overlay" image={b2bImg}>
+  <PageHero eyebrow={t('b2b.eyebrow')} title={t('b2b.title')} lead={t('b2b.lead')} image={b2bImg} alt={t('b2b.title')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')}>
+    <div class="mt-10 flex flex-wrap gap-4">
+      <a href={`/${lang}/account/register/?b2b=1`} class="btn btn-light">{t('b2b.register')}</a>
+      <a href={`/${lang}/account/login/?next=/${lang}/account/b2b/`} class="btn btn-outline">{t('b2b.login')}</a>
+    </div>
+  </PageHero>
+  <section class="py-20 lg:py-24">
+    <div class="container-page grid gap-14 lg:grid-cols-12">
+      <div class="lg:col-span-4">
+        <h2 class="display-md">{t('b2b.forTitle')}</h2>
+        <ul class="mt-8 space-y-3">{who.map((w) => <li class="border-b border-stone pb-3 font-display text-xl">{t(`b2b.who.${w}`)}</li>)}</ul>
+      </div>
+      <div class="lg:col-span-7 lg:col-start-6">
+        <h2 class="display-md">{t('b2b.benefitsTitle')}</h2>
+        <ul class="mt-8 grid gap-6 sm:grid-cols-2">
+          {benefits.map(([k, icon]) => <li class="flex gap-4 border-t border-stone pt-5"><Icon name={icon} size={24} class="shrink-0 text-brass" stroke={1.1} /><span>{t(`b2b.benefits.${k}`)}</span></li>)}
+        </ul>
+      </div>
+    </div>
+  </section>
+  <section class="bg-ivory py-20 lg:py-24">
+    <div class="container-page">
+      <h2 class="display-md">{t('b2b.howTitle')}</h2>
+      <ol class="mt-10 grid gap-8 md:grid-cols-3">
+        {['1', '2', '3'].map((n) => <li class="border-t border-stone pt-5"><span class="font-display text-2xl text-brass-deep">0{n}</span><p class="mt-2">{t(`b2b.how.${n}`)}</p></li>)}
+      </ol>
+      <a href={`/${lang}/account/register/?b2b=1`} class="btn btn-primary mt-12">{t('b2b.register')}</a>
+    </div>
+  </section>
+</Base>

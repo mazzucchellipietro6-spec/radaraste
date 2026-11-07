@@ -1,0 +1,48 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+import { withUser } from '~/lib/server/db';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t, fmt } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const session = 'user' in s ? s : null;
+type M = { id: string; sender: string; body: string; created_at: Date };
+const rows = session
+  ? await withUser(session.user.claims, async (tx) => {
+      const list = await tx<M[]>`select id, sender, body, created_at from public.messages order by created_at asc limit 300`;
+      return list;
+    })
+  : [];
+---
+
+<Account t={tr} path={`/${lang}/account/messages/`} section="messages" title={t('account.nav.messages')} profile={session?.profile}>
+  {
+    !session ? (
+      <NotConfigured t={tr} />
+    ) : (
+      <div class="max-w-3xl">
+        {rows.length === 0 ? (
+          <p class="text-ash">{t('account.messages.empty')}</p>
+        ) : (
+          <ol class="space-y-4">
+            {rows.map((m) => (
+              <li class:list={['max-w-[85%] border p-4', m.sender === 'customer' ? 'ms-auto border-stone bg-white' : 'border-brass/40 bg-ivory']}>
+                <p class="text-[0.78rem] text-ash">{m.sender === 'customer' ? t('account.messages.you') : t('account.messages.staff')} · {fmt.date(m.created_at, { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                <p class="mt-1 whitespace-pre-line">{m.body}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+        <form method="post" action="/api/me/messages" class="mt-8 space-y-3">
+          <label class="visually-hidden" for="msg-body">{t('account.messages.placeholder')}</label>
+          <textarea id="msg-body" class="input" name="body" rows="4" maxlength="8000" required placeholder={t('account.messages.placeholder')} />
+          <button class="btn btn-primary btn-sm" type="submit">{t('account.messages.send')}</button>
+        </form>
+      </div>
+    )
+  }
+</Account>

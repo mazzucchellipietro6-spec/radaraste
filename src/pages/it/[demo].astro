@@ -1,0 +1,127 @@
+---
+// SOLO ANTEPRIMA STATICA (WC_PREVIEW=1): la sede dell'azienda AI con dati di esempio dichiarati.
+// Nel sito vero questa pagina non viene generata: la sede è nel pannello (/admin/ai/) con i dati reali.
+import '~/styles/global.css';
+import Headquarters from '~/components/admin/ai/Headquarters';
+import registry from '../../../agents/config/agent-registry.json';
+import { DEPARTMENTS, KPI_LABEL } from '~/lib/server/company';
+
+export function getStaticPaths() {
+  return process.env.WC_PREVIEW === '1' ? [{ params: { demo: 'sede-ai' } }] : [];
+}
+
+const now = Date.now();
+const ago = (min: number) => new Date(now - min * 60_000).toISOString();
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+const T = {
+  ceo: id(1), lead: id(2), legal: id(3), ops: id(4), exportM: id(5), tax: id(6), ba: id(7),
+};
+const scenario: Record<string, { status: string; activity?: string; task?: string; taskId?: string; started?: number; queued?: number; waiting?: number }> = {
+  '01-ai-ceo': { status: 'waiting', waiting: 1 },
+  '03-lead-generation': { status: 'working', activity: 'research', task: 'Importatori di marmo negli Emirati Arabi Uniti', taskId: T.lead, started: 6 },
+  '24-legal-counsel': { status: 'working', activity: 'writing', task: 'Bozza di contratto di vendita internazionale', taskId: T.legal, started: 5 },
+  '21-operations-manager': { status: 'working', activity: 'analysis', task: 'Tempi dei processi per l’export', taskId: T.ops, started: 4 },
+  '04-export-manager': { status: 'queued', queued: 1 },
+  '25-tax-accounting-advisor': { status: 'queued', queued: 1 },
+  '23-business-analyst': { status: 'completed' },
+};
+type Reg = { id: string; name: string; department: string; team?: string; title: string; effort: string; monthly_budget_usd: number; daily_task_limit: number; objectives: string[]; kpis: string[] };
+const agents = (registry as Reg[]).map((a) => {
+  const sc = scenario[a.id] ?? { status: 'idle' };
+  return {
+    id: a.id, name: a.name, department: a.department, team: a.team ?? null, title: a.title, enabled: true, model: 'claude-opus-5-5',
+    effort: a.effort, monthlyBudget: a.monthly_budget_usd, dailyLimit: a.daily_task_limit, objectives: a.objectives,
+    kpis: a.kpis.filter((k) => k !== 'revenue_month' && k !== 'pipeline_value').map((k) => ({ key: k, label: KPI_LABEL[k] ?? k, value: null })),
+    status: sc.status, activity: sc.activity ?? null,
+    currentTask: sc.taskId ? { id: sc.taskId, title: sc.task!, startedAt: ago(sc.started ?? 1) } : null,
+    queued: sc.queued ?? 0, waiting: sc.waiting ?? 0, costMonth: 0, avgTaskCost: null,
+    last: a.id === '23-business-analyst' ? { id: T.ba, title: 'Redditività RESALE e BROKERAGE', status: 'completed', finishedAt: ago(3), summary: 'Esempio: nel gestionale non ci sono ancora trattative chiuse, quindi i margini non sono calcolabili. Servono i costi documentati dei fornitori.' } : null,
+  };
+});
+const ev = (n: number, agent: string, kind: string, message: string, min: number, task = T.ceo, activity: string | null = null) =>
+  ({ id: n, task_id: task, agent_id: agent, kind, activity, message, at: ago(min), task_title: null });
+const events = [
+  ev(12, '21-operations-manager', 'tool', 'process_metrics', 1, T.ops, 'analysis'),
+  ev(11, '24-legal-counsel', 'tool', 'web_fetch', 2, T.legal, 'research'),
+  ev(10, '03-lead-generation', 'tool', 'lead_save', 2, T.lead, 'crm'),
+  ev(9, '23-business-analyst', 'completed', 'Esempio: nel gestionale non ci sono ancora trattative chiuse, quindi i margini non sono calcolabili.', 3, T.ba, 'reporting'),
+  ev(8, '03-lead-generation', 'tool', 'web_search', 4, T.lead, 'research'),
+  ev(7, '21-operations-manager', 'started', 'Operations Manager inizia: Tempi dei processi per l’export', 4, T.ops),
+  ev(6, '24-legal-counsel', 'started', 'Legal Counsel Agent inizia: Bozza di contratto di vendita internazionale', 5, T.legal),
+  ev(5, '01-ai-ceo', 'waiting', 'In attesa di 6 colleghi', 6),
+  ev(4, '01-ai-ceo', 'delegated', 'Delegato a 25-tax-accounting-advisor: Fiscalità della vendita negli EAU (dopo il contratto)', 6),
+  ev(3, '01-ai-ceo', 'delegated', 'Delegato a 04-export-manager: Requisiti di importazione e logistica (dopo i lead)', 6),
+  ev(2, '01-ai-ceo', 'delegated', 'Delegato a 03-lead-generation: Importatori di marmo negli Emirati Arabi Uniti', 7),
+  ev(1, '01-ai-ceo', 'started', 'AI CEO inizia: Piano export Emirati Arabi Uniti', 8),
+];
+const state = {
+  generatedAt: new Date(now).toISOString(),
+  runtime: { online: true, llmConfigured: true, workers: 1, lastSeen: ago(0), version: 'anteprima' },
+  agents, events, queue: { running: 3, queued: 2, waiting: 1 },
+  costs: { today: 0, month: 0, dailyCap: 25 }, approvalsPending: 0,
+  finance: { resale: 0, commissions: 0, gmv: 0, cashIn: 0, total: 0, target: 30000, gap: 30000 },
+  departments: DEPARTMENTS, wsUrl: null,
+};
+const children = [
+  { id: T.lead, agent_id: '03-lead-generation', title: 'Importatori di marmo negli Emirati Arabi Uniti', status: 'running', result_summary: null, error: null },
+  { id: T.legal, agent_id: '24-legal-counsel', title: 'Bozza di contratto di vendita internazionale', status: 'running', result_summary: null, error: null },
+  { id: T.ops, agent_id: '21-operations-manager', title: 'Tempi dei processi per l’export', status: 'running', result_summary: null, error: null },
+  { id: T.ba, agent_id: '23-business-analyst', title: 'Redditività RESALE e BROKERAGE', status: 'completed', result_summary: 'Esempio: margini non calcolabili senza costi documentati.', error: null },
+  { id: T.exportM, agent_id: '04-export-manager', title: 'Requisiti di importazione e logistica', status: 'queued', result_summary: null, error: null },
+  { id: T.tax, agent_id: '25-tax-accounting-advisor', title: 'Fiscalità della vendita negli EAU', status: 'queued', result_summary: null, error: null },
+];
+const task = (tid: string, agent: string, title: string, status: string, extra: Record<string, unknown> = {}) => ({
+  task: { id: tid, agent_id: agent, title, status, phase: 'work', attempts: 1, cost_usd: '0', input_tokens: 0, output_tokens: 0, created_at: ago(8), finished_at: null, parent_id: tid === T.ceo ? null : T.ceo, error: null, result: null,
+          instructions: 'Esempio di incarico per l’anteprima: nel pannello vero le istruzioni sono quelle scritte dal fondatore o dal collega che delega.', ...extra },
+  events: events.filter((e) => e.task_id === tid).reverse().map((e) => ({ id: e.id, kind: e.kind, activity: e.activity, message: e.message, data: e.kind === 'tool' ? { tool: e.message } : {}, at: e.at })),
+  children: tid === T.ceo ? children : [], approvals: [],
+});
+const tasks: Record<string, unknown> = {
+  [T.ceo]: task(T.ceo, '01-ai-ceo', 'Piano export Emirati Arabi Uniti', 'waiting', { instructions: 'Esempio: trova 30 importatori di marmo negli Emirati Arabi Uniti e prepara una strategia per acquisirne almeno 5. Valuta contratto, fisco, redditività e processi.' }),
+  [T.lead]: task(T.lead, '03-lead-generation', 'Importatori di marmo negli Emirati Arabi Uniti', 'running'),
+  [T.legal]: task(T.legal, '24-legal-counsel', 'Bozza di contratto di vendita internazionale', 'running'),
+  [T.ops]: task(T.ops, '21-operations-manager', 'Tempi dei processi per l’export', 'running'),
+  [T.ba]: task(T.ba, '23-business-analyst', 'Redditività RESALE e BROKERAGE', 'completed', { finished_at: ago(3), result: {
+    status: 'completed', summary: 'Esempio: nel gestionale non ci sono ancora trattative chiuse, quindi i margini non sono calcolabili. Servono i costi documentati dei fornitori.',
+    verified_facts: [], estimates: [], assumptions: [], unknowns: ['Costi d’acquisto dei fornitori', 'Prezzi di vendita negli EAU'], risks: ['Prezzi senza costi documentati sarebbero solo ipotesi'],
+    next_action: 'Registrare almeno un fornitore con listino e costi documentati', records: [] } }),
+};
+const detail = (aid: string, list: string[]) => ({
+  agent: {}, memory: [], notes: [], usage: { usd: '0', input: '0', output: '0', calls: 0 },
+  shared: [{ id: id(90), topic: 'Modello di business', content: 'WHITE CARRARA non possiede cave: opera in RESALE (acquisto e rivendita) e in BROKERAGE (commissione). I due modelli restano separati.', data_status: 'verified', source: 'docs/AI-COMPANY.md', created_at: ago(60 * 24) }],
+  tasks: list.map((tid) => { const t = (tasks[tid] as { task: Record<string, unknown> }).task; return { id: tid, title: t.title, status: t.status, phase: 'work', result_summary: (t.result as { summary?: string } | null)?.summary ?? null, error: null, cost_usd: '0', created_at: t.created_at, finished_at: t.finished_at, created_by_agent: aid === '01-ai-ceo' ? null : '01-ai-ceo' }; }),
+});
+const details = {
+  '01-ai-ceo': detail('01-ai-ceo', [T.ceo]), '03-lead-generation': detail('03-lead-generation', [T.lead]), '24-legal-counsel': detail('24-legal-counsel', [T.legal]),
+  '21-operations-manager': detail('21-operations-manager', [T.ops]), '23-business-analyst': detail('23-business-analyst', [T.ba]),
+};
+const demo = { state, agents: details, tasks };
+---
+
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Sede dell'azienda AI — anteprima</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline define:vars={{ demo }}>window.__WC_DEMO__ = demo;</script>
+  </head>
+  <body class="bg-ivory">
+    <header class="bg-graphite px-4 py-4 text-marble sm:px-8">
+      <a href="/it/" class="font-display text-lg tracking-[0.3em] text-marble no-underline">WHITE CARRARA</a>
+      <span class="ml-3 text-[0.8rem] text-mist">Pannello · Azienda AI</span>
+    </header>
+    <main class="mx-auto max-w-[110rem] px-4 py-8 sm:px-8">
+      <h1 class="font-display text-3xl lg:text-4xl">Sede dell'azienda AI</h1>
+      <p role="note" class="mt-4 max-w-4xl rounded border border-brass/40 bg-marble px-4 py-3 text-[0.92rem]">
+        <strong>Anteprima con dati di esempio.</strong> Qui vedi come appare la sede: i 25 agenti nei 6 reparti, la scheda di ogni dipendente, la
+        control room. La situazione è dimostrativa: l'AI CEO ha diviso un incarico sugli Emirati Arabi Uniti tra i colleghi. Nel pannello
+        pubblicato (accesso con verifica in due passaggi) stati, incarichi, eventi e costi arrivano dal database e dal servizio agenti, e da qui si
+        assegnano gli incarichi.
+      </p>
+      <Headquarters client:only="react" initial={state as never} isAdmin={false} />
+    </main>
+  </body>
+</html>

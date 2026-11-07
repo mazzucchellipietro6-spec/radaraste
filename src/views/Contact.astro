@@ -1,0 +1,71 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Icon from '~/components/Icon.astro';
+import QuoteForm from '~/components/forms/QuoteForm.astro';
+import type { Translator } from '~/i18n';
+import { company, instagramHref, telHref, whatsappHref } from '~/lib/site';
+import contactImg from '~/assets/images/pages/contact.jpg';
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href } = tr;
+const c = await company();
+const lat = c.mapLat ?? 44.0794;
+const lng = c.mapLng ?? 10.0978;
+const d = 0.02;
+const osm = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d},${lat - d / 2},${lng + d},${lat + d / 2}&layer=mapnik&marker=${lat},${lng}`;
+const gmaps = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.contact') }];
+---
+
+<Base t={tr} title={t('contact.seoTitle')} description={t('contact.seoDescription')} path={path} header="overlay" image={contactImg}>
+  <PageHero eyebrow={t('contact.eyebrow')} title={t('contact.title')} lead={t('contact.lead')} image={contactImg} alt={t('contact.title')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+  <section class="py-16 lg:py-24">
+    <div class="container-page grid gap-14 lg:grid-cols-12">
+      <div class="lg:col-span-5">
+        <h2 class="eyebrow">{t('contact.details')}</h2>
+        <address class="mt-6 space-y-5 text-[1.05rem] not-italic">
+          <p class="flex gap-4"><Icon name="pin" class="mt-1 text-brass-deep" />{c.address}</p>
+          {c.email && <p class="flex gap-4"><Icon name="mail" class="mt-1 text-brass-deep" /><a href={`mailto:${c.email}`} class="[overflow-wrap:anywhere] no-underline hover:text-brass-deep">{c.email}</a></p>}
+          {c.phone && <p class="flex gap-4"><Icon name="phone" class="mt-1 text-brass-deep" /><a href={telHref(c.phone)} class="no-underline hover:text-brass-deep" dir="ltr">{c.phone}</a></p>}
+          {c.whatsapp && <p class="flex gap-4"><Icon name="whatsapp" class="mt-1 text-brass-deep" /><a href={whatsappHref(c.whatsapp)} target="_blank" rel="noopener" class="no-underline hover:text-brass-deep">{t('contact.whatsappText')}<span class="visually-hidden"> {t('a11y.newTab')}</span></a></p>}
+          {c.instagram && <p class="flex gap-4"><Icon name="instagram" class="mt-1 text-brass-deep" /><a href={instagramHref(c.instagram)} target="_blank" rel="noopener" class="no-underline hover:text-brass-deep">@{c.instagram}<span class="visually-hidden"> {t('a11y.newTab')}</span></a></p>}
+        </address>
+        <div class="mt-10">
+          <h2 class="eyebrow">{t('contact.map')}</h2>
+          <div class="relative mt-4 aspect-[4/3] overflow-hidden border border-stone bg-ivory" data-map data-src={osm}>
+            <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center" data-map-placeholder>
+              <Icon name="map" size={34} class="text-brass" stroke={1.1} />
+              <button type="button" class="btn btn-outline btn-sm" data-map-load>{t('contact.showMap')}</button>
+              <p class="text-[0.82rem] text-ash">{t('contact.mapNote')}</p>
+            </div>
+          </div>
+          <a href={gmaps} target="_blank" rel="noopener" class="link-luxe mt-4 text-graphite">{t('contact.openMaps')}</a>
+        </div>
+      </div>
+      <div class="lg:col-span-6 lg:col-start-7">
+        <div class="border border-stone bg-marble p-6 sm:p-10">
+          <h2 class="display-md mb-8">{t('contact.formTitle')}</h2>
+          <QuoteForm t={tr} source="contact" />
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  document.querySelector('[data-map-load]')?.addEventListener('click', () => {
+    const box = document.querySelector<HTMLElement>('[data-map]')!;
+    const iframe = document.createElement('iframe');
+    iframe.src = box.dataset.src!;
+    iframe.title = 'OpenStreetMap';
+    iframe.loading = 'lazy';
+    iframe.referrerPolicy = 'no-referrer';
+    iframe.className = 'absolute inset-0 h-full w-full border-0';
+    box.querySelector('[data-map-placeholder]')?.remove();
+    box.appendChild(iframe);
+  });
+</script>

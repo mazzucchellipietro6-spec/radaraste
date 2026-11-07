@@ -1,0 +1,95 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import Field from '~/components/forms/Field.astro';
+import Icon from '~/components/Icon.astro';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+import { withUser } from '~/lib/server/db';
+import { marbles } from '~/lib/site';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t, fmt } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const session = 'user' in s ? s : null;
+const p = session?.profile;
+type Price = { marble_slug: string; finish: string | null; thickness: string | null; price: string; unit: string; currency: string; valid_until: Date | null; note: string | null };
+type Doc = { id: string; title: string; description: string | null; marble_slug: string | null };
+const approved = p?.b2b_status === 'approved' || p?.role === 'admin' || p?.role === 'staff';
+const data =
+  session && approved
+    ? await withUser(session.user.claims, async (tx) => ({
+        prices: await tx<Price[]>`select marble_slug, finish, thickness, price, unit, currency, valid_until, note from public.b2b_prices where active and (valid_until is null or valid_until >= current_date) order by marble_slug, finish`,
+        docs: await tx<Doc[]>`select id, title, description, marble_slug from public.documents where scope = 'b2b' order by created_at desc`,
+      }))
+    : null;
+const names = new Map((await marbles()).map((m) => [m.id, m.data.name]));
+const types = ['architect', 'interior', 'importer', 'reseller', 'company', 'contractor', 'other'].map((v) => ({ value: v, label: t(`account.b2bTypes.${v}`) }));
+const money = (v: string, c: string) => new Intl.NumberFormat(tr.info.intl, { style: 'currency', currency: c }).format(Number(v));
+---
+
+<Account t={tr} path={`/${lang}/account/b2b/`} section="b2b" title={t('account.nav.b2b')} profile={p}>
+  {
+    !p ? (
+      <NotConfigured t={tr} />
+    ) : (
+      <div class="space-y-14">
+        <p class:list={['max-w-2xl border px-5 py-4', p.b2b_status === 'approved' ? 'border-success text-success' : p.b2b_status === 'rejected' ? 'border-danger text-danger' : 'border-stone']}>{t(`account.b2b.${p.b2b_status}`)}</p>
+        {(p.b2b_status === 'none' || p.b2b_status === 'rejected') && p.role === 'customer' && (
+          <form method="post" action="/api/b2b/apply" class="max-w-2xl space-y-5">
+            <input type="hidden" name="lang" value={lang} />
+            <h2 class="display-md">{t('account.b2b.apply')}</h2>
+            <p class="text-ash">{t('account.register.b2bLead')}</p>
+            <div class="grid gap-5 sm:grid-cols-2">
+              <Field name="company" label={t('account.register.company')} required value={p.company ?? ''} />
+              <Field name="b2bType" type="select" label={t('account.register.b2bType')} options={types} placeholder={t('forms.choose')} required />
+              <Field name="vat" label={t('account.register.vat')} value={p.vat_number ?? ''} />
+              <Field name="country" label={t('account.register.country')} required value={p.country ?? ''} />
+            </div>
+            <Field name="companySite" type="url" label={t('account.register.website')} dir="ltr" />
+            <Field name="b2bNotes" type="textarea" label={t('account.register.b2bNotes')} rows={3} />
+            <button class="btn btn-primary" type="submit">{t('account.b2b.apply')}</button>
+          </form>
+        )}
+        {data && (
+          <>
+            <section>
+              <h2 class="display-md">{t('account.b2b.pricesTitle')}</h2>
+              {data.prices.length === 0 ? (
+                <p class="mt-4 text-ash">{t('account.b2b.pricesEmpty')}</p>
+              ) : (
+                <div class="mt-6 overflow-x-auto">
+                  <table class="w-full min-w-[600px] text-[0.92rem]">
+                    <thead class="text-[0.75rem] uppercase tracking-[0.1em] text-ash"><tr><th class="py-2 text-start font-medium">{t('account.b2b.marble')}</th><th class="text-start font-medium">{t('account.b2b.finish')}</th><th class="text-start font-medium">{t('account.b2b.thickness')}</th><th class="text-end font-medium">{t('account.b2b.price')}</th><th class="text-end font-medium">{t('account.b2b.validUntil')}</th></tr></thead>
+                    <tbody class="divide-y divide-stone border-y border-stone">
+                      {data.prices.map((r) => (
+                        <tr><td class="py-3"><a href={tr.href('marble', r.marble_slug)} class="text-graphite">{names.get(r.marble_slug) ?? r.marble_slug}</a>{r.note && <span class="block text-[0.8rem] text-ash">{r.note}</span>}</td><td>{r.finish ?? '—'}</td><td>{r.thickness ?? '—'}</td><td class="text-end">{money(r.price, r.currency)} / {r.unit}</td><td class="text-end">{r.valid_until ? fmt.date(r.valid_until, { dateStyle: 'medium' }) : '—'}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p class="mt-3 text-[0.82rem] text-ash">{t('marble.b2bPriceNote')}</p>
+                </div>
+              )}
+            </section>
+            <section>
+              <h2 class="display-md">{t('account.b2b.docsTitle')}</h2>
+              {data.docs.length === 0 ? (
+                <p class="mt-4 text-ash">{t('account.b2b.docsEmpty')}</p>
+              ) : (
+                <ul class="mt-6 divide-y divide-stone border-y border-stone">
+                  {data.docs.map((d) => (
+                    <li class="flex flex-wrap items-center justify-between gap-4 py-4">
+                      <span class="flex items-start gap-3"><Icon name="document" class="mt-1 text-brass-deep" /><span><span class="font-medium">{d.title}</span>{d.marble_slug && <span class="block text-[0.85rem] text-ash">{names.get(d.marble_slug) ?? d.marble_slug}</span>}</span></span>
+                      <a href={`/api/me/documents/${d.id}`} class="btn btn-outline btn-sm">{t('account.documents.download')}</a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </>
+        )}
+      </div>
+    )
+  }
+</Account>

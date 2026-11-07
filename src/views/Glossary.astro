@@ -1,0 +1,43 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import CtaBand from '~/components/CtaBand.astro';
+import type { Translator } from '~/i18n';
+import { glossary } from '~/lib/site';
+import { absUrl } from '~/lib/seo';
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href } = tr;
+const terms = (await glossary()).map((g) => ({ id: g.id, ...tr.localize('glossary', g.id, g.data) }));
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'DefinedTermSet',
+  name: t('glossaryPage.title'),
+  url: absUrl(path),
+  hasDefinedTerm: terms.map((x) => ({ '@type': 'DefinedTerm', name: x.term, description: x.definition, termCode: x.italianTerm, url: absUrl(`${path}#${x.id}`) })),
+};
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.marbles'), href: href('marbles') }, { label: t('nav.glossary') }];
+---
+
+<Base t={tr} title={t('glossaryPage.seoTitle')} description={t('glossaryPage.seoDescription')} path={path} jsonld={[ld]}>
+  <PageHero eyebrow={t('glossaryPage.eyebrow')} title={t('glossaryPage.title')} lead={t('glossaryPage.lead')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+  <section class="py-16 lg:py-24">
+    <div class="container-page">
+      <dl class="grid gap-x-14 md:grid-cols-2">
+        {terms.map((x) => (
+          <div id={x.id} class="scroll-mt-40 border-t border-stone py-7">
+            <dt class="font-display text-2xl">
+              {x.term}
+              {x.italianTerm && x.italianTerm.toLowerCase() !== x.term.toLowerCase() && <span class="ms-3 align-middle text-[0.8rem] tracking-[0.08em] text-ash" lang="it">({t('glossaryPage.italianTerm')}: <em>{x.italianTerm}</em>)</span>}
+            </dt>
+            <dd class="mt-3 text-ash">{x.definition}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+  <CtaBand t={tr} />
+</Base>

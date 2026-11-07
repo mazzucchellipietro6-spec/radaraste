@@ -1,0 +1,8 @@
+@import '@fontsource-variable/noto-serif-devanagari/wght.css';
+@import '@fontsource-variable/noto-sans-devanagari/wght.css';
+:root {
+  --font-display: 'Bodoni Moda Variable', 'Noto Serif Devanagari Variable', 'Noto Serif Devanagari', serif;
+  --font-sans: 'Jost Variable', 'Noto Sans Devanagari Variable', 'Noto Sans Devanagari', system-ui, sans-serif;
+}
+body { line-height: 1.85; }
+h1, h2, h3, h4, .display-xl, .display-lg, .display-md { line-height: 1.3; }

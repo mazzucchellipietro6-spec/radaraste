@@ -1,0 +1,30 @@
+{
+  "name": "Statuario",
+  "active": true,
+  "order": 2,
+  "category": "statuario",
+  "tagline": "Bianco intenso e venature decise: il marmo delle grandi opere.",
+  "description": "Lo Statuario ha un fondo bianco luminoso, con venature grigie nette e scenografiche. Il nome ricorda l'uso storico nella scultura, per cui era scelto per la purezza del fondo.\n\nÈ tra i marmi più rari e ricercati delle cave di Carrara e si usa dove il materiale deve essere protagonista. Disponibilità, formati e prezzi dipendono dai blocchi estratti e vanno sempre verificati prima di un'offerta.",
+  "baseColor": [
+    "bianco-puro"
+  ],
+  "veinColor": [
+    "grigio-scuro"
+  ],
+  "veinIntensity": "marcata",
+  "veinPattern": "ampia",
+  "visualNotes": "Fondo bianco molto luminoso.\n\nVenature grigie scure, nette e di grande effetto, spesso ampie e irregolari.",
+  "finishes": [],
+  "thicknesses": [],
+  "applications": [],
+  "techSheets": [],
+  "slab": "../../assets/images/marbles/statuario-slab.jpg",
+  "slabAlt": "Lastra di marmo Statuario con venature grigie decise",
+  "detail": "../../assets/images/marbles/statuario-detail.jpg",
+  "detailAlt": "Dettaglio delle venature dello Statuario",
+  "ambient": "../../assets/images/marbles/statuario-ambient.jpg",
+  "ambientAlt": "Statuario in un ambiente",
+  "gallery": [],
+  "seoTitle": "",
+  "seoDescription": ""
+}

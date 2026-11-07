@@ -1,0 +1,66 @@
+---
+interface Option {
+  value: string;
+  label: string;
+}
+interface Props {
+  name: string;
+  label: string;
+  type?: 'text' | 'email' | 'tel' | 'date' | 'number' | 'textarea' | 'select' | 'password' | 'url';
+  required?: boolean;
+  autocomplete?: string;
+  options?: Option[];
+  placeholder?: string;
+  hint?: string;
+  rows?: number;
+  value?: string | number;
+  min?: string | number;
+  max?: string | number;
+  class?: string;
+  optionalLabel?: string;
+  multiple?: boolean;
+  dir?: 'auto' | 'ltr';
+}
+const p = Astro.props;
+const id = `f-${p.name}-${Math.random().toString(36).slice(2, 7)}`;
+const describedBy = [p.hint ? `${id}-hint` : '', `${id}-err`].filter(Boolean).join(' ');
+const common = {
+  id,
+  name: p.name,
+  required: p.required,
+  'aria-describedby': describedBy,
+  class: 'input',
+  autocomplete: p.autocomplete,
+  placeholder: p.placeholder,
+  dir: p.dir,
+};
+---
+
+<div class:list={['field', p.class]} data-field={p.name}>
+  <label for={id} class="field-label">
+    {p.label}
+    {!p.required && p.optionalLabel && <span class="ms-1 normal-case tracking-normal text-ash/80">({p.optionalLabel})</span>}
+  </label>
+  {
+    p.type === 'textarea' ? (
+      <textarea {...common} rows={p.rows ?? 5}>{p.value ?? ''}</textarea>
+    ) : p.type === 'select' ? (
+      <select {...common} multiple={p.multiple}>
+        {!p.multiple && (
+          <option value="" disabled={p.required} selected={p.value == null || p.value === ''}>
+            {p.placeholder ?? '—'}
+          </option>
+        )}
+        {p.options?.map((o) => (
+          <option value={o.value} selected={String(p.value ?? '') === o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <input {...common} type={p.type ?? 'text'} value={p.value} min={p.min} max={p.max} />
+    )
+  }
+  {p.hint && <p id={`${id}-hint`} class="field-hint">{p.hint}</p>}
+  <p id={`${id}-err`} class="field-error" data-error-for={p.name} hidden></p>
+</div>

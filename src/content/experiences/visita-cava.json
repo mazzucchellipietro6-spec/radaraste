@@ -1,0 +1,26 @@
+{
+  "title": "Visita in cava",
+  "active": true,
+  "order": 2,
+  "category": "cave",
+  "summary": "Dentro una cava attiva, accompagnati da chi ci lavora ogni giorno.",
+  "description": "Una visita guidata all'interno di una cava, a cielo aperto o in galleria, organizzata con il titolare o con operatori autorizzati.\n\nSi osservano da vicino il taglio dei blocchi, le macchine e il lavoro dei cavatori, nel rispetto delle norme di sicurezza della cava. Le visite si svolgono solo nei giorni e negli orari concordati con il partner.",
+  "highlights": [
+    "Il fronte di cava e il taglio dei blocchi",
+    "Il lavoro dei cavatori e le regole di sicurezza",
+    "Cave a cielo aperto e cave in galleria"
+  ],
+  "duration": "",
+  "languages": [],
+  "minParticipants": null,
+  "maxParticipants": null,
+  "price": null,
+  "priceUnit": "persona",
+  "priceNote": "",
+  "onlinePayment": false,
+  "meetingPoint": "",
+  "image": "../../assets/images/experiences/visita-cava.jpg",
+  "imageAlt": "Interno di una cava di marmo in galleria con blocchi squadrati",
+  "seoTitle": "",
+  "seoDescription": ""
+}

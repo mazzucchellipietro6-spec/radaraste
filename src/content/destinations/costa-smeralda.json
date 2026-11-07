@@ -1,0 +1,34 @@
+{
+  "name": "Costa Smeralda",
+  "active": true,
+  "featured": false,
+  "order": 210,
+  "region": "sardegna",
+  "tagline": "Granito, macchia mediterranea e acque turchesi.",
+  "description": "Nel nord-est della Sardegna, la Costa Smeralda alterna calette di sabbia chiara, rocce di granito modellate dal vento e un mare dai colori tropicali.\n\nPorto Cervo e Porto Rotondo sono i centri della vita mondana, mentre l'arcipelago di La Maddalena si scopre in barca.",
+  "attractions": [
+    "Porto Cervo",
+    "Porto Rotondo",
+    "Spiaggia del Principe e Capriccioli",
+    "Arcipelago di La Maddalena",
+    "San Pantaleo"
+  ],
+  "experiences": [
+    "Barca privata nell'arcipelago",
+    "Cena nei borghi dell'entroterra",
+    "Transfer da e per l'aeroporto di Olbia"
+  ],
+  "itineraries": [
+    {
+      "title": "Una giornata in barca",
+      "text": "Partenza da Palau o Porto Cervo, soste nelle calette dell'arcipelago di La Maddalena, rientro al tramonto."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/costa-smeralda.jpg",
+  "imageAlt": "Acque turchesi e rocce di granito in Costa Smeralda",
+  "seoTitle": "",
+  "seoDescription": ""
+}

@@ -1,0 +1,34 @@
+{
+  "name": "Palermo",
+  "active": true,
+  "featured": false,
+  "order": 250,
+  "region": "sicilia",
+  "tagline": "Mosaici, mercati e storie di molte culture.",
+  "description": "Palermo porta i segni di Fenici, Arabi, Normanni e Spagnoli. Il percorso arabo-normanno, patrimonio UNESCO, comprende la Cattedrale, il Palazzo dei Normanni con la Cappella Palatina e, poco fuori città, il Duomo di Monreale.\n\nI mercati storici come Ballarò e la Vucciria raccontano la città attraverso il suo cibo di strada.",
+  "attractions": [
+    "Cattedrale di Palermo",
+    "Palazzo dei Normanni e Cappella Palatina",
+    "Duomo di Monreale",
+    "Teatro Massimo",
+    "Mercati di Ballarò e Vucciria"
+  ],
+  "experiences": [
+    "Cibo di strada nei mercati storici",
+    "Il percorso arabo-normanno",
+    "Escursione a Cefalù"
+  ],
+  "itineraries": [
+    {
+      "title": "Palermo in un giorno",
+      "text": "Cappella Palatina e Cattedrale al mattino, mercato di Ballarò a pranzo, Monreale nel pomeriggio."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/palermo.jpg",
+  "imageAlt": "La Cattedrale di Palermo",
+  "seoTitle": "",
+  "seoDescription": ""
+}

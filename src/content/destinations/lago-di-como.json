@@ -1,0 +1,34 @@
+{
+  "name": "Lago di Como",
+  "active": true,
+  "featured": false,
+  "order": 190,
+  "region": "lombardia",
+  "tagline": "Ville, giardini e borghi sull'acqua.",
+  "description": "Il Lago di Como è celebre per le ville storiche affacciate sull'acqua e per borghi come Bellagio, Varenna e Tremezzo.\n\nVilla del Balbianello, Villa Carlotta e Villa Melzi aprono i loro giardini ai visitatori, mentre battelli e motoscafi privati collegano le sponde.",
+  "attractions": [
+    "Bellagio",
+    "Varenna",
+    "Villa del Balbianello",
+    "Villa Carlotta",
+    "Como e il suo Duomo"
+  ],
+  "experiences": [
+    "Motoscafo privato sul lago",
+    "Visita delle ville e dei giardini",
+    "Pranzo in riva al lago"
+  ],
+  "itineraries": [
+    {
+      "title": "Il centro lago",
+      "text": "Motoscafo tra Bellagio, Varenna e Tremezzo, visita a una villa e pranzo sul lago."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/lago-di-como.jpg",
+  "imageAlt": "Una villa storica sul Lago di Como con i suoi giardini",
+  "seoTitle": "",
+  "seoDescription": ""
+}

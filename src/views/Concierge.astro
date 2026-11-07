@@ -1,0 +1,44 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Concierge from '~/islands/Concierge';
+import type { Translator } from '~/i18n';
+import { flatten } from '~/i18n/core.mjs';
+import { VOCAB } from '~/data/vocab.mjs';
+import itUi from '~/i18n/locales/ui/it.json';
+
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href, lang } = tr;
+const s: Record<string, string> = {};
+for (const k of Object.keys(flatten(itUi.concierge))) s[k] = t(`concierge.${k}`);
+for (const k of ['name', 'email', 'phone', 'company', 'message', 'privacyLink', 'errorRequired', 'errorPrivacy']) s[k] = t(`forms.${k}`);
+const [before, after] = t('forms.privacy', { link: '§' }).split('§');
+s.privacyBefore = before;
+s.privacyAfter = after ?? '';
+s.errorGeneric = t('forms.errorGeneric', { email: '' }).replace(/\s*\.?\s*$/, '.');
+s.err_rate_limited = t('forms.rateLimited');
+s.err_spam = t('forms.spam');
+s.err_not_configured = t('forms.notConfigured', { email: '' });
+Object.assign(s, { back: t('common.back'), next: t('common.next'), optional: t('common.optional'), sending: t('common.sending') });
+const vocab: Record<string, Record<string, string>> = {};
+for (const g of ['projectType', 'application', 'baseColor', 'veinIntensity', 'veinPattern', 'finish'] as const) {
+  vocab[g] = Object.fromEntries(Object.keys(VOCAB[g]).map((k) => [k, t(`vocab.${g}.${k}`)]));
+}
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.marbles'), href: href('marbles') }, { label: t('nav.concierge') }];
+---
+
+<Base t={tr} title={t('concierge.seoTitle')} description={t('concierge.seoDescription')} path={path}>
+  {siteKey && <script slot="head" src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer is:inline></script>}
+  <PageHero eyebrow={t('concierge.eyebrow')} title={t('concierge.title')} lead={t('concierge.lead')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+  <section class="py-16 lg:py-24">
+    <div class="container-page">
+      <Concierge client:load lang={lang} s={s} vocab={vocab} privacyHref={href('privacy')} turnstileKey={siteKey} />
+      <noscript><p class="mx-auto max-w-3xl"><a href={href('quote')}>{t('nav.quote')}</a></p></noscript>
+    </div>
+  </section>
+</Base>

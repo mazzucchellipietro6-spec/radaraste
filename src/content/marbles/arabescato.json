@@ -1,0 +1,31 @@
+{
+  "name": "Arabescato",
+  "active": true,
+  "order": 4,
+  "category": "arabescato",
+  "tagline": "Venature fitte e intrecciate, come un disegno a mano libera.",
+  "description": "L'Arabescato ha un fondo bianco attraversato da venature grigie fitte e intrecciate, che creano un disegno ricco e movimentato, da cui il nome.\n\nIn alcune varietà l'aspetto è quasi brecciato, con zone chiare racchiuse da venature più scure. È adatto alle superfici dove si cercano carattere e movimento.",
+  "baseColor": [
+    "bianco-grigio"
+  ],
+  "veinColor": [
+    "grigio-scuro",
+    "antracite"
+  ],
+  "veinIntensity": "marcata",
+  "veinPattern": "rete",
+  "visualNotes": "Fondo bianco o bianco-grigio.\n\nVenature grigie e antracite fitte, intrecciate a rete, talvolta con aspetto brecciato.",
+  "finishes": [],
+  "thicknesses": [],
+  "applications": [],
+  "techSheets": [],
+  "slab": "../../assets/images/marbles/arabescato-slab.jpg",
+  "slabAlt": "Lastra di marmo Arabescato con venature intrecciate",
+  "detail": "../../assets/images/marbles/arabescato-detail.jpg",
+  "detailAlt": "Dettaglio delle venature dell'Arabescato",
+  "ambient": "../../assets/images/marbles/arabescato-ambient.jpg",
+  "ambientAlt": "Arabescato in un ambiente",
+  "gallery": [],
+  "seoTitle": "",
+  "seoDescription": ""
+}

@@ -1,0 +1,7 @@
+@import '@fontsource-variable/noto-serif-thai/wght.css';
+@import '@fontsource-variable/noto-sans-thai/wght.css';
+:root {
+  --font-display: 'Bodoni Moda Variable', 'Noto Serif Thai Variable', 'Noto Serif Thai', serif;
+  --font-sans: 'Jost Variable', 'Noto Sans Thai Variable', 'Noto Sans Thai', system-ui, sans-serif;
+}
+body { line-height: 1.9; }

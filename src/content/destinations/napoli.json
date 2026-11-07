@@ -1,0 +1,34 @@
+{
+  "name": "Napoli",
+  "active": true,
+  "featured": false,
+  "order": 140,
+  "region": "campania",
+  "tagline": "Arte, sapori e uno dei golfi più famosi del mondo.",
+  "description": "Il centro storico di Napoli, patrimonio UNESCO, è un intreccio di chiese, palazzi e vicoli come Spaccanapoli e San Gregorio Armeno. Il Museo Archeologico Nazionale e la Cappella Sansevero, con il Cristo velato, sono tappe imperdibili.\n\nDalla città si raggiungono Pompei, Ercolano e il Vesuvio.",
+  "attractions": [
+    "Centro storico e Spaccanapoli",
+    "Cappella Sansevero e il Cristo velato",
+    "Museo Archeologico Nazionale",
+    "Piazza del Plebiscito e Palazzo Reale",
+    "Lungomare e Castel dell'Ovo"
+  ],
+  "experiences": [
+    "La pizza napoletana dove è nata",
+    "Escursione a Pompei ed Ercolano",
+    "Escursione sul Vesuvio"
+  ],
+  "itineraries": [
+    {
+      "title": "Napoli e Pompei",
+      "text": "Un giorno nel centro storico, un giorno tra gli scavi di Pompei e il Vesuvio."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/napoli.jpg",
+  "imageAlt": "Il golfo di Napoli con il Vesuvio sullo sfondo",
+  "seoTitle": "",
+  "seoDescription": ""
+}

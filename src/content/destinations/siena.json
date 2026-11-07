@@ -1,0 +1,34 @@
+{
+  "name": "Siena",
+  "active": true,
+  "featured": false,
+  "order": 40,
+  "region": "toscana",
+  "tagline": "Gotico, contrade e una delle piazze più belle d'Italia.",
+  "description": "Il centro storico di Siena, patrimonio UNESCO, ruota intorno a Piazza del Campo, con il Palazzo Pubblico e la Torre del Mangia. Il Duomo, con il pavimento intarsiato in marmo, è uno dei capolavori del gotico italiano.\n\nLa città vive delle sue diciassette contrade, protagoniste del Palio che si corre il 2 luglio e il 16 agosto.",
+  "attractions": [
+    "Piazza del Campo",
+    "Palazzo Pubblico e Torre del Mangia",
+    "Duomo e pavimento intarsiato",
+    "Libreria Piccolomini",
+    "Basilica di San Domenico"
+  ],
+  "experiences": [
+    "Visita delle contrade",
+    "Il Palio del 2 luglio e del 16 agosto",
+    "Degustazioni nelle Crete Senesi"
+  ],
+  "itineraries": [
+    {
+      "title": "Siena in un giorno",
+      "text": "Duomo e Libreria Piccolomini al mattino, pranzo in centro, pomeriggio tra Piazza del Campo e il Palazzo Pubblico."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/siena.jpg",
+  "imageAlt": "Piazza del Campo a Siena con la Torre del Mangia",
+  "seoTitle": "",
+  "seoDescription": ""
+}

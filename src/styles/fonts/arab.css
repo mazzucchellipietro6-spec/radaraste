@@ -1,0 +1,7 @@
+@import '@fontsource-variable/noto-naskh-arabic/wght.css';
+@import '@fontsource-variable/noto-sans-arabic/wght.css';
+:root {
+  --font-display: 'Bodoni Moda Variable', 'Noto Naskh Arabic Variable', 'Noto Naskh Arabic', serif;
+  --font-sans: 'Jost Variable', 'Noto Sans Arabic Variable', 'Noto Sans Arabic', system-ui, sans-serif;
+}
+body { line-height: 1.85; }

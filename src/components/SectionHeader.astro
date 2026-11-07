@@ -1,0 +1,27 @@
+---
+interface Props {
+  eyebrow?: string;
+  title: string;
+  lead?: string;
+  as?: 'h1' | 'h2';
+  size?: 'lg' | 'md';
+  split?: boolean;
+  id?: string;
+}
+const { eyebrow, title, lead, as: Tag = 'h2', size = 'lg', split = true, id } = Astro.props;
+---
+
+<div class:list={['grid gap-6', split && lead && 'lg:grid-cols-12 lg:items-end lg:gap-8']}>
+  <div class:list={[split && lead && 'lg:col-span-6']} data-reveal>
+    {eyebrow && <p class="eyebrow flex items-center gap-4"><span class="rule" aria-hidden="true"></span>{eyebrow}</p>}
+    <Tag id={id} class:list={['mt-5', size === 'lg' ? 'display-lg' : 'display-md']}>{title}</Tag>
+  </div>
+  {
+    lead && (
+      <div class:list={[split && 'lg:col-span-5 lg:col-start-8']} data-reveal style="--reveal-delay: .12s">
+        <p class="lead">{lead}</p>
+        <slot />
+      </div>
+    )
+  }
+</div>

@@ -1,0 +1,57 @@
+---
+import Admin from '~/layouts/Admin.astro';
+import RecordForm from '~/components/admin/RecordForm.astro';
+import DealEvents from '~/components/admin/DealEvents.astro';
+import { canAccess, resource } from '~/lib/server/admin/resources';
+import { displayValue, getRow, listRows, resolveOptions } from '~/lib/server/admin/data';
+export const prerender = false;
+const r = resource(Astro.params.resource ?? '');
+const admin = Astro.locals.admin;
+if (!r || !admin || !canAccess(r, admin.profile)) return Astro.redirect('/admin/');
+const id = Astro.params.id ?? '';
+const row = await getRow(admin.user, r, id);
+if (!row) return Astro.redirect(`/admin/${r.key}/`);
+const options = await resolveOptions(admin.user, r);
+const related = [];
+for (const rel of r.related ?? []) {
+  const rr = resource(rel.resource);
+  if (!rr || !canAccess(rr, admin.profile)) continue;
+  const data = await listRows(admin.user, rr, { where: { [rel.fk]: id } });
+  related.push({ rel, rr, rows: data.rows, opts: await resolveOptions(admin.user, rr) });
+}
+const sp = Astro.url.searchParams;
+const title = `${r.singular} ${String(row[r.title] ?? row.number ?? '')}`.trim();
+---
+
+<Admin title={title} active={r.key}>
+  <p class="mt-2"><a href={`/admin/${r.key}/`} class="text-brass-deep">← {r.label}</a></p>
+  {r.note && <p class="adm-note mt-4">{r.note}</p>}
+  {sp.get('ok') && <p class="mt-4 border border-success px-4 py-2 text-success" role="status">Salvato.</p>}
+  {sp.get('error') && <p class="mt-4 border border-danger px-4 py-2 text-danger" role="alert">{sp.get('error')}</p>}
+  <RecordForm r={r} row={row} options={options} profile={admin.profile} back={`/admin/${r.key}/${id}/`} />
+  {(r.key === 'trading' || r.key === 'brokerage') && <DealEvents dealId={id} />}
+  {
+    related.map(({ rel, rr, rows, opts }) => (
+      <section class="mt-10">
+        <div class="flex items-center justify-between gap-4">
+          <h2 class="font-display text-2xl">{rel.label}</h2>
+          {rr.create !== false && !rr.readonly && <a href={`/admin/${rr.key}/new/`} class="text-[0.85rem] text-brass-deep">Nuovo</a>}
+        </div>
+        <div class="mt-3 overflow-x-auto">
+          <table class="adm-table">
+            <thead><tr>{rr.fields.filter((f) => f.list).map((f) => <th>{f.label}</th>)}<th /></tr></thead>
+            <tbody>
+              {rows.map((x) => (
+                <tr>
+                  {rr.fields.filter((f) => f.list).map((f) => <td>{displayValue(f, x[f.name], opts[f.name])}</td>)}
+                  <td class="text-end"><a href={`/admin/${rr.key}/${x.id}/`} class="text-brass-deep">Apri</a></td>
+                </tr>
+              ))}
+              {rows.length === 0 && <tr><td colspan="20" class="py-4 text-ash">Nessun elemento.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ))
+  }
+</Admin>

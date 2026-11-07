@@ -1,0 +1,532 @@
+---
+import Base from '~/layouts/Base.astro';
+import Img from '~/components/Img.astro';
+import Icon from '~/components/Icon.astro';
+import SectionHeader from '~/components/SectionHeader.astro';
+import QuoteForm from '~/components/forms/QuoteForm.astro';
+import type { Translator } from '~/i18n';
+import { company, destinations, experiences, homeImages, marbles, instagramHref, telHref, whatsappHref } from '~/lib/site';
+import { orgJsonLd } from '~/lib/seo';
+
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href } = tr;
+const img = await homeImages();
+const c = await company();
+const allMarbles = (await marbles()).slice(0, 5).map((m) => ({ ...m, data: tr.localize('marbles', m.id, m.data) }));
+const featuredExp = (await experiences())
+  .filter((e) => ['quarry-tours', 'marble-workshops', 'food-wine'].includes(e.id))
+  .map((e) => ({ ...e, data: tr.localize('experiences', e.id, e.data) }));
+const featuredDest = (await destinations())
+  .filter((d) => d.data.featured)
+  .slice(0, 6)
+  .map((d) => ({ ...d, data: tr.localize('destinations', d.id, d.data) }));
+
+// Titolo in due tempi: "Più del marmo." / "Scopri l'Italia."
+const heroTitle = t('home.heroTitle');
+const cut = heroTitle.search(/[.!?。！？]\s*\S/);
+const heroA = cut > 0 ? heroTitle.slice(0, cut + 1) : heroTitle;
+const heroB = cut > 0 ? heroTitle.slice(cut + 1).trim() : '';
+
+const pillars = [
+  { k: 'marble', icon: 'diamond', href: href('marbles') },
+  { k: 'export', icon: 'ship', href: href('trade') },
+  { k: 'showroom', icon: 'slab', href: href('showroom') },
+  { k: 'experience', icon: 'mountain', href: href('experience') },
+  { k: 'tours', icon: 'compass', href: href('tours') },
+  { k: 'consultancy', icon: 'chat', href: href('quote') },
+] as const;
+const v = (group: string, key: string) => t(`vocab.${group}.${key}`);
+---
+
+<Base t={tr} title={t('home.seoTitle')} fullTitle description={t('home.seoDescription')} path={path} header="overlay" jsonld={[orgJsonLd(tr, c)]}>
+  <!-- Hero -->
+  <section class="hero on-dark relative isolate flex min-h-[100svh] items-end overflow-hidden bg-[#0d0d0f] text-marble" data-hero>
+    {img.hero && <Img src={img.hero} alt={t('home.heroAlt')} priority class="hero-img absolute inset-0 -z-30 h-full w-full object-cover" pictureClass="contents" />}
+    <!-- Statua in marmo generata in 3D: compare sopra l'immagine quando il browser la sa disegnare -->
+    <canvas class="hero-statue absolute inset-0 -z-20 h-full w-full" data-statue aria-hidden="true"></canvas>
+    <div class="hero-shade absolute inset-0 -z-10" aria-hidden="true"></div>
+    <div class="container-page w-full pb-20 pt-40 lg:pb-28">
+      <p class="eyebrow flex items-center gap-4" data-reveal><span class="rule" aria-hidden="true"></span>{t('meta.payoff')}</p>
+      <h1 class="display-xl mt-7 max-w-[15ch]">
+        <span class="hero-line"><span>{heroA}</span></span>
+        {heroB && <span class="hero-line"><span class="hero-em">{heroB}</span></span>}
+      </h1>
+      <p class="lead mt-7 max-w-xl !text-marble/85" data-reveal style="--reveal-delay:.16s">{t('home.heroSubtitle')}</p>
+      <div class="mt-10 flex flex-wrap gap-4" data-reveal style="--reveal-delay:.24s">
+        <a href={href('marbles')} class="btn btn-light">{t('home.heroCtaMarbles')}</a>
+        <a href={href('experience')} class="btn btn-outline">{t('home.heroCtaCarrara')}</a>
+      </div>
+    </div>
+    <p class="absolute bottom-8 end-[clamp(1rem,4vw,3rem)] hidden text-[0.68rem] uppercase tracking-[0.28em] text-marble/70 lg:block" dir="ltr">
+      {t('home.coordinates')}
+    </p>
+    <a href="#pillars" class="scroll-cue absolute bottom-8 start-1/2 hidden -translate-x-1/2 flex-col items-center gap-3 text-[0.65rem] uppercase tracking-[0.3em] text-marble/75 no-underline md:flex rtl:translate-x-1/2">
+      {t('home.scroll')}<span class="scroll-line" aria-hidden="true"></span>
+    </a>
+  </section>
+
+  <!-- Che cosa facciamo -->
+  <section id="pillars" aria-labelledby="pillars-title" class="border-b border-stone bg-marble">
+    <h2 id="pillars-title" class="visually-hidden">{t('home.pillarsTitle')}</h2>
+    <ul class="container-page grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+      {
+        pillars.map((p, i) => (
+          <li class="pillar" data-reveal style={`--reveal-delay:${i * 0.06}s`}>
+            <a href={p.href} class="group flex h-full flex-col gap-4 px-2 py-10 no-underline sm:px-5 lg:py-12">
+              <Icon name={p.icon} size={30} class="text-brass" stroke={1.1} />
+              <span class="font-display text-[1.2rem] leading-snug text-graphite">{t(`home.pillars.${p.k}.title`)}</span>
+              <span class="text-[0.9rem] leading-relaxed text-ash">{t(`home.pillars.${p.k}.text`)}</span>
+              <Icon name="arrow" size={18} class="mt-auto hidden text-brass-deep opacity-0 transition-opacity duration-500 group-hover:opacity-100 lg:block rtl:-scale-x-100" />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <!-- I nostri marmi -->
+  <section class="bg-texture py-24 lg:py-36" aria-labelledby="marbles-title">
+    <div class="container-page">
+      <SectionHeader id="marbles-title" eyebrow={t('home.marbles.eyebrow')} title={t('home.marbles.title')} lead={t('home.marbles.lead')}>
+        <a href={href('marbles')} class="link-luxe mt-8 text-graphite">{t('home.marbles.cta')}</a>
+      </SectionHeader>
+      <ul class="marble-rail mt-16 grid auto-cols-[74%] grid-flow-col gap-5 overflow-x-auto pb-4 sm:auto-cols-[44%] lg:grid-flow-row lg:grid-cols-5 lg:overflow-visible">
+        {
+          allMarbles.map((m, i) => (
+            <li class="snap-start" data-reveal style={`--reveal-delay:${i * 0.07}s`}>
+              <a href={href('marble', m.id)} class="card-hover group block no-underline">
+                <div class="aspect-[3/4] overflow-hidden bg-stone" data-tilt>
+                  <Img src={m.data.slab} alt={m.data.slabAlt} sizes="(min-width: 1024px) 20vw, (min-width: 640px) 44vw, 74vw" widths={[360, 540, 720, 960]} class="h-full w-full object-cover" />
+                </div>
+                <p class="eyebrow mt-5 !text-ash">{m.data.baseColor[0] ? v('baseColor', m.data.baseColor[0]) : '\u00a0'}</p>
+                <h3 class="mt-2 font-display text-[1.6rem] leading-tight text-graphite">{m.data.name}</h3>
+                <p class="mt-2 text-[0.92rem] leading-relaxed text-ash">{m.data.tagline}</p>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="mt-10 flex max-w-3xl gap-3 text-[0.88rem] text-ash">
+        <Icon name="info" size={18} class="mt-0.5 shrink-0 text-brass-deep" />
+        {t('common.availabilityNote')}
+      </p>
+    </div>
+  </section>
+
+  <!-- Digital Showroom -->
+  <section class="py-24 lg:py-36" aria-labelledby="showroom-title">
+    <div class="container-page grid items-center gap-14 lg:grid-cols-12 lg:gap-16">
+      <div class="relative lg:col-span-6" data-reveal>
+        <div class="aspect-[4/5] overflow-hidden bg-stone">
+          {img.showroom && <Img src={img.showroom} alt={t('home.showroom.imageAlt')} sizes="(min-width: 1024px) 45vw, 100vw" class="h-full w-full object-cover" />}
+        </div>
+        <span class="frame-accent hidden lg:block" aria-hidden="true"></span>
+      </div>
+      <div class="lg:col-span-5 lg:col-start-8" data-reveal style="--reveal-delay:.1s">
+        <p class="eyebrow flex items-center gap-4"><span class="rule" aria-hidden="true"></span>{t('home.showroom.eyebrow')}</p>
+        <h2 id="showroom-title" class="display-lg mt-5">{t('home.showroom.title')}</h2>
+        <p class="lead mt-6">{t('home.showroom.lead')}</p>
+        <ul class="mt-10 grid gap-5 sm:grid-cols-2">
+          {
+            (
+              [
+                ['zoom', 'f1'],
+                ['compare', 'f2'],
+                ['filter', 'f3'],
+                ['folder', 'f4'],
+              ] as const
+            ).map(([icon, k]) => (
+              <li class="flex items-start gap-4 border-t border-stone pt-5">
+                <Icon name={icon} size={22} class="mt-0.5 shrink-0 text-brass-deep" />
+                <span class="text-[0.95rem]">{t(`home.showroom.${k}`)}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <a href={href('showroom')} class="btn btn-primary mt-12">{t('home.showroom.cta')}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Marble Matching AI -->
+  <section class="on-dark overflow-hidden bg-graphite py-24 text-marble lg:py-36" aria-labelledby="matching-title">
+    <div class="container-page grid items-center gap-14 lg:grid-cols-12">
+      <div class="lg:col-span-5" data-reveal>
+        <p class="eyebrow flex items-center gap-4"><Icon name="sparkle" size={18} />{t('home.matching.eyebrow')}</p>
+        <h2 id="matching-title" class="display-lg mt-5">{t('home.matching.title')}</h2>
+        <p class="lead mt-6">{t('home.matching.lead')}</p>
+        <ol class="mt-10 space-y-5">
+          {
+            ['s1', 's2', 's3'].map((s, i) => (
+              <li class="flex items-baseline gap-5 border-t border-white/10 pt-5">
+                <span class="font-display text-2xl text-brass-light" aria-hidden="true">0{i + 1}</span>
+                <span class="text-[1rem]">{t(`home.matching.${s}`)}</span>
+              </li>
+            ))
+          }
+        </ol>
+        <a href={href('matching')} class="btn btn-primary mt-12">{t('home.matching.cta')}</a>
+        <p class="mt-8 flex gap-3 text-[0.85rem] text-mist">
+          <Icon name="info" size={18} class="mt-0.5 shrink-0 text-brass-light" />
+          {t('home.matching.note')}
+        </p>
+      </div>
+      <div class="relative lg:col-span-6 lg:col-start-7" data-reveal style="--reveal-delay:.12s">
+        <figure class="scan relative aspect-[4/3] overflow-hidden bg-graphite-2">
+          {img.matching && <Img src={img.matching} alt={t('home.matching.imageAlt')} sizes="(min-width: 1024px) 45vw, 100vw" class="h-full w-full object-cover opacity-90" />}
+          <span class="scan-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        </figure>
+      </div>
+    </div>
+    <div class="container-page mt-20">
+      <div class="flex flex-col gap-6 border-t border-white/10 pt-10 md:flex-row md:items-center md:justify-between" data-reveal>
+        <div class="max-w-2xl">
+          <h3 class="font-display text-2xl">{t('home.matching.conciergeTitle')}</h3>
+          <p class="mt-2 text-mist">{t('home.matching.conciergeText')}</p>
+        </div>
+        <a href={href('concierge')} class="link-luxe shrink-0 text-marble">{t('home.matching.conciergeCta')}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Experience Carrara -->
+  <section class="py-24 lg:py-36" aria-labelledby="experience-title">
+    <div class="container-page">
+      <SectionHeader id="experience-title" eyebrow={t('home.experience.eyebrow')} title={t('home.experience.title')} lead={t('home.experience.lead')} />
+    </div>
+    <div class="relative mt-14 h-[56vh] min-h-[380px] max-h-[720px] overflow-hidden bg-stone" data-reveal>
+      {img.experience && <Img src={img.experience} alt={t('home.experience.imageAlt')} sizes="100vw" class="h-full w-full object-cover" />}
+    </div>
+    <div class="container-page relative -mt-20 lg:-mt-28">
+      <ul class="grid gap-5 md:grid-cols-3">
+        {
+          featuredExp.map((e, i) => (
+            <li data-reveal style={`--reveal-delay:${i * 0.08}s`}>
+              <a href={href('experienceItem', e.id)} class="group flex h-full flex-col border border-stone bg-marble p-7 no-underline transition-colors duration-500 hover:border-brass lg:p-9">
+                <span class="eyebrow">{v('experienceCategory', e.data.category)}</span>
+                <h3 class="mt-4 font-display text-[1.6rem] leading-tight text-graphite">{e.data.title}</h3>
+                <p class="mt-3 text-[0.95rem] leading-relaxed text-ash">{e.data.summary}</p>
+                <span class="link-luxe mt-auto pt-8 text-graphite">{t('common.learnMore')}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="mt-12 text-center">
+        <a href={href('experience')} class="btn btn-outline">{t('home.experience.cta')}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dal blocco alla forma: seconda statua, scolpita mentre si scorre -->
+  <section class="sculpt on-dark relative isolate overflow-hidden bg-[#0d0d0f] text-marble" aria-labelledby="sculpt-title" data-sculpt>
+    <canvas class="sculpt-canvas absolute inset-0 -z-20 h-full w-full" data-statue-scroll role="img" aria-label={t('home.sculpt.statueAlt')}></canvas>
+    <div class="sculpt-shade absolute inset-0 -z-10" aria-hidden="true"></div>
+    <div class="container-page flex min-h-[92svh] items-end py-20 lg:items-center lg:py-28">
+      <div class="max-w-xl lg:ms-auto" data-reveal>
+        <p class="eyebrow flex items-center gap-4"><span class="rule" aria-hidden="true"></span>{t('home.sculpt.eyebrow')}</p>
+        <h2 id="sculpt-title" class="display-lg mt-5">{t('home.sculpt.title')}</h2>
+        <p class="lead mt-6 !text-marble/80">{t('home.sculpt.text')}</p>
+        <a href={href('experienceItem', 'marble-workshops')} class="btn btn-light mt-9">{t('home.sculpt.cta')}</a>
+        <p class="mt-10 text-[0.78rem] text-mist">{t('home.sculpt.caption')}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Italian Tours -->
+  <section class="bg-ivory py-24 lg:py-36" aria-labelledby="tours-title">
+    <div class="container-page">
+      <SectionHeader id="tours-title" eyebrow={t('home.tours.eyebrow')} title={t('home.tours.title')} lead={t('home.tours.lead')}>
+        <div class="mt-8 flex flex-wrap gap-x-8 gap-y-3">
+          <a href={href('tours')} class="link-luxe text-graphite">{t('home.tours.cta')}</a>
+          <a href={href('customTrip')} class="link-luxe text-graphite">{t('home.tours.custom')}</a>
+        </div>
+      </SectionHeader>
+      <ul class="tours-grid mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          featuredDest.map((d, i) => (
+            <li data-reveal style={`--reveal-delay:${(i % 3) * 0.08}s`}>
+              <a href={href('destination', d.id)} class="card-hover group relative block aspect-[4/5] overflow-hidden bg-stone no-underline" data-tilt>
+                <Img src={d.data.image} alt={d.data.imageAlt} sizes="(min-width: 1024px) 31vw, (min-width: 640px) 48vw, 100vw" widths={[400, 640, 900, 1200]} class="h-full w-full object-cover" />
+                <span class="card-shade" aria-hidden="true" />
+                <span class="on-dark absolute inset-x-0 bottom-0 p-7 text-marble">
+                  <span class="eyebrow block">{v('region', d.data.region)}</span>
+                  <span class="mt-2 block font-display text-[1.9rem] leading-tight">{d.data.name}</span>
+                  <span class="mt-2 block text-[0.92rem] text-marble/80">{d.data.tagline}</span>
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <!-- International Trade -->
+  <section class="py-24 lg:py-36" aria-labelledby="trade-title">
+    <div class="container-page grid items-center gap-14 lg:grid-cols-12">
+      <div class="lg:order-2 lg:col-span-6 lg:col-start-7" data-reveal>
+        <div class="aspect-[4/3] overflow-hidden bg-stone">
+          {img.export && <Img src={img.export} alt={t('home.trade.imageAlt')} sizes="(min-width: 1024px) 45vw, 100vw" class="h-full w-full object-cover" />}
+        </div>
+      </div>
+      <div class="lg:order-1 lg:col-span-5" data-reveal style="--reveal-delay:.1s">
+        <p class="eyebrow flex items-center gap-4"><span class="rule" aria-hidden="true"></span>{t('home.trade.eyebrow')}</p>
+        <h2 id="trade-title" class="display-lg mt-5">{t('home.trade.title')}</h2>
+        <p class="lead mt-6">{t('home.trade.lead')}</p>
+        <div class="mt-10 grid gap-8 sm:grid-cols-2">
+          <div class="border-t border-stone pt-5">
+            <h3 class="font-display text-xl">{t('home.trade.tradingTitle')}</h3>
+            <p class="mt-2 text-[0.92rem] text-ash">{t('home.trade.trading')}</p>
+          </div>
+          <div class="border-t border-stone pt-5">
+            <h3 class="font-display text-xl">{t('home.trade.brokerageTitle')}</h3>
+            <p class="mt-2 text-[0.92rem] text-ash">{t('home.trade.brokerage')}</p>
+          </div>
+        </div>
+        <a href={href('trade')} class="link-luxe mt-10 text-graphite">{t('home.trade.cta')}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Richiesta preventivo e contatti -->
+  <section id="quote" class="bg-texture py-24 lg:py-36" aria-labelledby="quote-title">
+    <div class="container-page grid gap-14 lg:grid-cols-12">
+      <div class="lg:col-span-5" data-reveal>
+        <p class="eyebrow flex items-center gap-4"><span class="rule" aria-hidden="true"></span>{t('home.quote.eyebrow')}</p>
+        <h2 id="quote-title" class="display-lg mt-5">{t('home.quote.title')}</h2>
+        <p class="lead mt-6">{t('home.quote.lead')}</p>
+        <h3 class="eyebrow mt-12 !text-ash">{t('home.quote.contactsTitle')}</h3>
+        <ul class="mt-5 space-y-4 text-[1rem]">
+          {c.email && <li class="flex items-center gap-4"><Icon name="mail" class="text-brass-deep" /><a href={`mailto:${c.email}`} class="break-all no-underline hover:text-brass-deep">{c.email}</a></li>}
+          {c.phone && <li class="flex items-center gap-4"><Icon name="phone" class="text-brass-deep" /><a href={telHref(c.phone)} class="no-underline hover:text-brass-deep" dir="ltr">{c.phone}</a></li>}
+          {c.whatsapp && <li class="flex items-center gap-4"><Icon name="whatsapp" class="text-brass-deep" /><a href={whatsappHref(c.whatsapp)} target="_blank" rel="noopener" class="no-underline hover:text-brass-deep">WhatsApp<span class="visually-hidden"> {t('a11y.newTab')}</span></a></li>}
+          {c.instagram && <li class="flex items-center gap-4"><Icon name="instagram" class="text-brass-deep" /><a href={instagramHref(c.instagram)} target="_blank" rel="noopener" class="no-underline hover:text-brass-deep">@{c.instagram}<span class="visually-hidden"> {t('a11y.newTab')}</span></a></li>}
+          <li class="flex items-center gap-4"><Icon name="pin" class="text-brass-deep" />{c.address}</li>
+        </ul>
+      </div>
+      <div class="lg:col-span-6 lg:col-start-7" data-reveal style="--reveal-delay:.1s">
+        <div class="border border-stone bg-marble p-6 sm:p-10">
+          <QuoteForm t={tr} source="home" />
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { mountStatue } from '~/scripts/statue';
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-statue]');
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  const go = () => {
+    if (!canvas || !hero) return;
+    const s = mountStatue(canvas, { onReady: () => hero.classList.add('statue-on') });
+    if (!s) canvas.remove();
+  };
+  // parte dopo il caricamento, per non rallentare la prima visualizzazione
+  const idle = (cb: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(cb, { timeout: 900 }) : setTimeout(cb, 300));
+  if (document.readyState === 'complete') idle(go);
+  else addEventListener('load', () => idle(go), { once: true });
+
+  // seconda statua: si prepara solo quando la sezione si avvicina
+  const second = document.querySelector<HTMLCanvasElement>('[data-statue-scroll]');
+  const band = document.querySelector<HTMLElement>('[data-sculpt]');
+  if (second && band && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        const s = mountStatue(second, { mode: 'scroll', mirror: true, side: 'left', onReady: () => band.classList.add('statue-on') });
+        if (!s) second.remove();
+      },
+      { rootMargin: '600px 0px' },
+    );
+    io.observe(band);
+  }
+</script>
+
+<style>
+  /* titolo dell'apertura: ogni riga sale da sotto una maschera */
+  .hero-line {
+    display: block;
+    overflow: hidden;
+    padding: 0 0.12em 0.14em;
+    margin: 0 -0.12em -0.14em;
+  }
+  .hero-line > span {
+    display: inline-block;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html.js) .hero-line > span {
+      animation: line-up 1.4s var(--ease-luxe) both 0.15s;
+    }
+    :global(html.js) .hero-line + .hero-line > span {
+      animation-delay: 0.38s;
+    }
+    @keyframes line-up {
+      from { transform: translateY(110%); }
+      to { transform: none; }
+    }
+  }
+  .sculpt-canvas {
+    opacity: 0;
+    transition: opacity 1.2s var(--ease-luxe);
+  }
+  .sculpt.statue-on .sculpt-canvas {
+    opacity: 1;
+  }
+  .sculpt-shade {
+    background:
+      radial-gradient(ellipse at 30% 40%, rgb(60 54 46 / 0.35), transparent 60%),
+      linear-gradient(to top, rgb(13 13 15 / 0.9) 0%, rgb(13 13 15 / 0.55) 35%, rgb(13 13 15 / 0) 65%);
+  }
+  @media (min-width: 64rem) {
+    .sculpt-shade {
+      background: linear-gradient(to left, rgb(13 13 15 / 0.7) 0%, rgb(13 13 15 / 0.25) 40%, rgb(13 13 15 / 0) 60%);
+    }
+  }
+  @media (max-width: 47.99rem) {
+    .hero.statue-on .hero-shade {
+      background: linear-gradient(to top, rgb(13 13 15 / 0.94) 0%, rgb(13 13 15 / 0.8) 38%, rgb(13 13 15 / 0.2) 62%, rgb(13 13 15 / 0) 75%);
+    }
+  }
+  .hero-statue {
+    opacity: 0;
+    transition: opacity 1.4s var(--ease-luxe);
+  }
+  .hero :global(.hero-img) {
+    transition: opacity 1.4s var(--ease-luxe);
+  }
+  .statue-on .hero-statue {
+    opacity: 1;
+  }
+  .statue-on :global(.hero-img) {
+    opacity: 0;
+  }
+  /* con la statua lo sfondo è già scuro: basta velare il lato del testo */
+  .statue-on .hero-shade {
+    background:
+      linear-gradient(to top, rgb(13 13 15 / 0.75) 0%, rgb(13 13 15 / 0.2) 35%, rgb(13 13 15 / 0) 60%),
+      linear-gradient(to right, rgb(13 13 15 / 0.55) 0%, rgb(13 13 15 / 0.15) 40%, rgb(13 13 15 / 0) 60%);
+  }
+  :global([dir='rtl']) .statue-on .hero-shade {
+    background:
+      linear-gradient(to top, rgb(13 13 15 / 0.75) 0%, rgb(13 13 15 / 0.2) 35%, rgb(13 13 15 / 0) 60%),
+      linear-gradient(to left, rgb(13 13 15 / 0.55) 0%, rgb(13 13 15 / 0.15) 40%, rgb(13 13 15 / 0) 60%);
+  }
+  .hero-shade {
+    background:
+      linear-gradient(to top, rgb(26 26 28 / 0.82) 0%, rgb(26 26 28 / 0.42) 42%, rgb(26 26 28 / 0.14) 70%, rgb(26 26 28 / 0.42) 100%),
+      linear-gradient(to right, rgb(26 26 28 / 0.5) 0%, rgb(26 26 28 / 0.22) 45%, rgb(26 26 28 / 0) 70%);
+  }
+  :global([dir='rtl']) .hero-shade {
+    background:
+      linear-gradient(to top, rgb(26 26 28 / 0.82) 0%, rgb(26 26 28 / 0.42) 42%, rgb(26 26 28 / 0.14) 70%, rgb(26 26 28 / 0.42) 100%),
+      linear-gradient(to left, rgb(26 26 28 / 0.5) 0%, rgb(26 26 28 / 0.22) 45%, rgb(26 26 28 / 0) 70%);
+  }
+  /* Lento avvicinamento dell'immagine (effetto "Ken Burns"), solo se l'utente non ha chiesto meno animazioni */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero :global(img.hero-img) {
+      animation: hero-drift 22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+      transform-origin: 62% 40%;
+    }
+    @keyframes hero-drift {
+      from { transform: scale(1.09); }
+      to { transform: scale(1); }
+    }
+  }
+  :global(html[data-script='Latn']) .hero-em,
+  :global(html[data-script='Cyrl']) .hero-em,
+  :global(html[data-script='Grek']) .hero-em {
+    font-style: italic;
+  }
+  .scroll-line {
+    display: block;
+    width: 1px;
+    height: 3rem;
+    background: linear-gradient(to bottom, currentColor, transparent);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-line {
+      animation: cue 2.4s var(--ease-luxe) infinite;
+      transform-origin: top;
+    }
+    @keyframes cue {
+      0% { transform: scaleY(0); opacity: 0; }
+      30% { opacity: 1; }
+      100% { transform: scaleY(1); opacity: 0; }
+    }
+  }
+  .pillar {
+    border-top: 1px solid var(--color-stone);
+  }
+  .pillar:nth-child(-n + 2) {
+    border-top: 0;
+  }
+  .pillar:nth-child(even) {
+    border-inline-start: 1px solid var(--color-stone);
+  }
+  @media (min-width: 48rem) {
+    .pillar:nth-child(-n + 3) {
+      border-top: 0;
+    }
+    .pillar {
+      border-inline-start: 1px solid var(--color-stone);
+    }
+    .pillar:nth-child(3n + 1) {
+      border-inline-start: 0;
+    }
+  }
+  @media (min-width: 80rem) {
+    .pillar,
+    .pillar:nth-child(3n + 1) {
+      border-top: 0;
+      border-inline-start: 1px solid var(--color-stone);
+    }
+    .pillar:first-child {
+      border-inline-start: 0;
+    }
+  }
+  .marble-rail {
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+  .frame-accent {
+    position: absolute;
+    inset-inline-end: -1.75rem;
+    bottom: -1.75rem;
+    width: 45%;
+    height: 45%;
+    border: 1px solid var(--color-brass);
+    z-index: -1;
+  }
+  .scan-frame i {
+    position: absolute;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-color: var(--color-brass-light);
+    border-style: solid;
+    border-width: 0;
+  }
+  .scan-frame i:nth-child(1) { top: 1.25rem; left: 1.25rem; border-top-width: 1px; border-left-width: 1px; }
+  .scan-frame i:nth-child(2) { top: 1.25rem; right: 1.25rem; border-top-width: 1px; border-right-width: 1px; }
+  .scan-frame i:nth-child(3) { bottom: 1.25rem; left: 1.25rem; border-bottom-width: 1px; border-left-width: 1px; }
+  .scan-frame i:nth-child(4) { bottom: 1.25rem; right: 1.25rem; border-bottom-width: 1px; border-right-width: 1px; }
+  .card-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgb(26 26 28 / 0.78), rgb(26 26 28 / 0.1) 55%, transparent);
+  }
+  @media (min-width: 64rem) {
+    .tours-grid {
+      align-items: start;
+    }
+    .tours-grid > li:nth-child(3n + 2) {
+      margin-top: 3rem;
+    }
+  }
+</style>

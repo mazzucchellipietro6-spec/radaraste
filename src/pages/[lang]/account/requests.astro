@@ -1,0 +1,40 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import Status from '~/components/account/Status.astro';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+import { withUser } from '~/lib/server/db';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t, fmt } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const session = 'user' in s ? s : null;
+type R = { reference: string; kind: string; status: string; message: string | null; marbles: string[]; created_at: Date };
+const rows = session ? await withUser(session.user.claims, (tx) => tx<R[]>`select reference, kind, status, message, marbles, created_at from public.requests order by created_at desc limit 200`) : [];
+const tone = (st: string) => (st === 'won' ? 'ok' : st === 'waiting_customer' || st === 'quoted' ? 'warn' : st === 'lost' ? 'bad' : 'neutral');
+---
+
+<Account t={tr} path={`/${lang}/account/requests/`} section="requests" title={t('account.nav.requests')} profile={session?.profile}>
+  {
+    !session ? (
+      <NotConfigured t={tr} />
+    ) : rows.length === 0 ? (
+      <p class="text-ash">{t('account.requests.empty')}</p>
+    ) : (
+      <ul class="divide-y divide-stone border-y border-stone">
+        {rows.map((r) => (
+          <li class="grid gap-2 py-5 sm:grid-cols-[1fr_auto]">
+            <div>
+              <p class="text-[0.82rem] text-ash">{r.reference} · {fmt.date(r.created_at, { dateStyle: 'medium' })} · {t(`account.requests.kinds.${r.kind}`)}</p>
+              {r.message && <p class="mt-1 line-clamp-2">{r.message}</p>}
+              {r.marbles.length > 0 && <p class="mt-1 text-[0.85rem] text-ash">{r.marbles.join(', ')}</p>}
+            </div>
+            <div><Status label={t(`account.requests.statuses.${r.status}`)} tone={tone(r.status)} /></div>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Account>

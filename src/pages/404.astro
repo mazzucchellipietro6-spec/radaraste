@@ -1,0 +1,45 @@
+---
+// Pagina 404: elegante e nella lingua dell'indirizzo richiesto (scelta nel browser).
+import '~/styles/global.css';
+import { LANGS, getTranslator } from '~/i18n';
+const texts: Record<string, { title: string; text: string; home: string; dir: string }> = {};
+for (const l of LANGS) {
+  const tr = await getTranslator(l);
+  texts[l] = { title: tr.t('notFound.title'), text: tr.t('notFound.text'), home: tr.t('notFound.home'), dir: tr.dir };
+}
+const en = texts.en;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>404 — WHITE CARRARA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="bg-texture">
+    <main class="container-page flex min-h-[100svh] flex-col items-center justify-center py-20 text-center">
+      <a href="/" class="font-display text-2xl tracking-[0.34em] text-graphite no-underline">WHITE CARRARA</a>
+      <p class="mt-2 text-[0.65rem] uppercase tracking-[0.3em] text-brass-deep">From Carrara to the World.</p>
+      <p class="mt-16 font-display text-[7rem] leading-none text-stone" aria-hidden="true">404</p>
+      <h1 class="display-lg mt-6" data-404="title">{en.title}</h1>
+      <p class="lead mt-4 max-w-md" data-404="text">{en.text}</p>
+      <a href="/" class="btn btn-primary mt-10" data-404="home">{en.home}</a>
+    </main>
+    <script is:inline define:vars={{ texts }}>
+      var seg = location.pathname.split('/')[1];
+      var tx = texts[seg];
+      if (tx) {
+        document.documentElement.lang = seg;
+        document.documentElement.dir = tx.dir;
+        document.querySelector('[data-404="title"]').textContent = tx.title;
+        document.querySelector('[data-404="text"]').textContent = tx.text;
+        var a = document.querySelector('[data-404="home"]');
+        a.textContent = tx.home;
+        a.href = '/' + seg + '/';
+      }
+    </script>
+  </body>
+</html>

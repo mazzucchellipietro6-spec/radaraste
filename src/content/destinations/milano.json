@@ -1,0 +1,35 @@
+{
+  "name": "Milano",
+  "active": true,
+  "featured": false,
+  "order": 180,
+  "region": "lombardia",
+  "tagline": "Design, moda e il Cenacolo di Leonardo.",
+  "description": "Milano è la capitale italiana della moda e del design. Il Duomo, rivestito di marmo di Candoglia, domina la piazza accanto alla Galleria Vittorio Emanuele II.\n\nNel refettorio di Santa Maria delle Grazie si trova il Cenacolo di Leonardo, visitabile solo su prenotazione. Il Quadrilatero della moda e Brera completano il ritratto della città.",
+  "attractions": [
+    "Duomo e terrazze",
+    "Galleria Vittorio Emanuele II",
+    "Il Cenacolo di Leonardo",
+    "Teatro alla Scala",
+    "Pinacoteca di Brera",
+    "Quadrilatero della moda"
+  ],
+  "experiences": [
+    "Salita alle terrazze del Duomo",
+    "Shopping con personal shopper",
+    "Showroom di design"
+  ],
+  "itineraries": [
+    {
+      "title": "Milano in un giorno",
+      "text": "Duomo e terrazze, Galleria e Scala, Cenacolo nel pomeriggio, aperitivo a Brera."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/milano.jpg",
+  "imageAlt": "Il Duomo di Milano e la Galleria Vittorio Emanuele II",
+  "seoTitle": "",
+  "seoDescription": ""
+}

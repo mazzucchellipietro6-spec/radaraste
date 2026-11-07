@@ -1,0 +1,34 @@
+{
+  "name": "Verona",
+  "active": true,
+  "featured": false,
+  "order": 110,
+  "region": "veneto",
+  "tagline": "L'Arena, le piazze e la città di Giulietta.",
+  "description": "Verona, patrimonio UNESCO, unisce l'eredità romana a quella medievale: l'Arena, ancora oggi sede di una celebre stagione lirica estiva, domina Piazza Bra.\n\nNel centro si susseguono Piazza delle Erbe, Piazza dei Signori e la casa di Giulietta, mentre Castelvecchio e il suo ponte si specchiano nell'Adige.",
+  "attractions": [
+    "Arena di Verona",
+    "Piazza delle Erbe",
+    "Casa di Giulietta",
+    "Castelvecchio e Ponte Scaligero",
+    "Basilica di San Zeno"
+  ],
+  "experiences": [
+    "Opera all'Arena (secondo stagione)",
+    "Degustazione in Valpolicella",
+    "Passeggiata nel centro storico"
+  ],
+  "itineraries": [
+    {
+      "title": "Verona e Valpolicella",
+      "text": "Mattina nel centro storico, pomeriggio in una cantina della Valpolicella."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/verona.jpg",
+  "imageAlt": "L'Arena di Verona in Piazza Bra",
+  "seoTitle": "",
+  "seoDescription": ""
+}

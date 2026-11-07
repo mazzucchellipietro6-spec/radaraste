@@ -1,0 +1,33 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Lightbox from '~/components/Lightbox.astro';
+import Matching from '~/islands/Matching';
+import type { Translator } from '~/i18n';
+import { flatten } from '~/i18n/core.mjs';
+import itUi from '~/i18n/locales/ui/it.json';
+
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href, lang } = tr;
+// tutti i testi della sezione "matching" (anche quelli annidati) + alcuni comuni
+const s: Record<string, string> = {};
+for (const k of Object.keys(flatten(itUi.matching))) s[k] = t(`matching.${k}`);
+for (const k of ['addSelection', 'inSelection', 'compare', 'inCompare']) s[k] = t(`marble.${k}`);
+s.open = t('showroom.open');
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.marbles'), href: href('marbles') }, { label: t('nav.matching') }];
+---
+
+<Base t={tr} title={t('matching.seoTitle')} description={t('matching.seoDescription')} path={path}>
+  <PageHero eyebrow={t('matching.eyebrow')} title={t('matching.title')} lead={t('matching.lead')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} compact />
+  <section class="py-16 lg:py-24">
+    <div class="container-page">
+      <Matching client:load lang={lang} s={s} quoteHref={href('quote')} turnstileKey={import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? ''} />
+      <noscript><p>{t('matching.error')}</p></noscript>
+    </div>
+  </section>
+  <Lightbox t={tr} />
+</Base>

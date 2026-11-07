@@ -1,0 +1,23 @@
+---
+import type { Translator } from '~/i18n';
+interface Props {
+  t: Translator;
+  title?: string;
+  text?: string;
+  href?: string;
+  label?: string;
+}
+const { t: tr, title, text, href, label } = Astro.props;
+const { t } = tr;
+---
+
+<section class="on-dark bg-graphite text-marble">
+  <div class="container-page flex flex-col gap-8 py-20 lg:flex-row lg:items-center lg:justify-between lg:py-24" data-reveal>
+    <div class="max-w-2xl">
+      <p class="eyebrow">{t('home.quote.eyebrow')}</p>
+      <h2 class="display-md mt-4">{title ?? t('home.quote.title')}</h2>
+      <p class="lead mt-4">{text ?? t('home.quote.lead')}</p>
+    </div>
+    <a href={href ?? tr.href('quote')} class="btn btn-primary shrink-0">{label ?? t('nav.quote')}</a>
+  </div>
+</section>

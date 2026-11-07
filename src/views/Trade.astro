@@ -1,0 +1,56 @@
+---
+import Base from '~/layouts/Base.astro';
+import PageHero from '~/components/PageHero.astro';
+import Icon from '~/components/Icon.astro';
+import CtaBand from '~/components/CtaBand.astro';
+import type { Translator } from '~/i18n';
+import tradeImg from '~/assets/images/pages/trade.jpg';
+interface Props {
+  t: Translator;
+  path: string;
+}
+const { t: tr, path } = Astro.props;
+const { t, href } = tr;
+const services = [['sourcing', 'search'], ['trading', 'diamond'], ['brokerage', 'chat'], ['export', 'ship']] as const;
+const crumbs = [{ label: t('nav.home'), href: href('home') }, { label: t('nav.trade') }];
+---
+
+<Base t={tr} title={t('trade.seoTitle')} fullTitle description={t('trade.seoDescription')} path={path} header="overlay" image={tradeImg}>
+  <PageHero eyebrow={t('trade.eyebrow')} title={t('trade.title')} lead={t('trade.lead')} image={tradeImg} alt={t('home.trade.imageAlt')} crumbs={crumbs} crumbLabel={t('a11y.breadcrumb')} />
+  <section class="py-20 lg:py-28" aria-labelledby="services-title">
+    <div class="container-page">
+      <h2 id="services-title" class="display-md">{t('trade.servicesTitle')}</h2>
+      <div class="mt-12 grid gap-10 md:grid-cols-2">
+        {services.map(([k, icon], i) => (
+          <article class="flex gap-6 border-t border-stone pt-7" data-reveal style={`--reveal-delay:${(i % 2) * 0.08}s`}>
+            <Icon name={icon} size={30} class="mt-1 shrink-0 text-brass" stroke={1.1} />
+            <div>
+              <h3 class="font-display text-2xl">{t(`trade.services.${k}.title`)}</h3>
+              <p class="mt-3 text-ash">{t(`trade.services.${k}.text`)}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+  <section class="on-dark bg-graphite py-20 text-marble lg:py-28" aria-labelledby="models-title">
+    <div class="container-page grid gap-12 lg:grid-cols-12">
+      <div class="lg:col-span-5">
+        <h2 id="models-title" class="display-md">{t('trade.modelsTitle')}</h2>
+        <p class="lead mt-6">{t('trade.modelsText')}</p>
+      </div>
+      <ol class="grid gap-6 sm:grid-cols-2 lg:col-span-6 lg:col-start-7">
+        {['1', '2', '3', '4', '5', '6'].map((n) => (
+          <li class="border-t border-white/10 pt-5"><span class="font-display text-2xl text-brass-light">0{n}</span><p class="mt-2 text-marble/85">{t(`trade.process.${n}`)}</p></li>
+        ))}
+      </ol>
+    </div>
+  </section>
+  <section class="py-16">
+    <div class="container-page flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+      <p class="flex max-w-3xl gap-3 text-ash"><Icon name="info" size={20} class="mt-0.5 shrink-0 text-brass-deep" />{t('trade.note')}</p>
+      <a href={href('b2b')} class="link-luxe shrink-0 text-graphite">{t('trade.b2bCta')}</a>
+    </div>
+  </section>
+  <CtaBand t={tr} href={`${href('quote')}?interest=trade`} />
+</Base>

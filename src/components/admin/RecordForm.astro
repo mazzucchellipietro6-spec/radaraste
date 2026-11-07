@@ -1,0 +1,88 @@
+---
+import type { FieldDef, ResourceDef } from '~/lib/server/admin/resources';
+import { displayValue } from '~/lib/server/admin/data';
+import type { Profile } from '~/lib/server/auth';
+interface Props {
+  r: ResourceDef;
+  row: Record<string, unknown> | null;
+  options: Record<string, [string, string][]>;
+  profile: Profile;
+  back: string;
+}
+const { r, row, options, profile, back } = Astro.props;
+const isNew = !row;
+const val = (f: FieldDef) => row?.[f.name] ?? (f.type === 'bool' && isNew ? f.name === 'active' : null);
+const disabled = (f: FieldDef) => f.readonly || r.readonly || (f.adminOnly && profile.role !== 'admin');
+const dateVal = (v: unknown) => (v ? new Date(v as string).toISOString().slice(0, 10) : '');
+---
+
+<form method="post" action="/api/admin/save" class="adm-card mt-6 grid gap-5 md:grid-cols-2">
+  <input type="hidden" name="_resource" value={r.key} />
+  <input type="hidden" name="_id" value={(row?.id as string) ?? ''} />
+  <input type="hidden" name="_back" value={back} />
+  {
+    r.fields
+      .filter((f) => !(isNew && f.readonly))
+      .map((f) => {
+        const v = val(f);
+        const opts = options[f.name] ?? f.options ?? [];
+        const dis = disabled(f);
+        return (
+          <label class:list={['field', (f.wide || f.type === 'textarea' || f.type === 'json') && 'md:col-span-2', f.type === 'bool' && 'flex items-center gap-3 self-end']}>
+            {f.type !== 'bool' && <span class="field-label">{f.label}{f.required && ' *'}</span>}
+            {f.type === 'textarea' ? (
+              <textarea class="input" name={f.name} rows={5} disabled={dis}>{(v as string) ?? ''}</textarea>
+            ) : f.type === 'json' ? (
+              <pre class="input max-h-72 overflow-auto whitespace-pre-wrap text-[0.8rem]">{displayValue(f, v)}</pre>
+            ) : f.type === 'bool' ? (
+              <>
+                <input type="checkbox" class="checkbox !mt-0" name={f.name} checked={!!v} disabled={dis} />
+                <span>{f.label}</span>
+              </>
+            ) : f.type === 'select' || f.type === 'ref' ? (
+              <select class="input" name={f.name} disabled={dis} required={f.required}>
+                <option value="">—</option>
+                {opts.map(([k, label]) => (
+                  <option value={k} selected={String(v ?? '') === k}>{label}</option>
+                ))}
+              </select>
+            ) : f.type === 'date' ? (
+              <input class="input" type="date" name={f.name} value={dateVal(v)} disabled={dis} required={f.required} />
+            ) : f.type === 'datetime' ? (
+              <input class="input" value={displayValue(f, v)} disabled />
+            ) : f.type === 'tags' ? (
+              <input class="input" name={f.name} value={((v as string[]) ?? []).join(', ')} disabled={dis} placeholder="separati da virgola" />
+            ) : (
+              <input
+                class="input"
+                name={f.name}
+                type={f.type === 'email' ? 'email' : f.type === 'number' || f.type === 'money' || f.type === 'percent' ? 'number' : 'text'}
+                step={f.type === 'money' ? '0.01' : f.type === 'percent' ? '0.01' : undefined}
+                value={v === null || v === undefined ? '' : String(v)}
+                disabled={dis}
+                required={f.required}
+              />
+            )}
+            {f.help && <span class="field-hint">{f.help}</span>}
+          </label>
+        );
+      })
+  }
+  {
+    !r.readonly && (
+      <div class="flex flex-wrap items-center gap-3 md:col-span-2">
+        <button type="submit" name="_action" value="save" class="btn btn-primary btn-sm">Salva</button>
+        {!isNew && r.remove === 'deactivate' && <button type="submit" name="_action" value="remove" class="btn btn-outline btn-sm" data-confirm="Disattivare questo elemento?">Disattiva</button>}
+        {!isNew && r.remove === 'delete' && <button type="submit" name="_action" value="remove" class="btn btn-sm border border-danger text-danger" data-confirm="Eliminare definitivamente?">Elimina</button>}
+      </div>
+    )
+  }
+</form>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-confirm]').forEach((b) =>
+    b.addEventListener('click', (e) => {
+      if (!confirm(b.dataset.confirm!)) e.preventDefault();
+    }),
+  );
+</script>

@@ -1,0 +1,55 @@
+---
+import Admin from '~/layouts/Admin.astro';
+import RecordForm from '~/components/admin/RecordForm.astro';
+import RelatedList from '~/components/admin/RelatedList.astro';
+import { canAccess, resource } from '~/lib/server/admin/resources';
+import { getRow, resolveOptions } from '~/lib/server/admin/data';
+import { withUser } from '~/lib/server/db';
+export const prerender = false;
+const r = resource('customers')!;
+const admin = Astro.locals.admin;
+if (!admin || !canAccess(r, admin.profile)) return Astro.redirect('/admin/');
+const id = Astro.params.id ?? '';
+const row = await getRow(admin.user, r, id);
+if (!row) return Astro.redirect('/admin/customers/');
+const options = await resolveOptions(admin.user, r);
+type M = { sender: string; body: string; created_at: Date };
+const messages = await withUser(admin.user.claims, (tx) => tx<M[]>`select sender, body, created_at from public.messages where customer_id = ${id} order by created_at desc limit 50`);
+await withUser(admin.user.claims, (tx) => tx`update public.messages set read_at = now() where customer_id = ${id} and sender = 'customer' and read_at is null`);
+const sp = Astro.url.searchParams;
+const b2b = String(row.b2b_status);
+---
+
+<Admin title={`Cliente ${row.full_name ?? row.email}`} active="customers">
+  <p class="mt-2"><a href="/admin/customers/" class="text-brass-deep">← Clienti</a></p>
+  {sp.get('ok') && <p class="mt-4 border border-success px-4 py-2 text-success" role="status">{sp.get('ok') === '1' ? 'Salvato.' : sp.get('ok')}</p>}
+  {sp.get('error') && <p class="mt-4 border border-danger px-4 py-2 text-danger" role="alert">{sp.get('error')}</p>}
+  {
+    b2b === 'pending' && (
+      <section class="adm-card mt-6 border-brass">
+        <h2 class="font-display text-xl">Richiesta di accesso B2B</h2>
+        <p class="mt-2 text-[0.92rem]">{String(row.company ?? '')} · {String(row.b2b_type ?? '')} · {String(row.country ?? '')} {row.b2b_website && <>· <a href={String(row.b2b_website)} target="_blank" rel="noopener noreferrer" class="text-brass-deep">{String(row.b2b_website)}</a></>}</p>
+        {row.b2b_notes && <p class="mt-2 text-[0.92rem] text-ash">{String(row.b2b_notes)}</p>}
+        <div class="mt-4 flex gap-3">
+          <form method="post" action="/api/admin/customers/b2b"><input type="hidden" name="id" value={id} /><button name="decision" value="approved" class="btn btn-primary btn-sm">Approva</button></form>
+          <form method="post" action="/api/admin/customers/b2b"><input type="hidden" name="id" value={id} /><button name="decision" value="rejected" class="btn btn-sm border border-danger text-danger">Rifiuta</button></form>
+        </div>
+      </section>
+    )
+  }
+  <section class="adm-card mt-6">
+    <h2 class="font-display text-xl">Comunicazioni</h2>
+    <form method="post" action="/api/admin/customers/message" class="mt-3 space-y-3">
+      <input type="hidden" name="id" value={id} />
+      <textarea class="input" name="body" rows="3" required maxlength="8000" placeholder="Scrivi al cliente (riceverà un avviso via email)"></textarea>
+      <button class="btn btn-primary btn-sm" type="submit">Invia messaggio</button>
+    </form>
+    <ol class="mt-4 space-y-2">{messages.map((m) => <li class:list={['border p-3 text-[0.9rem]', m.sender === 'staff' ? 'border-brass/40 bg-ivory' : 'border-stone']}><span class="text-[0.78rem] text-ash">{m.sender === 'staff' ? 'WHITE CARRARA' : 'Cliente'} · {new Date(m.created_at).toLocaleString('it-IT')}</span><br /><span class="whitespace-pre-line">{m.body}</span></li>)}</ol>
+  </section>
+  <RecordForm r={r} row={row} options={options} profile={admin.profile} back={`/admin/customers/${id}/`} />
+  <RelatedList resourceKey="requests" where={{ user_id: id }} label="Richieste" />
+  <RelatedList resourceKey="quotes" where={{ customer_id: id }} label="Preventivi" />
+  <RelatedList resourceKey="bookings" where={{ user_id: id }} label="Prenotazioni" />
+  <RelatedList resourceKey="projects" where={{ user_id: id }} label="Progetti" />
+  <RelatedList resourceKey="orders" where={{ customer_id: id }} label="Ordini" />
+</Admin>

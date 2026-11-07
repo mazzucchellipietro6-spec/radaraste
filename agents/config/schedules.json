@@ -1,0 +1,16 @@
+[
+ {"agent_id": "05-crm-follow-up", "title": "Controllo giornaliero dei follow-up", "every_hours": 24,
+  "instructions": "Controlla i follow-up scaduti e i lead qualificati senza attività da più di 14 giorni. Aggiorna il CRM, programma i prossimi contatti e prepara al massimo 5 email da approvare, solo dove c'è una base giuridica e il contatto non è escluso."},
+ {"agent_id": "02-chief-sales-officer", "title": "Revisione settimanale della pipeline", "every_hours": 168,
+  "instructions": "Rivedi la pipeline: opportunità ferme, probabilità da aggiornare, preventivi in attesa di risposta, prossimi passi. Consegna le 5 azioni commerciali più importanti della settimana."},
+ {"agent_id": "12-quality-control", "title": "Controllo settimanale di disponibilità e certificazioni", "every_hours": 168,
+  "instructions": "Elenca materiali con disponibilità senza prova completa o con ricontrollo scaduto e certificazioni scadute o in scadenza entro 60 giorni. Per ognuno indica cosa chiedere al fornitore."},
+ {"agent_id": "21-operations-manager", "title": "Misure settimanali dei processi", "every_hours": 168,
+  "instructions": "Misura con process_metrics i tempi richiesta-preventivo-ordine-consegna, i follow-up scaduti, le approvazioni in attesa e gli incarichi falliti o bloccati. Confronta con la settimana precedente (memoria) e proponi al massimo 3 miglioramenti."},
+ {"agent_id": "18-cfo", "title": "Rapporto economico mensile", "every_hours": 720,
+  "instructions": "Prepara il rapporto del mese: ricavi RESALE, commissioni BROKERAGE, valore intermediato, margini noti, incassi, crediti aperti, costi degli agenti AI, scostamento dall'obiettivo di 30.000 euro. Separa dati registrati, stime e simulazioni."},
+ {"agent_id": "25-tax-accounting-advisor", "title": "Nota mensile su IVA e cash flow", "every_hours": 720,
+  "instructions": "Prepara una nota sulle operazioni del mese dal punto di vista di IVA (interne, intracomunitarie, export, commissioni) e del cash flow previsto, con i punti da far verificare al commercialista."},
+ {"agent_id": "19-business-intelligence", "title": "Indicatori mensili e costi degli agenti", "every_hours": 720,
+  "instructions": "Calcola gli indicatori commerciali del mese e i costi degli agenti AI rispetto ai risultati prodotti. Segnala anomalie e agenti poco efficienti."}
+]

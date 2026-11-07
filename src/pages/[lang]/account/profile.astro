@@ -1,0 +1,64 @@
+---
+import Account from '~/layouts/Account.astro';
+import NotConfigured from '~/components/account/NotConfigured.astro';
+import CountryList from '~/components/forms/CountryList.astro';
+import { pageLang } from '~/lib/server/page';
+import { accountSession } from '~/lib/server/account';
+import { LANGS, LANG_INFO } from '~/i18n';
+export const prerender = false;
+const { lang, tr } = await pageLang(Astro.params.lang);
+const { t } = tr;
+const s = await accountSession(Astro, lang);
+if ('redirect' in s) return Astro.redirect(s.redirect);
+const p = 'user' in s ? s.profile : null;
+const fields = [
+  ['full_name', t('account.register.name'), 'name'],
+  ['phone', t('forms.phone'), 'tel'],
+  ['company', t('forms.company'), 'organization'],
+  ['vat_number', t('account.register.vat'), 'off'],
+  ['country', t('forms.country'), 'country-name'],
+  ['city', t('concierge.city'), 'address-level2'],
+  ['nationality', t('forms.nationality'), 'off'],
+] as const;
+const confirmError = Astro.url.searchParams.get('error') === 'confirm';
+---
+
+<Account t={tr} path={`/${lang}/account/profile/`} section="profile" title={t('account.nav.profile')} profile={p}>
+  {
+    !p ? (
+      <NotConfigured t={tr} />
+    ) : (
+      <div class="space-y-16">
+        <form method="post" action="/api/me/profile" class="max-w-2xl space-y-5">
+          <p class="text-ash">{p.email}</p>
+          <div class="grid gap-5 sm:grid-cols-2">
+            {fields.map(([k, label, ac]) => (
+              <label class="field"><span class="field-label">{label}</span><input class="input" name={k} value={(p as unknown as Record<string, string | null>)[k] ?? ''} autocomplete={ac} list={k === 'country' || k === 'nationality' ? 'countries' : undefined} /></label>
+            ))}
+            <label class="field">
+              <span class="field-label">{t('account.profile.language')}</span>
+              <select class="input" name="lang">{LANGS.map((l) => <option value={l} selected={p.lang === l}>{LANG_INFO[l].name}</option>)}</select>
+            </label>
+          </div>
+          <label class="flex gap-3"><input type="checkbox" class="checkbox" name="marketing_opt_in" checked={p.marketing_opt_in} />{t('account.profile.marketing')}</label>
+          <button class="btn btn-primary" type="submit">{t('common.save')}</button>
+          <CountryList id="countries" intl={tr.info.intl} />
+        </form>
+        <section class="max-w-2xl border-t border-stone pt-10">
+          <h2 class="font-display text-2xl">{t('account.profile.exportTitle')}</h2>
+          <p class="mt-3 text-ash">{t('account.profile.exportText')}</p>
+          <a href="/api/me/export" class="btn btn-outline btn-sm mt-6">{t('account.profile.export')}</a>
+        </section>
+        <section class="max-w-2xl border-t border-stone pt-10">
+          <h2 class="font-display text-2xl">{t('account.profile.deleteTitle')}</h2>
+          <p class="mt-3 text-ash">{t('account.profile.deleteText')}</p>
+          <form method="post" action="/api/me/delete" class="mt-6 space-y-4">
+            <input type="hidden" name="lang" value={lang} />
+            <label class="field"><span class="field-label">{t('account.profile.deleteConfirm')}</span><input class="input" name="confirm" required autocomplete="off" dir="ltr" aria-invalid={confirmError ? 'true' : undefined} /></label>
+            <button class="btn btn-sm border border-danger text-danger hover:bg-danger hover:text-white" type="submit">{t('account.profile.deleteButton')}</button>
+          </form>
+        </section>
+      </div>
+    )
+  }
+</Account>

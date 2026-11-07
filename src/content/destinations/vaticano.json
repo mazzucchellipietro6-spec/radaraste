@@ -1,0 +1,34 @@
+{
+  "name": "Città del Vaticano",
+  "active": true,
+  "featured": false,
+  "order": 130,
+  "region": "lazio",
+  "tagline": "San Pietro, i Musei Vaticani e la Cappella Sistina.",
+  "description": "Lo Stato più piccolo del mondo custodisce alcuni tesori immensi: la Basilica di San Pietro, con la cupola di Michelangelo e il colonnato del Bernini, e i Musei Vaticani, che culminano nella Cappella Sistina.\n\nLa visita richiede ingressi prenotati e un abbigliamento adeguato; una guida esperta aiuta a orientarsi tra le collezioni.",
+  "attractions": [
+    "Basilica di San Pietro",
+    "Piazza San Pietro e il colonnato del Bernini",
+    "Musei Vaticani",
+    "Cappella Sistina",
+    "Giardini Vaticani (su prenotazione)"
+  ],
+  "experiences": [
+    "Visita guidata dei Musei Vaticani",
+    "Salita alla cupola di San Pietro",
+    "Ingresso al mattino presto (secondo disponibilità)"
+  ],
+  "itineraries": [
+    {
+      "title": "Mezza giornata in Vaticano",
+      "text": "Musei Vaticani e Cappella Sistina, poi Basilica e Piazza San Pietro."
+    }
+  ],
+  "privateTours": true,
+  "transfer": true,
+  "guides": true,
+  "image": "../../assets/images/destinations/vaticano.jpg",
+  "imageAlt": "La Basilica di San Pietro e il colonnato del Bernini",
+  "seoTitle": "",
+  "seoDescription": ""
+}

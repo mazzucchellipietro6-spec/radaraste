@@ -1,0 +1,26 @@
+{
+  "title": "Transfer",
+  "active": true,
+  "order": 9,
+  "category": "transfer",
+  "summary": "Trasferimenti privati da e per aeroporti, stazioni, porti e hotel.",
+  "description": "Organizziamo trasferimenti privati con autisti professionisti e vetture di categoria superiore, per raggiungere Carrara o spostarsi tra le destinazioni dei vostri tour.\n\nIndicate partenza, arrivo, data, numero di passeggeri e bagagli: riceverete una proposta dopo la verifica della disponibilità dei vettori autorizzati.",
+  "highlights": [
+    "Aeroporti di Pisa, Firenze e Genova",
+    "Stazioni, porti e hotel",
+    "Autisti professionisti e vetture di categoria superiore"
+  ],
+  "duration": "",
+  "languages": [],
+  "minParticipants": null,
+  "maxParticipants": null,
+  "price": null,
+  "priceUnit": "persona",
+  "priceNote": "",
+  "onlinePayment": false,
+  "meetingPoint": "",
+  "image": "../../assets/images/experiences/transfer.jpg",
+  "imageAlt": "Auto di rappresentanza con autista davanti a un palazzo storico",
+  "seoTitle": "",
+  "seoDescription": ""
+}
