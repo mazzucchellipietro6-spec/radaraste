@@ -4,6 +4,16 @@ Un paragrafo per ogni giro del mattino, il più recente in alto: come sta il sit
 
 ---
 
+## 7/11/2026 – URGENTE: raccolta ferma da 5 giorni
+
+- **Sito pubblicato:** fermo alle aste del 2/11 (raccolta n. 31 fallita per lo stesso test su `main`). Serve il Merge della pull request #4.
+- **Revisore:** pronto sulle foto di copertina. Ha corretto:
+  - il controllo dell'indirizzo della foto, ora fatto comunque arrivi;
+  - la stessa regola nella mappa;
+  - l'alt delle foto, ora vuoto;
+  - il clic sulla foto degli affari.
+- **Test:** 470 su 470, anche con l'orologio avanti di 90 giorni.
+
 ## 6/11/2026 – URGENTE: raccolta ferma da 4 giorni
 
 - **Sito pubblicato:** visibile ma fermo alle aste del 2/11 (raccolta n. 30 fallita per lo stesso test). Serve il Merge della pull request #4.
