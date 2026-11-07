@@ -276,6 +276,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 6px va
    Sotto la foto c'è l'icona della categoria: si vede mentre la foto si carica e resta se non si apre (js/ui.js toglie
    l'immagine rotta), così non compare mai un riquadro vuoto o bianco. */
 .foto-cop { position: relative; aspect-ratio: 16 / 9; overflow: hidden; display: grid; place-content: center; justify-items: center; gap: 4px; background: var(--surface-2); color: var(--faint); border-bottom: 1px solid var(--line); }
+a.foto-cop { text-decoration: none; }
 .foto-cop .icona-cat { width: 36px; height: 36px; stroke-width: 1.3; }
 .foto-cop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .foto-cop.caricata .icona-cat { visibility: hidden; }

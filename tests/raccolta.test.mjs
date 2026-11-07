@@ -154,3 +154,43 @@ test('formato compatto: copertina salvata senza "https://resource-pvp.giustizia.
   assert.equal(Formato.copertina('https://esempio.invalid/a.jpg'), null);
   assert.equal(Formato.copertina(foto), foto);
 });
+
+test('formato compatto: copertina da un data/aste.js manomesso, codifiche strane e indirizzi che il browser riscriverebbe', () => {
+  const ok = 'immagini-beni/1/2/LOTTO%201%20(1)%5Bb%5D%C3%A0.jpg?versionId=efecf346-a6b5';
+  assert.equal(Formato.copertina(ok), 'https://resource-pvp.giustizia.it/' + ok);
+  // "%" solo con due cifre esadecimali; mai un punto codificato ("%2e%2e" il browser lo legge come "..") o un carattere di controllo
+  for (const v of ['immagini-beni/%2e%2e/%2E%2e/x.jpg', 'immagini-beni/.%2e/x.jpg', 'immagini-beni/%zz/x.jpg', 'immagini-beni/%2/x.jpg', 'immagini-beni/x%.jpg',
+    'immagini-beni/%00/x.jpg', 'immagini-beni/%0a/x.jpg', 'immagini-beni/%1F/x.jpg', 'immagini-beni/%7f/x.jpg', 'immagini-beni/x.jpg?v=%0d%0a',
+    'immagini-beni/x.jpg\n', ' immagini-beni/x.jpg', 'immagini-beni/x.jpg#a', 'immagini-beni\\x.jpg', '\\\\esempio.invalid/x.jpg', '/\\esempio.invalid/x.jpg',
+    'immagini-beni/x.jpg?a=b?c', 'immagini-beni/@esempio.invalid/x.jpg', 'https://resource-pvp.giustizia.it//esempio.invalid/x.jpg',
+    'HTTPS://resource-pvp.giustizia.it/x/x.jpg', 'https://resource-pvp.giustizia.it@esempio.invalid/x.jpg', 'immagini-beni/x.jpg' + 'a'.repeat(400) + '.jpg']) {
+    assert.equal(Formato.copertina(v), null, JSON.stringify(v));
+  }
+  // ogni indirizzo accettato resta sul dominio delle foto e il browser non lo riscrive (niente ".." nascosti)
+  const pezzi = ['a', 'Z', '0', '.', '..', '%2e', '%2f', '%5c', '%20', '%', '/', '//', '\\', ':', '@', '?', '#', '&', '=', '~', '(', "'", '"', '<', 'jpg', '.jpg', '\t', '%0a', '-'];
+  let semi = 7, accettati = 0;
+  const caso = () => { semi = (semi * 1103515245 + 12345) % 2147483648; return semi; };
+  for (let n = 0; n < 20000; n++) {
+    let v = 'immagini-beni/';
+    const k = 1 + (caso() % 8);
+    for (let i = 0; i < k; i++) v += pezzi[caso() % pezzi.length];
+    v += ['.jpg', '.png', '.jpg?versionId=1', ''][caso() % 4];
+    const u = Formato.copertina(v);
+    if (!u) continue;
+    accettati++;
+    const url = new URL(u);
+    assert.equal(url.origin, 'https://resource-pvp.giustizia.it', v);
+    assert.equal(url.href, u, 'riscritto dal browser: ' + v);
+    assert.doesNotMatch(u.slice(8), /[\s"<>\\#@:]|\/\/|%(?![0-9A-Fa-f]{2})|%2e/i, v);
+  }
+  assert.ok(accettati > 100, 'il generatore produce anche indirizzi validi: ' + accettati);
+  // in lettura la copertina si controlla anche se arriva da un dizionario o da un prefisso aggiunti a mano nel file
+  const letto = Formato.decodifica({ versione: 2, campi: ['id', 'copertina'], dizionari: { copertina: ['javascript:alert(1)//a.jpg', 'immagini-beni/1/d.jpg'] },
+    prefissi: [], righe: [['a', 0], ['b', 1]] });
+  assert.deepEqual(letto, [{ id: 'a' }, { id: 'b', copertina: 'https://resource-pvp.giustizia.it/immagini-beni/1/d.jpg' }]);
+  // formato più vecchio (dati.aste): stessa regola, l'oggetto originale non si tocca
+  const vecchie = [{ id: 'v1', copertina: 'https://esempio.invalid/a.jpg' }, { id: 'v2', copertina: 'immagini-beni/1/e.png' }, { id: 'v3' }];
+  assert.deepEqual(Formato.decodifica({ aste: vecchie }), [{ id: 'v1' }, { id: 'v2', copertina: 'https://resource-pvp.giustizia.it/immagini-beni/1/e.png' }, { id: 'v3' }]);
+  assert.equal(vecchie[0].copertina, 'https://esempio.invalid/a.jpg');
+  assert.equal(Formato.decodifica({ aste: vecchie })[2], vecchie[2]);
+});

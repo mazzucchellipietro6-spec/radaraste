@@ -151,21 +151,19 @@
    * delle Vendite Pubbliche, solo da resource-pvp.giustizia.it (Formato.copertina) e scaricata senza referrer.
    * Riquadro con proporzioni fisse (niente salti dell'impaginazione) e, sotto la foto, l'icona della categoria: si vede
    * mentre la foto arriva e resta, con "Foto non disponibile", se la foto non si apre. Mai un riquadro vuoto e mai una foto
-   * che l'avviso non ha: senza copertina restituisce '' e la card resta com'era. */
+   * che l'avviso non ha: senza copertina restituisce '' e la card resta com'era.
+   * La foto è un link alla scheda per chi usa il mouse o il dito (nelle card degli affari non c'è il link esteso del titolo),
+   * ma è nascosta ai lettori di schermo e fuori dal giro del tasto Tab, con alt vuoto: subito dopo c'è il titolo con lo stesso
+   * link, e leggere due volte il titolo non serve. */
   var ICONE_CATEGORIA = { immobile: 'casa', auto: 'auto', moto: 'moto', beni: 'beni' };
-  function titoloBreve(t, n) {
-    t = String(t == null ? '' : t).replace(/\s+/g, ' ').trim(); n = n || 70;
-    if (t.length <= n) return t;
-    var c = t.slice(0, n), i = c.lastIndexOf(' ');
-    return (i > n * 0.6 ? c.slice(0, i) : c).replace(/[\s,.;:(–-]+$/, '') + '…';
-  }
   function fotoCopertina(a) {
     var F = root.Formato, u = a && F && F.copertina ? F.copertina(a.copertina) : null;
     if (!u) return '';
-    var t = titoloBreve(a.titolo);
-    return '<div class="foto-cop">' + icona(ICONE_CATEGORIA[a.categoria] || 'beni', 'icona-cat') +
-      '<img src="' + esc(u) + '" alt="' + esc('Foto dall\'avviso dell\'asta' + (t ? ': ' + t : '')) + '" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-copertina>' +
-      '<span class="foto-ko">Foto non disponibile</span></div>';
+    var ic = icona(Object.prototype.hasOwnProperty.call(ICONE_CATEGORIA, a.categoria) ? ICONE_CATEGORIA[a.categoria] : 'beni', 'icona-cat');
+    var dentro = ic + '<img src="' + esc(u) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-copertina>' +
+      '<span class="foto-ko">Foto non disponibile</span>';
+    if (a.id == null || a.id === '') return '<div class="foto-cop" aria-hidden="true">' + dentro + '</div>';
+    return '<a class="foto-cop" href="scheda.html?id=' + encodeURIComponent(a.id) + '" data-passa="id:' + esc(a.id) + '" tabindex="-1" aria-hidden="true">' + dentro + '</a>';
   }
   // foto arrivata: l'icona sotto non serve più; foto che non si apre: via l'immagine rotta, resta l'icona della categoria
   // (gli eventi load ed error delle immagini non risalgono: si ascoltano in cattura su tutta la pagina)
@@ -451,7 +449,7 @@
   root.UI = {
     $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando, oggi: oggi,
     linkSicuro: linkSicuro, esempioCheEntra: esempioCheEntra, esempioAdattivo: esempioAdattivo, fontiFerme: fontiFerme, abbonamentiVisibili: abbonamentiVisibili, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
-    icona: icona, fotoCopertina: fotoCopertina, titoloBreve: titoloBreve, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI, SERVIZIO: SERVIZIO,
+    icona: icona, fotoCopertina: fotoCopertina, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI, SERVIZIO: SERVIZIO,
     finestra: finestra, apriFinestra: apriFinestra, chiudiFinestra: chiudiFinestra, focusabili: focusabili, menoMovimento: function () { return menoMovimento.matches; },
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,
     csvParse: csvParse, csvStringify: csvStringify, scarica: scarica, leggiFile: leggiFile,

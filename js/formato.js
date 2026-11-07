@@ -22,14 +22,16 @@
 
   /* Foto di copertina: solo immagini di resource-pvp.giustizia.it (lo stesso dominio è in img-src della CSP, _headers).
    * Il percorso ammesso è quello che scrive urlRisorsa (scripts/lib/dettaglio-pvp.mjs): parti codificate, estensione
-   * d'immagine e, se c'è, il versionId. Niente "//", ".." o ":" (che porterebbero fuori dal dominio o dal sito). */
+   * d'immagine e, se c'è, il versionId. Niente "//", ".." o ":" (che porterebbero fuori dal dominio o dal sito), e "%" solo
+   * seguito da due cifre esadecimali, mai per un punto ("%2e%2e" il browser lo legge come "..") o un carattere di controllo. */
   var RISORSE = 'https://resource-pvp.giustizia.it/';
-  var PERCORSO_FOTO = /^[A-Za-z0-9._~%()!*'-]+(?:\/[A-Za-z0-9._~%()!*'-]+)*\.(?:jpe?g|png|webp|gif)(?:\?[A-Za-z0-9_.~=&%-]*)?$/i;
+  var PERCORSO_FOTO = /^(?:[A-Za-z0-9._~()!*'-]|%[0-9A-Fa-f]{2})+(?:\/(?:[A-Za-z0-9._~()!*'-]|%[0-9A-Fa-f]{2})+)*\.(?:jpe?g|png|webp|gif)(?:\?(?:[A-Za-z0-9_.~=&-]|%[0-9A-Fa-f]{2})*)?$/i;
+  var CODIFICA_VIETATA = /%(?:2e|[01][0-9a-f]|7f)/i;
   // percorso dopo il dominio (es. 'immagini-beni/1/2/foto.jpg?versionId=…') o null; accetta l'indirizzo completo o il solo percorso
   function percorsoCopertina(v) {
     if (typeof v !== 'string') return null;
     var p = v.indexOf(RISORSE) === 0 ? v.slice(RISORSE.length) : v;
-    if (p.length > 400 || !PERCORSO_FOTO.test(p) || /(?:^|\/)\.\.?(?:\/|\?|$)/.test(p)) return null;
+    if (p.length > 400 || !PERCORSO_FOTO.test(p) || CODIFICA_VIETATA.test(p) || /(?:^|\/)\.\.?(?:\/|\?|$)/.test(p)) return null;
     return p;
   }
   // indirizzo completo della copertina (sempre https://resource-pvp.giustizia.it/…) o null
@@ -71,9 +73,9 @@
   // restituisce un array di oggetti (solo i campi presenti)
   function decodifica(dati) {
     if (!dati) return [];
-    if (!Array.isArray(dati.righe)) return Array.isArray(dati.aste) ? dati.aste : [];
+    if (!Array.isArray(dati.righe)) return Array.isArray(dati.aste) ? dati.aste.map(copertinaControllata) : [];
     var c = dati.campi, diz = dati.dizionari || {}, pref = dati.prefissi || [];
-    var tipo = c.map(function (k) { return diz[k] ? 1 : LINK.indexOf(k) >= 0 ? 2 : k === 'copertina' ? 3 : 0; });
+    var tipo = c.map(function (k) { return diz[k] ? 1 : LINK.indexOf(k) >= 0 ? 2 : 0; });
     return dati.righe.map(function (r) {
       var o = {};
       for (var i = 0; i < r.length; i++) {
@@ -83,11 +85,21 @@
         else if (tipo[i] === 2 && typeof v === 'string' && v.charAt(0) === '~') {
           var j = v.indexOf('~', 1);
           v = pref[+v.slice(1, j)] + v.slice(j + 1);
-        } else if (tipo[i] === 3 && !(v = copertina(v))) continue;
+        }
+        // la copertina si controlla comunque arrivi (anche da un dizionario o da un prefisso messi a mano nel file)
+        if (c[i] === 'copertina' && !(v = copertina(v))) continue;
         o[c[i]] = v;
       }
       return o;
     });
+  }
+  // formato più vecchio (dati.aste): stessa regola sulla copertina, senza toccare l'oggetto originale
+  function copertinaControllata(a) {
+    if (!a || typeof a !== 'object' || !('copertina' in a)) return a;
+    var o = {}, u = copertina(a.copertina);
+    for (var k in a) if (Object.prototype.hasOwnProperty.call(a, k) && k !== 'copertina') o[k] = a[k];
+    if (u) o.copertina = u;
+    return o;
   }
 
   /* Date di un'asta lette dai campi del record → { asta: { data, ora } | null, termine: { data, ora } | null }

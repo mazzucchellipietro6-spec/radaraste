@@ -81,6 +81,7 @@
 .m-foto .icona-cat { width: 40px; height: 40px; stroke-width: 1.3; }
 .m-foto figcaption { font-size: 13px; font-weight: 550; color: var(--muted); display: grid; justify-items: center; gap: 2px; text-align: center; padding: 0 12px; }
 .m-foto figcaption small { font-weight: 400; }
+.m-foto-link { position: absolute; inset: 0; }
 .m-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .m-foto.con-foto .icona-cat, .m-foto.con-foto figcaption { display: none; }
 .m-foto.in-carico::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--surface-3) 80%, transparent) 50%, transparent 70%); background-size: 300% 100%; animation: luce 1.4s linear infinite; }

@@ -413,20 +413,22 @@
         (avviso ? '<a class="btn ghost" href="' + esc(avviso) + '" target="_blank" rel="noopener">Avviso originale' + U.icona('esterno') + '<span class="sr-only"> (si apre in una nuova scheda)</span></a>' : '<span class="muted">Link all\'avviso mancante</span>') +
       '</div></div>';
   }
+  // prima foto che sia un'immagine di resource-pvp.giustizia.it (stessa regola della copertina: js/formato.js)
   function primaFoto(d) {
-    var l = d && d.foto ? [].concat(d.foto) : [];
+    var l = d && d.foto ? [].concat(d.foto) : [], F = window.Formato;
+    if (!F || !F.copertina) return null;
     for (var i = 0; i < l.length; i++) {
-      var u = typeof l[i] === 'string' ? l[i] : l[i] && (l[i].url || l[i].src);
-      if (U.linkSicuro(u)) return u;
+      var u = F.copertina(typeof l[i] === 'string' ? l[i] : l[i] && (l[i].url || l[i].src));
+      if (u) return u;
     }
     return null;
   }
-  // foto di copertina dell'elenco (js/formato.js: solo resource-pvp.giustizia.it), altrimenti la prima foto della scheda a pezzi
-  // (solo se l'asta dice di averne: niente richieste inutili)
+  // foto di copertina dell'elenco, altrimenti la prima foto della scheda a pezzi (solo se l'asta dice di averne: niente
+  // richieste inutili). La foto porta alla scheda come "Apri la scheda"; per i lettori di schermo resta solo il pulsante.
   function caricaFoto(a) {
-    var fig = $('#mFoto'), D = window.Dettagli, F = window.Formato;
+    var fig = $('#mFoto'), D = window.Dettagli;
     if (!fig) return;
-    var cop = F && F.copertina ? F.copertina(a.copertina) : null, subito = cop || primaFoto(a);
+    var subito = primaFoto({ foto: [a.copertina].concat(a.foto || []) });
     var attesa = subito ? Promise.resolve({ foto: [subito], fotoTotali: Number(a.nFoto) || 1 }) : D && Number(a.nFoto) > 0 ? D.carica(a.id) : null;
     if (!attesa) return;
     fig.classList.add('in-carico');
@@ -434,17 +436,21 @@
       if (scelta !== a.id || !fig.isConnected) return;
       var u = primaFoto(d), tot = d && (d.fotoTotali || (d.foto && d.foto.length)) || Number(a.nFoto) || 0;
       if (!u) { fig.classList.remove('in-carico'); return; }
-      var img = document.createElement('img');
-      img.alt = 'Foto dall\'avviso dell\'asta: ' + (U.titoloBreve ? U.titoloBreve(a.titolo) : String(a.titolo || '').slice(0, 80));
+      var img = document.createElement('img'), link = document.createElement('a');
+      // alt vuoto: subito dopo c'è il titolo dell'asta, e la foto è dentro un link nascosto ai lettori di schermo
+      img.alt = '';
       img.loading = 'lazy'; img.decoding = 'async';
       img.referrerPolicy = 'no-referrer'; img.setAttribute('referrerpolicy', 'no-referrer');
+      link.className = 'm-foto-link'; link.href = 'scheda.html?id=' + encodeURIComponent(a.id); link.setAttribute('data-passa', 'id:' + a.id);
+      link.tabIndex = -1; link.setAttribute('aria-hidden', 'true');
       img.addEventListener('load', function () { fig.classList.remove('in-carico'); fig.classList.add('con-foto'); });
       img.addEventListener('error', function () {
-        img.remove(); fig.classList.remove('in-carico'); fig.classList.add('foto-ko');
+        link.remove(); fig.classList.remove('in-carico'); fig.classList.add('foto-ko');
         var c = fig.querySelector('figcaption'); if (c) c.insertAdjacentHTML('beforeend', '<small>Foto non disponibile</small>');
       });
       img.src = u;
-      fig.insertBefore(img, fig.firstChild);
+      link.appendChild(img);
+      fig.insertBefore(link, fig.firstChild);
       if (tot > 1) fig.insertAdjacentHTML('beforeend', '<span class="m-nfoto">' + num(tot) + ' foto nella scheda</span>');
     }, function () { fig.classList.remove('in-carico'); });
   }

@@ -92,26 +92,34 @@ const MOBILE = { id: 'pvp-4652637', titolo: 'N°1 mobile a parete con due casset
   categoria: 'beni', tipo: 'Arredamento elettrodomestici', regione: 'Lombardia', provincia: 'BS', comune: 'San Zeno Naviglio', tribunale: 'Brescia', fonte: 'Portale Vendite Pubbliche',
   prezzoBase: 268, offertaMinima: 201, dataAsta: '2026-11-10', ora: '13:30', linkAvviso: 'https://pvp.giustizia.it/pvp/it/detail_annuncio.page?idAnnuncio=4652637', nFoto: 1 };
 
-test('card con la copertina: foto in alto, proporzioni fisse, lazy, async, senza referrer, alt con il titolo breve e icona della categoria sotto', () => {
+test('card con la copertina: foto in alto, proporzioni fisse, lazy, async, senza referrer, link alla scheda nascosto ai lettori di schermo, icona della categoria sotto', () => {
   const { S, U } = schede();
   const h = S.card({ ...MOBILE, copertina: FOTO }, {});
   assert.match(h, /^<article class="card cat-beni con-foto">/);
-  const foto = h.match(/<div class="foto-cop">[\s\S]*?<\/div>/)[0];
+  const foto = h.match(/<a class="foto-cop"[\s\S]*?<\/a>/)[0];
   // prima la foto, poi la testata con il punteggio
   assert.ok(h.indexOf('class="foto-cop"') < h.indexOf('class="copertina"'));
+  // il clic sulla foto porta alla scheda (come il titolo), ma il link non entra nel giro del Tab e i lettori di schermo non lo leggono
+  const apertura = foto.match(/^<a [^>]+>/)[0];
+  assert.equal(apertura, '<a class="foto-cop" href="scheda.html?id=pvp-4652637" data-passa="id:pvp-4652637" tabindex="-1" aria-hidden="true">');
+  assert.ok(h.includes('<h3 class="card-titolo"><a href="scheda.html?id=pvp-4652637"'), 'il titolo resta il link per tastiera e lettori di schermo');
   const img = foto.match(/<img [^>]+>/)[0];
   assert.ok(img.includes('src="' + U.esc(FOTO) + '"'), img);
   for (const a of ['loading="lazy"', 'decoding="async"', 'referrerpolicy="no-referrer"', 'data-copertina']) assert.ok(img.includes(a), a);
-  const alt = img.match(/alt="([^"]*)"/)[1].replace(/&#39;/g, "'");
-  assert.equal(alt, 'Foto dall\'avviso dell\'asta: N°1 mobile a parete con due cassetti grandi nella parte bassa e…');
-  assert.ok(alt.length <= 'Foto dall\'avviso dell\'asta: '.length + 71);
+  // alt vuoto: il titolo, letto subito dopo, non si ripete
+  assert.match(img, / alt="" /);
+  assert.doesNotMatch(foto, /mobile a parete/);
   // l'icona della categoria (beni) è già nel riquadro, sotto la foto, con la scritta per quando la foto non si apre
   assert.match(foto, /<svg[^>]*class="[^"]*icona-cat/);
   assert.ok(foto.indexOf('icona-cat') < foto.indexOf('<img'));
   assert.match(foto, /<span class="foto-ko">Foto non disponibile<\/span>/);
-  // titolo corto: intero; senza titolo: niente due punti appesi
-  assert.match(S.card({ ...MOBILE, titolo: 'Furgone FIAT Ducato', categoria: 'auto', copertina: FOTO }, {}), /alt="Foto dall&#39;avviso dell&#39;asta: Furgone FIAT Ducato"/);
-  assert.match(U.fotoCopertina({ copertina: FOTO }), /alt="Foto dall&#39;avviso dell&#39;asta"/);
+  // id con caratteri speciali: codificato nel link, escapato nell'attributo
+  const strano = U.fotoCopertina({ id: 'x"><script>&', copertina: FOTO });
+  assert.ok(strano.startsWith('<a class="foto-cop" href="scheda.html?id=x%22%3E%3Cscript%3E%26" data-passa="id:x&quot;&gt;&lt;script&gt;&amp;"'), strano);
+  // senza id (nessuna scheda da aprire): solo il riquadro, nascosto ai lettori di schermo
+  assert.match(U.fotoCopertina({ copertina: FOTO }), /^<div class="foto-cop" aria-hidden="true">/);
+  // categoria sconosciuta o con nomi di Object.prototype: icona dei beni
+  assert.equal(U.fotoCopertina({ ...MOBILE, categoria: 'constructor', copertina: FOTO }), U.fotoCopertina({ ...MOBILE, copertina: FOTO }));
   // nel riepilogo della home e negli affari la copertina può essere il solo percorso: l'indirizzo si ricostruisce con il dominio giusto
   assert.ok(U.fotoCopertina({ ...MOBILE, copertina: 'immagini-beni/1/2/a.jpg' }).includes('src="https://resource-pvp.giustizia.it/immagini-beni/1/2/a.jpg"'));
 });
@@ -168,9 +176,28 @@ test('affari di oggi: la card ha la foto in alto solo con la copertina', () => {
   const { A } = schede();
   const a = { ...MOBILE, motivo: 'nuova', punteggio: 60, sconto: 0.3, offertaMax: 200, riassunto: {} };
   const con = A.card({ ...a, copertina: FOTO }, 0);
-  assert.match(con, /^<article class="aff-card rivela con-foto" style="--i:0"><div class="foto-cop">/);
+  // la card degli affari non ha il link esteso del titolo: è la foto stessa a portare alla scheda
+  assert.match(con, /^<article class="aff-card rivela con-foto" style="--i:0"><a class="foto-cop" href="scheda\.html\?id=pvp-4652637" data-passa="id:pvp-4652637" tabindex="-1" aria-hidden="true">/);
   assert.match(con, /referrerpolicy="no-referrer"/);
+  assert.match(con, / alt="" /);
   const senza = A.card(a, 0);
   assert.doesNotMatch(senza, /foto-cop|con-foto|<img/);
   assert.equal(A.card({ ...a, copertina: 'https://esempio.invalid/x.jpg' }, 0), senza);
+});
+
+test('anteprima della mappa: foto solo da resource-pvp.giustizia.it, alt vuoto e link alla scheda nascosto ai lettori di schermo', () => {
+  const js = fs.readFileSync(path.join(RADICE, 'js/pages/mappa.js'), 'utf8');
+  const prima = js.match(/function primaFoto\(d\) \{[\s\S]*?\n  \}/)[0];
+  // stessa regola della copertina (js/formato.js), non un link https qualsiasi
+  assert.match(prima, /F\.copertina\(/);
+  assert.doesNotMatch(prima, /linkSicuro/);
+  const carica = js.match(/function caricaFoto\(a\) \{[\s\S]*?\n  \}/)[0];
+  assert.match(carica, /img\.alt = '';/);
+  assert.match(carica, /link\.href = 'scheda\.html\?id=' \+ encodeURIComponent\(a\.id\)/);
+  assert.match(carica, /link\.tabIndex = -1; link\.setAttribute\('aria-hidden', 'true'\);/);
+  assert.match(carica, /referrerpolicy', 'no-referrer'/);
+  // foto che non si apre: via anche il link, resta l'icona della categoria con "Foto non disponibile"
+  assert.match(carica, /'error', function \(\) \{\s*link\.remove\(\);/);
+  // nessun gestore scritto nell'HTML (la CSP di _headers non permette script in linea)
+  for (const f of ['js/ui.js', 'js/schede.js', 'js/affari.js', 'js/pages/mappa.js']) assert.doesNotMatch(fs.readFileSync(path.join(RADICE, f), 'utf8'), /\son(?:error|load)\s*=/i, f);
 });

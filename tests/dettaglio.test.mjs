@@ -407,3 +407,24 @@ test('arricchisci senza rete: storico dall\'indice, dettagli conservati, aste di
     assert.equal(stat.catene, 1);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test('copertina: non resta quella vecchia quando la scheda salvata cambia o non ha più foto', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'radar-cop-'));
+  try {
+    const cartella = path.join(dir, 'dettagli');
+    const vecchia = 'https://resource-pvp.giustizia.it/immagini-beni/1/1/vecchia.jpg';
+    await scriviSchede(cartella, new Map([
+      ['pvp-6', { id: 'pvp-6', dettaglio: '2026-10-10', foto: [] }],
+      ['pvp-7', { id: 'pvp-7', dettaglio: '2026-10-10', foto: ['https://resource-pvp.giustizia.it/immagini-beni/7/1/nuova.jpg', vecchia] }]]));
+    const pvp = (id) => ({ id: 'pvp-' + id, categoria: 'beni', prezzoBase: 1000, dataAsta: '2026-11-20', copertina: vecchia, nFoto: 3,
+      _pvp: { id, codiceTribunale: 'T1', procedura: String(id), numeroLotto: '1', dataVendita: '2026-11-20', prezzoBaseAsta: 1000, descLotto: 'Lotto' } });
+    // le aste arrivano con la copertina del giorno prima (data/aste.js), le schede salvate dicono altro
+    const aste = [pvp(6), pvp(7), pvp(8)];
+    await arricchisci({ aste, oggi: OGGI, cartella, fileIndice: path.join(dir, 'manca.json'), rete: false, log: () => {} });
+    assert.equal('copertina' in aste[0], false, 'scheda senza foto: niente copertina');
+    assert.equal(aste[0].nFoto, 0);
+    assert.equal(aste[1].copertina, 'https://resource-pvp.giustizia.it/immagini-beni/7/1/nuova.jpg', 'la prima foto della scheda, non quella di ieri');
+    assert.equal('copertina' in aste[2], false, 'scheda non ancora letta: niente copertina');
+    assert.equal('nFoto' in aste[2], false);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
