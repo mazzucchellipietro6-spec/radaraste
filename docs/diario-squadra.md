@@ -4,6 +4,11 @@ Un paragrafo per ogni giro del mattino, il più recente in alto: come sta il sit
 
 ---
 
+## 8-9/11/2026 – URGENTE: raccolta ferma da 7 giorni
+
+- **Sito pubblicato:** fermo alle aste del 2/11. Le raccolte n. 32 e 33 sono fallite per lo stesso test su `main`. Il giro dell'8/11 non è partito: la notifica è arrivata solo il 9/11.
+- **Agenti:** nessuno, finché la raccolta non riparte con il Merge della pull request #4.
+
 ## 7/11/2026 – URGENTE: raccolta ferma da 5 giorni
 
 - **Sito pubblicato:** fermo alle aste del 2/11 (raccolta n. 31 fallita per lo stesso test su `main`). Serve il Merge della pull request #4.
