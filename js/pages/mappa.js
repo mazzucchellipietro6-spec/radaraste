@@ -375,7 +375,8 @@
     $('#mMigliori').innerHTML = lista.map(voce).join('');
     if (idFuoco) { var el = $$('#mMigliori .m-voce').filter(function (x) { return x.getAttribute('data-id') === idFuoco; })[0]; fuoco(el || $('#mMigliori .m-voce') || $('#mCercaZona')); }
     $('#mPillTesto').innerHTML = '<b>' + breve(conta) + '</b> ' + (conta === 1 ? 'asta' : 'aste') + ' qui · le migliori';
-    $('#mApriZona').setAttribute('aria-label', 'In questa zona: ' + aste(conta) + ' con posizione. Apri le migliori');
+    // il nome per i lettori di schermo comincia con il testo visibile (chi usa i comandi vocali dice quello che vede)
+    $('#mApriZona').setAttribute('aria-label', breve(conta) + ' ' + (conta === 1 ? 'asta' : 'aste') + ' qui · le migliori: ' + aste(conta) + ' con posizione in questa zona');
   }
 
   /* ---------- anteprima ---------- */
@@ -387,7 +388,8 @@
   }
   function htmlAnteprima(a, ritorno) {
     var p = punti(a), fa = fascia(p), cat = ICONA_CAT[a.categoria] ? a.categoria : 'beni';
-    var avviso = U.linkSicuro(a.linkAvviso), sc = sconto(a), q = U.quando ? U.quando(a.dataAsta) : '';
+    var D = window.Formato.date(a), xd = D.asta || D.termine;
+    var avviso = U.linkSicuro(a.linkAvviso), sc = sconto(a), q = U.quando && xd ? U.quando(xd.data) : '';
     var min = a.offertaMinima;
     if (!min && a.prezzoBase && window.Calcoli && window.Calcoli.offertaMinima && window.TARIFFE) { try { min = window.Calcoli.offertaMinima(a.prezzoBase, window.TARIFFE); } catch (e) { min = null; } }
     var aff = AFFIDABILE[a.affidabilita] || a.affidabilita === 'bassa' ? ' <small>affidabilità ' + esc(a.affidabilita) + '</small>' : '';
@@ -400,7 +402,8 @@
         (p != null && a.punteggioCompleto === false ? ' · parziale' : '') + '</p><h2 id="hScheda" tabindex="-1">' + esc(a.titolo) + '</h2></div></div>' +
       (luogo(a) ? '<p class="m-luogo">' + U.icona('luogo') + '<span>' + esc(luogo(a)) + '</span></p>' : '') +
       '<dl class="kv m-kv">' +
-        '<div><dt>' + (a.fonte === 'Agenzia del Demanio' ? 'Termine offerte' : 'Data asta') + '</dt><dd>' + U.dataIt(a.dataAsta) + (a.ora ? ' ' + esc(a.ora) : '') + (q ? ' <small>(' + esc(q) + ')</small>' : '') + '</dd></div>' +
+        // del Demanio a volte si conosce solo il termine per le offerte (js/formato.js)
+        '<div><dt>' + (D.asta || !D.termine ? 'Data asta' : 'Termine offerte') + '</dt><dd>' + (xd ? U.dataIt(xd.data) + (xd.ora ? ' ' + esc(xd.ora) : '') : '—') + (q ? ' <small>(' + esc(q) + ')</small>' : '') + '</dd></div>' +
         '<div><dt>Prezzo base</dt><dd>' + (a.prezzoBase ? U.eur(a.prezzoBase) : '<span class="muted">nell\'avviso</span>') + '</dd></div>' +
         '<div><dt>Offerta minima</dt><dd>' + (min ? U.eur(min) : '—') + '</dd></div>' +
         '<div><dt>Sconto sul valore</dt><dd>' + (sc != null ? U.pct(sc, 0) + aff : '<span class="muted">non stimato</span>') + '</dd></div>' +
@@ -410,37 +413,44 @@
         (avviso ? '<a class="btn ghost" href="' + esc(avviso) + '" target="_blank" rel="noopener">Avviso originale' + U.icona('esterno') + '<span class="sr-only"> (si apre in una nuova scheda)</span></a>' : '<span class="muted">Link all\'avviso mancante</span>') +
       '</div></div>';
   }
+  // prima foto che sia un'immagine di resource-pvp.giustizia.it (stessa regola della copertina: js/formato.js)
   function primaFoto(d) {
-    var l = d && d.foto ? [].concat(d.foto) : [];
+    var l = d && d.foto ? [].concat(d.foto) : [], F = window.Formato;
+    if (!F || !F.copertina) return null;
     for (var i = 0; i < l.length; i++) {
-      var u = typeof l[i] === 'string' ? l[i] : l[i] && (l[i].url || l[i].src);
-      if (U.linkSicuro(u)) return u;
+      var u = F.copertina(typeof l[i] === 'string' ? l[i] : l[i] && (l[i].url || l[i].src));
+      if (u) return u;
     }
     return null;
   }
-  // prima foto della scheda a pezzi (solo se l'asta dice di averne: niente richieste inutili)
+  // foto di copertina dell'elenco, altrimenti la prima foto della scheda a pezzi (solo se l'asta dice di averne: niente
+  // richieste inutili). La foto porta alla scheda come "Apri la scheda"; per i lettori di schermo resta solo il pulsante.
   function caricaFoto(a) {
     var fig = $('#mFoto'), D = window.Dettagli;
     if (!fig) return;
-    var subito = primaFoto(a);
-    var attesa = subito ? Promise.resolve({ foto: [subito] }) : D && Number(a.nFoto) > 0 ? D.carica(a.id) : null;
+    var subito = primaFoto({ foto: [a.copertina].concat(a.foto || []) });
+    var attesa = subito ? Promise.resolve({ foto: [subito], fotoTotali: Number(a.nFoto) || 1 }) : D && Number(a.nFoto) > 0 ? D.carica(a.id) : null;
     if (!attesa) return;
     fig.classList.add('in-carico');
     attesa.then(function (d) {
       if (scelta !== a.id || !fig.isConnected) return;
       var u = primaFoto(d), tot = d && (d.fotoTotali || (d.foto && d.foto.length)) || Number(a.nFoto) || 0;
       if (!u) { fig.classList.remove('in-carico'); return; }
-      var img = document.createElement('img');
-      img.alt = 'Foto dall\'avviso: ' + String(a.titolo || '').slice(0, 80);
+      var img = document.createElement('img'), link = document.createElement('a');
+      // alt vuoto: subito dopo c'è il titolo dell'asta, e la foto è dentro un link nascosto ai lettori di schermo
+      img.alt = '';
       img.loading = 'lazy'; img.decoding = 'async';
       img.referrerPolicy = 'no-referrer'; img.setAttribute('referrerpolicy', 'no-referrer');
+      link.className = 'm-foto-link'; link.href = 'scheda.html?id=' + encodeURIComponent(a.id); link.setAttribute('data-passa', 'id:' + a.id);
+      link.tabIndex = -1; link.setAttribute('aria-hidden', 'true');
       img.addEventListener('load', function () { fig.classList.remove('in-carico'); fig.classList.add('con-foto'); });
       img.addEventListener('error', function () {
-        img.remove(); fig.classList.remove('in-carico'); fig.classList.add('foto-ko');
+        link.remove(); fig.classList.remove('in-carico'); fig.classList.add('foto-ko');
         var c = fig.querySelector('figcaption'); if (c) c.insertAdjacentHTML('beforeend', '<small>Foto non disponibile</small>');
       });
       img.src = u;
-      fig.insertBefore(img, fig.firstChild);
+      link.appendChild(img);
+      fig.insertBefore(link, fig.firstChild);
       if (tot > 1) fig.insertAdjacentHTML('beforeend', '<span class="m-nfoto">' + num(tot) + ' foto nella scheda</span>');
     }, function () { fig.classList.remove('in-carico'); });
   }
@@ -587,33 +597,39 @@
     var p = mappa.containerPointToLayerPoint(cp).add(mappa.getPixelOrigin()), c = CAL.trova(celle, p.x, p.y);
     return c && c.colorata ? c : null;
   }
+  // al passaggio del puntatore è un'anteprima che non si tocca (così si passa da un quadrato al vicino);
+  // con un clic o un tocco si fissa e porta il link alle aste del quadrato
   function htmlCella(c, fissa) {
     var forchetta = c.min !== c.max ? 'valori da ' + U.pct(c.min, 0) + ' a ' + U.pct(c.max, 0) : 'tutte con lo stesso sconto';
     return '<div class="m-cella-testa"><p class="m-legenda-t">Sconto medio nel quadrato</p>' +
         (fissa ? '<button class="m-x" type="button" data-chiudi-cella aria-label="Chiudi il riquadro del quadrato">' + U.icona('chiudi') + '</button>' : '') + '</div>' +
       '<p class="m-cella-v"><b>' + U.pct(c.media, 0) + '</b><small>' + esc(forchetta) + '</small></p>' +
       '<p class="m-cella-n">Campione: ' + aste(c.campione) + ' con sconto e valore di affidabilità media o alta, su ' + aste(c.aste) + ' nel quadrato con i filtri scelti.</p>' +
-      '<a class="btn small" href="aste.html" data-cella-elenco>Apri queste aste' + U.icona('freccia') + '</a>' +
-      (fissa ? '' : '<p class="m-suggerimento">Clic sul quadrato per fissare il riquadro.</p>');
+      (fissa ? '<a class="btn small" href="aste.html" data-cella-elenco>Apri queste aste' + U.icona('freccia') + '</a>'
+        : '<p class="m-suggerimento">Clic sul quadrato per fissare il riquadro e aprire queste aste.</p>');
   }
   function mostraCella(c, fissa) {
     clearTimeout(timerCella);
     var el = $('#mCella'), dentro = el.contains(document.activeElement);
     el.innerHTML = htmlCella(c, fissa);
-    var f = copia(perElenco(false));
-    f.bbox = CAL.bbox(c, celle.zoom);
-    linkElenco(el.querySelector('[data-cella-elenco]'), f);
+    if (fissa) {
+      var f = copia(perElenco(false));
+      f.bbox = CAL.bbox(c, celle.zoom);
+      linkElenco(el.querySelector('[data-cella-elenco]'), f);
+    }
     el.classList.toggle('fissa', !!fissa);
     el.hidden = false;
+    // il riquadro della regione (al passaggio) lascia il posto a quello del quadrato
+    if (!regioneFissa) { clearTimeout(timerRegione); $('#mRegione').removeAttribute('data-aperto'); }
     posizionaCella(c);
     if (dentro) fuoco(el.querySelector('[data-cella-elenco]'));
   }
-  // accanto al quadrato, dentro la mappa (su telefono tra la barra dei filtri e il pulsante in basso)
+  // accanto al quadrato, dentro la mappa (su telefono tra la barra dei filtri e la legenda in basso)
   function posizionaCella(c) {
     var el = $('#mCella'), box = $('#mMappa'), po = mappa.getPixelOrigin();
     var a = mappa.layerPointToContainerPoint([c.x0 - po.x, c.y0 - po.y]), b = mappa.layerPointToContainerPoint([c.x1 - po.x, c.y1 - po.y]);
     var W = box.clientWidth, H = box.clientHeight, w = el.offsetWidth, h = el.offsetHeight, m = 8;
-    var su = TELEFONO.matches ? 62 : m, giu = TELEFONO.matches ? 70 : m, x = b.x + m, y = a.y;
+    var su = TELEFONO.matches ? 62 : m, giu = TELEFONO.matches ? 114 : m, x = b.x + m, y = a.y;
     if (x + w > W - m) x = a.x - m - w;
     if (x < m) {
       x = Math.max(m, Math.min(W - w - m, (a.x + b.x - w) / 2));
@@ -651,7 +667,12 @@
   }
   function nascondiCellaPresto() {
     clearTimeout(timerCella);
-    timerCella = setTimeout(function () { if (cellaFissa) return; cellaSopra = null; nascondiCella(); dipingi(); }, 220);
+    timerCella = setTimeout(function () {
+      if (cellaFissa) return;
+      cellaSopra = null; nascondiCella(); dipingi();
+      // il puntatore è ancora sulla regione (mappa lontana): torna il suo riquadro
+      if (regioneSopra && !regioneFissa && !TOCCO.matches && mappa.getZoom() <= ZOOM_REGIONI_PUNTATORE) mostraRegione(regioneSopra, false);
+    }, 220);
   }
   // passando il puntatore (non al tocco: lì si tocca il quadrato)
   function sopraMappa(e) {
@@ -663,7 +684,7 @@
   }
   function legendaCalore(mini) {
     var tasselli = CAL.TONI.map(function (t) { return '<i style="--t:' + Math.round(t * 100) + '%"></i>'; }).join('');
-    if (mini) return '<span>Sconto medio</span><span class="m-scala" aria-hidden="true">' + tasselli + '</span><span>40%+</span>';
+    if (mini) return '<span>Sconto medio</span><span>0%</span><span class="m-scala" aria-hidden="true">' + tasselli + '</span><span>40%+</span>';
     var passi = ['0%'].concat(CAL.PASSI.map(function (p, i) { return Math.round(p * 100) + '%' + (i === CAL.PASSI.length - 1 ? '+' : ''); }));
     return '<div class="m-leg-calore"><p class="m-legenda-t">Sconto medio sul valore</p>' +
       '<div class="m-scala" role="img" aria-label="Scala di colore a una sola tinta: più intenso è il quadrato, più alto è lo sconto medio, da meno del 10% fino al 40% e oltre">' + tasselli + '</div>' +
@@ -754,7 +775,7 @@
     if (tipo === 'sopra') {
       if (TOCCO.matches || z > ZOOM_REGIONI_PUNTATORE) return;
       regioneSopra = nome; layer.setStyle(stileRegione(layer.feature)); layer.bringToFront && fallback && layer.bringToFront();
-      if (!regioneFissa) mostraRegione(nome, false);
+      if (!regioneFissa && $('#mCella').hidden) mostraRegione(nome, false);   // con il riquadro di un quadrato aperto, la regione aspetta
     } else if (tipo === 'fuori') {
       if (regioneSopra === nome) { regioneSopra = null; layer.setStyle(stileRegione(layer.feature)); }
       if (!regioneFissa) { clearTimeout(timerRegione); timerRegione = setTimeout(nascondiRegione, 260); }
@@ -1115,9 +1136,6 @@
       var corpo = $('#mFiltri .m-foglio-corpo'), fs = $('#mFiltri .m-strati');
       if (corpo && fs) corpo.scrollTop = Math.max(0, fs.offsetTop - corpo.offsetTop - 12);
     });
-    // riquadro del quadrato: resta aperto finché il puntatore ci è sopra (così il link si può cliccare)
-    $('#mCella').addEventListener('mouseenter', function () { clearTimeout(timerCella); });
-    $('#mCella').addEventListener('mouseleave', function () { if (!cellaFissa) nascondiCellaPresto(); });
     $('#mCella').addEventListener('click', function (e) { if (e.target.closest('[data-chiudi-cella]')) chiudiCella(true); });
     $('#mDaElenco').addEventListener('click', function (e) {
       var b = e.target.closest('[data-togli]'); if (!b) return;

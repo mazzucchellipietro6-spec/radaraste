@@ -1,7 +1,8 @@
 /* Scheda di un'asta in elenco (home, elenco, mappa, confronto).
- * Componenti del design system: .copertina (sfumatura per categoria con icona), .corpo, .anello (punteggio),
- * .preferito (stella "Segui"). I campi arricchiti (punteggio, sconto, affidabilità, valore…) possono mancare:
- * in quel caso la scheda lo dice ("Senza punteggio", "non indicato nell'avviso") e non inventa nulla. */
+ * Componenti del design system: .foto-cop (foto dall'avviso, solo se l'asta ha la copertina: UI.fotoCopertina),
+ * .copertina (testata con punteggio e luogo), .corpo, .anello (punteggio), .preferito (stella "Segui").
+ * I campi arricchiti (punteggio, sconto, affidabilità, valore, foto…) possono mancare: in quel caso la scheda lo dice
+ * ("Senza punteggio", "non indicato nell'avviso") o resta senza foto, e non inventa nulla. */
 (function (root) {
   'use strict';
   var U = root.UI, C = root.Calcoli, T = root.TARIFFE;
@@ -70,13 +71,17 @@
   }
 
   function quando(a) {
-    var q = U.quando(a.dataAsta), g = U.giorniA(a.dataAsta);
-    var et = a.fonte === 'Agenzia del Demanio' ? 'Termine offerte' : 'Asta';
-    if (!a.dataAsta) return '<div class="quando">' + U.icona('calendario') + '<span>' + et + ': data non indicata nell\'avviso</span></div>';
-    var presto = g !== null && g >= 0 && g <= 7;
-    return '<div class="quando">' + U.icona('calendario') + '<span><span class="sr-only">' + et + ': </span>' + U.dataIt(a.dataAsta) + (a.ora ? ', ' + U.esc(a.ora) : '') + '</span>' +
+    // giorno dell'asta e termine per le offerte (js/formato.js): per il Demanio senza il giorno dell'asta la data è il termine
+    var D = root.Formato.date(a), x = D.asta || D.termine, to = D.termine;
+    var et = D.asta || (!D.termine && a.fonte !== 'Agenzia del Demanio') ? 'Asta' : 'Termine offerte';
+    if (!x) return '<div class="quando">' + U.icona('calendario') + '<span>' + et + ': data non indicata nell\'avviso</span></div>';
+    var q = U.quando(x.data), g = U.giorniA(x.data), presto = g !== null && g >= 0 && g <= 7;
+    // solo il termine (Demanio senza il giorno dell'asta): la scritta si vede, altrimenti la data sembra il giorno dell'asta
+    var prima = D.asta ? '<span class="sr-only">Asta: </span>' : 'Offerte entro ';
+    return '<div class="quando">' + U.icona('calendario') + '<span>' + prima + U.dataIt(x.data) + (x.ora ? ', ' + U.esc(x.ora) : '') + '</span>' +
       (q ? '<b class="tra' + (presto ? ' presto' : '') + (g !== null && g < 0 ? ' finita' : '') + '">' + q + '</b>' : '') + '</div>' +
-      (a.termineOfferte && a.termineOfferte !== a.dataAsta ? '<div class="quando sub">' + U.icona('orologio') + '<span>Offerte entro il ' + U.dataIt(a.termineOfferte) + '</span></div>' : '');
+      // il termine sotto la data dell'asta, se è un altro giorno o ha l'ora (anche il giorno stesso dell'asta)
+      (D.asta && to && (to.data !== D.asta.data || to.ora) ? '<div class="quando sub">' + U.icona('orologio') + '<span>Offerte entro il ' + U.dataIt(to.data) + (to.ora ? ', ' + U.esc(to.ora) : '') + '</span></div>' : '');
   }
 
   function linkEsterni(a, opz) {
@@ -110,6 +115,8 @@
     var dove = luogoBreve(a);
     var manuale = a.origine === 'manuale';
 
+    // foto dall'avviso in alto, con l'icona della categoria se non si apre; senza copertina la card resta com'era
+    var foto = U.fotoCopertina ? U.fotoCopertina(a) : '';
     var copertina = '<div class="copertina">' + U.icona(ICONE_CAT[cat], 'icona-cat') + anello(a) +
       '<div class="luogo">' + U.icona('luogo') + '<span>' + (dove ? U.esc(dove) : 'Luogo non indicato') + '</span></div></div>';
 
@@ -130,9 +137,10 @@
       (manuale && !opz.compatta ? '<button class="btn small ghost" type="button" data-modifica="' + id + '">Modifica</button><button class="btn small danger" type="button" data-elimina="' + id + '">Elimina</button>' : '') +
       '<a class="btn small ghost" href="calcolatore.html?id=' + encodeURIComponent(a.id) + '"' + passa + '>Conviene?</a></div>';
 
-    return '<article class="card cat-' + cat + (opz.nuova ? ' nuova' : '') + (opz.compatta ? ' compatta' : '') + '">' + copertina +
+    return '<article class="card cat-' + cat + (foto ? ' con-foto' : '') + (opz.nuova ? ' nuova' : '') + (opz.compatta ? ' compatta' : '') + '">' + foto + copertina +
       '<div class="corpo">' + top +
-      '<h4><a href="scheda.html?id=' + encodeURIComponent(a.id) + '"' + passa + '>' + U.esc(a.titolo || 'Asta senza titolo') + '</a></h4>' +
+      // h3: le card stanno sotto un h2 (home, elenco aste); l'aspetto è quello di prima (.card-titolo in style.css)
+      '<h3 class="card-titolo"><a href="scheda.html?id=' + encodeURIComponent(a.id) + '"' + passa + '>' + U.esc(a.titolo || 'Asta senza titolo') + '</a></h3>' +
       (sotto ? '<div class="where">' + U.esc(sotto) + '</div>' : '') +
       prezzi + quando(a) + metriche(a, opz) + linkEsterni(a, opz) + azioni + '</div></article>';
   }

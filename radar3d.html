@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar 3D delle aste – Radar Aste Italia</title>
+<meta name="description" content="Radar 3D delle aste in Italia: colonne alte quanto lo sconto reale e colorate per punteggio, esagoni quando allontani la mappa, viaggio nel tempo mese per mese e il miglior affare con un clic.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/vendor/maplibre-gl/maplibre-gl.css">
+<link rel="stylesheet" href="assets/css/radar3d.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body class="pagina-radar">
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="r3-app" id="contenuto" tabindex="-1">
+  <!-- Colonna laterale su computer; su telefono diventa il foglio "Legenda e numeri" -->
+  <aside class="r3-lato" aria-label="Numeri, migliori affari e legenda del Radar 3D">
+    <section class="r3-foglio r3-info" id="r3Info" aria-labelledby="hRadar">
+      <div class="r3-foglio-testa solo-telefono">
+        <span class="maniglia" aria-hidden="true"></span>
+        <p class="r3-eti">Legenda e numeri</p>
+        <button class="r3-x" type="button" data-chiudi="info" aria-label="Chiudi legenda e numeri"><svg class="icona" aria-hidden="true"><use href="#i-chiudi"/></svg></button>
+      </div>
+      <div class="r3-scorri">
+        <div class="r3-testa">
+          <h1 id="hRadar">Radar <span>3D</span></h1>
+          <p class="r3-sintesi" id="r3Sintesi" aria-live="polite">Carico le aste…</p>
+          <a class="r3-link2d" href="mappa.html"><svg class="icona" aria-hidden="true"><use href="#i-mappa"/></svg>Torna alla mappa 2D</a>
+        </div>
+
+        <section class="r3-blocco" aria-labelledby="hMigliori">
+          <h2 id="hMigliori">I migliori affari</h2>
+          <p class="r3-nota" id="r3MiglioriNota">Le aste con il punteggio più alto tra quelle con un valore di mercato affidabile.</p>
+          <ol class="r3-voci" id="r3Migliori"></ol>
+        </section>
+
+        <section class="r3-blocco" aria-labelledby="hLegenda">
+          <h2 id="hLegenda">Come si legge</h2>
+          <div class="r3-legenda" id="r3LegendaLista"></div>
+          <div class="r3-metodo">
+            <p><b>Colonne</b> (mappa vicina): una per asta con posizione. L'<b>altezza</b> è lo sconto reale: quanto il costo totale al prezzo base (prezzo, imposte e spese) resta sotto il valore di mercato stimato. Ce l'hanno solo le aste con sconto e valore di affidabilità media o alta; le altre sono punti bassi grigi, perché non inventiamo uno sconto. Il <b>colore</b> è il punteggio affare, sulla stessa scala del sito.</p>
+            <p><b>Esagoni</b> (mappa lontana): raccolgono le aste vicine. L'<b>altezza</b> è il numero di aste; il <b>colore</b> è lo sconto medio delle sole aste affidabili, con almeno <span id="r3Minimo">3</span> nel campione, altrimenti grigio. Avvicinando la mappa gli esagoni si separano nelle colonne.</p>
+            <p><b>Viaggio nel tempo</b>: mostra le aste del mese scelto, dalla data dell'asta. Le aste già passate non ci sono.</p>
+            <p class="r3-fonte">Fonti: prezzi, date e luoghi dagli avvisi delle <a href="fonti.html">fonti ufficiali</a>; valore di mercato dalla stima del perito nell'avviso o dalle quotazioni OMI dell'Agenzia delle Entrate; punteggio e sconto calcolati dal sito (<a href="guida.html">come funziona</a>)<span id="r3Data"></span><span id="r3Sfondo"></span>. Calcoli indicativi: verifica sempre avviso e perizia.</p>
+          </div>
+        </section>
+
+        <section class="r3-blocco" aria-labelledby="hNumeri">
+          <h2 id="hNumeri">In numeri</h2>
+          <dl class="r3-numeri" id="r3Numeri"></dl>
+        </section>
+
+        <footer id="site-footer"></footer>
+      </div>
+    </section>
+
+    <!-- Scheda dell'asta scelta: sopra la colonna su computer, foglio dal basso su telefono -->
+    <section class="r3-foglio r3-scheda" id="r3Scheda" aria-labelledby="hScheda" tabindex="-1"></section>
+  </aside>
+
+  <div class="r3-mappa" id="r3Mappa">
+    <div id="r3Map" role="region" aria-label="Radar 3D delle aste: trascina per spostarti, con due dita o con il tasto destro inclini e ruoti la mappa" aria-describedby="r3Alt"></div>
+    <p class="sr-only" id="r3Alt">Mappa 3D delle aste in corso. Il riepilogo dei numeri e l'elenco dei migliori affari sono nella colonna “Legenda e numeri”.</p>
+
+    <div class="r3-comandi" id="r3Comandi">
+      <button class="btn r3-migliore" type="button" id="r3Migliore" disabled><svg class="icona" aria-hidden="true"><use href="#i-mirino"/></svg><span><span class="r3-inizio">Mostrami il </span><span class="r3-fine">miglior affare</span></span></button>
+      <button class="btn ghost r3-apri-info solo-telefono" type="button" id="r3ApriInfo" aria-controls="r3Info" aria-expanded="false"><svg class="icona" aria-hidden="true"><use href="#i-livelli"/></svg><span>Legenda</span></button>
+    </div>
+
+    <section class="r3-tempo" id="r3Tempo" aria-labelledby="hTempo" hidden>
+      <div class="r3-tempo-testa">
+        <h2 id="hTempo">Viaggio nel tempo</h2>
+        <p class="r3-tempo-mese" id="r3MeseNome" aria-live="polite">Tutti i mesi</p>
+        <button class="r3-tutti" type="button" id="r3Tutti" aria-pressed="true" aria-label="Tutti i mesi">Tutti</button>
+      </div>
+      <div class="r3-tempo-riga">
+        <button class="r3-play" type="button" id="r3Play" aria-pressed="false" aria-label="Avvia il viaggio nel tempo"></button>
+        <div class="r3-mesi" id="r3Mesi" role="group" aria-label="Mese dell'asta: l'altezza della barra è il numero di aste"></div>
+      </div>
+    </section>
+
+    <div class="r3-legenda r3-legenda-mappa" id="r3Legenda" aria-hidden="true"></div>
+    <div class="r3-tip" id="r3Tip" role="tooltip" hidden></div>
+    <div class="r3-avviso" id="r3Avviso" role="status" hidden></div>
+    <div class="r3-carico" id="r3Carico" role="status"><span class="r3-giro" aria-hidden="true"></span>Carico il radar…</div>
+    <div class="r3-ripiego" id="r3Ripiego" role="alert" hidden></div>
+    <div class="r3-velo" id="r3Velo" hidden></div>
+  </div>
+</main>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/punteggio.js"></script>
+<script src="js/calore.js"></script>
+<script src="js/radar3d-dati.js"></script>
+<script src="data/italia.js"></script>
+<script src="assets/vendor/maplibre-gl/maplibre-gl-csp.js"></script>
+<script src="assets/vendor/deck.gl/core.min.js"></script>
+<script src="assets/vendor/deck.gl/layers.min.js"></script>
+<script src="assets/vendor/deck.gl/aggregation-layers.min.js"></script>
+<script src="assets/vendor/deck.gl/mapbox.min.js"></script>
+<!-- la mappa parte subito (sfondo) mentre si scaricano le aste; le colonne arrivano a DOMContentLoaded -->
+<script src="js/pages/radar3d.js"></script>
+<script src="data/aste.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/cerca.js"></script>
+</body>
+</html>

@@ -26,11 +26,13 @@
     if (p >= 35) return 'var(--s-50)';
     return 'var(--s-0)';
   }
+  // giorno dell'asta, o il termine per le offerte quando del Demanio si conosce solo quello (js/formato.js)
   function quando(a) {
-    var t = A.istante(a.dataAsta, a.ora);
+    var D = window.Formato.date(a), x = D.asta || D.termine;
+    var t = x && A.istante(x.data, x.ora);
     if (!t) return null;
     var g = Math.ceil((t - Date.now()) / 86400000);
-    return { t: t, futura: t > Date.now(), giorni: g };
+    return { t: t, futura: t > Date.now(), giorni: g, data: x.data, ora: x.ora, soloTermine: !D.asta, termine: D.termine };
   }
 
   /* Righe: v = numero da confrontare (null se manca), meglio = 'min' | 'max', mostra = HTML della cella. */
@@ -125,10 +127,10 @@
       mostra: function (a) {
         var q = quando(a);
         if (!q) return cella(manca(a));
-        var h = A.oraDi(a.dataAsta, a.ora);
         var nota = !q.futura ? 'conclusa' : q.giorni <= 1 ? 'entro un giorno' : 'tra ' + q.giorni + ' giorni';
-        if (a.fonte === DEMANIO) nota = 'termine per le offerte · ' + nota;
-        return cella(esc(U.dataIt(String(a.dataAsta).slice(0, 10))) + (h ? ' · ' + h : ''), nota);
+        if (q.soloTermine) nota = 'termine per le offerte · ' + nota;
+        else if (a.fonte === DEMANIO && q.termine) nota += ' · offerte entro il ' + U.dataIt(q.termine.data) + (q.termine.ora ? ' ' + q.termine.ora : '');
+        return cella(esc(U.dataIt(q.data)) + (q.ora ? ' · ' + q.ora : ''), nota);
       } }
   ];
 

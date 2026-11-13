@@ -35,6 +35,35 @@
     return 'tra ' + g + ' giorni';
   }
   function linkSicuro(u) { return /^https?:\/\//i.test(u || '') ? u : null; }
+  /* Testo d'esempio di un campo (placeholder): il più lungo della lista che entra intero, l'ultimo se non ne entra nessuno.
+   * Su telefono un esempio lungo verrebbe tagliato a metà parola ("Parole, comune, n. procedu"). misura(testo) → px. */
+  function esempioCheEntra(esempi, largo, misura) {
+    for (var i = 0; i < esempi.length - 1; i++) if (misura(esempi[i]) <= largo) return esempi[i];
+    return esempi[esempi.length - 1];
+  }
+  var tela = null;
+  function adattaEsempio(el, esempi) {
+    var c = tela || (tela = document.createElement('canvas').getContext('2d'));
+    if (!el || !c) return;
+    var cs = getComputedStyle(el), largo = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    if (!(largo > 0)) return;
+    c.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    el.placeholder = esempioCheEntra(esempi, largo, function (t) { return c.measureText(t).width; });
+  }
+  // sceglie l'esempio adesso, quando cambia la larghezza della finestra e quando arrivano i caratteri del sito
+  function esempioAdattivo(el, esempi) {
+    if (!el || !esempi || !esempi.length) return;
+    var attesa = null, adatta = function () { adattaEsempio(el, esempi); };
+    adatta();
+    window.addEventListener('resize', function () { if (attesa) return; attesa = requestAnimationFrame(function () { attesa = null; adatta(); }); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(adatta);
+  }
+  // fonti che oggi non si sono aggiornate (errore o blocco) ma restano in elenco con le aste di una raccolta precedente:
+  // [{ nome, data: giorno dell'ultima raccolta riuscita, AAAA-MM-GG nel fuso del browser }]
+  function fontiFerme(R) {
+    return ((R && R.fonti) || []).filter(function (f) { return (f.stato === 'errore' || f.stato === 'bloccata') && f.ultimaRaccolta && !isNaN(new Date(f.ultimaRaccolta)); })
+      .map(function (f) { return { nome: f.nome, data: oggi(new Date(f.ultimaRaccolta)) }; });
+  }
   function badgeStato(s) {
     return s === 'confermato'
       ? '<span class="pill p-good" title="Riscontrato su fonte ufficiale">confermato</span>'
@@ -118,6 +147,36 @@
   function ciclaTema() { var ord = ['auto', 'light', 'dark']; applicaTema(ord[(ord.indexOf(temaCorrente()) + 1) % 3]); toast('Tema ' + NOME_TEMA[temaCorrente()]); }
   function icona(n, cls) { return root.Icone ? root.Icone.svg(n, cls) : ''; }
 
+  /* Foto di copertina di un'asta nelle card (elenchi, home, affari di oggi): la prima foto della scheda letta dal Portale
+   * delle Vendite Pubbliche, solo da resource-pvp.giustizia.it (Formato.copertina) e scaricata senza referrer.
+   * Riquadro con proporzioni fisse (niente salti dell'impaginazione) e, sotto la foto, l'icona della categoria: si vede
+   * mentre la foto arriva e resta, con "Foto non disponibile", se la foto non si apre. Mai un riquadro vuoto e mai una foto
+   * che l'avviso non ha: senza copertina restituisce '' e la card resta com'era.
+   * La foto è un link alla scheda per chi usa il mouse o il dito (nelle card degli affari non c'è il link esteso del titolo),
+   * ma è nascosta ai lettori di schermo e fuori dal giro del tasto Tab, con alt vuoto: subito dopo c'è il titolo con lo stesso
+   * link, e leggere due volte il titolo non serve. */
+  var ICONE_CATEGORIA = { immobile: 'casa', auto: 'auto', moto: 'moto', beni: 'beni' };
+  function fotoCopertina(a) {
+    var F = root.Formato, u = a && F && F.copertina ? F.copertina(a.copertina) : null;
+    if (!u) return '';
+    var ic = icona(Object.prototype.hasOwnProperty.call(ICONE_CATEGORIA, a.categoria) ? ICONE_CATEGORIA[a.categoria] : 'beni', 'icona-cat');
+    var dentro = ic + '<img src="' + esc(u) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-copertina>' +
+      '<span class="foto-ko">Foto non disponibile</span>';
+    if (a.id == null || a.id === '') return '<div class="foto-cop" aria-hidden="true">' + dentro + '</div>';
+    return '<a class="foto-cop" href="scheda.html?id=' + encodeURIComponent(a.id) + '" data-passa="id:' + esc(a.id) + '" tabindex="-1" aria-hidden="true">' + dentro + '</a>';
+  }
+  // foto arrivata: l'icona sotto non serve più; foto che non si apre: via l'immagine rotta, resta l'icona della categoria
+  // (gli eventi load ed error delle immagini non risalgono: si ascoltano in cattura su tutta la pagina)
+  function statoFoto(e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG' || !img.hasAttribute || !img.hasAttribute('data-copertina')) return;
+    var box = img.parentNode;
+    if (e.type === 'load') { if (box) box.classList.add('caricata'); return; }
+    img.parentNode && img.parentNode.removeChild(img);
+    if (box) box.classList.add('senza-foto');
+  }
+  if (document.addEventListener) { document.addEventListener('error', statoFoto, true); document.addEventListener('load', statoFoto, true); }
+
   /* ---- Struttura del sito: intestazione, barra in basso, foglio "Menu", piè di pagina ----
    * Sei sezioni, sempre nello stesso ordine: Home, Aste, Mappa, Assistenti, Strumenti, Le mie aste.
    * Assistenti e Strumenti hanno una pagina indice e, su computer, una tendina con le loro pagine. */
@@ -144,8 +203,25 @@
     { href: 'strumenti.html', nome: 'Strumenti', icona: 'strumenti', voci: STRUMENTI },
     { href: 'mie-aste.html', nome: 'Le mie aste', icona: 'stella', anche: ['account.html', 'accedi.html'] }
   ];
-  // pagine di servizio nel piè di pagina (abbonamenti in modalità test e bozze legali): una voce solo quando la pagina esiste
-  var SERVIZIO = [];
+  // pagine di servizio nel piè di pagina: abbonamenti in modalità test e bozze legali. Finché gli abbonamenti non sono
+  // attivi si vedono solo nell'anteprima del proprietario (?anteprima=abbonamenti, vedi js/piani.js)
+  var SERVIZIO = [
+    { href: 'prezzi.html', nome: 'Prezzi e abbonamenti' }, { href: 'account.html', nome: 'Il mio account' },
+    { href: 'termini.html', nome: 'Termini d\'uso' }, { href: 'privacy.html', nome: 'Privacy' }, { href: 'cookie.html', nome: 'Cookie' },
+    { href: 'recesso.html', nome: 'Recesso' }, { href: 'avvertenze.html', nome: 'Non è consulenza finanziaria' }
+  ];
+  // ?anteprima=abbonamenti vale per tutta la scheda del browser e ?anteprima=no la spegne, come in js/piani.js:
+  // prima, aperta da una pagina senza js/piani.js (es. la home), l'anteprima spariva alla pagina successiva
+  function abbonamentiVisibili() {
+    if (root.ABBONAMENTI && root.ABBONAMENTI.attivi === true) return true;
+    if (root.ANTEPRIMA_ABBONAMENTI === true) return true;
+    var v = (/[?&]anteprima=([^&#]*)/.exec(root.location.search || '') || [])[1];
+    try {
+      if (v === 'abbonamenti') { root.sessionStorage.setItem('radaraste.anteprima-abbonamenti', '1'); return true; }
+      if (v === 'no') { root.sessionStorage.removeItem('radaraste.anteprima-abbonamenti'); return false; }
+      return root.sessionStorage.getItem('radaraste.anteprima-abbonamenti') === '1';
+    } catch (e) { return v === 'abbonamenti'; }
+  }
   // su telefono: le prime quattro sezioni nella barra in basso, il resto nel foglio "Menu"
   var TAB = ['index.html', 'aste.html', 'mappa.html', 'assistenti.html'];
   var MARCHIO = '<svg class="marchio" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><circle cx="16" cy="16" r="9.5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".45" stroke-width="1.4"/><circle cx="16" cy="16" r="5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".75" stroke-width="1.4"/><path d="M16 16 L23.5 11" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="1.8" fill="var(--accent-ink)"/></svg>';
@@ -178,7 +254,7 @@
             p.voci.map(function (v) { return voceElenco(v, qui); }).join('') +
             '<a class="tutte" href="' + p.href + '">Tutti gli ' + p.nome.toLowerCase() + ' →</a></div></div></div>';
         }).join('') + '</nav>' +
-        '<button class="cerca-btn" type="button" data-cerca aria-label="Cerca aste, comuni, tribunali">' + icona('cerca') + '<span class="testo">Cerca comune, tribunale, asta…</span><kbd>/</kbd></button>' +
+        '<button class="cerca-btn" type="button" data-cerca aria-label="Cerca comune, tribunale, asta">' + icona('cerca') + '<span class="testo">Cerca comune, tribunale, asta…</span><kbd>/</kbd></button>' +
         '<button class="theme-btn" type="button"></button></div>';
     }
     // barra in basso (visibile su telefono)
@@ -194,14 +270,15 @@
     var f = $('#site-footer');
     if (f) {
       var agg = root.TARIFFE ? dataIt(root.TARIFFE.aggiornamento) : '';
-      var col = function (titolo, voci) { return '<div><h3>' + titolo + '</h3><ul>' + voci.map(function (v) { return '<li><a href="' + v.href + '">' + esc(v.nome) + '</a></li>'; }).join('') + '</ul></div>'; };
+      // h2: le colonne del piè di pagina stanno subito sotto l'h1 della pagina (con un h3 la scala dei titoli saltava un livello)
+      var col = function (titolo, voci) { return '<div><h2 class="piede-titolo">' + titolo + '</h2><ul>' + voci.map(function (v) { return '<li><a href="' + v.href + '">' + esc(v.nome) + '</a></li>'; }).join('') + '</ul></div>'; };
       f.className = 'site-footer';
       f.innerHTML = '<div class="wrap">' +
         '<div class="piede-colonne">' +
           '<div class="piede-marchio"><a class="brand" href="index.html">' + MARCHIO + '<span>Radar <b>Aste</b></span></a><p>Le aste pubbliche italiane raccolte ogni giorno dalle fonti ufficiali, con i conti fatti in chiaro.</p></div>' +
           col('Sezioni', NAV.filter(function (p) { return !p.voci; })) + col('Assistenti', ASSISTENTI) + col('Strumenti', STRUMENTI) +
         '</div>' + avvertenza() +
-        (SERVIZIO.length ? '<nav class="row-actions piede-servizio" aria-label="Informazioni legali e abbonamenti">' + SERVIZIO.map(function (v) { return '<a href="' + v.href + '">' + esc(v.nome) + '</a>'; }).join('') + '</nav>' : '') +
+        (abbonamentiVisibili() ? '<nav class="row-actions piede-servizio" aria-label="Informazioni legali e abbonamenti">' + SERVIZIO.map(function (v) { return '<a href="' + v.href + '">' + esc(v.nome) + '</a>'; }).join('') + '</nav>' : '') +
         '<div class="row-actions piede-link"><span>Aliquote aggiornate al ' + esc(agg) + '</span><span class="spacer"></span><span>Nessun dato inventato</span></div></div>';
     }
     applicaTema(temaCorrente());
@@ -371,8 +448,8 @@
 
   root.UI = {
     $: $, $$: $$, esc: esc, eur: eur, pct: pct, dataIt: dataIt, giorniA: giorniA, quando: quando, oggi: oggi,
-    linkSicuro: linkSicuro, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
-    icona: icona, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI, SERVIZIO: SERVIZIO,
+    linkSicuro: linkSicuro, esempioCheEntra: esempioCheEntra, esempioAdattivo: esempioAdattivo, fontiFerme: fontiFerme, abbonamentiVisibili: abbonamentiVisibili, badgeStato: badgeStato, toast: toast, conferma: conferma, offriFile: offriFile, parametro: parametro, layout: layout, avvertenza: avvertenza,
+    icona: icona, fotoCopertina: fotoCopertina, osservaComparsa: osservaComparsa, apriAltro: apriAltro, aggiornaSeguite: aggiornaSeguite, NAV: NAV, ASSISTENTI: ASSISTENTI, STRUMENTI: STRUMENTI, SERVIZIO: SERVIZIO,
     finestra: finestra, apriFinestra: apriFinestra, chiudiFinestra: chiudiFinestra, focusabili: focusabili, menoMovimento: function () { return menoMovimento.matches; },
     opzioniRegioni: opzioniRegioni, opzioniProvince: opzioniProvince,
     csvParse: csvParse, csvStringify: csvStringify, scarica: scarica, leggiFile: leggiFile,

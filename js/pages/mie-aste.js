@@ -15,7 +15,9 @@
     if (!a) return '';
     var sparita = !S.asta(s.id);
     var v = s.valutazione;
-    var g = U.giorniA(a.dataAsta);
+    // del Demanio a volte si conosce solo il termine per le offerte (js/formato.js): la data mostrata è quella
+    var D = window.Formato.date(a), x = D.asta || D.termine, soloTermine = !D.asta && !!D.termine;
+    var g = x ? U.giorniA(x.data) : null;
     var urgente = g !== null && g >= 0 && g <= 7;
     var link = U.linkSicuro(a.linkAvviso), perizia = U.linkSicuro(a.linkPerizia);
     return '<article class="panel" data-id="' + U.esc(s.id) + '">' +
@@ -23,7 +25,7 @@
         '<div style="flex:1;min-width:220px">' +
           '<div class="row-actions" style="gap:6px;margin-bottom:4px"><span class="pill p-info">' + U.esc(U.CATEGORIE[a.categoria] || a.categoria) + '</span>' +
             (v ? '<span class="pill p-' + v.tono + '" title="Valutazione del ' + U.dataIt((v.data || '').slice(0, 10)) + '">' + U.esc(v.giudizio) + ' · ' + U.pct(v.sconto, 0) + '</span>' : '<span class="pill p-neutral">Non ancora valutata</span>') +
-            (urgente ? '<span class="pill p-warn">Asta ' + U.quando(a.dataAsta) + '</span>' : '') +
+            (urgente ? '<span class="pill p-warn">' + (soloTermine ? 'Termine offerte ' : 'Asta ') + U.quando(x.data) + '</span>' : '') +
             (sparita ? '<span class="pill p-neutral" title="Non è più nell\'elenco: mostro la copia salvata">non più in elenco</span>' : '') + '</div>' +
           '<h2 style="font-size:18px">' + U.esc(a.titolo) + '</h2>' +
           '<div class="note" style="margin:0">' + U.esc([a.comune, a.provincia ? '(' + a.provincia + ')' : '', a.tribunale ? '· Trib. ' + a.tribunale : '', a.rge ? '· R.G.E. ' + a.rge : ''].filter(Boolean).join(' ')) + '</div>' +
@@ -31,7 +33,8 @@
         '<label style="min-width:180px">A che punto sei<select data-campo="stato">' + STATI.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === s.stato ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></label>' +
       '</div>' +
       '<dl class="kv" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:12px">' +
-        '<div><dt>Data asta</dt><dd>' + U.dataIt(a.dataAsta) + '</dd></div>' +
+        '<div><dt>' + (soloTermine ? 'Termine offerte' : 'Data asta') + '</dt><dd>' + (x ? U.dataIt(x.data) : '—') + '</dd></div>' +
+        (D.asta && D.termine && D.termine.data !== D.asta.data ? '<div><dt>Offerte entro</dt><dd>' + U.dataIt(D.termine.data) + (D.termine.ora ? ' ' + U.esc(D.termine.ora) : '') + '</dd></div>' : '') +
         '<div><dt>Prezzo base</dt><dd>' + U.eur(a.prezzoBase) + '</dd></div>' +
         '<div><dt>Offerta minima</dt><dd>' + U.eur(a.offertaMinima || (a.prezzoBase ? C.offertaMinima(a.prezzoBase, T) : NaN)) + '</dd></div>' +
         (v ? '<div><dt>Costo totale stimato</dt><dd>' + U.eur(v.totale) + '</dd></div><div><dt>Offerta max consigliata</dt><dd>' + U.eur(v.offertaMax) + '</dd></div>' : '') +

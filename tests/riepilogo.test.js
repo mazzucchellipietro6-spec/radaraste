@@ -6,7 +6,8 @@ const OGGI = '2026-10-13';
 const a = (id, o) => ({ id, titolo: 'Asta ' + id, categoria: 'immobile', regione: 'Liguria', dataAsta: '2026-11-20', prezzoBase: 100000, pubblicata: '2026-09-01', vista: '2026-09-01', ...o });
 
 const aste = [
-  a('p1', { punteggio: 80, punteggioCompleto: true, sconto: 0.45, affidabilita: 'alta', valore: 200000, lat: 44.4, lng: 8.9, superficieMq: 90, tentativo: 3, rischi: [], nFoto: 5 }),
+  a('p1', { punteggio: 80, punteggioCompleto: true, sconto: 0.45, affidabilita: 'alta', valore: 200000, lat: 44.4, lng: 8.9, superficieMq: 90, tentativo: 3, rischi: [], nFoto: 5,
+    copertina: 'https://resource-pvp.giustizia.it/immagini-beni/1/2/foto.jpg?versionId=a' }),
   a('p2', { punteggio: 90, punteggioCompleto: false, sconto: 0.6, affidabilita: 'bassa' }),              // non completo: fuori dai migliori e dalla media
   a('p3', { punteggio: 70, punteggioCompleto: true, sconto: 0.25, affidabilita: 'media', regione: 'Lazio', tentativo: 2, pubblicata: '2026-10-12' }),
   a('p4', { punteggio: 95, punteggioCompleto: true, sconto: 0.5, affidabilita: 'alta', dataAsta: '2026-10-01' }), // passata
@@ -19,7 +20,10 @@ test('migliori: solo aste future con punteggio completo, ordinate per punteggio,
   assert.deepEqual(r.migliori.lista.map((x) => x.id), ['p1', 'p3']);
   assert.equal(r.migliori.totale, 2);
   const m = r.migliori.lista[0];
-  for (const c of ['valore', 'affidabilita', 'sconto', 'punteggio', 'superficieMq', 'tentativo', 'nFoto', 'lat', 'lng', 'regione']) assert.ok(c in m, c);
+  for (const c of ['valore', 'affidabilita', 'sconto', 'punteggio', 'superficieMq', 'tentativo', 'nFoto', 'lat', 'lng', 'regione', 'copertina']) assert.ok(c in m, c);
+  // la foto di copertina va nelle card della home; senza foto il campo non c'è
+  assert.equal(m.copertina, 'https://resource-pvp.giustizia.it/immagini-beni/1/2/foto.jpg?versionId=a');
+  assert.equal('copertina' in r.migliori.lista[1], false);
   assert.deepEqual(m.rischi, []);
 });
 

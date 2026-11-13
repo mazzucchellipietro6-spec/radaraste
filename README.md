@@ -15,8 +15,9 @@ Il menu ha sei sezioni, uguali in tutte le pagine (su telefono: barra in basso c
 | Sezione | Pagine | Cosa fa |
 |---|---|---|
 | **Home** | `index.html` | Domanda al consulente, Affari di oggi, stato degli assistenti, migliori affari in corso, aste nuove e in scadenza, tre passi per chi è nuovo. Legge solo i file piccoli del giorno: si apre subito. |
-| **Aste** | `aste.html`, `scheda.html?id=…` | Elenco con filtri (categoria, testo, luogo, tribunale, prezzo, date, stato, zona della mappa), ricerche salvate. La scheda di ogni asta ha prezzi, date, valore di mercato con forchetta, fonte e affidabilità, costo totale, simulazione dell'offerta, rischi con la frase che li prova, storico dei tentativi, foto, documenti, promemoria in calendario. |
+| **Aste** | `aste.html`, `scheda.html?id=…` | Elenco con filtri (categoria, testo, luogo, tribunale, prezzo, date, stato, zona della mappa), ricerche salvate; le card hanno in alto la prima foto dell'avviso, quando il Portale ne ha pubblicate. La scheda di ogni asta ha prezzi, date, valore di mercato con forchetta, fonte e affidabilità, costo totale, simulazione dell'offerta, rischi con la frase che li prova, storico dei tentativi, foto, documenti, promemoria in calendario. |
 | **Mappa** | `mappa.html` | Mappa OpenStreetMap con le aste colorate per punteggio, raggruppate quando sono vicine; dati per regione, anteprima dell'asta, "Cerca in questa zona". Se lo sfondo è bloccato restano confini e nomi delle regioni. |
+| | `radar3d.html` | **Radar 3D** (in lavorazione): colonne alte quanto lo sconto e colorate per punteggio, esagoni quando allontani la mappa, viaggio nel tempo mese per mese, il miglior affare con un clic. Sfondo OpenFreeMap con ripiego su OpenStreetMap; sotto 10 immagini al secondo il 3D si ferma. |
 | **Assistenti** | `assistenti.html` | Indice dei cinque assistenti con lo stato di oggi e la spiegazione dei livelli di affidabilità. |
 | | `affari.html` | **Cacciatore di affari**: ogni mattina analizza le aste nuove o ribassate, ricontrolla i numeri, cerca segnali di affare e di pericolo e sceglie 5-10 affari con perché conviene, rischi, offerta massima e scadenza. Preferenze personali (zona, budget, categoria, strategia) e storico delle segnalate. |
 | | `consulente.html` | **Consulente d'asta**: chat che capisce domande in italiano e risponde con ricerca, filtri e calcoli del sito. Modalità AI preparata ma spenta (vedi `CONSULENTE.md`). |
@@ -30,6 +31,7 @@ Il menu ha sei sezioni, uguali in tutte le pagine (su telefono: barra in basso c
 | | `guida.html` | Guida all'asta telematica passo per passo, con le fonti (le stesse risposte del consulente). |
 | | `tariffe.html`, `fonti.html` | Aliquote con fonte e data; stato delle fonti dei dati. |
 | **Le mie aste** | `mie-aste.html` | Aste seguite con note, stato, giudizio salvato, promemoria in calendario di tutte, backup. Tutto resta nel browser. |
+| **Abbonamenti** (modalità test, spenti) | `prezzi.html`, `accedi.html`, `account.html`; pagine legali `termini.html`, `privacy.html`, `cookie.html`, `recesso.html`, `avvertenze.html` | Piani e prezzi proposti, accesso e pagina dell'account, bozze legali con i dati del titolare da completare. Finché non configuri gli account nessuna funzione è bloccata; anteprima con `?anteprima=abbonamenti`. Vedi `ABBONAMENTI.md`. |
 
 Ricerca istantanea da ogni pagina (pulsante Cerca, tasto `/` o Ctrl/Cmd+K). Tema chiaro e scuro, pensato per il telefono, usabile da tastiera, installabile come app con funzionamento offline (`sw.js`).
 
@@ -57,6 +59,8 @@ Quando due fonti non concordano si usa sempre il valore più basso: lo sconto no
 
 Il programma di raccolta si identifica con uno user-agent riconoscibile, rispetta robots.txt, fa una richiesta ogni 2,5–3 secondi e si ferma su 401/403/429. Se una fonte blocca l'accesso lo scrive nella pagina Fonti.
 
+**Foto delle aste.** Vengono solo dalle schede di dettaglio del Portale delle Vendite Pubbliche (la ricerca del Portale non ne dà): fino a 8 per asta in `data/dettagli/XX.js` (`foto`, `fotoTotali`), mostrate nella galleria della scheda. La prima è anche in `data/aste.js` come `copertina`, salvata senza `https://resource-pvp.giustizia.it/`: `js/formato.js` rimette l'indirizzo alla lettura e accetta solo immagini di quel sito. Le card (home, elenco, affari di oggi) e l'anteprima della mappa la mostrano in alto; se non si apre resta l'icona della categoria, e senza foto la card resta senza immagine: mai foto di repertorio. Il sito non copia le foto: le scarica il browser dal Portale, senza referrer. Con i dati del 3/11/2026 hanno la copertina 1.062 aste su 23.794 (data/aste.js cresce di circa 124 KB, 52 KB compresso).
+
 ---
 
 ## Come si aggiorna ogni giorno
@@ -66,7 +70,7 @@ Il workflow `.github/workflows/aggiorna-aste.yml` parte ogni giorno alle 04:17 U
 1. esegue i test;
 2. recupera i dati pubblicati il giorno prima e la cache dell'indice storico e delle schede;
 3. se configurato, scarica le quotazioni OMI dal repository privato e ricostruisce l'indice;
-4. raccoglie le aste (`scripts/raccogli.mjs`): fonti, arricchimento (fino a 600 schede di dettaglio al giorno), valore OMI, punteggio, riepilogo, stato degli assistenti, Combinazioni d'oro;
+4. raccoglie le aste (`scripts/raccogli.mjs`): fonti, arricchimento (fino a 1000 schede di dettaglio al giorno, circa 52 minuti con una richiesta ogni 3 secondi), valore OMI, punteggio, riepilogo, stato degli assistenti, Combinazioni d'oro;
 5. esegue il Cacciatore (`scripts/cacciatore.mjs`) e, se ci sono i secret, invia il messaggio Telegram;
 6. pubblica il sito su GitHub Pages, senza indice storico, cartella OMI e file temporanei.
 
@@ -157,6 +161,18 @@ Tecnologie: HTML, CSS e JavaScript senza framework né passaggi di build. Il sit
 3. Nel repository: **Settings → Secrets and variables → Actions** → `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`.
 
 Il token non va mai scritto nel codice. Senza i due secret il workflow non invia nulla e lo scrive nel log.
+
+---
+
+## Abbonamenti (modalità test)
+
+Piani Gratis, Base e Pro con prezzi **proposti** (da approvare), account con Supabase, pagamenti con Stripe e email con Resend, su Cloudflare Pages con le funzioni di `functions/`. È tutto **spento e in modalità test**: con `attivi: false` in `config/abbonamenti.js` il sito funziona come sempre e nessun pagamento reale è possibile (le funzioni rifiutano le chiavi reali di Stripe se su Cloudflare manca `PAGAMENTI_REALI=si`). Le chiavi segrete stanno solo nelle variabili d'ambiente di Cloudflare.
+
+Il workflow pubblica anche su Cloudflare Pages solo se nel repository ci sono la variabile `CF_PAGES_PROGETTO` e i secret `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`. Lo fa **dopo** GitHub Pages, che resta com'è anche se Cloudflare non risponde; la versione di wrangler è fissata (4.151.2). Intestazioni di sicurezza e cache in `_headers` (valgono solo su Cloudflare), progetto in `wrangler.toml`.
+
+File: `config/abbonamenti.js` (piani, prezzi, interruttore), `js/piani.js`, `js/account.js`, le pagine della tabella sopra, `functions/api/stripe/` e `functions/api/account/` (funzioni del server) con il codice comune in `servizi/`, `supabase/schema.sql` (database), `wrangler.toml`, `_headers`.
+
+Guida completa per il proprietario (prezzi e perché, come funziona, account da creare passo per passo, carte di test, lista di controllo prima dei pagamenti reali): **[ABBONAMENTI.md](ABBONAMENTI.md)**.
 
 ---
 

@@ -2,14 +2,16 @@
  * La raccolta lo scrive in data/riepilogo.js, così la home si apre subito senza caricare tutte le aste.
  *
  *   attive, perCategoria, valoreTotale (somma dei prezzi base delle aste attive)
- *   nuove, inScadenza, migliori, ribassi: { totale, lista } con le aste in forma compatta (CAMPI)
+ *   nuove, inScadenza, migliori, ribassi: { totale, lista } con le aste in forma compatta (CAMPI; copertina = indirizzo
+ *   completo della prima foto dell'avviso, che le card mostrano solo se è di resource-pvp.giustizia.it: js/formato.js)
  *   sconto: { medio, campione } solo sulle aste con valore ad affidabilità media o alta
  *   perRegione: { regione: { n, scontoMedio, campione, migliore: { id, titolo, punteggio } } } */
 (function (root) {
   'use strict';
   var CAMPI = ['id', 'titolo', 'categoria', 'tipo', 'regione', 'comune', 'provincia', 'tribunale', 'fonte', 'prezzoBase', 'offertaMinima', 'dataAsta', 'ora', 'stato',
     'linkAvviso', 'pubblicata', 'vista', 'lat', 'lng', 'superficieMq', 'tentativo', 'rischi', 'nFoto', 'stima', 'valore', 'valoreMin', 'valoreMax', 'fonteValore',
-    'affidabilita', 'sconto', 'costoTotale', 'offertaMax', 'punteggio', 'punteggioCompleto', 'prezzoPrecedente', 'dataRibasso', 'ribasso', 'termineOfferte'];
+    'affidabilita', 'sconto', 'costoTotale', 'offertaMax', 'punteggio', 'punteggioCompleto', 'prezzoPrecedente', 'dataRibasso', 'ribasso', 'termineOfferte',
+    'copertina'];
 
   function compatta(a) {
     var o = {};
