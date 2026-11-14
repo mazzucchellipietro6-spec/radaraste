@@ -4,7 +4,7 @@ Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce camb
 
 Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ aspetta una tua decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 13/11/2026 (giro della squadra).
+Ultimo aggiornamento: 14/11/2026 (giro della squadra).
 
 ---
 
@@ -17,7 +17,7 @@ Ultimo aggiornamento: 13/11/2026 (giro della squadra).
 - valori di mercato **più prudenti**: con fonti discordanti si usa il valore più basso e il punteggio si ferma a "Da valutare";
 - **README** e documentazione riscritti; **182 test** automatici.
 
-**URGENTE (dal 3/11, ancora il 13/11): il sito pubblicato non si aggiorna più.** La raccolta del 3/11 su GitHub è fallita al primo passo, i test. Su `main` un test degli abbonamenti aveva una data fissa e dal 3/11 fallisce da solo. Il sito resta visibile, ma con le aste del 2/11. La correzione è già nella pull request [#4](https://github.com/mazzucchellipietro6-spec/radaraste/pull/4): con il **Merge** la raccolta riparte subito.
+**URGENTE (dal 3/11, ancora il 14/11): il sito pubblicato non si aggiorna più.** La raccolta del 3/11 su GitHub è fallita al primo passo, i test. Su `main` un test degli abbonamenti aveva una data fissa e dal 3/11 fallisce da solo. Il sito resta visibile, ma con le aste del 2/11. La correzione è già nella pull request [#4](https://github.com/mazzucchellipietro6-spec/radaraste/pull/4): con il **Merge** la raccolta riparte subito.
 
 **Pubblicato:**
 - il 13/10 hai unito la pull request [#2](https://github.com/mazzucchellipietro6-spec/radaraste/pull/2);
