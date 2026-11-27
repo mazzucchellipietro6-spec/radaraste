@@ -13,7 +13,8 @@
 #   img-src      tile di OpenStreetMap (sfondo della mappa), foto delle aste dal Portale Vendite Pubbliche
 #                (resource-pvp.giustizia.it), data: (immagini vuote di Leaflet) e blob: (immagini che MapLibre
 #                ricava dai file scaricati).
-#   connect-src  nominatim.openstreetmap.org (posizione delle aste inserite a mano, nella mappa); il progetto
+#   connect-src  nominatim.openstreetmap.org (posizione delle aste inserite a mano, nella mappa); resource-pvp.giustizia.it
+#                (il lettore della perizia scarica il PDF dal Portale, che lo permette ad altri siti, e lo legge nel browser); il progetto
 #                Supabase degli account (*.supabase.co: se usi un dominio personalizzato, aggiungilo qui);
 #                tiles.openfreemap.org (Radar 3D: stile, tile vettoriali, caratteri e icone) e tile.openstreetmap.org
 #                (Radar 3D, sfondo di ripiego): MapLibre scarica tutto con fetch, quindi servono qui e non in img-src.
@@ -35,7 +36,7 @@
 # la posizione ("vicino a me"), cambia geolocation=(self).
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-AuRrEURHuEvIPVaIwyFxbQnSFt5SRQtPHQyFcTZ7IAE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://resource-pvp.giustizia.it; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org https://*.supabase.co https://tiles.openfreemap.org https://tile.openstreetmap.org; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-AuRrEURHuEvIPVaIwyFxbQnSFt5SRQtPHQyFcTZ7IAE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://resource-pvp.giustizia.it; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org https://resource-pvp.giustizia.it https://*.supabase.co https://tiles.openfreemap.org https://tile.openstreetmap.org; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin

@@ -218,6 +218,8 @@ async function risorseNelCodice() {
 async function risorseDinamiche() {
   const { RISORSE } = await import('../scripts/lib/dettaglio-pvp.mjs');
   const r = [{ host: new URL(RISORSE).hostname, direttive: ['img-src'], dove: 'foto delle aste (scripts/lib/dettaglio-pvp.mjs → data/dettagli/, e la copertina in data/aste.js: js/formato.js)' }];
+  // il lettore della perizia (js/lettore-perizia.js) scarica con fetch il PDF il cui indirizzo è nei dati della scheda
+  r.push({ host: new URL(RISORSE).hostname, direttive: ['connect-src'], dove: 'perizie lette nel browser (allegati.perizia in data/dettagli/: js/lettore-perizia.js)' });
   const abb = require('../config/abbonamenti.js');
   const sb = abb.supabase && abb.supabase.url;
   // senza configurazione vale l'indirizzo che Supabase dà a ogni progetto: https://<id>.supabase.co

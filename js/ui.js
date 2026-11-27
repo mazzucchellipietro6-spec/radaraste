@@ -191,6 +191,7 @@
     { href: 'calcolatore.html', nome: 'Calcolatore "Conviene?"', nota: 'Costo totale, sconto e offerta massima', icona: 'calcolo' },
     { href: 'mutuo.html', nome: 'Simulatore mutuo', nota: 'Rata, budget e quanto puoi permetterti', icona: 'mutuo' },
     { href: 'confronta.html', nome: 'Confronta aste', nota: 'Fino a 3 aste fianco a fianco', icona: 'confronta' },
+    { href: 'perizia.html', nome: 'Lettore della perizia', nota: 'I punti critici, con la frase e la pagina', icona: 'documento' },
     { href: 'guida.html', nome: 'Guida all\'asta', nota: 'Come si partecipa, passo per passo', icona: 'guida' },
     { href: 'tariffe.html', nome: 'Tariffe e tasse', nota: 'Aliquote con fonte e data', icona: 'tasse' },
     { href: 'fonti.html', nome: 'Fonti dei dati', nota: 'Da dove arrivano le aste e quando', icona: 'fonti' }

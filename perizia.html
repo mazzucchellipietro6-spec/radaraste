@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lettore della perizia – Radar Aste Italia</title>
+<meta name="description" content="Scegli la perizia di stima in PDF: il lettore trova abusi edilizi, occupazione, vincoli, spese condominiali, agibilità e gli altri punti critici, con la frase esatta e la pagina. Tutto nel tuo browser.">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/pagine.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body class="pg-perizia">
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <div class="page-head">
+    <h1>Lettore della <span>perizia</span></h1>
+    <p class="sub">Scegli la perizia di stima in PDF: trovo i punti che possono costarti caro e per ognuno ti mostro la frase esatta e la pagina. La lettura avviene nel tuo browser.</p>
+  </div>
+
+  <section class="panel lp-pagina" aria-labelledby="hLeggi">
+    <h2 id="hLeggi" class="sr-only">Scegli la perizia</h2>
+    <div id="lettore"><p class="note">Carico il lettore…</p></div>
+  </section>
+
+  <section class="panel lp-cosa" aria-labelledby="hCosa">
+    <h2 id="hCosa">Cosa cerco nella perizia</h2>
+    <ul class="lp-elenco" id="temi"></ul>
+    <p class="note">Le ipoteche e il pignoramento non sono nell'elenco: li cancella il decreto di trasferimento, a cura della procedura. Le domande del giudice al perito («verifichi», «accerti»…) non contano: contano le sue risposte.</p>
+  </section>
+
+  <div class="callout warn">
+    <b>È un aiuto alla lettura, non un parere tecnico.</b> Le regole cercano le parole con cui i periti descrivono i problemi: ogni punto va riletto nella perizia, e un tema "non trovato" può essere scritto con parole diverse. Per un'asta vera leggi tutta la perizia e, se serve, fatti aiutare da un tecnico o da un avvocato.
+  </div>
+  <noscript><div class="panel empty"><h2>Serve JavaScript</h2><p>Il lettore della perizia funziona nel browser. Attiva JavaScript per usarlo.</p></div></noscript>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="js/perizia.js"></script>
+<script src="js/lettore-perizia.js"></script>
+<script src="js/pages/perizia.js"></script>
+</body>
+</html>

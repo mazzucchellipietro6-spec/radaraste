@@ -28,6 +28,7 @@ Il menu ha sei sezioni, uguali in tutte le pagine (su telefono: barra in basso c
 | | `calcolatore.html` | "Conviene?": costo totale con imposte, condominio, lavori e liberazione; sconto, giudizio, offerta massima, IMU, plusvalenza, tre strategie. Anche per auto, moto e beni. |
 | | `mutuo.html` | Simulatore del mutuo: prezzo massimo con stipendio e risparmi, rata, "posso permettermi questa asta?". Il tasso lo inserisci tu. |
 | | `confronta.html` | Fino a tre aste fianco a fianco. |
+| | `perizia.html` | **Lettore della perizia**: scegli o trascina il PDF della perizia e trova i punti critici (abusi, occupazione, vincoli e servitù, spese condominiali, agibilità, catasto, impianti, conservazione, quote parziali, costi indicati dal perito), ognuno con la frase esatta e la pagina. Lo stesso lettore è nella scheda di ogni immobile ("Leggi la perizia"). Tutto nel browser: il file non va su nessun server. Le perizie scansionate (senza testo) non si leggono e il lettore lo dice. |
 | | `guida.html` | Guida all'asta telematica passo per passo, con le fonti (le stesse risposte del consulente). |
 | | `tariffe.html`, `fonti.html` | Aliquote con fonte e data; stato delle fonti dei dati. |
 | **Le mie aste** | `mie-aste.html` | Aste seguite con note, stato, giudizio salvato, promemoria in calendario di tutte, backup. Tutto resta nel browser. |
@@ -129,7 +130,7 @@ assets/css/mappa.css         mappa
 assets/css/assistenti.css    pagine degli assistenti e degli strumenti, chat del consulente
 assets/css/affari.css        sezione Affari di oggi
 assets/fonts/                Source Serif 4 e Inter (licenza OFL)
-assets/vendor/               Leaflet e Supercluster (con licenze)
+assets/vendor/               Leaflet, Supercluster, MapLibre, deck.gl e pdf.js (con licenze)
 config/tariffe.js            ★ unico file delle aliquote, con fonte e data per ogni voce
 config/fonti.js              registro delle fonti e verifica di robots.txt e condizioni d'uso
 config/consulente.js         collegamento AI del consulente (spento)
@@ -141,6 +142,7 @@ js/                          moduli condivisi dal sito e dagli script (funzioni 
   cacciatore.js, combinazioni.js, stratega.js, consulente.js   logica dei quattro assistenti
   mutuo.js, calendario.js, riepilogo.js, formato.js, dettagli.js, store.js …
   ui.js, icone.js, schede.js, cerca.js, agenti.js, affari.js   interfaccia comune
+  perizia.js, lettore-perizia.js, pdfjs-carica.mjs   lettore della perizia: regole dei punti critici e lettura del PDF nel browser
 js/pages/*.js                uno script per pagina
 scripts/raccogli.mjs         raccolta quotidiana (Node ≥ 20, nessuna dipendenza)
 scripts/cacciatore.mjs, ricalcola.mjs, omi.mjs, telegram.mjs, artifact.mjs

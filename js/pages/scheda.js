@@ -186,8 +186,9 @@
 
   function indiceSezioni(a) {
     var v = [['sez-numeri', 'Prezzi e date'], ['sez-punteggio', 'Punteggio'], ['sez-valore', 'Valore'], ['sez-zona', 'La zona'], ['sez-simula', 'Simula l\'offerta'],
-      ['sez-costi', 'Costi'], ['sez-rischi', 'Rischi'], ['sez-tempi', 'Linea del tempo'], ['sez-dettagli', 'Descrizione'], ['sez-documenti', 'Documenti']];
-    if (a.categoria !== 'immobile') v = v.filter(function (x) { return x[0] !== 'sez-zona'; });
+      ['sez-costi', 'Costi'], ['sez-rischi', 'Rischi'], ['sez-perizia', 'Perizia'], ['sez-tempi', 'Linea del tempo'], ['sez-dettagli', 'Descrizione'], ['sez-documenti', 'Documenti']];
+    if (a.categoria !== 'immobile') v = v.filter(function (x) { return x[0] !== 'sez-zona' && x[0] !== 'sez-perizia'; });
+    if (!window.LettorePerizia) v = v.filter(function (x) { return x[0] !== 'sez-perizia'; });
     return '<nav class="sc-sezioni" aria-label="Sezioni della scheda">' + v.map(function (x) { return '<a class="chip" href="#' + x[0] + '">' + x[1] + '</a>'; }).join('') + '</nav>';
   }
 
@@ -607,7 +608,8 @@
           esc(s.testo) + (s.prova ? '<small class="sc-prova">«' + esc(s.prova) + '»</small>' : '') + '</div></div>';
       }).join('') + '</div>' +
       '<div class="callout warn sc-perizia">' + U.icona('documento') + '<div><b>La perizia va letta comunque.</b> Questo controllo cerca le parole tipiche dei problemi solo nel testo breve dell\'avviso: un rischio può esserci anche se qui non compare. ' +
-      (perizia ? esterno(perizia, 'Apri la perizia') : 'La perizia si scarica dall\'avviso originale.') + '</div></div>';
+      (a.categoria === 'immobile' && window.LettorePerizia ? '<a href="#sez-perizia">Leggi la perizia con il lettore automatico</a>' + (perizia ? ' o ' + esterno(perizia, 'aprila') : '') + '.'
+        : perizia ? esterno(perizia, 'Apri la perizia') : 'La perizia si scarica dall\'avviso originale.') + '</div></div>';
     var n = r.nRischi;
     return '<section class="panel sc-sez" id="sez-rischi" aria-labelledby="h-rischi"><div class="sc-sez-testa"><h2 id="h-rischi">Semafori dei rischi</h2>' +
       '<span class="pill ' + (n === null ? 'p-neutral">Testo non disponibile' : n ? 'p-bad">' + n + (n === 1 ? ' rischio trovato' : ' rischi trovati') : 'p-good">Nessun rischio nel testo') + '</span></div>' + h + '</section>';
@@ -689,6 +691,20 @@
       }
     }
     return '<section class="panel sc-sez" id="sez-dettagli" aria-labelledby="h-dettagli"><div class="sc-sez-testa"><h2 id="h-dettagli">Descrizione e dati</h2></div>' + h + '</section>';
+  }
+
+  /* ---------- punti critici della perizia (js/lettore-perizia.js, tutto nel browser) ---------- */
+  function sezPerizia(a) {
+    if (a.categoria !== 'immobile' || !window.LettorePerizia || !window.Perizia) return '';
+    var perizia = U.linkSicuro((a.allegati || {}).perizia) || U.linkSicuro(a.linkPerizia);
+    var dalPortale = perizia && /^https:\/\/resource-pvp\.giustizia\.it\//.test(perizia);
+    return '<section class="panel sc-sez" id="sez-perizia" aria-labelledby="h-perizia"><div class="sc-sez-testa"><h2 id="h-perizia">Punti critici della perizia</h2>' +
+      '<span class="pill p-neutral">Lettura automatica</span></div>' +
+      '<p class="sc-perizia-intro">Leggo la perizia di stima e cerco quello che può costarti caro: abusi edilizi, chi abita l\'immobile, vincoli e servitù, spese condominiali arretrate, agibilità, ' +
+      'conformità catastale, impianti, stato di conservazione, quote parziali e costi indicati dal perito. Per ogni punto ti mostro la frase esatta e la pagina.</p>' +
+      (perizia && !dalPortale ? '<p class="note">La perizia di questa asta è su un altro sito: aprila con ' + esterno(perizia, 'questo link') + ', salvala e sceglila qui sotto.</p>' : '') +
+      (!perizia ? '<p class="note">Il link alla perizia non è nei dati raccolti: scaricala dall\'avviso originale e sceglila qui sotto.</p>' : '') +
+      window.LettorePerizia.blocco({ url: dalPortale ? perizia : null }) + '</section>';
   }
 
   /* ---------- documenti ---------- */
@@ -837,13 +853,18 @@
     el.innerHTML = testa(a, r) + indiceSezioni(a) + numeri(a, r) +
       '<div class="sc-griglia">' + sezPunteggio(a, r) + sezValore(a, r) + '</div>' + sezZona(a) +
       '<div class="sc-griglia sc-griglia-calc">' + sezSimula(a, r) + sezCosti(a, r) + '</div>' +
-      '<div class="sc-griglia">' + sezRischi(a, r) + sezTempi(a, lineaTempo(a)) + '</div>' +
+      '<div class="sc-griglia">' + sezRischi(a, r) + sezTempi(a, lineaTempo(a)) + '</div>' + sezPerizia(a) +
       sezDettagli(a, r) + sezDocumenti(a) + avvertenza() +
       '<section class="sc-stampa" id="sc-stampa" aria-label="Versione da stampare"></section>';
     el.setAttribute('aria-busy', 'false');
     document.body.classList.add('sc-con-stampa');
     attivaGalleria(a);
     aggiornaAzioni();
+    var lp = $('#sez-perizia [data-lp]');
+    if (lp) {
+      var pz = U.linkSicuro((a.allegati || {}).perizia) || U.linkSicuro(a.linkPerizia);
+      window.LettorePerizia.collega(lp, { url: pz && /^https:\/\/resource-pvp\.giustizia\.it\//.test(pz) ? pz : null });
+    }
     var inp = $('#offerta');
     if (inp) { inp.addEventListener('input', function () { simula(null, true); }); simula(r.offertaMinima); }
     var ip = $('#ipotesi');
