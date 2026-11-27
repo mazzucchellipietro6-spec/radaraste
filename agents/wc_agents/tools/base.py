@@ -32,6 +32,7 @@ class ToolContext:
     waiting: bool = False
     result: dict | None = None
     created: list[dict] = field(default_factory=list)  # record creati, per il riepilogo
+    email_sender: Any = None  # invio email per i follow-up consentiti (None = non configurato)
 
     @property
     def actor(self) -> str:

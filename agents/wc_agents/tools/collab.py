@@ -175,7 +175,9 @@ async def memory_save(ctx: ToolContext, a: MemorySave) -> dict:
 
 
 APPROVAL_KINDS = Literal["supplier_purchase", "payment", "contract", "financial_commitment", "binding_quote", "discount",
-                         "stock_reservation", "legal", "outbound_message", "other"]
+                         "stock_reservation", "legal", "outbound_message", "binding_conditions", "booking_commitment",
+                         "price_change", "campaign_activation", "sensitive_data", "irreversible", "other"]
+RISK = Literal["low", "medium", "high", "critical"]
 
 
 class Approval(Args):
@@ -184,19 +186,25 @@ class Approval(Args):
     summary: str = Field(description="Cosa si chiede di approvare, perché, rischi e alternative")
     amount: float | None = None
     currency: str | None = "EUR"
+    reason: str = Field("", description="Motivazione: perché serve, a quale obiettivo o cliente si riferisce")
+    effects: str = Field("", description="Cosa succede se il proprietario approva (e se rifiuta)")
+    risk_level: RISK = "medium"
     payload: dict = Field(default_factory=dict, description="Dettagli necessari per eseguire l'azione dopo l'approvazione")
 
 
 @tool("request_approval", "Chiede al fondatore di approvare un'azione vincolante. Non esegue l'azione.", Approval, "review")
 async def request_approval(ctx: ToolContext, a: Approval) -> dict:
-    return await create_approval(ctx, a.kind, a.title, a.summary, a.amount, a.currency, a.payload)
+    return await create_approval(ctx, a.kind, a.title, a.summary, a.amount, a.currency, a.payload,
+                                 reason=a.reason, effects=a.effects, risk_level=a.risk_level)
 
 
-async def create_approval(ctx: ToolContext, kind: str, title: str, summary: str, amount, currency, payload: dict) -> dict:
+async def create_approval(ctx: ToolContext, kind: str, title: str, summary: str, amount, currency, payload: dict, *,
+                          reason: str = "", effects: str = "", risk_level: str = "medium") -> dict:
     row = await ctx.db.fetchone(
-        """insert into public.approvals (kind, title, summary, amount, currency, payload, requested_by_agent, task_id, expires_at)
-           values (%s, %s, %s, %s, %s, %s, %s, %s, now() + interval '30 days') returning id, number""",
-        (kind, title, summary, amount, currency, jsonb(payload), ctx.agent.id, ctx.task["id"]),
+        """insert into public.approvals (kind, title, summary, amount, currency, payload, requested_by_agent, task_id, expires_at,
+                                       reason, effects, risk_level)
+           values (%s, %s, %s, %s, %s, %s, %s, %s, now() + interval '30 days', %s, %s, %s) returning id, number""",
+        (kind, title, summary, amount, currency, jsonb(payload), ctx.agent.id, ctx.task["id"], reason or None, effects or None, risk_level),
         actor=ctx.actor,
     )
     await ctx.db.execute(

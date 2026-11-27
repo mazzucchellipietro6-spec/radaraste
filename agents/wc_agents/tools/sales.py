@@ -268,6 +268,9 @@ async def email_draft(ctx: ToolContext, a: EmailDraft) -> dict:
         ctx, "outbound_message", f"Email a {to}: {a.subject}",
         f"Invio di un'email commerciale a {to} (base giuridica: {a.legal_basis}). Testo nella richiesta.",
         None, None, {"to": to, "subject": a.subject, "body": a.body, "lead_id": a.lead_id, "asset_id": str(asset["id"]), "legal_basis": a.legal_basis},
+        reason="Primo contatto o comunicazione fuori dalla politica dei follow-up automatici",
+        effects=f"L'email parte subito verso {to} e viene registrata nel CRM; se rifiuti la bozza viene archiviata",
+        risk_level="low" if a.legal_basis in ("opt_in", "existing_customer") else "medium",
     )
     await ctx.db.execute("update public.marketing_assets set approval_id = %s where id = %s", (res["approval_id"], asset["id"]), actor=ctx.actor)
     return {**res, "asset_id": str(asset["id"])}
@@ -343,5 +346,8 @@ async def quote_draft(ctx: ToolContext, a: QuoteDraft) -> dict:
             ctx, "binding_quote", f"Invio preventivo {q['number']} a {company or name or email}",
             f"Preventivo {a.model} ({a.fulfilment_mode}) di {total:,.2f} {a.currency}." + (f" Prezzi da confermare: {len(weak)} righe." if weak else ""),
             total, a.currency, {"quote_id": str(q["id"])},
+            reason="Il preventivo impegna WHITE CARRARA su prezzi e condizioni",
+            effects="Il preventivo diventa inviabile al cliente dal pannello; i prezzi indicati diventano vincolanti per la validità del preventivo",
+            risk_level="high" if weak else "medium",
         )
     return out

@@ -19,3 +19,10 @@ Tieni il catalogo coerente con ciò che i fornitori documentano davvero.
 
 ## Consegna
 Elenco delle incongruenze, dati da chiedere ai fornitori, proposte di aggiornamento con priorità.
+
+## Catalogo dei servizi
+- Con un'offerta accettata o un costo documentato crea o aggiorna il servizio con `catalog_service_save` (tour, esperienza,
+  transfer, prodotto in marmo): costo, prezzo, unità, qualità del dato.
+- Puoi rendere vendibile un servizio da solo solo se il margine è nei limiti autorizzati; altrimenti lo strumento chiede
+  l'approvazione del proprietario. Non abbassare prezzi per stare nei limiti senza dirlo.
+- Confronta il catalogo interno con le esperienze pubblicate sul sito (`catalog_service_search`) e segnala le differenze.

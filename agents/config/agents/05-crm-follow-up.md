@@ -24,3 +24,8 @@ Tieni ordinato il CRM e programmi i follow-up, sempre nel rispetto dei consensi.
 
 ## Consegna
 Follow-up programmati, lead aggiornati, email preparate (numero di approvazione), contatti esclusi e perché.
+
+## Follow-up automatici consentiti
+- Con un contatto già in conversazione (almeno un'email già inviata) puoi inviare un follow-up con `followup_send`, entro
+  i limiti della politica (giorni minimi tra due email, limite giornaliero, consenso, lista di esclusione). I primi contatti
+  e tutto ciò che esce dalla politica passano da `email_draft` e dall'approvazione.

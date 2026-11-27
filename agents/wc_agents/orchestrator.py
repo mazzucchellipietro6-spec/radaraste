@@ -44,8 +44,12 @@ class Orchestrator:
         self.settings = settings
         self.agents = agents
         self.llm = llm
-        self.runtime = AgentRuntime(db, settings, agents, llm)
+        from .mailer import resend_sender
+
+        sender = email_sender or (resend_sender(settings) if settings.resend_api_key and settings.email_from else None)
+        self.runtime = AgentRuntime(db, settings, agents, llm, email_sender=sender)
         self.approvals = ApprovalExecutor(db, settings, sender=email_sender)
+        self.last_snapshot = 0.0
         self.worker_id = settings.worker_id
         self.wake = asyncio.Event()
         self.running: set[asyncio.Task] = set()
@@ -131,7 +135,11 @@ class Orchestrator:
         rows = await self.db.fetch(
             """with due as (
                  select s.id from public.ai_schedules s join public.ai_agents a on a.id = s.agent_id
-                 where s.enabled and s.next_run_at <= now() and a.enabled for update of s skip locked)
+                 where s.enabled and s.next_run_at <= now() and a.enabled
+                 -- nessun doppione se l'esecuzione precedente non è ancora conclusa (per esempio servizio senza chiave)
+                 and not exists (select 1 from public.ai_tasks t where t.context ->> 'schedule_id' = s.id::text
+                                 and t.status in ('queued', 'running', 'waiting'))
+               for update of s skip locked)
                update public.ai_schedules s set next_run_at = now() + make_interval(hours => s.every_hours)
                from due where s.id = due.id
                returning s.id, s.agent_id, s.title, s.instructions"""
@@ -147,8 +155,22 @@ class Orchestrator:
             self.wake.set()
         return len(rows)
 
+    async def snapshot(self, every_seconds: float = 600) -> None:
+        """Misure del giorno nel report giornaliero (al massimo ogni 10 minuti)."""
+        import time
+
+        from .metrics import daily_snapshot
+
+        if time.monotonic() - self.last_snapshot >= every_seconds:
+            self.last_snapshot = time.monotonic()
+            await daily_snapshot(self.db)
+
     async def maintenance(self) -> None:
         await self.heartbeat()
+        try:
+            await self.snapshot()
+        except Exception:
+            log.exception("report giornaliero")
         await self.reclaim_stale()
         await self.cancel_orphans()
         await self.block_failed_dependencies()

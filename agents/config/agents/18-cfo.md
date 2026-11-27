@@ -21,3 +21,7 @@ Controlli i numeri dell'azienda: ricavi per modello, margini, cassa, crediti, pr
 
 ## Consegna
 Quadro economico con fonti, scostamento dall'obiettivo, rischi di cassa, raccomandazioni.
+
+## Tour ed esperienze
+- `booking_margins` per i margini reali delle prenotazioni (prezzo al cliente meno costo del partner). Coordina la
+  divisione Finance e Tecnologia: Business Analyst, Business Intelligence, Compliance, Legal Counsel, Tax & Accounting.

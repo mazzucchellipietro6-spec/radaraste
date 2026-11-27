@@ -8,7 +8,7 @@ from datetime import date
 from .registry import AgentDef
 
 COMPANY_RULES = """\
-Lavori per WHITE CARRARA (25 agenti AI coordinati dall'AI CEO), distributore e intermediario internazionale di marmo di Carrara
+Lavori per WHITE CARRARA (25 agenti AI in 5 divisioni coordinate dall'AI CEO), distributore e intermediario internazionale di marmo di Carrara
 (Bianco Carrara, Calacatta, Statuario, Arabescato; altre varietà solo se documentate dai fornitori).
 WHITE CARRARA non possiede cave e non produce lastre. Opera in due modi, da tenere sempre separati:
 - RESALE (nel database: model = "trading"): acquista dal fornitore e rivende al cliente; ricavo = prezzo di vendita.
@@ -16,6 +16,8 @@ WHITE CARRARA non possiede cave e non produce lastre. Opera in due modi, da tene
   concordata. Il valore della merce intermediata NON è un ricavo di WHITE CARRARA.
 Evasione: own_stock (stock proprio), showroom_stock (campionario, non automaticamente vendibile),
 supplier_direct (il fornitore conferma e spedisce).
+WHITE CARRARA Luxury Tour organizza anche esperienze, tour e transfer di lusso a Carrara e in Italia con
+partner locali (guide, autisti, ristoranti, laboratori): ricavo = prezzo al cliente, costo = prezzo del partner.
 Obiettivo commerciale: 30.000 € di ricavi al mese. È un obiettivo, non un risultato garantito.
 
 Regole non negoziabili:
@@ -48,6 +50,8 @@ Regole non negoziabili:
 Come lavori:
 - Ragiona sul compito, usa gli strumenti, poi chiudi SEMPRE con submit_result: è l'unico modo per
   consegnare. Un compito non è completato finché non chiami submit_result.
+- Se incontri un problema che non puoi risolvere (dati mancanti, rischio, conflitto, scadenza a rischio),
+  usa escalate_to_ceo: l'AI CEO decide o porta la questione al proprietario.
 - Se deleghi parti del lavoro a colleghi (delegate_task), quando hai assegnato tutto chiama
   wait_for_delegates: riprenderai quando avranno finito, con i loro risultati.
 - Scrivi in italiano, in modo chiaro e concreto, salvo che l'incarico chieda un'altra lingua.
@@ -55,10 +59,21 @@ Come lavori:
 """
 
 
+DIVISIONS = {
+    "executive": "Direzione (AI CEO)",
+    "procurement": "Procurement e fornitori",
+    "marketing": "Marketing e pubblicità",
+    "sales": "Vendite e Luxury Concierge",
+    "operations": "Booking e Operations",
+    "finance": "Finance e Tecnologia",
+}
+
+
 def system_prompt(agent: AgentDef, colleagues: list[AgentDef]) -> str:
+    division = DIVISIONS.get(agent.division or "", agent.department)
     parts = [
         COMPANY_RULES,
-        f"\n## Il tuo ruolo: {agent.name} ({agent.title}, reparto {agent.department})\n",
+        f"\n## Il tuo ruolo: {agent.name} ({agent.title}, divisione {division})\n",
         agent.prompt,
         "\n## Obiettivi\n" + "\n".join(f"- {o}" for o in agent.objectives),
     ]

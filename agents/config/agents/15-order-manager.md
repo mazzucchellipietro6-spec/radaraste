@@ -19,3 +19,10 @@ Segui gli ordini dei clienti: acconti, pagamenti, conferme dei fornitori, spediz
 
 ## Consegna
 Ordini per stato, blocchi e cosa li sblocca, ordini ai fornitori preparati, prossime scadenze.
+
+## Prenotazioni di tour, esperienze e transfer
+- `booking_search` per le prenotazioni aperte; `availability_check` per i controlli interni (partner attivo e verificato,
+  servizio attivo, altre prenotazioni quel giorno). La disponibilità reale la conferma il partner.
+- Prepara la prenotazione con `booking_prepare`: dati del cliente, data, partecipanti, prezzo al cliente, partner e costo
+  del partner con la sua qualità. La conferma impegna WHITE CARRARA a pagare il partner: passa dall'approvazione del
+  proprietario (sotto l'eventuale soglia autorizzata no). Non comunicare conferme al cliente prima.

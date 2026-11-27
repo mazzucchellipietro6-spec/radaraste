@@ -23,22 +23,31 @@
    "approvals_list",
    "ai_stats",
    "advisory_doc_search",
-   "process_metrics"
+   "process_metrics",
+   "ceo_dashboard",
+   "daily_report_save",
+   "notify_owner",
+   "security_overview",
+   "booking_search",
+   "campaign_search"
   ],
   "can_delegate_to": [
    "*"
   ],
   "objectives": [
-   "Tradurre gli obiettivi del fondatore in piani eseguibili",
-   "Coordinare i 24 colleghi e raccogliere i risultati",
-   "Riferire al fondatore con fatti verificati, stime e rischi separati"
+   "Assegnare incarichi e coordinare le 5 divisioni",
+   "Controllare scadenze, risultati, costi, ricavi e margini",
+   "Produrre il report giornaliero e segnalare al proprietario le decisioni importanti"
   ],
   "kpis": [
    "tasks_completed_30d",
    "success_rate",
    "approvals_pending",
-   "revenue_month"
-  ]
+   "revenue_month",
+   "owner_alerts_open",
+   "security_open"
+  ],
+  "division": "executive"
  },
  {
   "id": "02-chief-sales-officer",
@@ -63,7 +72,11 @@
    "crm_add_activity",
    "quote_draft",
    "material_search",
-   "catalog_search"
+   "catalog_search",
+   "escalate_to_ceo",
+   "catalog_service_search",
+   "itinerary_draft",
+   "request_search"
   ],
   "can_delegate_to": [
    "03-lead-generation",
@@ -83,7 +96,8 @@
    "opportunities_open",
    "pipeline_value",
    "quotes_drafted_30d"
-  ]
+  ],
+  "division": "sales"
  },
  {
   "id": "03-lead-generation",
@@ -105,7 +119,8 @@
    "lead_search",
    "lead_save",
    "lead_update",
-   "suppression_check"
+   "suppression_check",
+   "escalate_to_ceo"
   ],
   "can_delegate_to": [],
   "objectives": [
@@ -116,7 +131,8 @@
   "kpis": [
    "leads_created_30d",
    "leads_qualified_30d"
-  ]
+  ],
+  "division": "sales"
  },
  {
   "id": "04-export-manager",
@@ -140,7 +156,8 @@
    "shipment_search",
    "lead_search",
    "delegate_task",
-   "wait_for_delegates"
+   "wait_for_delegates",
+   "escalate_to_ceo"
   ],
   "can_delegate_to": [
    "14-logistics-manager",
@@ -154,7 +171,8 @@
   ],
   "kpis": [
    "market_analyses_30d"
-  ]
+  ],
+  "division": "sales"
  },
  {
   "id": "05-crm-follow-up",
@@ -177,7 +195,10 @@
    "opportunity_save",
    "pipeline_summary",
    "email_draft",
-   "suppression_check"
+   "suppression_check",
+   "escalate_to_ceo",
+   "followup_send",
+   "request_search"
   ],
   "can_delegate_to": [],
   "objectives": [
@@ -188,7 +209,8 @@
   "kpis": [
    "followups_done_30d",
    "opportunities_open"
-  ]
+  ],
+  "division": "sales"
  },
  {
   "id": "06-marketing-director",
@@ -211,7 +233,10 @@
    "marketing_search",
    "web_search",
    "catalog_search",
-   "market_analysis_search"
+   "market_analysis_search",
+   "escalate_to_ceo",
+   "campaign_prepare",
+   "campaign_search"
   ],
   "can_delegate_to": [
    "07-content-creator",
@@ -223,8 +248,10 @@
    "Coordinare contenuti, SEO e campagne"
   ],
   "kpis": [
-   "marketing_assets_30d"
-  ]
+   "marketing_assets_30d",
+   "campaigns_prepared_30d"
+  ],
+  "division": "marketing"
  },
  {
   "id": "07-content-creator",
@@ -243,7 +270,8 @@
    "request_approval",
    "marketing_asset_save",
    "marketing_search",
-   "catalog_search"
+   "catalog_search",
+   "escalate_to_ceo"
   ],
   "can_delegate_to": [],
   "objectives": [
@@ -251,7 +279,8 @@
   ],
   "kpis": [
    "marketing_assets_30d"
-  ]
+  ],
+  "division": "marketing"
  },
  {
   "id": "08-seo-website-manager",
@@ -272,7 +301,8 @@
    "web_fetch",
    "marketing_asset_save",
    "marketing_search",
-   "catalog_search"
+   "catalog_search",
+   "escalate_to_ceo"
   ],
   "can_delegate_to": [],
   "objectives": [
@@ -281,7 +311,8 @@
   ],
   "kpis": [
    "marketing_assets_30d"
-  ]
+  ],
+  "division": "marketing"
  },
  {
   "id": "09-advertising-agent",
@@ -300,7 +331,10 @@
    "request_approval",
    "web_search",
    "marketing_asset_save",
-   "marketing_search"
+   "marketing_search",
+   "escalate_to_ceo",
+   "campaign_prepare",
+   "campaign_search"
   ],
   "can_delegate_to": [],
   "objectives": [
@@ -308,14 +342,16 @@
   ],
   "kpis": [
    "marketing_assets_30d",
-   "approvals_requested_30d"
-  ]
+   "approvals_requested_30d",
+   "campaigns_prepared_30d"
+  ],
+  "division": "marketing"
  },
  {
   "id": "10-product-manager",
   "name": "Product Manager",
   "department": "prodotto",
-  "title": "Catalogo e prodotto",
+  "title": "Catalogo dei servizi e dei prodotti",
   "prompt_file": "config/agents/10-product-manager.md",
   "effort": "low",
   "monthly_budget_usd": 15,
@@ -328,22 +364,29 @@
    "request_approval",
    "catalog_search",
    "material_search",
-   "supplier_search"
+   "supplier_search",
+   "escalate_to_ceo",
+   "catalog_service_save",
+   "catalog_service_search",
+   "offer_search",
+   "tour_partner_search"
   ],
   "can_delegate_to": [],
   "objectives": [
-   "Mantenere il catalogo coerente con i materiali documentati dai fornitori",
-   "Segnalare dati mancanti"
+   "Mantenere aggiornato il catalogo dei servizi e dei prodotti con costi documentati",
+   "Segnalare dati mancanti e servizi da ritirare"
   ],
   "kpis": [
-   "materials_to_recheck"
-  ]
+   "materials_to_recheck",
+   "services_active"
+  ],
+  "division": "procurement"
  },
  {
   "id": "11-supplier-manager",
   "name": "Supplier Manager",
   "department": "prodotto",
-  "title": "Fornitori e acquisti",
+  "title": "Fornitori, partner e offerte",
   "prompt_file": "config/agents/11-supplier-manager.md",
   "effort": "medium",
   "monthly_budget_usd": 20,
@@ -358,17 +401,38 @@
    "supplier_detail",
    "material_search",
    "certification_list",
-   "purchase_order_draft"
+   "purchase_order_draft",
+   "escalate_to_ceo",
+   "web_search",
+   "web_fetch",
+   "supplier_save",
+   "tour_partner_search",
+   "tour_partner_save",
+   "offer_save",
+   "offer_search",
+   "offer_accept_request",
+   "delegate_task",
+   "wait_for_delegates"
   ],
-  "can_delegate_to": [],
+  "can_delegate_to": [
+   "10-product-manager",
+   "12-quality-control",
+   "13-pricing-manager",
+   "17-sample-kit-manager",
+   "24-legal-counsel"
+  ],
   "objectives": [
-   "Gestire anagrafiche, condizioni e certificazioni",
-   "Preparare ordini di acquisto da approvare"
+   "Trovare nuovi fornitori e partner (guide, transfer, esperienze) da fonti pubbliche",
+   "Registrare e analizzare offerte e condizioni",
+   "Preparare ordini e accettazioni da approvare"
   ],
   "kpis": [
    "purchase_orders_drafted_30d",
-   "certifications_expiring"
-  ]
+   "certifications_expiring",
+   "offers_recorded_30d",
+   "partners_found_30d"
+  ],
+  "division": "procurement"
  },
  {
   "id": "12-quality-control",
@@ -388,7 +452,11 @@
    "material_search",
    "supplier_detail",
    "certification_list",
-   "supplier_search"
+   "supplier_search",
+   "escalate_to_ceo",
+   "tour_partner_search",
+   "offer_search",
+   "catalog_service_search"
   ],
   "can_delegate_to": [],
   "objectives": [
@@ -398,7 +466,8 @@
   "kpis": [
    "materials_to_recheck",
    "certifications_expiring"
-  ]
+  ],
+  "division": "procurement"
  },
  {
   "id": "13-pricing-manager",
@@ -421,7 +490,11 @@
    "catalog_search",
    "delegate_task",
    "wait_for_delegates",
-   "tax_simulate"
+   "tax_simulate",
+   "escalate_to_ceo",
+   "catalog_service_search",
+   "catalog_service_save",
+   "offer_search"
   ],
   "can_delegate_to": [
    "23-business-analyst",
@@ -433,13 +506,14 @@
   ],
   "kpis": [
    "pricing_sims_30d"
-  ]
+  ],
+  "division": "procurement"
  },
  {
   "id": "14-logistics-manager",
   "name": "Logistics Manager",
   "department": "operazioni",
-  "title": "Logistica",
+  "title": "Logistica e transfer",
   "prompt_file": "config/agents/14-logistics-manager.md",
   "effort": "low",
   "monthly_budget_usd": 15,
@@ -452,7 +526,11 @@
    "request_approval",
    "shipment_search",
    "order_search",
-   "web_search"
+   "web_search",
+   "escalate_to_ceo",
+   "booking_search",
+   "tour_partner_search",
+   "availability_check"
   ],
   "can_delegate_to": [],
   "objectives": [
@@ -461,13 +539,14 @@
   ],
   "kpis": [
    "shipments_in_transit"
-  ]
+  ],
+  "division": "operations"
  },
  {
   "id": "15-order-manager",
   "name": "Order Manager",
   "department": "operazioni",
-  "title": "Ordini",
+  "title": "Ordini e prenotazioni",
   "prompt_file": "config/agents/15-order-manager.md",
   "effort": "low",
   "monthly_budget_usd": 15,
@@ -482,22 +561,32 @@
    "order_detail",
    "shipment_search",
    "purchase_order_draft",
-   "supplier_detail"
+   "supplier_detail",
+   "escalate_to_ceo",
+   "booking_search",
+   "booking_prepare",
+   "availability_check",
+   "catalog_service_search",
+   "tour_partner_search",
+   "request_search"
   ],
   "can_delegate_to": [],
   "objectives": [
-   "Seguire ordini, acconti, conferme dei fornitori e consegne"
+   "Seguire ordini, acconti, conferme dei fornitori e consegne",
+   "Preparare le prenotazioni e chiedere l'approvazione per gli impegni economici"
   ],
   "kpis": [
    "orders_open",
-   "purchase_orders_drafted_30d"
-  ]
+   "purchase_orders_drafted_30d",
+   "bookings_to_confirm"
+  ],
+  "division": "operations"
  },
  {
   "id": "16-customer-success",
-  "name": "Customer Success Agent",
+  "name": "Luxury Concierge",
   "department": "vendite",
-  "title": "Assistenza clienti",
+  "title": "Luxury Concierge e assistenza clienti",
   "prompt_file": "config/agents/16-customer-success.md",
   "effort": "low",
   "monthly_budget_usd": 15,
@@ -511,16 +600,30 @@
    "lead_search",
    "order_search",
    "crm_add_activity",
-   "opportunity_save"
+   "opportunity_save",
+   "escalate_to_ceo",
+   "request_search",
+   "request_update",
+   "itinerary_draft",
+   "catalog_service_search",
+   "availability_check",
+   "booking_search",
+   "email_draft",
+   "followup_send",
+   "quote_draft"
   ],
   "can_delegate_to": [],
   "objectives": [
-   "Seguire i clienti dopo la vendita",
-   "Raccogliere riscontri e nuove opportunità"
+   "Gestire le richieste dei clienti con tempi di risposta brevi",
+   "Preparare itinerari personalizzati con servizi del catalogo",
+   "Seguire i clienti dopo la vendita e trovare nuove opportunità"
   ],
   "kpis": [
-   "followups_done_30d"
-  ]
+   "followups_done_30d",
+   "requests_open",
+   "itineraries_30d"
+  ],
+  "division": "sales"
  },
  {
   "id": "17-sample-kit-manager",
@@ -540,7 +643,8 @@
    "catalog_search",
    "material_search",
    "crm_add_activity",
-   "lead_search"
+   "lead_search",
+   "escalate_to_ceo"
   ],
   "can_delegate_to": [],
   "objectives": [
@@ -548,7 +652,8 @@
   ],
   "kpis": [
    "approvals_requested_30d"
-  ]
+  ],
+  "division": "procurement"
  },
  {
   "id": "18-cfo",
@@ -573,11 +678,16 @@
    "delegate_task",
    "wait_for_delegates",
    "tax_simulate",
-   "advisory_doc_search"
+   "advisory_doc_search",
+   "escalate_to_ceo",
+   "booking_margins"
   ],
   "can_delegate_to": [
    "13-pricing-manager",
+   "19-business-intelligence",
+   "20-compliance-risk",
    "23-business-analyst",
+   "24-legal-counsel",
    "25-tax-accounting-advisor"
   ],
   "objectives": [
@@ -587,13 +697,14 @@
   "kpis": [
    "revenue_month",
    "pricing_sims_30d"
-  ]
+  ],
+  "division": "finance"
  },
  {
   "id": "19-business-intelligence",
   "name": "Business Intelligence Analyst",
   "department": "direzione",
-  "title": "Analisi dati",
+  "title": "Dati, tecnologia e costi AI",
   "prompt_file": "config/agents/19-business-intelligence.md",
   "effort": "medium",
   "monthly_budget_usd": 15,
@@ -609,7 +720,10 @@
    "company_overview",
    "ai_stats",
    "lead_search",
-   "process_metrics"
+   "process_metrics",
+   "escalate_to_ceo",
+   "security_overview",
+   "booking_margins"
   ],
   "can_delegate_to": [],
   "objectives": [
@@ -618,7 +732,8 @@
   ],
   "kpis": [
    "tasks_completed_30d"
-  ]
+  ],
+  "division": "finance"
  },
  {
   "id": "20-compliance-risk",
@@ -643,7 +758,9 @@
    "suppression_check",
    "delegate_task",
    "wait_for_delegates",
-   "advisory_doc_search"
+   "advisory_doc_search",
+   "escalate_to_ceo",
+   "security_overview"
   ],
   "can_delegate_to": [
    "24-legal-counsel",
@@ -655,7 +772,8 @@
   ],
   "kpis": [
    "approvals_pending"
-  ]
+  ],
+  "division": "finance"
  },
  {
   "id": "21-operations-manager",
@@ -683,7 +801,10 @@
    "supplier_search",
    "company_overview",
    "list_agents",
-   "ai_stats"
+   "ai_stats",
+   "escalate_to_ceo",
+   "booking_search",
+   "request_search"
   ],
   "can_delegate_to": [
    "11-supplier-manager",
@@ -704,7 +825,8 @@
    "overdue_followups",
    "approvals_waiting_hours"
   ],
-  "prompt_file": "config/agents/21-operations-manager.md"
+  "prompt_file": "config/agents/21-operations-manager.md",
+  "division": "operations"
  },
  {
   "id": "22-business-process-engineer",
@@ -728,7 +850,8 @@
    "advisory_doc_search",
    "schedule_propose",
    "company_overview",
-   "ai_stats"
+   "ai_stats",
+   "escalate_to_ceo"
   ],
   "can_delegate_to": [
    "23-business-analyst"
@@ -744,7 +867,8 @@
    "kpis_defined",
    "schedules_proposed"
   ],
-  "prompt_file": "config/agents/22-business-process-engineer.md"
+  "prompt_file": "config/agents/22-business-process-engineer.md",
+  "division": "operations"
  },
  {
   "id": "23-business-analyst",
@@ -772,7 +896,9 @@
    "pipeline_summary",
    "process_doc_save",
    "advisory_doc_search",
-   "commission_search"
+   "commission_search",
+   "escalate_to_ceo",
+   "booking_margins"
   ],
   "can_delegate_to": [
    "13-pricing-manager",
@@ -789,7 +915,8 @@
    "forecasts_30d",
    "revenue_month"
   ],
-  "prompt_file": "config/agents/23-business-analyst.md"
+  "prompt_file": "config/agents/23-business-analyst.md",
+  "division": "finance"
  },
  {
   "id": "24-legal-counsel",
@@ -815,7 +942,8 @@
    "supplier_detail",
    "order_detail",
    "market_analysis_search",
-   "approvals_list"
+   "approvals_list",
+   "escalate_to_ceo"
   ],
   "can_delegate_to": [
    "20-compliance-risk",
@@ -831,7 +959,8 @@
    "legal_docs_30d",
    "legal_reviews_pending"
   ],
-  "prompt_file": "config/agents/24-legal-counsel.md"
+  "prompt_file": "config/agents/24-legal-counsel.md",
+  "division": "finance"
  },
  {
   "id": "25-tax-accounting-advisor",
@@ -861,7 +990,9 @@
    "profitability_analysis",
    "pricing_simulate",
    "commission_search",
-   "order_search"
+   "order_search",
+   "escalate_to_ceo",
+   "booking_margins"
   ],
   "can_delegate_to": [
    "23-business-analyst",
@@ -878,6 +1009,7 @@
    "tax_reviews_pending",
    "revenue_month"
   ],
-  "prompt_file": "config/agents/25-tax-accounting-advisor.md"
+  "prompt_file": "config/agents/25-tax-accounting-advisor.md",
+  "division": "finance"
  }
 ]

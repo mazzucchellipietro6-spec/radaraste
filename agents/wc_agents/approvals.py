@@ -103,6 +103,16 @@ class ApprovalExecutor:
 
     async def cleanup_rejected(self, a: dict) -> None:
         p = a.get("payload") or {}
+        act = "sistema:approvazioni"
+        if a["kind"] == "binding_conditions" and p.get("offer_id"):
+            await self.db.execute("update public.supplier_offers set status = 'rejected' where id = %s and status = 'pending_approval'",
+                                  (p["offer_id"],), actor=act)
+        if a["kind"] == "campaign_activation" and p.get("campaign_id"):
+            await self.db.execute("update public.campaigns set status = 'rejected' where id = %s and status = 'pending_approval'",
+                                  (p["campaign_id"],), actor=act)
+        if a["kind"] == "price_change" and p.get("service_id"):
+            await self.db.execute("update public.service_catalog set status = 'draft' where id = %s and status = 'pending_approval'",
+                                  (p["service_id"],), actor=act)
         if a["kind"] == "outbound_message" and p.get("asset_id"):
             await self.db.execute("update public.marketing_assets set status = 'archived' where id = %s", (p["asset_id"],))
         if a["kind"] == "supplier_purchase" and p.get("purchase_order_id"):
@@ -145,7 +155,40 @@ class ApprovalExecutor:
             await self.mark(a, "executed", res)
             await self.notify(a, f"Approvato: {a['number']}", res["next"])
             return
-        # pagamenti, contratti, impegni, sconti, prenotazioni di stock, operazioni legali: azione di una persona
+        act = "sistema:approvazioni"
+        if a["kind"] == "binding_conditions" and p.get("offer_id"):
+            o = await self.db.fetchone("update public.supplier_offers set status = 'accepted' where id = %s returning number",
+                                       (p["offer_id"],), actor=act)
+            res = {"offer": o["number"] if o else None, "next": "Condizioni accettate: il servizio può entrare nel catalogo"}
+            await self.mark(a, "executed", res)
+            await self.notify(a, f"Approvato: {a['number']}", f"{res['next']}. {note}")
+            return
+        if a["kind"] == "booking_commitment" and p.get("booking_id"):
+            b = await self.db.fetchone(
+                "update public.bookings set status = 'confirmed', confirmed_at = now() where id = %s and status in ('requested', 'checking') returning reference",
+                (p["booking_id"],), actor=act)
+            res = {"booking": b["reference"] if b else None,
+                   "next": "Prenotazione confermata: confermare al partner e al cliente, poi inviare il link di pagamento dal pannello"}
+            await self.mark(a, "executed", res)
+            await self.notify(a, f"Approvato: {a['number']}", f"{res['next']}. {note}")
+            return
+        if a["kind"] == "price_change" and p.get("service_id"):
+            s = await self.db.fetchone(
+                """update public.service_catalog set status = 'active', price = coalesce(%s, price) where id = %s returning code, price""",
+                (p.get("price"), p["service_id"]), actor=act)
+            res = {"service": s["code"] if s else None, "price": float(s["price"]) if s else None, "next": "Servizio attivo al prezzo approvato"}
+            await self.mark(a, "executed", res)
+            await self.notify(a, f"Approvato: {a['number']}", f"{res['next']}. {note}")
+            return
+        if a["kind"] == "campaign_activation" and p.get("campaign_id"):
+            c = await self.db.fetchone("update public.campaigns set status = 'approved' where id = %s returning number", (p["campaign_id"],), actor=act)
+            res = {"campaign": c["number"] if c else None,
+                   "next": "Campagna approvata: va attivata sulla piattaforma pubblicitaria (nessun collegamento automatico)"}
+            await self.mark(a, "executed", res)
+            await self.notify(a, f"Approvato: {a['number']}", f"{res['next']}. {note}")
+            return
+        # pagamenti, contratti, impegni, sconti, prenotazioni di stock, operazioni legali, dati sensibili,
+        # operazioni irreversibili: l'autorizzazione è registrata, l'azione la esegue una persona
         res = {"action": "manual", "message": "Autorizzazione registrata: l'azione va eseguita da una persona, non dagli agenti"}
         await self.mark(a, None, res)
         await self.notify(a, f"Approvato: {a['number']}", f"«{a['title']}» è autorizzata. {res['message']}. {note}")

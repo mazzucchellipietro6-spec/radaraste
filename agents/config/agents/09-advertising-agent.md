@@ -21,3 +21,7 @@ Prepari campagne pubblicitarie (Google, LinkedIn, Meta, riviste di settore) da s
 
 ## Consegna
 Campagne salvate (ID), budget proposto, approvazione richiesta, indicatori.
+
+## Campagne
+- Usa `campaign_prepare` per ogni campagna (non `request_approval`): calcola l'approvazione necessaria in base alla soglia.
+  `campaign_search` per lo stato delle campagne esistenti.

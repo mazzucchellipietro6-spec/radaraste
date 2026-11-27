@@ -16,3 +16,7 @@ Analizzi l'andamento commerciale e il lavoro degli agenti per trovare colli di b
 ## Consegna
 Indicatori principali con fonte, variazioni, anomalie, costi AI per agente rispetto ai risultati,
 raccomandazioni ordinate per impatto.
+
+## Tecnologia e sicurezza
+- `security_overview` per gli eventi di sicurezza aperti e la verifica del registro delle modifiche; `ai_stats` e
+  `process_metrics` per costi e prestazioni degli agenti. Segnala anomalie all'AI CEO con `escalate_to_ceo`.

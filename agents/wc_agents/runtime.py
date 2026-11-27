@@ -36,11 +36,12 @@ def backoff_seconds(attempt: int) -> int:
 
 
 class AgentRuntime:
-    def __init__(self, db: Database, settings: Any, agents: dict[str, AgentDef], llm: LLM | None):
+    def __init__(self, db: Database, settings: Any, agents: dict[str, AgentDef], llm: LLM | None, email_sender=None):
         self.db = db
         self.settings = settings
         self.agents = agents
         self.llm = llm
+        self.email_sender = email_sender
 
     # ------------------------------------------------------------------ registri
     async def event(self, task: dict, kind: str, message: str, activity: str | None = None, data: dict | None = None) -> None:
@@ -220,7 +221,7 @@ class AgentRuntime:
             messages[0]["content"] += "\n\n" + INJECTION_NOTICE
             await security_event(self.db, "prompt_injection", "medium", f"Istruzioni sospette nel materiale dell'incarico «{task['title'][:120]}»",
                                  actor=f"agente:{agent.id}", details={"task_id": str(task["id"]), "found": found})
-        ctx = ToolContext(db=self.db, settings=self.settings, agent=agent, task=task, agents=self.agents)
+        ctx = ToolContext(db=self.db, settings=self.settings, agent=agent, task=task, agents=self.agents, email_sender=self.email_sender)
         injection_alert = False
         web_sources: list[dict] = []
         nudges = 0

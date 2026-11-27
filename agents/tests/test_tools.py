@@ -174,15 +174,19 @@ async def test_registry_synced_to_database(clean):
     assert len(rows) == 25 and sum(1 for r in rows if r["department"] == "advisory") == 5
 
 
-async def test_default_schedules_are_added_disabled_once(clean, settings):
+async def test_default_schedules_are_added_once_and_only_ceo_report_is_on(clean, settings):
     from wc_agents.registry import sync_default_schedules
 
-    n = await sync_default_schedules(clean, settings.config_dir)
-    assert n >= 5
-    assert await sync_default_schedules(clean, settings.config_dir) == 0
-    rows = await clean.fetch("select enabled from public.ai_schedules")
-    assert rows and not any(r["enabled"] for r in rows)
-    assert await Orchestrator(clean.agent, settings, {}, None).run_schedules() == 0
+    n = await sync_default_schedules(clean.agent, settings.config_dir)
+    assert n >= 8
+    assert await sync_default_schedules(clean.agent, settings.config_dir) == 0
+    rows = await clean.fetch("select agent_id, title, enabled from public.ai_schedules where enabled")
+    assert [(r["agent_id"], r["title"]) for r in rows] == [("01-ai-ceo", "Report giornaliero dell'AI CEO")]
+    orch = Orchestrator(clean.agent, settings, {}, None)
+    assert await orch.run_schedules() == 1
+    # finché il report precedente non è concluso (per esempio senza chiave) non se ne accumulano altri
+    await clean.execute("update public.ai_schedules set next_run_at = now() - interval '1 minute'")
+    assert await orch.run_schedules() == 0
 
 
 async def test_smoke_command(clean, settings, agents):

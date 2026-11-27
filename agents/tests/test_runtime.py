@@ -86,7 +86,7 @@ async def test_transient_error_is_retried(clean, settings, agents):
 
 async def test_task_without_result_fails(clean, settings, agents):
     tid = await new_task(clean, "16-customer-success", "Risposta al cliente")
-    await run(clean.agent, settings, agents, {"Customer Success Agent": lambda c: [text("Ho finito, credo.")]})
+    await run(clean.agent, settings, agents, {"Luxury Concierge": lambda c: [text("Ho finito, credo.")]})
     st = await status(clean, tid)
     assert st["status"] == "failed" and "submit_result" in st["error"]
 

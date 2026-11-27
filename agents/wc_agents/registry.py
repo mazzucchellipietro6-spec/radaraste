@@ -30,6 +30,7 @@ class AgentDef:
     monthly_budget_usd: float = 20
     daily_task_limit: int = 40
     team: str | None = None
+    division: str | None = None
     # valori correnti dal database (pannello)
     enabled: bool = True
     model: str = ""
@@ -54,7 +55,7 @@ def load_registry(config_dir: Path) -> dict[str, AgentDef]:
             id=a["id"], name=a["name"], department=a["department"], title=a["title"], prompt=prompt,
             tools=a["tools"], can_delegate_to=a.get("can_delegate_to", []), objectives=a.get("objectives", []),
             kpis=a.get("kpis", []), effort=a.get("effort", "medium"), monthly_budget_usd=a.get("monthly_budget_usd", 20),
-            daily_task_limit=a.get("daily_task_limit", 40), team=a.get("team"),
+            daily_task_limit=a.get("daily_task_limit", 40), team=a.get("team"), division=a.get("division"),
         )
     return out
 
@@ -64,14 +65,15 @@ async def sync_registry(db: Database, agents: dict[str, AgentDef], default_model
     for a in agents.values():
         h = hashlib.sha256(a.prompt.encode()).hexdigest()[:16]
         await db.execute(
-            """insert into public.ai_agents (id, name, department, team, title, model, effort, monthly_budget_usd, daily_task_limit,
+            """insert into public.ai_agents (id, name, department, team, division, title, model, effort, monthly_budget_usd, daily_task_limit,
                                              tools, can_delegate_to, objectives, kpis, prompt_hash)
-               values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+               values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                on conflict (id) do update set name = excluded.name, department = excluded.department, team = excluded.team,
+                 division = excluded.division,
                  title = excluded.title,
                  tools = excluded.tools, can_delegate_to = excluded.can_delegate_to, objectives = excluded.objectives,
                  kpis = excluded.kpis, prompt_hash = excluded.prompt_hash""",
-            (a.id, a.name, a.department, a.team, a.title, default_model, a.effort, a.monthly_budget_usd, a.daily_task_limit,
+            (a.id, a.name, a.department, a.team, a.division, a.title, default_model, a.effort, a.monthly_budget_usd, a.daily_task_limit,
              a.tools, a.can_delegate_to, a.objectives, jsonb(a.kpis), h),
         )
 
@@ -101,11 +103,11 @@ async def sync_default_schedules(db: Database, config_dir: Path) -> int:
     for s in json.loads(path.read_text(encoding="utf-8")):
         row = await db.fetchone(
             """insert into public.ai_schedules (agent_id, title, instructions, every_hours, enabled, reason)
-               select %s, %s, %s, %s, false, 'Attività ricorrente consigliata: si attiva dal pannello'
+               select %s, %s, %s, %s, %s, 'Attività ricorrente consigliata: si attiva e disattiva dal pannello'
                where exists (select 1 from public.ai_agents where id = %s)
                  and not exists (select 1 from public.ai_schedules where agent_id = %s and lower(title) = lower(%s))
                returning id""",
-            (s["agent_id"], s["title"], s["instructions"], s["every_hours"], s["agent_id"], s["agent_id"], s["title"]),
+            (s["agent_id"], s["title"], s["instructions"], s["every_hours"], bool(s.get("enabled", False)), s["agent_id"], s["agent_id"], s["title"]),
         )
         added += 1 if row else 0
     return added

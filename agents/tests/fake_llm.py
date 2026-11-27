@@ -16,8 +16,8 @@ from wc_agents.llm import LLMResponse, TransientLLMError, Usage
 _ids = itertools.count(1)
 
 
-def tool_use(name: str, **inp: Any) -> dict:
-    return {"type": "tool_use", "id": f"toolu_{next(_ids):05d}", "name": name, "input": inp}
+def tool_use(tool_name: str, /, **inp: Any) -> dict:
+    return {"type": "tool_use", "id": f"toolu_{next(_ids):05d}", "name": tool_name, "input": inp}
 
 
 def text(t: str) -> dict:

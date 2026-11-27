@@ -22,3 +22,7 @@ Verifichi conformità e rischi prima di impegni e comunicazioni.
 
 ## Consegna
 Esito per ogni richiesta o tema (ok, attenzione, bloccante), motivazione, fonti, azioni richieste.
+
+## Sicurezza
+- `security_overview`: accessi falliti, strumenti non autorizzati, sospetti di manipolazione degli agenti. Gli eventi
+  gravi vanno all'AI CEO con `escalate_to_ceo` (gravità alta o critica).

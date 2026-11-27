@@ -39,7 +39,8 @@ def database_url():
     url = _with_db(BASE, name)
     try:
         for f in ["supabase/tests/local-auth-stub.sql", "supabase/migrations/20261101000000_init.sql",
-                  "supabase/migrations/20261106000000_ai_company.sql", "supabase/migrations/20261107000000_security.sql"]:
+                  "supabase/migrations/20261106000000_ai_company.sql", "supabase/migrations/20261107000000_security.sql",
+                  "supabase/migrations/20261127000000_operations.sql"]:
             subprocess.run(["psql", url, "-q", "-v", "ON_ERROR_STOP=1", "-f", str(REPO / f)], check=True,
                            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         yield url
@@ -92,7 +93,7 @@ async def owner(database_url):
     await d.close()
 
 
-TABLES = ["security_events", "ai_task_events", "ai_usage", "ai_messages", "ai_memory", "approvals", "ai_tasks", "ai_schedules", "ai_runtime",
+TABLES = ["owner_alerts", "daily_reports", "campaigns", "itineraries", "service_catalog", "supplier_offers", "booking_internal", "bookings", "tour_partners", "requests", "security_events", "ai_task_events", "ai_usage", "ai_messages", "ai_memory", "approvals", "ai_tasks", "ai_schedules", "ai_runtime",
           "advisory_documents", "pricing_simulations", "market_analyses", "marketing_assets", "crm_activities", "opportunities",
           "leads", "suppression_list", "purchase_orders", "supplier_certifications", "email_log", "commissions", "shipments",
           "payments", "orders", "quote_versions", "quote_items", "quotes", "deals", "materials", "suppliers"]

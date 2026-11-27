@@ -213,6 +213,9 @@ async def purchase_order_draft(ctx: ToolContext, a: PODraft) -> dict:
         ctx, "supplier_purchase", f"Ordine {po['number']} a {sup['name']}",
         f"{a.justification}\nTotale {total:,.2f} {a.currency}." + (f" Attenzione: {', '.join(warn)}." if warn else ""),
         total, a.currency, {"purchase_order_id": str(po["id"])},
+        reason=a.justification,
+        effects=f"L'ordine al fornitore viene autorizzato e va inviato: impegno di spesa di {total:,.2f} {a.currency}",
+        risk_level="high" if warn else "medium",
     )
     await ctx.db.execute("update public.purchase_orders set approval_id = %s where id = %s", (appr["approval_id"], po["id"]), actor=ctx.actor)
     return {"purchase_order_id": str(po["id"]), "number": po["number"], "status": "pending_approval", "total": total,

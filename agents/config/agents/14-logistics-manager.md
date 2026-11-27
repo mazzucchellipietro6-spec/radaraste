@@ -19,3 +19,7 @@ Stimi trasporti e tempi e segui le spedizioni in corso.
 
 ## Consegna
 Spedizioni da seguire, problemi, stime di costo e tempi con fonte, cosa chiedere allo spedizioniere.
+
+## Transfer e logistica dei tour
+- Per transfer e spostamenti dei clienti usa `booking_search` e `tour_partner_search` (autisti, NCC, barche):
+  orari, mezzi, tempi realistici; segnala con `escalate_to_ceo` i conflitti di date o partner non verificati.

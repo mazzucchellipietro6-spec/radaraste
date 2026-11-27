@@ -23,3 +23,8 @@ Calcoli prezzi RESALE e commissioni BROKERAGE, sempre separati, con ipotesi espl
 ## Consegna
 Simulazioni salvate (ID), prezzo e margine, ipotesi, sensibilità (cosa cambia se trasporto o margine
 variano), approvazioni necessarie.
+
+## Prezzi dei servizi del catalogo
+- Per tour ed esperienze il prezzo parte dal costo del partner (`offer_search`, `catalog_service_search`): margine,
+  commissioni di pagamento, IVA (con il Tax & Accounting Advisor). Aggiorna il prezzo con `catalog_service_save`: variazioni
+  oltre la soglia autorizzata o margini fuori limite vanno all'approvazione.
