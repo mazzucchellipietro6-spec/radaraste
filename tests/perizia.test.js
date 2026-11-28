@@ -189,6 +189,8 @@ test('«libero da pesi, vincoli e servitù» non dice chi abita il bene e non è
     assert.equal(tema(r, 'occupazione').esito, 'assente', frase);
   }
   assert.equal(tema(leggi('Il bene risulta libero da persone e cose.'), 'occupazione').esito, 'ok');
+  // negata, la formula non è più rassicurante
+  assert.equal(tema(leggi('L\'immobile non è libero da vincoli.'), 'vincoli').esito, 'assente');
 });
 
 test('occupazione: «occupato» senza dire da chi e contratto non opponibile sono problemi', () => {

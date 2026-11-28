@@ -215,6 +215,9 @@ Ultimo aggiornamento: 28/11/2026 (mappa più interattiva e lettore della perizia
   - le perizie contengono nomi e codici fiscali: nel sito andrebbero solo gli esiti per tema ("abusi: da verificare"), mai le frasi;
   - prima vanno rilette le condizioni d'uso del Portale per questo uso.
 - **Perizie scansionate.** Per leggerle servirebbe il riconoscimento del testo (OCR). Si può fare gratis nel browser (Tesseract.js, alcuni MB e qualche decina di secondi per perizia), oppure con un servizio AI a pagamento che capirebbe anche il contesto: i costi vanno in `CONSULENTE.md` e decidi tu.
+- **Testi legali e posizione.** La pagina dei cookie ora dice che i filtri della mappa possono contenere il centro del cerchio della distanza; l'informativa privacy (bozza) non parla ancora della posizione né delle tile di OpenStreetMap, che vedono la zona guardata come in ogni mappa. Sono testi tuoi da approvare.
+- **Mappa, ritocchi minori trovati dal Revisore:** «Sconto minimo» non passa all'elenco, che non ha questo filtro; i numeri della ricerca dei luoghi non tengono conto dei filtri; con «Vicino a me» l'elenco riceve un riquadro di circa 10 km invece del cerchio.
+- **Lettore, ritocchi minori:** avviso quando solo alcune pagine sono scansionate; avanzamento annunciato meno spesso ai lettori di schermo; altre frasi da riconoscere («la conformità urbanistica non sussiste») e altri falsi allarmi da togliere.
 - **Prova con il tuo browser.** Il Portale permette di leggere le perizie da altri siti (intestazioni CORS presenti), ma il suo firewall blocca i browser automatici che uso per le prove, e non l'ho aggirato. Quindi "Leggi la perizia" è provato fino allo scarico. Dopo il Merge provalo su un immobile: se il Portale non lo lascia scaricare, la scheda lo dice e propone di scegliere il PDF a mano, che funziona.
 
 **Nuove del 30/10-2/11:**

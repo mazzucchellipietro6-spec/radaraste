@@ -228,16 +228,28 @@
     ['testo', 'regione', 'provincia', 'comune', 'tribunale', 'min', 'dal', 'al', 'ordina'].forEach(function (k) { if (extra[k]) f[k] = extra[k]; });
     // l'elenco non conosce "entro N giorni": diventa la data "al"
     if (filtri.giorni) { var lim = piuGiorni(oggi(), filtri.giorni); if (!f.al || f.al > lim) f.al = lim; }
-    if (conZona && mappa) f.bbox = bboxVista(); else if (raggio) f.bbox = bboxRaggio(); else if (extra.bbox) f.bbox = extra.bbox;
+    // con il cerchio della distanza la zona è il riquadro del cerchio (anche per "Cerca in questa zona")
+    if (raggio) f.bbox = bboxRaggio(); else if (conZona && mappa) f.bbox = bboxVista(); else if (extra.bbox) f.bbox = extra.bbox;
     return f;
+  }
+  // zona intorno alla persona ("Vicino a me", o la vista ancora centrata lì): riquadro allargato a 0,1° (circa 10 km),
+  // mai la posizione precisa
+  function vicinoATe() { return !!mappa && (!!(raggio && raggio.te) || vistaSuDiTe(mappa.getCenter())); }
+  function bboxLargo(b) {
+    var giu = function (x) { return Math.floor(x * 10) / 10; }, su = function (x) { return Math.ceil(x * 10) / 10; };
+    return [giu(b[0]), giu(b[1]), su(b[2]), su(b[3])];
   }
   function bboxRaggio() {
     var dLat = raggio.km / 111.2, dLng = raggio.km / (111.32 * Math.cos(raggio.lat * Math.PI / 180)), r = function (x) { return Math.round(x * 10000) / 10000; };
     return [r(raggio.lat - dLat), r(raggio.lng - dLng), r(raggio.lat + dLat), r(raggio.lng + dLng)];
   }
+  // link all'elenco con gli stessi filtri. Vicino alla persona la zona non va nell'indirizzo (che arriva al server e resta
+  // nella cronologia): passa solo dentro il browser (data-passa → sessionStorage), allargata a circa 10 km
   function linkElenco(el, f) {
+    var privato = !!f.bbox && vicinoATe();
+    if (privato) { f = copia(f); f.bbox = bboxLargo(f.bbox); }
     var vuoto = !Object.keys(f).length, j = JSON.stringify(f);
-    el.href = vuoto ? 'aste.html' : 'aste.html?filtri=' + encodeURIComponent(j);
+    el.href = vuoto || privato ? 'aste.html' : 'aste.html?filtri=' + encodeURIComponent(j);
     if (vuoto) el.removeAttribute('data-passa'); else el.setAttribute('data-passa', 'filtri:' + j);
   }
   function bboxVista() {
@@ -1488,7 +1500,11 @@
     else if (nav && nav.type === 'back_forward' && v && v.c && isFinite(v.z)) mappa.setView(v.c, v.z, { animate: false });
     else mappa.fitBounds(ITALIA, paddingVista());
     // tasto destro (computer): misura la distanza da quel punto
-    mappa.on('contextmenu', function (e) { if (!TOCCO.matches && datiPronti) impostaRaggio(e.latlng.lat, e.latlng.lng, false); });
+    mappa.on('contextmenu', function (e) {
+      if (TOCCO.matches || !datiPronti) return;
+      impostaRaggio(e.latlng.lat, e.latlng.lng, false);
+      U.toast('Distanza misurata dal punto del clic destro: cambiala o toglila nei filtri');
+    });
   }
 
   function vistaDaFiltri() {

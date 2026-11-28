@@ -10,9 +10,15 @@ Un paragrafo per ogni giro del mattino, il più recente in alto: come sta il sit
 - **Fatto su tua richiesta del 27/11** (sul branch, nella pull request #4):
   - **lettore della perizia**: nella scheda di ogni immobile e in una pagina negli Strumenti. Trova 10 temi di punti critici con la frase e la pagina. È stato provato su 8 perizie vere: affitto registrato fino al 2029, muffa e umidità, legnaia non accatastata, quote di 1/2 e 3/9, servitù di passaggio e di elettrodotto, infiltrazioni. I falsi allarmi visti nelle prove sono stati corretti: "occupato da beni mobili", millesimi delle parti comuni, "Creppi" letto come crepe, cantine al rustico;
   - **mappa**: prezzi sui puntini, colori per sconto o data, ricerca dei luoghi, "Vicino a me" con il cerchio, filtri per data e sconto, elenco della zona ordinabile, link della vista, schermo intero.
-- **Prove:** tutte nel browser con la CSP del sito, su telefono e computer, in chiaro e scuro, senza errori. I test passano da 470 a 486, tutti verdi, anche con l'orologio avanti di 90 giorni.
+- **Prove:** tutte nel browser con la CSP del sito, su telefono e computer, in chiaro e scuro, senza errori. Prove nel browser ripetute anche alla misura dell'iPad, in verticale e in orizzontale.
 - **Ambiente:** per scaricare le perizie del Portale hai approvato un ambiente "radaraste" con resource-pvp.giustizia.it.
-- **Agenti:** 1, il Revisore indipendente, su tutte le modifiche.
+- **Revisore indipendente (1 agente):** ha controllato tutte le modifiche e corretto quello che ha trovato:
+  - frasi negative lette come rassicuranti («non è conforme», «non è libero», «gli impianti non sono a norma», «non è recintato e presenta infiltrazioni»);
+  - la posizione nel link della vista anche dopo «Togli»;
+  - «Azzera i filtri» che non toglieva il cerchio;
+  - il valore di stima scambiato per un costo; date e repertori letti come quote.
+- **Dopo la revisione:** con «Vicino a me» i pulsanti verso l'elenco mettevano nell'indirizzo una zona centrata sulla persona, precisa a 10 metri. Ora la zona passa solo dentro il browser, allargata a circa 10 km (provato: nessuna richiesta con la posizione).
+- **Test:** 494, tutti verdi, anche con l'orologio avanti di 90 giorni.
 
 ## 27/11/2026 – URGENTE: raccolta ferma da 25 giorni
 
