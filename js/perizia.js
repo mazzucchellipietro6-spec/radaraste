@@ -120,7 +120,19 @@
   }
 
   /* ---------- negazioni ---------- */
-  var NEG_PRIMA = R(/(?:\bnon\b|\bnessun\w*|\bassenz\w*|\bsenza\b|\bn[ée]\b|\bniente\b|\besclus[oaie]\b|\binesistent\w*|\bmai\b)[^.;:]{0,70}$/i);
+  // Parole che negano. Non "mai" ("veranda mai autorizzata" è un abuso) né "né" da solo: nel testo piatto "né" e il
+  // pronome "ne" ("Ne consegue che le opere sono abusive") sono uguali; vale solo la coppia "né... né".
+  var NEG_PAROLA = R(/\bnon\b|\bnessun\w*|\bassenz\w*|\bsenza\b|\bne\s+(?:[\w']+[\s,]+){0,4}?ne\b|\bniente\b|\besclus[oaie]\b|\binesistent\w*/i);
+  // dopo la negazione comincia un'altra frase, che la negazione non tocca: "non è recintato e presenta infiltrazioni",
+  // "non è abitato, ma presenta muffa", "senza contare la tettoia, sono presenti difformità"
+  var STACCO = R(/\b(?:ma|però|tuttavia|mentre|bensì|eccetto|salvo)\b|\b(?:e|ed)\s+(?:si\s+)?(?:presenta\w*|rilev\w*|riscontr\w*|evidenzi\w*|mostra\w*|risult\w*|ha|hanno|sono)\b|\bed\s+è\b|,\s*(?:è|sono|risulta\w*)\s+(?:stat[aoie]\s+)?(?:present|rilevat|riscontrat|evidenziat)\w*|,\s*si\s+(?:rilev|riscontr|evidenzi|segnal|precisa)\w*/i);
+  // negazione nella stessa frase, prima della parola del problema (al massimo 70 caratteri, senza . ; : in mezzo)
+  function negataPrima(prima) {
+    var seg = prima.slice(Math.max(prima.lastIndexOf('.'), prima.lastIndexOf(';'), prima.lastIndexOf(':')) + 1);
+    var re = new RegExp(NEG_PAROLA.source, 'gi'), x, ultima = null;
+    while ((x = re.exec(seg))) ultima = x;
+    return !!ultima && !STACCO.test(seg.slice(ultima.index + ultima[0].length));
+  }
   // doppia negazione: "non si può escludere la presenza di amianto" segnala un rischio, non lo esclude
   var NON_ESCLUDE = R(/\bnon\s+(?:si\s+)?(?:pu[òo]|possa|potrebbe|potendo|può\s+essere|è\s+possibile)\s+(?:essere\s+)?esclud\w*|\bnon\s+(?:è|sia|risulta)\s+(?:da\s+)?esclud\w*|\bnon\s+esclud\w*|\bnon\s+(?:si\s+)?(?:conosc|sa|sapere|verificabil|accertabil|determinabil)\w*/i);
   // subito dopo la parola: "difformità non riscontrate", "abusi: nessuno"
@@ -136,8 +148,12 @@
     if (NEG_SUBITO.test(dopo) || NEG_CAMPO.test(dopo)) return true;
     // "non direttamente occupata dall'impianto", "non è abusivo": negazione subito prima, vale per tutti i temi
     if (/\bnon\s+(?:[\wàèéìòù'’]+\s+){0,2}$/i.test(f.slice(Math.max(0, m.index - 30), m.index)) && !NON_ESCLUDE.test(f.slice(Math.max(0, m.index - 40), m.index + 12))) return true;
-    return !!davanti && NEG_PRIMA.test(prima) && !NON_ESCLUDE.test(prima);
+    // "liberi da pesi, vincoli e servitù", "libero da iscrizioni e trascrizioni pregiudizievoli": formula di assenza
+    if (LIBERO_DA.test(prima)) return true;
+    return !!davanti && negataPrima(prima) && !NON_ESCLUDE.test(prima);
   }
+  // "libero da" seguito solo da nomi di pesi e formalità fino alla parola del problema
+  var LIBERO_DA = R(/\bliber[oaie]\s+da\s+(?:(?:pesi|oneri|vincoli|servitù|gravami|iscrizioni|trascrizioni|ipoteche|formalità|diritti|privilegi|reali|di|terzi|pregiudizievoli|e|ed|o|ovvero)[\s,]+)*$/i);
 
   /* ---------- temi ---------- */
   // Ogni tema: problemi (parole dei problemi), ok (frasi rassicuranti esplicite), ambito (la frase deve riguardare il
@@ -149,45 +165,45 @@
     { chiave: 'urbanistica', titolo: 'Abusi edilizi e conformità urbanistica', gravita: 'alta',
       spiegazione: 'Le opere senza titolo edilizio vanno sanate (costi e tempi a carico di chi compra) o, se non sanabili, demolite. Un abuso non sanabile può rendere difficile anche il mutuo.',
       dove: 'capitolo sulla regolarità urbanistica (o "conformità edilizia")',
-      problemi: /\babusiv\w*|\babus[oi]\b|\bdifformit\w*|\bnon\s+conform\w*|\bnon\s+(?:è\s+|risulta\s+)?sanabil\w*|\binsanabil\w*|\bnon\s+regolarizzabil\w*|\birregolarit\w*|\bda\s+sanare\b|\bsanabil\w*|\bfiscalizzazion\w*|\bordinanz\w*\s+di\s+demolizion\w*|\bda\s+demolire\b|\bripristin\w*\s+(?:dello\s+)?stato\s+dei\s+luoghi|\bin\s+assenza\s+di\s+titol\w*|\bsenza\s+(?:alcun\s+)?(?:titol\w*|permess\w*|licenz\w*|concession\w*)\s+edilizi\w*|\bdomand\w*\s+di\s+condono\s+(?:non\s+(?:ancora\s+)?definit\w*|pendent\w*|in\s+corso)/i,
-      ok: /\b(?:conformit\w*\s+(?:urbanistic\w*|edilizi\w*)(?:[-\s]\w+)?|regolarit\w*\s+(?:urbanistic\w*|edilizi\w*))[^.;]{0,50}?\b(?:conform\w*|sussist\w*|regolar\w*|verificat\w*\s+positiv)|\b(?:è|risulta|risultano|si\s+presenta)\s+(?:urbanisticamente\s+)?(?:conform\w*|regolar\w*)\s+(?:sotto\s+il\s+profilo\s+|dal\s+punto\s+di\s+vista\s+|alle?\s+|ai\s+)?(?:urbanistic|edilizi|titol|progett|licenz|concession|permess)/i,
+      problemi: /\babusiv\w*|\babus[oi]\b|\bdifformit\w*|\bnon\s+(?:(?:è|sono|risulta|risultano|appare|appaiono|sia|siano)\s+)?(?:(?:pienamente|completamente|perfettamente|totalmente|interamente|del\s+tutto)\s+)?conform\w*|\bnon\s+(?:(?:è|sono|risulta|risultano|appare|appaiono|sia|siano)\s+)?sanabil\w*|\binsanabil\w*|\bnon\s+(?:(?:è|sono|risulta|risultano|appare|appaiono|sia|siano)\s+)?regolarizzabil\w*|\birregolarit\w*|\bda\s+sanare\b|\bsanabil\w*|\bfiscalizzazion\w*|\bordinanz\w*\s+di\s+demolizion\w*|\bda\s+demolire\b|\bripristin\w*\s+(?:dello\s+)?stato\s+dei\s+luoghi|\bin\s+assenza\s+di\s+titol\w*|\bsenza\s+(?:alcun\s+)?(?:titol\w*|permess\w*|licenz\w*|concession\w*)\s+edilizi\w*|\bdomand\w*\s+di\s+condono\s+(?:non\s+(?:ancora\s+)?definit\w*|pendent\w*|in\s+corso)/i,
+      ok: /\b(?:conformit\w*\s+(?:urbanistic\w*|edilizi\w*)(?:[-\s]\w+)?|regolarit\w*\s+(?:urbanistic\w*|edilizi\w*))[^.;]{0,50}?\b(?:conform\w*|sussist\w*|regolar\w*|verificat\w*\s+positiv)|\b(?:è|risulta|risultano|si\s+presenta)\s+(?:urbanisticamente\s+)?(?:conform\w*|regolar\w*)\s+(?:sotto\s+il\s+profilo\s+|dal\s+punto\s+di\s+vista\s+|al(?:le|lo)?\s+|all'\s*|ai\s+|agli\s+)?(?:urbanistic|edilizi|titol|progett|licenz|concession|permess)/i,
       ambito: URB, fuori: /\boccup\w*\s+abusiv|abusivamente\s+occupat|occupant\w*\s+abusiv/i, catastoEscluso: true, negabile: true },
     { chiave: 'catasto', titolo: 'Conformità catastale', gravita: 'media',
       spiegazione: 'Se la planimetria catastale non corrisponde allo stato dei luoghi serve un aggiornamento (pratica DOCFA): di solito poche centinaia di euro, ma senza conformità catastale non si stipula il rogito di un eventuale mutuo.',
       dove: 'capitolo sulla conformità catastale',
-      problemi: /\bdifformit\w*|\bnon\s+conform\w*|\bnon\s+corrispond\w*|\bdiscrepanz\w*|\bincongruenz\w*|\bnon\s+(?:è\s+|risulta\s+)?(?:accatastat|censit|aggiornat)\w*|\bmancat\w*\s+accatastament\w*|\bnon\s+(?:è\s+|risulta\s+|sono\s+)?(?:riportat|rappresentat|indicat|inserit|graficizzat)\w*\s+(?:nella|nelle|in|sulla|sulle)\s+(?:planimetri|mappa|scheda)\w*|\bplanimetri\w*\s+(?:catastal\w*\s+)?(?:non\s+(?:conform|corrispond|aggiornat|present|reperit|depositat)\w*|assent\w*|mancant\w*|errat\w*|difform\w*)|\b(?:necessari\w*|occorre|occorrerà|si\s+rende\s+necessari\w*)\s+(?:una?\s+|l[ao']\s*)?(?:pratica\s+)?(?:docfa|variazion\w*\s+catastal\w*|aggiornament\w*\s+catastal\w*)/i,
+      problemi: /\bdifformit\w*|\bnon\s+(?:(?:è|sono|risulta|risultano|appare|appaiono|sia|siano)\s+)?(?:(?:pienamente|completamente|perfettamente|totalmente|interamente|del\s+tutto)\s+)?(?:conform|corrispond)\w*|\bdiscrepanz\w*|\bincongruenz\w*|\bnon\s+(?:è\s+|risulta\s+)?(?:accatastat|censit|aggiornat)\w*|\bmancat\w*\s+accatastament\w*|\bnon\s+(?:è\s+|risulta\s+|sono\s+)?(?:riportat|rappresentat|indicat|inserit|graficizzat)\w*\s+(?:nella|nelle|in|sulla|sulle)\s+(?:planimetri|mappa|scheda)\w*|\bplanimetri\w*\s+(?:catastal\w*\s+)?(?:non\s+(?:conform|corrispond|aggiornat|present|reperit|depositat)\w*|assent\w*|mancant\w*|errat\w*|difform\w*)|\b(?:necessari\w*|occorre|occorrerà|si\s+rende\s+necessari\w*)\s+(?:una?\s+|l[ao']\s*)?(?:pratica\s+)?(?:docfa|variazion\w*\s+catastal\w*|aggiornament\w*\s+catastal\w*)/i,
       ok: /\b(?:conformit\w*\s+catastal\w*|planimetri\w*\s+catastal\w*|dati\s+catastal\w*)[^.;]{0,60}?\b(?:conform\w*|corrispond\w*|sussist\w*|regolar\w*|coeren\w*)|\b(?:conform\w*|corrispond\w*)\b[^.;]{0,40}\bplanimetri\w*\s+catastal\w*/i,
       ambito: CAT, negabile: true },
     { chiave: 'occupazione', titolo: 'Chi abita l\'immobile', gravita: 'alta',
       spiegazione: 'Un immobile occupato dal debitore viene di solito liberato dal custode, ma servono mesi. Un contratto di affitto registrato prima del pignoramento (opponibile) va rispettato fino alla scadenza; anche l\'assegnazione della casa coniugale può esserlo.',
       dove: 'capitolo "stato di possesso" (o "stato di occupazione")',
-      problemi: /\boccupat\w*\s+(?:dal(?:l[ao'’])?|dai|dagli|da|con|senza)\b(?!\s*(?:[\w'’]+\s+){0,2}?(?:beni|cose|mobili|material|masseriz|arred|rifiut|macerie|attrezzatur|merc[ie]|veicol|automezz|suppellettil|oggett|vegetazion|sterpaglie|acqua|detriti|impiant|struttur|costruzion|fabbricat|manufatt|edific|pannell|serr[ae]|tettoi|piazzal|strad))|\boccupant\w*\s+(?:senza\s+titolo|abusiv\w*|non\s+autorizzat\w*)|\butilizzat\w*\s+(?:dal|dalla|dai)\s+[^.;]{0,60}?\ba\s+titolo\s+di\b|\bocc?upazione\s+(?:abusiv|senza\s+titol)\w*|\babusivamente\s+occupat\w*|\blocat\w*\s+(?:a|al|alla|ai|con)\b|\bcontratt\w*\s+di\s+(?:locazione|affitt\w*|comodato)|\bconcess\w*\s+in\s+(?:locazione|affitt\w*|comodato)|\bin\s+affitto\b|\bcomodato\b|\bassegnat\w*\s+(?:al|alla)\s+(?:coniuge|ex\s+coniuge|moglie|marito)|\bcasa\s+(?:familiare|coniugale)|\bsenza\s+titolo\b|\bopponibil\w*/i,
-      ok: /\b(?:è|risulta|risultava|appare|si\s+presenta|si\s+trova|trovato|trovata|attualmente)\s+(?:attualmente\s+|ancora\s+|oggi\s+)?liber[oa]\b|\bliber[oa]\s+(?:da\s+persone|e\s+disponibil|da\s+cose|e\s+sgombr)|\bstato\s+di\s+(?:possesso|occupazione)\s*[:.-]?\s*liber[oa]\b|\bnon\s+(?:è\s+|risulta\s+)?(?:occupat|abitat|locat)\w*|\bdisabitat\w*|\bnella\s+(?:piena\s+)?disponibilit\w*\s+della\s+procedura/i,
+      problemi: /\bcontratt\w*\s+di\s+(?:locazione|affitt\w*|comodato)[^.;]{0,40}?\bnon\s+(?:(?:è|risulta)\s+)?(?:(?:stat[oa]|ancora)\s+)?(?:opponibil|registrat)\w*|\boccupat\w*\s+(?:dal(?:l[ao'’])?|dai|dagli|da|con|senza)\b(?!\s*(?:[\w'’]+\s+){0,2}?(?:beni|cose|mobili|material|masseriz|arred|rifiut|macerie|attrezzatur|merc[ie]|veicol|automezz|suppellettil|oggett|vegetazion|sterpaglie|acqua|detriti|impiant|struttur|costruzion|fabbricat|manufatt|edific|pannell|serr[ae]|tettoi|piazzal|strad))|\boccupant\w*\s+(?:senza\s+titolo|abusiv\w*|non\s+autorizzat\w*)|\butilizzat\w*\s+(?:dal|dalla|dai)\s+[^.;]{0,60}?\ba\s+titolo\s+di\b|\bocc?upazione\s+(?:abusiv|senza\s+titol)\w*|\babusivamente\s+occupat\w*|\blocat\w*\s+(?:a|al|alla|ai|con)\b|\bcontratt\w*\s+di\s+(?:locazione|affitt\w*|comodato)|\bconcess\w*\s+in\s+(?:locazione|affitt\w*|comodato)|\bin\s+affitto\b|\bcomodato\b|\bassegnat\w*\s+(?:al|alla)\s+(?:coniuge|ex\s+coniuge|moglie|marito)|\bcasa\s+(?:familiare|coniugale)|\bsenza\s+titolo\b|\bopponibil\w*|\bstato\s+di\s+(?:possesso|occupazione)\s*[:.-]?\s*occupat\w*|\b(?:risulta|risultano|risultava|appare|appaiono|si\s+presenta|attualmente|tuttora)\s+(?:attualmente\s+|ancora\s+|tuttora\s+)?occupat[oaie]\b(?!\s*(?:da|dal|dall|dalla|dallo|dai|dagli|dalle|con|senza)\b)/i,
+      ok: /\b(?:è|risulta|risultava|appare|si\s+presenta|si\s+trova|trovato|trovata|attualmente)\s+(?:attualmente\s+|ancora\s+|oggi\s+)?liber[oa]\b(?!\s+da\s+(?:pesi|oneri|vincol|servit|gravam|iscrizion|trascrizion|ipotec|formalit|diritt|privileg))|\bliber[oa]\s+(?:da\s+persone|e\s+disponibil|da\s+cose|e\s+sgombr)|\bstato\s+di\s+(?:possesso|occupazione)\s*[:.-]?\s*liber[oa]\b|\bnon\s+(?:è\s+|risulta\s+)?(?:occupat|abitat|locat)\w*|\bdisabitat\w*|\bnella\s+(?:piena\s+)?disponibilit\w*\s+della\s+procedura/i,
       soggetto: /immobil|appartament|unit[àa]|\bben[ei]\b|fabbricat|abitazion|villa|alloggi|local[ei]\b|lott[oi]\b|\bbox\b|garage|negozi|capannon|possesso|occupazion|porzion|edifici/i,
       fuori: /verific\w*\s+(?:l['’]\s*)?esistenza|esistenza\s+di\s+(?:eventuali\s+)?contratt|\beventual\w*\s+contratt|richiest\w*\s+(?:formal\w*\s+)?(?:all['’]\s*|alla\s+|di\s+)?(?:agenzia|ufficio|anagrafe)|\binterrogazion\w*/i,
-      negabile: false },
+      negabile: false, okNegato: true },
     { chiave: 'vincoli', titolo: 'Vincoli, servitù e diritti di altri', gravita: 'alta',
       spiegazione: 'Servitù, usufrutto, diritto di abitazione, edilizia convenzionata (prezzo massimo di rivendita), vincoli paesaggistici o storici e domande giudiziali restano a carico di chi compra: il decreto di trasferimento non li cancella.',
       dove: 'capitolo "vincoli ed oneri giuridici" (formalità che resteranno a carico dell\'acquirente)',
       problemi: /\bservit[uù]\b|\busufrutt\w*|\bdiritt\w*\s+di\s+(?:abitazione|uso|superficie)|\bpropriet\w*\s+superficiari\w*|\busi\s+civic\w*|\buso\s+civico|\blivell\w*\s+(?:a\s+favore|enfiteutic)|\benfiteus\w*|\bvincol\w*\s+(?:paesaggistic|paesistic|storic|artistic|archeologic|idrogeologic|monumental|cimiterial|di\s+inedificabilit|di\s+destinazione|di\s+(?:non\s+)?alienabilit|ambiental|forestal|ex\s+lege|ai\s+sensi\s+del\s+d\.?\s*lgs)\w*|\bprelazion\w*|\bediliz\w*\s+(?:residenziale\s+)?(?:convenzionat|economica\s+e\s+popolare|agevolat|sovvenzionat|residenziale\s+pubblica)\w*|\bp\.?e\.?e\.?p\.?\b|\bprezzo\s+massimo\s+di\s+(?:cessione|vendita)|\bconvenzion\w*\s+(?:urbanistic\w*|edilizi\w*|con\s+il\s+comune|ex\s+art|ai\s+sensi)|\batt\w*\s+d\w*\s+asserviment\w*|\bdomand\w*\s+giudizial\w*|\bsequestr\w*|\bfondo\s+patrimonial\w*|\btrascrizion\w*\s+(?:\w+\s+){0,2}pregiudizievol\w*|\b(?:non\s+saranno|non\s+verranno|non\s+potranno\s+essere)\s+cancellat\w*/i,
       ok: /\b(?:non\s+(?:risultano|sussistono|esistono|gravano|sono\s+(?:presenti|stati\s+(?:rilevati|riscontrati)))|nessun\w*|assenza\s+di|libero\s+da)\s+(?:\w+\s+){0,3}?(?:vincol|servit|oner|gravam|diritt|trascrizion|domand|formalit)\w*/i,
-      fuori: /\bipotec\w*|\bpignorament\w*|\bsaranno\s+cancellat\w*|\bcancellazion\w*\s+(?:delle\s+)?formalit|a\s+cura\s+e\s+spese\s+della\s+procedura/i, negabile: true },
+      fuori: /\bipotec\w*|\bpignorament\w*|\bsaranno\s+cancellat\w*|\bcancellazion\w*\s+(?:delle\s+)?formalit|a\s+cura\s+e\s+spese\s+della\s+procedura/i, negabile: true, okNegato: true },
     { chiave: 'condominio', titolo: 'Spese condominiali arretrate', gravita: 'media',
       spiegazione: 'Chi compra risponde con il debitore delle spese condominiali dell\'anno in corso e di quello precedente (art. 63 disp. att. c.c.). Le spese straordinarie già deliberate possono pesare molto.',
       dove: 'capitolo sulle spese condominiali (o "oneri condominiali")',
       problemi: /\b(?:spes\w*|oner\w*|quot\w*|rat\w*)\s+condominial\w*\s+(?:\w+\s+){0,5}?(?:insolut\w*|arretrat\w*|scadut\w*|non\s+(?:pagat|versat|saldat|corrispost)\w*|da\s+pagare|morosit\w*)|\b(?:debit\w*|morosit\w*|insolut\w*|arretrat\w*|pendenz\w*|esposizion\w*)\s+(?:\w+\s+){0,5}?(?:condomin\w*)|\b(?:spes\w*|lavor\w*|interventi?)\s+(?:\w+\s+){0,3}?straordinar\w*\s+(?:\w+\s+){0,4}?(?:deliberat|approvat)\w*/i,
       ok: /\bnon\s+(?:è\s+|risulta\s+)?costituit\w*\s+(?:alcun\s+|il\s+)?condomini\w*|\bnon\s+(?:esiste|vi\s+è|c'è)\s+(?:alcun\s+|un\s+)?condomini\w*|\b(?:non\s+risultano|nessun\w*)\s+(?:\w+\s+){0,3}?(?:spes|debit|insolut|morosit|arretrat)\w*\s+(?:\w+\s+){0,2}condomin\w*/i,
-      ambito: /condomin|straordinar/i, negabile: true, importi: true },
+      ambito: /condomin|straordinar/i, negabile: true, okNegato: true, importi: true },
     { chiave: 'agibilita', titolo: 'Agibilità (abitabilità)', gravita: 'media',
       spiegazione: 'Senza certificato o segnalazione di agibilità l\'immobile si può comprare, ma alcune banche non danno il mutuo e per ottenerla possono servire lavori e pratiche.',
       dove: 'capitolo sulla regolarità urbanistica, alla voce agibilità o abitabilità',
-      problemi: /\b(?:privo|priva|privi|prive|sprovvist\w*|senza|mancan\w*|assenza)\s+(?:del(?:l[a'’]|la)?\s*|di\s+)?(?:certificat\w*\s+(?:di\s+)?|segnalazion\w*\s+(?:certificata\s+)?(?:di\s+|per\s+l'\s*)?|dichiarazion\w*\s+(?:di\s+)?)?(?:agibilit|abitabilit)\w*|\b(?:agibilit|abitabilit)\w*\s*[:.-]?\s*(?:non\s+(?:è\s+stat[oa]\s+)?(?:rilasciat|present|reperit|risulta|richiest|depositat)\w*|assent\w*|mancant\w*|non\s+presente)|\bnon\s+(?:risulta|è\s+stat[oa]|sono\s+stat[ei]|risultano)\s+(?:mai\s+)?(?:rilasciat|richiest|presentat|depositat)\w*\s+(?:il\s+|la\s+|i\s+|le\s+)?(?:certificat\w*\s+|segnalazion\w*\s+|dichiarazion\w*\s+)?(?:di\s+|d'\s*)?(?:agibilit|abitabilit)\w*/i,
-      ok: /\b(?:certificat\w*|dichiarazion\w*|segnalazion\w*|attestazion\w*)\s+(?:certificata\s+)?(?:di\s+|d'\s*)?(?:agibilit|abitabilit)\w*\s+(?:n\.|n°|numero|rilasciat|del\b|prot|in\s+data|è\s+stat[oa]\s+rilasciat|presentat|depositat)|\b(?:agibilit|abitabilit)\w*\s+(?:è\s+stat[oa]\s+|risulta\s+)?(?:rilasciat|attestat)\w*/i,
+      problemi: /\b(?:privo|priva|privi|prive|sprovvist\w*|senza|mancan\w*|assenza)\s+(?:del(?:l[a'’]|la)?\s*|di\s+)?(?:certificat\w*\s+(?:di\s+)?|segnalazion\w*\s+(?:certificata\s+)?(?:di\s+|per\s+l'\s*)?|dichiarazion\w*\s+(?:di\s+)?)?(?:agibilit|abitabilit)\w*|\b(?:agibilit|abitabilit)\w*\s*[:.-]?\s*(?:non\s+(?:è\s+stat[oa]\s+)?(?:rilasciat|present|reperit|risulta|richiest|depositat)\w*|assent\w*|mancant\w*|non\s+presente)|\bnon\s+(?:(?:risulta|risultano|è|sono)\s+)?(?:(?:stat[oaie]|mai|ancora)\s+)*(?:rilasciat\w*|richiest\w*|presentat\w*|depositat\w*|reperit\w*|present[ei]|dotat\w*\s+d\w*|in\s+possesso\s+d\w*)\s+(?:(?:il|la|i|le|alcun[oa]?)\s+|l'\s*)?(?:(?:certificat\w*|segnalazion\w*|dichiarazion\w*|attestazion\w*)\s+(?:certificata\s+)?)?(?:di\s+|d'\s*|per\s+l'\s*)?(?:agibilit|abitabilit)\w*/i,
+      ok: /\b(?:certificat\w*|dichiarazion\w*|segnalazion\w*|attestazion\w*)\s+(?:certificata\s+)?(?:di\s+|d'\s*)?(?:agibilit|abitabilit)\w*\s+(?:n\.|n°|numero|rilasciat|del\s+\d|prot|in\s+data|è\s+stat[oa]\s+rilasciat|presentat|depositat)|\b(?:agibilit|abitabilit)\w*\s+(?:è\s+stat[oa]\s+|risulta\s+)?(?:rilasciat|attestat)\w*/i,
       negabile: false },
     { chiave: 'impianti', titolo: 'Impianti', gravita: 'bassa',
       spiegazione: 'Impianti senza dichiarazione di conformità o da adeguare sono un costo in più da mettere in conto prima dell\'offerta.',
       dove: 'descrizione dell\'immobile, alla voce impianti',
-      problemi: /\bimpiant\w*\s+(?:[\w'’]+\s+){0,4}?(?:non\s+(?:a\s+norma|conform\w*|certificat\w*|funzionant\w*|adeguat\w*|collaudat\w*|verificabil\w*)|priv[oiae]\s+(?:di|della|delle|dei)\s+(?:dichiarazion|certificazion|certificat)\w*|da\s+(?:adeguare|rifare|revisionare|sostituire|ripristinare|mettere\s+a\s+norma)|obsolet\w*|fatiscent\w*|vetust\w*|fuori\s+norma|dismess\w*|distaccat\w*|scollegat\w*|assent\w*|inesistent\w*|non\s+presenti)|\b(?:dichiarazion|certificazion)\w*\s+di\s+conformit\w*\s+(?:degli\s+impianti\s+|dell'impianto\s+)?[:\s-]*(?:non\s+(?:è\s+stat[ae]\s+|sono\s+stat[ei]\s+)?(?:reperit|present|rilasciat|disponibil|fornit|prodott)\w*|assent\w*|mancant\w*)/i,
+      problemi: /\bimpiant\w*\s+(?:[\w'’]+\s+){0,4}?(?:non\s+(?:(?:è|sono|risulta|risultano|appare|appaiono|sia|siano)\s+)?(?:a\s+norma|conform\w*|certificat\w*|funzionant\w*|adeguat\w*|collaudat\w*|verificabil\w*)|priv[oiae]\s+(?:di|della|delle|dei)\s+(?:dichiarazion|certificazion|certificat)\w*|da\s+(?:adeguare|rifare|revisionare|sostituire|ripristinare|mettere\s+a\s+norma)|obsolet\w*|fatiscent\w*|vetust\w*|fuori\s+norma|dismess\w*|distaccat\w*|scollegat\w*|assent\w*|inesistent\w*|non\s+presenti)|\b(?:dichiarazion|certificazion)\w*\s+di\s+conformit\w*\s+(?:degli\s+impianti\s+|dell'impianto\s+)?[:\s-]*(?:non\s+(?:è\s+stat[ae]\s+|sono\s+stat[ei]\s+)?(?:reperit|present|rilasciat|disponibil|fornit|prodott)\w*|assent\w*|mancant\w*)/i,
       ok: /\bimpiant\w*\s+(?:[\w'’]+\s+){0,4}?(?:a\s+norma|conformi\b|certificat\w*|dotat\w*\s+di\s+(?:dichiarazione|certificazione)|in\s+buono\s+stato|funzionant\w*)/i,
       negabile: false },
     { chiave: 'conservazione', titolo: 'Stato di conservazione', gravita: 'media',
@@ -229,8 +245,10 @@
       }
       var a = +m[1], b = +m[2], intorno = f.slice(Math.max(0, m.index - 50), m.index + m[0].length + 50);
       if (/[\d,.]$/.test(f.slice(Math.max(0, m.index - 1), m.index))) continue;   // "15,58/1000": decimale, non una frazione di proprietà
+      // data ("in data 3/5/2001") o numero di repertorio ("rep. 1234/5678"): non una frazione
+      if (/^\s*\/\s*\d/.test(f.slice(m.index + m[0].length)) || /\/\s*$/.test(f.slice(Math.max(0, m.index - 2), m.index))) continue;
       if (b > 0 && a > 0 && a < b && b <= 10000 && /quota|propriet|diritt|usufrutt|indivis/i.test(intorno) &&
-        !/foglio|particella|mappale|\bsub\b|p\.f\.|p\.ed|civ|n\.\s*$|del\s*$|legge|l\.\s*$|d\.?p\.?r|art/i.test(f.slice(Math.max(0, m.index - 14), m.index))) return m;
+        !/foglio|particella|mappale|\bsub\b|p\.f\.|p\.ed|civ|n\.\s*$|n°\s*$|del\s*$|data\s*$|legge|l\.\s*$|d\.?p\.?r|art|\brep\b|\brep\.|\bracc|\bprot|\breg\.|\bvol\./i.test(f.slice(Math.max(0, m.index - 14), m.index))) return m;
     }
     var nuda = /\bnuda\s+propriet\w*/i.exec(f);
     if (nuda && !/usufrutt\w*\s+e\s+(?:la\s+)?nuda|nuda\s+propriet\w*\s+e\s+(?:l['’]\s*)?usufrutt/i.test(f)) return nuda;
@@ -269,17 +287,31 @@
       if (tema.scarta && tema.scarta(f, m)) continue;
       var imp = tema.importi ? importoIn(f.slice(m.index)) : null;
       if (negata(f, m, tema.negabile) || (imp && imp.valore === 0 && imp.indice < 90)) { negate = negate || m; continue; }
-      return { tipo: 'problema', m: m, importo: imp && imp.indice < 160 ? imp.valore : null };
+      // l'importo è quello della voce, non il valore di stima citato dopo ("... con una stima finale di € 12.000,00")
+      var tra = imp ? f.slice(m.index + m[0].length, m.index + imp.indice) : '';
+      return { tipo: 'problema', m: m, importo: imp && imp.indice < 160 && !VALORE_PRIMA.test(tra) ? imp.valore : null };
     }
     if (negate) return { tipo: 'ok', m: negate };
     var ok = tema.ok && tema.ok.exec(f);
     if (ok && tema.ambito && !tema.ambito.test(f)) ok = null;
     if (ok && tema.soggetto && !tema.soggetto.test(f)) ok = null;
     if (ok && tema.okFuori && tema.okFuori.test(f)) ok = null;
-    // "non è conforme" non è rassicurante
-    if (ok && /\bnon\s+(?:\w+\s+){0,2}$/i.test(f.slice(Math.max(0, ok.index - 20), ok.index + 1))) ok = null;
+    if (ok && okRovesciato(tema, f, ok)) ok = null;
     return ok ? { tipo: 'ok', m: ok } : null;
   }
+  // Una frase rassicurante negata non è rassicurante: "non è libero", "non si presenta in buono stato" (negazione
+  // subito prima), "gli impianti non sono a norma", "la planimetria catastale non è conforme" (dentro, dove la regola
+  // salta qualche parola), "il certificato di agibilità n. 45 non è stato rinvenuto" (subito dopo, nella stessa frase).
+  // Dentro e dopo non valgono per i temi le cui frasi rassicuranti sono già negazioni ("non risultano vincoli").
+  var NON_DOPO = R(/^[^.;:,]{0,60}?\bnon\s+(?:(?:(?:è|sono|risulta|risultano|sia|siano|appare|appaiono)\s+)(?:stat[oaie]\s+)?(?:(?:mai|ancora|più)\s+)?(?:conform|corrispond|regolar|rilasciat|reperit|rinvenut|present[ei]\b|depositat|aggiornat|a\s+norma|valid|in\s+buon)|sussist|corrispond)/i);
+  function okRovesciato(tema, f, ok) {
+    var negativa = /^(?:non|nessun\w*|assenza|senza|liber[oaie]\s+da)\b/i.test(ok[0]);
+    if (!negativa && /\bnon\s+(?:[\w']+\s+){0,4}$/i.test(f.slice(Math.max(0, ok.index - 45), ok.index))) return true;
+    if (tema.okNegato) return false;
+    return /\bnon\b/i.test(ok[0]) || NON_DOPO.test(f.slice(ok.index + ok[0].length));
+  }
+
+  var VALORE_PRIMA = R(/\b(?:valore|stima\s+(?:finale|complessiva)|prezzo\s+(?:a\s+)?base|base\s+d'asta|sommano|totale|arrotondat\w*)\b[^€]{0,30}$/i);
 
   /* pagine: array di stringhe (testo di ogni pagina, nell'ordine) → risultato della lettura */
   function analizza(pagine) {

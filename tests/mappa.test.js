@@ -28,7 +28,11 @@ test('distanza: la posizione resta nel browser e non entra nei link condivisi', 
   const link = js.slice(js.indexOf('function linkVista()'), js.indexOf('function condividiVista()'));
   assert.ok(link.length > 100);
   assert.doesNotMatch(link, /raggio\.lat|raggio\.lng/);
-  assert.match(link, /if \(!\(raggio && raggio\.te\)\) parti\.push\('vista='/);
+  assert.match(link, /if \(!vistaSuDiTe\(c\)\) parti\.push\('vista='/);
+  // ... anche dopo "Togli": la vista resta centrata lì finché non si sposta di 25 km (revisione del 28/11)
+  assert.match(js, /function vistaSuDiTe\(c\) \{\n\s+return !!\(raggio && raggio\.te\) \|\| !!\(posizioneTe && distanzaKm\(c\.lat, c\.lng, posizioneTe\[0\], posizioneTe\[1\]\) < 25\);/);
+  assert.match(js, /posizioneTe = \[c\.latitude, c\.longitude\];\n\s+impostaRaggio\(c\.latitude, c\.longitude, true\);/);
+  assert.doesNotMatch(js, /Storage\.setItem\([^)]*posizioneTe/, 'la posizione in memoria non si salva');
   // i filtri che arrivano da un link o dall'elenco cancellano il raggio
   assert.match(js, /function daElenco\(f\) \{\n\s+filtri = copia\(VUOTI\); extra = \{\}; raggio = null;/);
   // la posizione si chiede solo con il pulsante, non all'apertura della pagina
@@ -44,4 +48,13 @@ test('filtri nuovi e "Colora per": controlli nella pagina e valori ammessi nel c
   // sconto per colori e filtri: solo valori di affidabilità media o alta, come la mappa di calore
   assert.match(js, /function scontoAffidabile\(a\) \{ var s = sconto\(a\); return s != null && AFFIDABILE\[a\.affidabilita\] \? s : null; \}/);
   assert.match(html, /<option value="punteggio">Punteggio affare<\/option>\s*<option value="sconto">Sconto sul valore<\/option>\s*<option value="data">Data dell'asta<\/option>/);
+});
+
+test('"Azzera i filtri" toglie anche la distanza, che conta tra i filtri attivi', () => {
+  assert.match(js, /if \(filtri\.giorni\) n\+\+; if \(filtri\.smin\) n\+\+; if \(raggio\) n\+\+;/);
+  assert.match(js, /\$\('#mAzzera'\)\.addEventListener\('click', function \(\) \{ filtri = copia\(VUOTI\); extra = \{\}; togliRaggio\(\);/);
+  const togli = js.slice(js.indexOf('function togliRaggio()'), js.indexOf('function armaPunto('));
+  assert.match(togli, /raggio = null;/);
+  assert.match(togli, /disegnaCerchio\(\);/);
+  assert.match(togli, /cambiaFiltri\(\);/);
 });

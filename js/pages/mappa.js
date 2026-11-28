@@ -53,6 +53,8 @@
   var tileOk = 0, tileKo = 0;
   var strati = { puntini: true, calore: false, prezzi: true, colore: 'punteggio' }, calore = null, celle = null, versione = 0, cacheXY = null;
   var raggio = null, cerchio = null, distanze = {}, sceltaPunto = false, ordineZona = 'migliori', luoghi = null, sopra = null, LIMITE = '', vistaUrl = null;
+  // ultima posizione data dal browser ("Vicino a me"): solo in memoria, per tenerla fuori dai link anche dopo "Togli"
+  var posizioneTe = null;
   var cellaSopra = null, cellaFissa = null, COLC = null, timerCella = null;
 
   /* ---------- utilità ---------- */
@@ -199,6 +201,7 @@
     var s = leggiSessione(K_FILTRI);
     if (s && s.filtri) { for (var k in VUOTI) if (k in s.filtri) filtri[k] = s.filtri[k]; extra = s.extra || {}; }
     raggio = s && raggioValido(s.raggio) ? s.raggio : null;
+    if (raggio && raggio.te) posizioneTe = [raggio.lat, raggio.lng];
     var arrivo = null, nellUrl = new URLSearchParams(location.search).get('filtri');
     try { arrivo = U.parametro('filtri'); } catch (e) {}
     // se i filtri sono nell'indirizzo, il valore lasciato in sessionStorage dallo stesso link è già usato
@@ -1274,6 +1277,7 @@
       if (c.latitude < DENTRO.s - 0.5 || c.latitude > DENTRO.n + 0.5 || c.longitude < DENTRO.o - 0.5 || c.longitude > DENTRO.e + 0.5) {
         U.toast('Sembri fuori dall\'Italia: scegli un punto sulla mappa', 6000); return;
       }
+      posizioneTe = [c.latitude, c.longitude];
       impostaRaggio(c.latitude, c.longitude, true);
     }, function (e) {
       b.disabled = false; b.innerHTML = t;
@@ -1349,7 +1353,7 @@
     } else if (l.centro) vai(l.centro, 10);
     $('#mCercaInput').value = l.nome;
     chiudiLuoghi();
-    if (TELEFONO.matches) chiudiCerca(false);
+    if (TELEFONO.matches) chiudiCerca(true);   // il campo sparisce: il fuoco torna al pulsante della lente, non si perde
     U.toast(l.tipo === 'Regione' || (l.b && l.b.n) ? 'Ecco ' + l.nome : l.nome + ': nessuna asta con posizione, ti porto nel capoluogo');
   }
   function apriCerca() {
@@ -1367,20 +1371,25 @@
   function linkVista() {
     var c = mappa.getCenter(), z = Math.round(mappa.getZoom() * 4) / 4;
     var f = perElenco(false);
+    delete f.seguite;                                  // le aste seguite sono di chi condivide, non di chi riceve il link
     delete f.al; if (extra.al) f.al = extra.al;      // nella mappa "entro N giorni" resta relativo a oggi
     if (raggio) { delete f.bbox; if (extra.bbox) f.bbox = extra.bbox; }
     if (filtri.giorni) f.giorni = filtri.giorni;
     if (filtri.smin) f.smin = filtri.smin;
-    // con "Vicino a me" la vista è centrata sulla posizione di chi usa la mappa: il link non la porta
+    // con "Vicino a me" la vista è centrata sulla posizione di chi usa la mappa: il link non la porta, anche dopo aver
+    // tolto il cerchio finché la vista resta a meno di 25 km da lì
     var parti = [];
-    if (!(raggio && raggio.te)) parti.push('vista=' + c.lat.toFixed(4) + ',' + c.lng.toFixed(4) + ',' + z);
+    if (!vistaSuDiTe(c)) parti.push('vista=' + c.lat.toFixed(4) + ',' + c.lng.toFixed(4) + ',' + z);
     if (strati.colore !== 'punteggio') parti.push('colore=' + strati.colore);
     if (Object.keys(f).length) parti.push('filtri=' + encodeURIComponent(JSON.stringify(f)));
     return location.origin + location.pathname + (parti.length ? '?' + parti.join('&') : '');
   }
+  function vistaSuDiTe(c) {
+    return !!(raggio && raggio.te) || !!(posizioneTe && distanzaKm(c.lat, c.lng, posizioneTe[0], posizioneTe[1]) < 25);
+  }
   function condividiVista() {
     if (!mappa) return;
-    var u = linkVista(), nota = raggio && raggio.te ? ' (senza la tua posizione né la vista intorno a te)' : raggio ? ' (senza il cerchio della distanza)' : '';
+    var u = linkVista(), nota = vistaSuDiTe(mappa.getCenter()) ? ' (senza la tua posizione né la vista intorno a te)' : raggio ? ' (senza il cerchio della distanza)' : '';
     if (navigator.share && TOCCO.matches) { navigator.share({ title: 'Mappa delle aste – Radar Aste Italia', url: u }).catch(function () {}); return; }
     function ok() { U.toast('Link della vista copiato' + nota); }
     function ripiego() {
@@ -1552,7 +1561,8 @@
       cambiaFiltri();
       fuoco($('#mDaElenco [data-togli]') || $('#mCat .chip[aria-pressed="true"]'));
     });
-    $('#mAzzera').addEventListener('click', function () { filtri = copia(VUOTI); extra = {}; cambiaFiltri(); fuoco($('#mCat .chip')); });
+    // anche la distanza è un filtro (conta in "N attivi"): l'azzeramento toglie il cerchio
+    $('#mAzzera').addEventListener('click', function () { filtri = copia(VUOTI); extra = {}; togliRaggio(); fuoco($('#mCat .chip')); });
     $('#geocodifica').addEventListener('click', geocodifica);
     $('#mApriFiltri').addEventListener('click', function () { if (aperto('filtri')) chiudiFoglio('filtri'); else apriFoglio('filtri'); });
     $('#mApriZona').addEventListener('click', function () { if (aperto('zona')) chiudiFoglio('zona'); else { apriFoglio('zona'); fuoco($('#hZona')); } });

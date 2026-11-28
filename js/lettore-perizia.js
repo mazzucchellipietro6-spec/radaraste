@@ -246,7 +246,8 @@
       if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name || '')) { scrivi(icona('allerta') + '<span>Il file scelto non è un PDF.</span>', 'lp-errore'); return; }
       if (urlFile) { try { URL.revokeObjectURL(urlFile); } catch (e) {} }
       urlFile = null;
-      try { urlFile = URL.createObjectURL(file); } catch (e) {}
+      // i link "pag. N" aprono il file sempre come PDF, qualunque tipo gli dia il sistema (anche vuoto)
+      try { urlFile = URL.createObjectURL(new Blob([file], { type: 'application/pdf' })); } catch (e) {}
       esegui(function () { return daFile(file); }, { linkPdf: urlFile, nome: file.name });
     }
     el.addEventListener('click', function (e) {

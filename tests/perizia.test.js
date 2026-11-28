@@ -62,10 +62,10 @@ test('abusi e catasto: frasi reali', () => {
 
 test('occupazione: affitto registrato, comodato, debitore; cose che occupano non contano', () => {
   const r = leggi(
-    'Attualmente l\'appartamento risulta occupato a fronte di un contratto di locazione ad uso abitativo la cui prima scadenza è il 29/09/2029, regolarmente registrato presso l\'Agenzia delle Entrate.\n' +
+    'Attualmente l\'appartamento risulta occupato a fronte di un contratto di locazione ad uso abitativo la cui prima scadenza è il 30/06/2030, regolarmente registrato presso l\'Agenzia delle Entrate.\n' +
     'La porzione al terzo piano è utilizzata da un familiare a titolo di comodato di cui si allega copia del contratto.\n' +
     'Anche la zona uffici è occupata da beni mobili di varia natura in condizioni di ammaloramento e valore nullo.\n' +
-    'Una superficie residua di circa 2.101 mq, non direttamente occupata dall\'impianto, è interessata da vegetazione spontanea.\n' +
+    'Una superficie residua di circa 1.800 mq, non direttamente occupata dall\'impianto, è interessata da vegetazione spontanea.\n' +
     'Lo scrivente ha inoltrato richiesta all\'Agenzia delle Entrate al fine di verificare l\'esistenza di contratti di locazione e/o di comodato.'
   );
   const o = tema(r, 'occupazione');
@@ -88,7 +88,7 @@ test('quota: frazioni vere sì, millesimi delle parti comuni no', () => {
 test('stato di conservazione: difetti sì, nomi di luogo e cantine al rustico no', () => {
   const r = leggi('Le condizioni manutentive dell\'immobile sono da ritenersi precarie, sono ben visibili tracce di muffa e umidità sulle pareti e sul soffitto.');
   assert.equal(tema(r, 'conservazione').esito, 'problema');
-  assert.equal(tema(leggi('Trattasi di un lotto di area sito in località Creppi di forma trapezoidale, adibito a prato stabile.'), 'conservazione').esito, 'assente');
+  assert.equal(tema(leggi('Trattasi di un lotto di area sito in località Creppo di forma trapezoidale, adibito a prato stabile.'), 'conservazione').esito, 'assente');
   assert.equal(tema(leggi('Completano il piano seminterrato locali atrio e ripostiglio cantina al rustico per una superficie di circa 70 mq.'), 'conservazione').esito, 'assente');
   assert.equal(tema(leggi('Cedimenti 0,990 0,970 0,950'), 'conservazione').esito, 'assente', 'tabella dei coefficienti di stima');
   assert.equal(tema(leggi('L\'appartamento si presenta in buone condizioni di conservazione.'), 'conservazione').esito, 'ok');
@@ -138,4 +138,77 @@ test('importi: i prezzi al metro quadro non sono costi', () => {
   assert.equal(P.importoIn('appartamento mq.137 x €/mq.650 = € 89.050,00').valore, 89050);
   assert.equal(P.importoIn('Costi di regolarizzazione: € 2.500,00').valore, 2500);
   assert.equal(P.importoIn('Spese ordinarie annue: Euro 0,00').valore, 0);
+});
+
+// Revisione del 28/11/2026: frasi inventate, scritte come quelle tipiche delle perizie.
+test('frase rassicurante negata: mai «Rassicurante»; le forme «non è / non risulta conforme» sono problemi', () => {
+  const casi = [
+    ['catasto', 'La planimetria catastale non è conforme allo stato dei luoghi.', 'problema'],
+    ['catasto', 'L\'immobile non risulta conforme alla planimetria catastale.', 'problema'],
+    ['urbanistica', 'Lo stato di fatto non risulta conforme ai titoli edilizi.', 'problema'],
+    ['urbanistica', 'Gli abusi non sono sanabili.', 'problema'],
+    ['impianti', 'Gli impianti non sono a norma.', 'problema'],
+    ['impianti', 'Gli impianti non risultano conformi alla normativa vigente.', 'problema'],
+    ['agibilita', 'Non è presente il certificato di agibilità.', 'problema'],
+    ['agibilita', 'Non risulta rilasciata l\'agibilità.', 'problema'],
+    ['agibilita', 'L\'unità non è dotata di certificato di abitabilità.', 'problema'],
+    // negata ma senza le parole di un problema: "non trovato", non "rassicurante"
+    ['occupazione', 'L\'immobile non è libero.', 'assente'],
+    ['conservazione', 'L\'immobile non si presenta in buono stato di conservazione.', 'assente'],
+    ['conservazione', 'Il bene non è in buone condizioni di manutenzione.', 'assente'],
+    ['urbanistica', 'La conformità urbanistica non sussiste.', 'assente'],
+    ['agibilita', 'Il certificato di agibilità del fabbricato non è stato rilasciato.', 'assente'],
+    // le affermative restano rassicuranti
+    ['catasto', 'La planimetria catastale è conforme allo stato dei luoghi.', 'ok'],
+    ['impianti', 'Gli impianti sono conformi alla normativa.', 'ok'],
+    ['urbanistica', 'Lo stato dei luoghi è conforme al progetto approvato.', 'ok'],
+    ['condominio', 'Non ci sono impianti condominiali, non è recintato e non vi è condominio.', 'ok'],
+    // una negazione dopo che non tocca la frase rassicurante
+    ['catasto', 'La planimetria catastale è conforme allo stato dei luoghi e non sono necessari aggiornamenti.', 'ok'],
+    ['conservazione', 'L\'immobile si presenta in buono stato di conservazione e non necessita di lavori.', 'ok']
+  ];
+  for (const [k, frase, esito] of casi) assert.equal(tema(leggi(frase), k).esito, esito, frase);
+});
+
+test('negazioni: il pronome «ne», «mai» e una frase nuova dopo la negazione non tolgono il problema', () => {
+  assert.equal(tema(leggi('Ne consegue che le opere realizzate sono abusive.'), 'urbanistica').esito, 'problema');
+  assert.equal(tema(leggi('La veranda, mai autorizzata, costituisce un abuso edilizio.'), 'urbanistica').esito, 'problema');
+  assert.equal(tema(leggi('Il fabbricato non è recintato e presenta infiltrazioni dal tetto.'), 'conservazione').esito, 'problema');
+  assert.equal(tema(leggi('Senza contare la tettoia, sono presenti difformità edilizie.'), 'urbanistica').esito, 'problema');
+  assert.equal(tema(leggi('Non sono presenti vincoli, è presente una servitù di passaggio.'), 'vincoli').esito, 'problema');
+  // le negazioni vere valgono ancora, anche su un elenco
+  assert.equal(tema(leggi('Non sono presenti né vincoli né servitù.'), 'vincoli').esito, 'ok');
+  assert.equal(tema(leggi('Non risultano iscrizioni, trascrizioni o servitù.'), 'vincoli').esito, 'ok');
+  assert.equal(tema(leggi('Non si rilevano infiltrazioni e muffe.'), 'conservazione').esito, 'ok');
+});
+
+test('«libero da pesi, vincoli e servitù» non dice chi abita il bene e non è un vincolo', () => {
+  for (const frase of ['Il bene è libero da pesi, vincoli e servitù.', 'L\'immobile è libero da iscrizioni e trascrizioni pregiudizievoli.']) {
+    const r = leggi(frase);
+    assert.equal(tema(r, 'vincoli').esito, 'ok', frase);
+    assert.equal(tema(r, 'occupazione').esito, 'assente', frase);
+  }
+  assert.equal(tema(leggi('Il bene risulta libero da persone e cose.'), 'occupazione').esito, 'ok');
+});
+
+test('occupazione: «occupato» senza dire da chi e contratto non opponibile sono problemi', () => {
+  assert.equal(tema(leggi('Stato di possesso: Occupato.'), 'occupazione').esito, 'problema');
+  assert.equal(tema(leggi('L\'immobile risulta occupato.'), 'occupazione').esito, 'problema');
+  assert.equal(tema(leggi('Il contratto di locazione non è opponibile alla procedura.'), 'occupazione').esito, 'problema');
+  assert.equal(tema(leggi('L\'immobile non risulta occupato.'), 'occupazione').esito, 'ok');
+  // "e occupate" (congiunzione) nel testo piatto è uguale a "è occupate": parla della frazione, non del bene
+  assert.equal(tema(leggi('Molte case della frazione sono disabitate per gran parte dell\'anno e occupate solo d\'estate.'), 'occupazione').esito, 'assente');
+});
+
+test('quota: date e numeri di repertorio non sono frazioni di proprietà', () => {
+  assert.equal(tema(leggi('Con atto in data 3/5/2001 l\'esecutato acquistava la piena proprietà.'), 'quota').esito, 'assente');
+  assert.equal(tema(leggi('Atto rep. 1234/5678, piena proprietà del bene.'), 'quota').esito, 'assente');
+  assert.equal(tema(leggi('Diritto: piena proprietà per la quota di 1/2.'), 'quota').esito, 'problema');
+});
+
+test('costi: l\'importo è quello della voce, non il valore di stima citato dopo nella frase', () => {
+  const c = tema(leggi('Riduzione del 10% per tenere conto dei costi di regolarizzazione edilizia, con una stima finale di € 12.000,00.'), 'costi');
+  assert.equal(c.esito, 'info');
+  assert.equal(c.problemi[0].importo, undefined);
+  assert.equal(c.importi, undefined, 'nessuna somma di costi inventata');
 });
