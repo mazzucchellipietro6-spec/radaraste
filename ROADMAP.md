@@ -4,7 +4,7 @@ Questo file dice **da dove ripartire**. Si aggiorna ogni volta che una voce camb
 
 Legenda: ✅ fatto · 🔄 in corso · ⬜ da fare · ⏸ aspetta una tua decisione · ⛔ non si può fare (motivo indicato)
 
-Ultimo aggiornamento: 27/11/2026 (giro della squadra).
+Ultimo aggiornamento: 28/11/2026 (mappa più interattiva e lettore della perizia, chiesti il 27/11; giro della squadra).
 
 ---
 
@@ -17,7 +17,7 @@ Ultimo aggiornamento: 27/11/2026 (giro della squadra).
 - valori di mercato **più prudenti**: con fonti discordanti si usa il valore più basso e il punteggio si ferma a "Da valutare";
 - **README** e documentazione riscritti; **182 test** automatici.
 
-**URGENTE (dal 3/11, ancora il 27/11): il sito pubblicato non si aggiorna più.** La raccolta del 3/11 su GitHub è fallita al primo passo, i test. Su `main` un test degli abbonamenti aveva una data fissa e dal 3/11 fallisce da solo. Il sito resta visibile, ma con le aste del 2/11. La correzione è già nella pull request [#4](https://github.com/mazzucchellipietro6-spec/radaraste/pull/4): con il **Merge** la raccolta riparte subito.
+**URGENTE (dal 3/11, ancora il 28/11): il sito pubblicato non si aggiorna più.** La raccolta del 3/11 su GitHub è fallita al primo passo, i test. Su `main` un test degli abbonamenti aveva una data fissa e dal 3/11 fallisce da solo. Il sito resta visibile, ma con le aste del 2/11. La correzione è già nella pull request [#4](https://github.com/mazzucchellipietro6-spec/radaraste/pull/4): con il **Merge** la raccolta riparte subito.
 
 **Pubblicato:**
 - il 13/10 hai unito la pull request [#2](https://github.com/mazzucchellipietro6-spec/radaraste/pull/2);
@@ -66,6 +66,20 @@ Ultimo aggiornamento: 27/11/2026 (giro della squadra).
   - su telefono fogli dal basso;
   - se lo sfondo è bloccato restano confini e nomi delle regioni.
   - Il foglio di stile della mappa mancava del tutto: ora c'è.
+  - **Più interattiva (27-28/11, su tua richiesta, in attesa del Merge):**
+    - da vicino ogni puntino mostra il prezzo base;
+    - "Colora per" punteggio, sconto (solo valori di affidabilità media o alta) o data dell'asta, con la legenda giusta;
+    - "Cerca un luogo": comuni, province, regioni e tribunali con aste, anche da tastiera;
+    - "Vicino a me" o un punto scelto: cerchio di 5-100 km e aste ordinate per distanza. La posizione la chiede il browser solo quando premi il pulsante, resta nella scheda del browser e non entra nei link;
+    - filtri "Asta entro" (7 giorni-3 mesi) e "Sconto minimo"; elenco della zona ordinabile (migliori, più vicine, prima asta, prezzo) con un anello sulla mappa quando passi sopra una voce;
+    - "Condividi questa vista" e schermo intero.
+- ✅ **Lettore della perizia (27/11, su tua richiesta, in attesa del Merge):**
+  - nella scheda di ogni immobile, "Leggi la perizia" la scarica dal Portale e la legge nel tuo browser; c'è anche la pagina "Lettore della perizia" negli Strumenti, per qualsiasi PDF;
+  - trova abusi edilizi, conformità catastale, chi abita l'immobile, vincoli e servitù, spese condominiali arretrate, agibilità, impianti, stato di conservazione, quote parziali e costi indicati dal perito;
+  - per ogni punto mostra la frase esatta e la pagina; distingue le frasi rassicuranti ("non sono state riscontrate difformità", "Nessuna", "€ 0,00") e salta le domande del giudice e l'indice;
+  - provato su 8 perizie vere del Portale (tenute solo in locale: contengono nomi e codici fiscali), da 6 a 79 pagine: meno di un secondo ciascuna;
+  - le perizie scansionate (pagine fotografate) non si possono leggere: il lettore lo dice e indica i capitoli da cercare;
+  - nessun servizio a pagamento e nessun invio: il PDF non lascia il computer. pdf.js 4.10.38 (Apache 2.0) si carica solo quando serve.
 - ✅ **Scheda asta**:
   - valore con forchetta, fonte e affidabilità, controlli di coerenza;
   - costi e "Simula la tua offerta";
@@ -132,7 +146,7 @@ Ultimo aggiornamento: 27/11/2026 (giro della squadra).
 
 ## In corso 🔄
 
-- 🔄 **Pull request [#4](https://github.com/mazzucchellipietro6-spec/radaraste/pull/4)**: correzioni del sito pubblicato rivedute dal Revisore il 26/10, più tutto il lavoro dal 19/10. Per pubblicare premi **Merge**.
+- 🔄 **Pull request [#4](https://github.com/mazzucchellipietro6-spec/radaraste/pull/4)**: correzioni del sito pubblicato rivedute dal Revisore il 26/10, più tutto il lavoro dal 19/10 (dal 28/11 anche mappa più interattiva e lettore della perizia). Per pubblicare premi **Merge**.
 - 🔄 **Zona abbonamenti in modalità TEST** (vedi "Da decidere", punto 2). È tutta spenta finché non crei gli account. Nel sito pubblicato le pagine prezzi, account e bozze legali esistono ma non sono collegate da nessun menu.
   - Pronti e riveduti:
     - piani e blocchi (`config/abbonamenti.js`, `js/piani.js`) e funzioni Stripe di prova (`functions/`, `servizi/`);
@@ -167,7 +181,7 @@ Ultimo aggiornamento: 27/11/2026 (giro della squadra).
    - reinvestimento di affitti e guadagni;
    - sforamento dei lavori e tempi di vendita nella simulazione.
    - Oggi l'orizzonte arriva a 12 mesi e la simulazione considera vittorie e cassa.
-5. ⬜ **Consulente**: lettura delle perizie (serve il dominio `resource-pvp.giustizia.it`) e avvisi quando esce l'asta giusta.
+5. 🔄 **Consulente**: ✅ lettura delle perizie nel browser (27/11, vedi "Fatto"); ⬜ avvisi quando esce l'asta giusta; ⬜ punti critici già pronti sulle card senza aprire la perizia (vedi "Da decidere").
 6. ⬜ **Radar 3D** (MapLibre + deck.gl, colonne per sconto e punteggio, esagoni, "viaggio nel tempo", "Mostrami il miglior affare", ritorno al 2D sui dispositivi lenti). Le librerie si possono prendere dal registro npm. Lo sfondo vettoriale OpenFreeMap è bloccato da questo ambiente e i suoi termini sono da verificare.
 7. ⬜ **Idee extra**:
    - s) storico delle aste concluse e "a quanto si vendono davvero" (il Portale non pubblica il prezzo di aggiudicazione: si può dire solo se è stata aggiudicata);
@@ -194,6 +208,14 @@ Ultimo aggiornamento: 27/11/2026 (giro della squadra).
 ---
 
 ## Da decidere ⏸ (per te)
+
+**Nuove del 28/11 (lettore della perizia):**
+- **Punti critici su tutte le aste, già pronti.** Oggi il lettore parte quando apri la scheda e premi "Leggi la perizia". Si potrebbe leggere ogni perizia durante la raccolta del mattino e mostrare i punti critici direttamente sulle card e sulla mappa. Servono il tuo via e una verifica:
+  - scaricare ogni giorno qualche migliaio di PDF dal Portale (circa 1 MB l'uno), con le stesse pause della raccolta;
+  - le perizie contengono nomi e codici fiscali: nel sito andrebbero solo gli esiti per tema ("abusi: da verificare"), mai le frasi;
+  - prima vanno rilette le condizioni d'uso del Portale per questo uso.
+- **Perizie scansionate.** Per leggerle servirebbe il riconoscimento del testo (OCR). Si può fare gratis nel browser (Tesseract.js, alcuni MB e qualche decina di secondi per perizia), oppure con un servizio AI a pagamento che capirebbe anche il contesto: i costi vanno in `CONSULENTE.md` e decidi tu.
+- **Prova con il tuo browser.** Il Portale permette di leggere le perizie da altri siti (intestazioni CORS presenti), ma il suo firewall blocca i browser automatici che uso per le prove, e non l'ho aggirato. Quindi "Leggi la perizia" è provato fino allo scarico. Dopo il Merge provalo su un immobile: se il Portale non lo lascia scaricare, la scheda lo dice e propone di scegliere il PDF a mano, che funziona.
 
 **Nuove del 30/10-2/11:**
 - **Aste estere:** per verificare le fonti ufficiali bisogna aprire la rete dell'ambiente a www.vebeg.de, www.zoll-auktion.de, www.encheres-domaine.gouv.fr, subastas.boe.es e finshop.belgium.be (menu dell'ambiente → Edit → Network access → Allowed domains). Va deciso anche come mostrarle: pagina "Estero" o filtro per paese, fuori da OMI, costi italiani e punteggio.

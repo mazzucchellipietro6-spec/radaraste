@@ -4,6 +4,16 @@ Un paragrafo per ogni giro del mattino, il più recente in alto: come sta il sit
 
 ---
 
+## 28/11/2026 – URGENTE: raccolta ferma da 26 giorni; mappa più interattiva e lettore della perizia
+
+- **Sito pubblicato:** fermo alle aste del 2/11. La raccolta n. 51 del 27/11 è fallita per lo stesso test su `main`. Serve il Merge della pull request #4.
+- **Fatto su tua richiesta del 27/11** (sul branch, nella pull request #4):
+  - **lettore della perizia**: nella scheda di ogni immobile e in una pagina negli Strumenti. Trova 10 temi di punti critici con la frase e la pagina. È stato provato su 8 perizie vere: affitto registrato fino al 2029, muffa e umidità, legnaia non accatastata, quote di 1/2 e 3/9, servitù di passaggio e di elettrodotto, infiltrazioni. I falsi allarmi visti nelle prove sono stati corretti: "occupato da beni mobili", millesimi delle parti comuni, "Creppi" letto come crepe, cantine al rustico;
+  - **mappa**: prezzi sui puntini, colori per sconto o data, ricerca dei luoghi, "Vicino a me" con il cerchio, filtri per data e sconto, elenco della zona ordinabile, link della vista, schermo intero.
+- **Prove:** tutte nel browser con la CSP del sito, su telefono e computer, in chiaro e scuro, senza errori. I test passano da 470 a 486, tutti verdi, anche con l'orologio avanti di 90 giorni.
+- **Ambiente:** per scaricare le perizie del Portale hai approvato un ambiente "radaraste" con resource-pvp.giustizia.it.
+- **Agenti:** 1, il Revisore indipendente, su tutte le modifiche.
+
 ## 27/11/2026 – URGENTE: raccolta ferma da 25 giorni
 
 - **Sito pubblicato:** fermo alle aste del 2/11. La raccolta n. 50 del 26/11 è fallita per lo stesso test su `main`.
