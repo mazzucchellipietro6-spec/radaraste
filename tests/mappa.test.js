@@ -71,3 +71,13 @@ test('link verso l\'elenco: vicino alla persona la zona non va nell\'indirizzo e
   assert.match(largo, /Math\.ceil\(x \* 10\) \/ 10/);
   assert.match(html, /la zona passa dentro il browser, allargata a circa 10 km/);
 });
+
+test('miniature delle foto nelle voci: solo immagini del Portale, senza testo alternativo, con la stessa regola delle card', () => {
+  const f = js.slice(js.indexOf('function miniatura(a)'), js.indexOf('function voce(a)'));
+  assert.match(f, /F\.copertina\(a\.copertina\)/, 'solo indirizzi validati da js/formato.js');
+  assert.match(f, /alt=""/);
+  assert.match(f, /referrerpolicy="no-referrer"/);
+  assert.match(f, /data-copertina/, 'js/ui.js toglie le foto che non si aprono');
+  assert.match(f, /: '';/, 'senza foto, niente miniatura');
+  assert.match(js, /'<\/small><\/span>' \+ miniatura\(a\) \+ '<\/button><\/li>'/);
+});

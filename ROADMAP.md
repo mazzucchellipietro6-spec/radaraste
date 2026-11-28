@@ -167,6 +167,7 @@ Ultimo aggiornamento: 28/11/2026 (mappa più interattiva e lettore della perizia
   - quando l'avviso ha delle foto, la prima compare in alto nelle card di home, elenco, affari e mappa; se non si apre torna l'icona;
   - le schede lette ogni giorno passano da 600 a 1000, con le stesse pause;
   - oggi le foto sono pubblicate per circa metà delle aste di cui si legge il dettaglio.
+  - dal 28/11 anche una miniatura in ogni voce dell'elenco della mappa; e la copertina è la prima foto leggera dell'immobile (fino a circa 700 KB, altrimenti la più leggera): il Portale dà solo i file originali, da 0,1 a quasi 4 MB. La galleria della scheda resta con tutte le foto. Vale per le schede lette da ora in poi.
 - ✅ **Squadra quotidiana** attiva dal 20/10 ([SQUADRA.md](SQUADRA.md)). Dal 26/10 lavora leggera: al massimo 3 agenti al giorno.
 
 ---

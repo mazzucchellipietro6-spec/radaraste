@@ -462,12 +462,18 @@
   }
 
   /* ---------- "In questa zona" ---------- */
+  // miniatura della foto dell'annuncio (solo immagini del Portale, stessa regola delle card: js/formato.js e UI.fotoCopertina);
+  // se non si apre, js/ui.js la toglie e il riquadro sparisce. Niente foto inventate: senza foto, niente miniatura.
+  function miniatura(a) {
+    var F = window.Formato, u = F && F.copertina ? F.copertina(a.copertina) : null;
+    return u ? '<span class="m-mini" aria-hidden="true"><img src="' + esc(u) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-copertina></span>' : '';
+  }
   function voce(a) {
     var p = punti(a), fa = fascia(p);
     var dett = [raggio && distanze[a.id] != null ? km(distanze[a.id]) : '', luogoBreve(a), a.prezzoBase ? U.eur(a.prezzoBase) : '', U.dataIt(a.dataAsta)].filter(Boolean).join(' · ');
     return '<li><button type="button" class="m-voce" data-id="' + esc(a.id) + '">' +
       '<span class="m-voto f-' + fa.chiave + '" aria-hidden="true">' + (p == null ? '–' : Math.round(p)) + '</span>' +
-      '<span class="m-voce-t"><span class="sr-only">' + (p == null ? 'Senza punteggio. ' : 'Punteggio ' + Math.round(p) + ' su 100. ') + '</span><b>' + esc(a.titolo) + '</b><small>' + esc(dett) + '</small></span></button></li>';
+      '<span class="m-voce-t"><span class="sr-only">' + (p == null ? 'Senza punteggio. ' : 'Punteggio ' + Math.round(p) + ' su 100. ') + '</span><b>' + esc(a.titolo) + '</b><small>' + esc(dett) + '</small></span>' + miniatura(a) + '</button></li>';
   }
   var ORDINI_ZONA = {
     migliori: { cmp: migliore, titolo: function (n) { return n === 1 ? 'L\'unica con punteggio' : 'Le ' + n + ' migliori per punteggio'; } },

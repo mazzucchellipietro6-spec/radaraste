@@ -36,7 +36,7 @@ async function main() {
   for (const a of aste) {
     const s = schede.get(a.id);
     if (!s) continue;
-    const c = copertinaDa(s.foto);
+    const c = copertinaDa(s.foto, s.fotoKb);
     if (c) a.copertina = c; else delete a.copertina;
   }
   let indiceOmi = null;
