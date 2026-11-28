@@ -6,12 +6,12 @@
  *   node scripts/ricalcola.mjs      # riscrive data/aste.js, data/riepilogo.js e data/dettagli/ con i nuovi valori
  *   node scripts/cacciatore.mjs     # rifà la scelta degli affari di oggi
  *
- * Legge data/aste.js e le schede a pezzi (descrizioni complete per l'OMI); i dati raccolti restano quelli. */
+ * Legge data/aste.js e le schede a pezzi (descrizioni complete per l'OMI, foto per la copertina); i dati raccolti restano quelli. */
 import { readFile, writeFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import { valutaTutte, leggiSchede, scriviSchede, record, DAL_PUNTEGGIO, LUNGHI } from './lib/arricchimento.mjs';
+import { valutaTutte, leggiSchede, scriviSchede, record, copertinaDa, DAL_PUNTEGGIO, LUNGHI } from './lib/arricchimento.mjs';
 import { fileCollegati } from './lib/correzioni.mjs';
 import { statoAgenti, scriviCombinazioni } from './lib/derivati.mjs';
 import { scriviStatistiche } from './lib/statistiche.mjs';
@@ -32,9 +32,16 @@ async function main() {
   const dati = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
   const aste = Formato.decodifica(dati);
   const schede = await leggiSchede(collegati.dettagli);
+  // foto di copertina: la prima foto della scheda letta (anche per le aste raccolte prima che il campo esistesse)
+  for (const a of aste) {
+    const s = schede.get(a.id);
+    if (!s) continue;
+    const c = copertinaDa(s.foto);
+    if (c) a.copertina = c; else delete a.copertina;
+  }
   let indiceOmi = null;
   try { indiceOmi = JSON.parse(await readFile(path.resolve(RADICE, 'data/omi/indice.json'), 'utf8')); } catch { indiceOmi = null; }
-  console.log(`${aste.length} aste, ${schede.size} schede a pezzi, quotazioni OMI ${indiceOmi ? indiceOmi.semestre : 'non disponibili'}`);
+  console.log(`${aste.length} aste, ${schede.size} schede a pezzi, ${aste.filter((a) => a.copertina).length} con la foto di copertina, quotazioni OMI ${indiceOmi ? indiceOmi.semestre : 'non disponibili'}`);
   const avvio = Date.now();
   const { dettagli } = valutaTutte(aste, T, { omi: indiceOmi, testi: (a) => (schede.get(a.id) && schede.get(a.id).descrizione) || a.descrizione || a.titolo });
   const conta = (f) => { const o = {}; for (const a of aste) { const k = f(a); if (k != null) o[k] = (o[k] || 0) + 1; } return o; };

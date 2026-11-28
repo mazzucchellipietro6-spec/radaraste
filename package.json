@@ -10,7 +10,8 @@
     "ricalcola": "node scripts/ricalcola.mjs",
     "cacciatore": "node scripts/cacciatore.mjs",
     "omi": "node scripts/omi.mjs",
-    "anteprima": "node scripts/artifact.mjs"
+    "anteprima": "node scripts/artifact.mjs",
+    "test:futuro": "GIORNI_AVANTI=90 NODE_OPTIONS=--import=./tests/aiuti/orologio-avanti.mjs node --test tests/*.test.js tests/*.test.mjs"
   },
   "license": "UNLICENSED",
   "engines": {

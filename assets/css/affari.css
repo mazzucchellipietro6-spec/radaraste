@@ -10,6 +10,11 @@
 .aff-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); padding: 18px; display: flex; flex-direction: column; gap: 12px;
   transition: border-color var(--dur-2), box-shadow var(--dur-2); }
 @media (hover: hover) { .aff-card:hover { border-color: var(--line-2); box-shadow: var(--ombra-2); } }
+/* foto dall'avviso in alto, da bordo a bordo (.foto-cop in style.css: proporzioni fisse, icona della categoria se non si apre) */
+.aff-card.con-foto { overflow: hidden; }
+/* con almeno una foto ogni card tiene la sua altezza (niente vuoto sopra i pulsanti nelle card senza foto) */
+.aff-griglia:has(.aff-card.con-foto) { align-items: start; }
+.aff-card .foto-cop { margin: -18px -18px 0; }
 .aff-testa { display: flex; gap: 14px; align-items: flex-start; }
 .aff-tit { min-width: 0; }
 .aff-tit h3 { margin: 2px 0 2px; font-family: var(--f-body); font-size: 16px; font-weight: 600; line-height: 1.35; text-transform: none; letter-spacing: 0; color: var(--fg); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -47,4 +52,4 @@
 .aff-pref-azioni { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
 .aff-pref .nota { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--muted); }
 .aff-avvertenza { font-size: 12px; color: var(--muted); margin-top: 14px; }
-@media (max-width: 420px) { .aff-numeri dd { font-size: 13px; } .aff-card { padding: 14px; } }
+@media (max-width: 420px) { .aff-numeri dd { font-size: 13px; } .aff-card { padding: 14px; } .aff-card .foto-cop { margin: -14px -14px 0; } }

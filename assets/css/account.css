@@ -1,0 +1,65 @@
+/* Account: accesso e registrazione (accedi.html) e "Il mio account" (account.html).
+ * Solo token del design system (style.css): tema chiaro e scuro senza regole in più. */
+
+.acc-griglia { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px; align-items: start; }
+.acc-blocco { gap: 14px; min-width: 0; }
+.acc-form { display: grid; gap: 14px; }
+/* campi raggruppati in un fieldset (disattivato finché gli account non sono configurati), senza la cornice del browser */
+.acc-campi { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }
+.acc-form .row-actions { margin-top: 2px; }
+/* testi lunghi nei pulsanti: vanno a capo invece di uscire dal riquadro sui telefoni */
+.acc-blocco .btn, .acc-azioni .btn, .acc-google .btn, .acc-dentro .btn, .acc-vuoto .btn { white-space: normal; text-align: center; }
+
+/* messaggi */
+.acc-msg:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+.acc-msg.acc-errore { border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); background: var(--bad-bg); color: var(--fg); }
+.acc-errore-campo { margin: -6px 0 0; color: var(--bad); font-size: 14px; font-weight: 600; }
+.acc-ok { border-color: color-mix(in srgb, var(--good) 40%, var(--line)); background: var(--good-bg); color: var(--fg); }
+.acc-spento p, .acc-dentro p { margin: 0; }
+.acc-spento .row-actions, .acc-dentro .row-actions { margin-top: 10px; }
+.acc-spento strong { color: var(--warn); }
+
+/* accesso con Google */
+.acc-google { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.acc-google-testo { display: grid; gap: 4px; flex: 1 1 320px; min-width: 0; }
+.acc-google h2 { font-size: 19px; }
+.acc-google .note { margin: 0; }
+
+/* separatore "oppure" */
+.acc-oppure { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .08em; }
+.acc-oppure::before, .acc-oppure::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+.acc-alternativa { gap: 8px; justify-items: start; }
+
+/* consenso: testo su più righe con la casella in alto */
+label.check.acc-consenso { align-items: flex-start; line-height: 1.45; font-weight: 500; color: var(--fg-2); }
+label.check.acc-consenso input { margin-top: 1px; }
+
+/* informazioni sui dati */
+.acc-info h2 { font-size: 18px; margin-bottom: 4px; }
+.acc-info ul, .acc-elenco { margin: 0; padding-left: 20px; display: grid; gap: 5px; }
+.acc-info ul { margin: 6px 0 8px; }
+.acc-elenco { color: var(--fg-2); font-size: 14.5px; }
+
+/* "Il mio account" */
+.acc-kv { grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); }
+.acc-piano { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.acc-piano-nome { font-family: var(--f-display); font-size: clamp(24px, 3vw, 30px); font-weight: 600; line-height: 1.2; color: var(--fg); }
+#acAbbonamento { display: grid; gap: 8px; }
+#acAbbonamento p { margin: 0; }
+.acc-testa-sez { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.acc-conteggi { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 12px; }
+.acc-conteggi .tile .t-val { font-size: clamp(20px, 2.2vw, 26px); }
+.acc-password > summary { cursor: pointer; font-weight: 600; font-size: 14.5px; color: var(--accent); min-height: 32px; display: inline-flex; align-items: center; }
+.acc-password[open] > summary { margin-bottom: 10px; }
+.acc-pericolo { border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); }
+.acc-pericolo h2 { color: var(--bad); }
+.acc-vuoto p { max-width: 56ch; }
+.acc-collega p { margin: 0; }
+.acc-collega .row-actions { margin-top: 10px; }
+.acc-collega strong { color: var(--warn); }
+.acc-uscita { gap: 8px; }
+.acc-uscita .note { margin: 0; max-width: 72ch; }
+
+@media (max-width: 899px) {
+  .acc-password > summary { min-height: 44px; }
+}

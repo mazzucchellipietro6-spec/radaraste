@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Il mio account – Radar Aste Italia</title>
+<meta name="description" content="Il tuo account: piano e stato dell'abbonamento, pagamenti e fatture, dati sincronizzati, scarica i tuoi dati o cancella l'account.">
+<meta name="robots" content="noindex">
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/assistenti.css">
+<link rel="stylesheet" href="assets/css/abbonamenti.css">
+<link rel="stylesheet" href="assets/css/account.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('radaraste.tema');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header id="site-header"></header>
+
+<main class="wrap stack" id="contenuto" tabindex="-1">
+  <p class="note"><a href="mie-aste.html">Le mie aste</a> / Il mio account</p>
+  <div id="acAnteprima"></div>
+  <div class="as-testa">
+    <p class="eyebrow"><svg class="icona" aria-hidden="true"><use href="#i-persona"/></svg>Account</p>
+    <h1>Il mio <em>account</em></h1>
+    <p class="sub">Abbonamento, pagamenti e dati salvati nell'account. Puoi scaricare i tuoi dati o cancellare l'account quando vuoi.</p>
+  </div>
+
+  <div class="callout acc-msg" id="acMsg" tabindex="-1" hidden></div>
+  <p class="sr-only" id="acAnnuncio" role="status" aria-live="polite" aria-atomic="true"></p>
+  <p class="sr-only" id="acAvviso" role="alert" aria-atomic="true"></p>
+  <div class="callout acc-ok" id="acPagamento" role="status" aria-live="polite" hidden></div>
+
+  <!-- senza configurazione o senza accesso -->
+  <div id="acFuori" aria-live="polite"></div>
+
+  <div class="stack" id="acDentro" hidden>
+    <div class="acc-griglia">
+      <section class="panel stack acc-blocco" aria-labelledby="h-profilo">
+        <h2 id="h-profilo">Profilo</h2>
+        <dl class="kv acc-kv" id="acProfilo"></dl>
+        <details class="acc-password">
+          <summary>Cambia password</summary>
+          <form id="fPassword" class="stack acc-form" novalidate>
+            <label>Nuova password (almeno 8 caratteri)<input type="password" name="password" autocomplete="new-password" minlength="8" required></label>
+            <label class="check"><input type="checkbox" data-mostra="fPassword"> Mostra la password</label>
+            <div class="row-actions"><button class="btn small" type="submit">Salva la nuova password</button></div>
+          </form>
+        </details>
+      </section>
+
+      <section class="panel stack acc-blocco" aria-labelledby="h-abbonamento">
+        <h2 id="h-abbonamento">Abbonamento</h2>
+        <div id="acAbbonamento" aria-live="polite"><p class="muted">Carico l'abbonamento…</p></div>
+        <div class="row-actions acc-azioni">
+          <a class="btn" href="prezzi.html" id="acCambia">Cambia piano</a>
+          <button class="btn ghost" type="button" id="acPortale">Gestisci pagamenti e fatture</button>
+        </div>
+        <p class="note" id="acPortaleNota"></p>
+      </section>
+    </div>
+
+    <section class="panel stack acc-blocco" aria-labelledby="h-dati">
+      <div class="acc-testa-sez">
+        <h2 id="h-dati">Dati salvati nell'account</h2>
+        <button class="btn small ghost" type="button" id="acSincronizza">Sincronizza ora</button>
+      </div>
+      <div class="callout warn acc-collega" id="acCollega" hidden>
+        <p><strong>I dati salvati in questo browser sono collegati a un altro account.</strong> Per non mescolare i dati di persone diverse non li uniamo da soli. Se sono tuoi (per esempio li hai salvati con un tuo account precedente), uniscili a questo account. Finché non lo fai, in questo browser l'account non si sincronizza e i dati restano solo qui.</p>
+        <div class="row-actions"><button class="btn small" type="button" id="acUnisci">Unisci i dati di questo browser al mio account</button></div>
+      </div>
+      <div class="acc-conteggi" id="acConteggi"></div>
+      <p class="note" id="acSync" aria-live="polite"></p>
+      <p class="note">Le aste seguite su più dispositivi si uniscono: per ogni asta resta la nota modificata per ultima. Un'asta che smetti di seguire sparisce anche dagli altri dispositivi, salvo che lì sia stata modificata nel frattempo. Per preferenze, ricerche e Stratega vale la versione più recente. Nessun dato va perso: le versioni sostituite (le ultime 100) restano nel file "Scarica i miei dati".</p>
+    </section>
+
+    <section class="panel stack acc-blocco" aria-labelledby="h-gdpr">
+      <h2 id="h-gdpr">I tuoi dati</h2>
+      <p>Scarica in un file JSON tutto quello che sappiamo di te: account, abbonamento, dati sincronizzati e dati salvati in questo browser.</p>
+      <div class="row-actions acc-azioni"><button class="btn ghost" type="button" id="acScarica">Scarica i miei dati</button></div>
+      <p class="note">Come trattiamo i tuoi dati e quali sono i tuoi diritti: <a href="privacy.html">Informativa sulla privacy</a>, <a href="cookie.html">Cookie e memoria del browser</a> e <a href="termini.html">Condizioni d'uso e di abbonamento</a>.</p>
+    </section>
+
+    <section class="panel stack acc-blocco acc-pericolo" aria-labelledby="h-cancella">
+      <h2 id="h-cancella">Cancella l'account</h2>
+      <p>Cosa succede se cancelli l'account:</p>
+      <ul class="acc-elenco">
+        <li>l'abbonamento in corso viene annullato subito e non ci saranno altri addebiti;</li>
+        <li>account, profilo e dati sincronizzati vengono eliminati dai nostri archivi;</li>
+        <li>fatture e pagamenti già fatti restano presso Stripe per gli obblighi fiscali;</li>
+        <li>i dati salvati in questo browser (aste seguite, note, preferenze) restano su questo dispositivo;</li>
+        <li>ti mandiamo un'email di conferma. L'operazione è definitiva.</li>
+      </ul>
+      <div class="row-actions acc-azioni"><button class="btn danger" type="button" id="acCancella" aria-describedby="acCancellaNota">Cancella il mio account</button></div>
+      <p class="note" id="acCancellaNota">Serve un secondo clic, entro 4 secondi, per confermare.</p>
+    </section>
+
+    <div class="stack acc-uscita">
+      <div class="row-actions acc-azioni">
+        <button class="btn quiet" type="button" id="acEsci" aria-describedby="acEsciNota">Esci da questo dispositivo</button>
+        <a class="btn ghost" href="mie-aste.html">Le mie aste</a>
+      </div>
+      <p class="note" id="acEsciNota">Uscendo, le aste seguite, le note e le preferenze restano salvate in questo browser: su un computer condiviso, chi lo usa dopo di te può vederle.</p>
+    </div>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="config/tariffe.js"></script>
+<script src="data/geo.js"></script>
+<script src="js/icone.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/formato.js"></script>
+<script src="js/calcoli.js"></script>
+<script src="js/cerca.js"></script>
+<script src="config/abbonamenti.js"></script>
+<script src="js/account.js"></script>
+<script src="js/piani.js"></script>
+<script src="js/pages/account.js"></script>
+</body>
+</html>

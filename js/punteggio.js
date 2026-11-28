@@ -19,10 +19,12 @@
     'primo-prezzo': 'Prezzo base della prima asta, che di norma coincide con la stima del perito',
     'prima-asta': 'È la prima asta: il prezzo base di norma coincide con la stima del perito',
     omi: 'Quotazioni OMI della zona (Agenzia delle Entrate – OMI) per la superficie indicata',
-    'omi-comune': 'Quotazioni OMI tipiche del comune (zona OMI non riconosciuta dall\'indirizzo) per la superficie indicata'
+    // anche una zona riconosciuta con dati incerti (lotto con più unità, box insolito, solo stato "ottimo"): vedi applicaOmi
+    'omi-comune': 'Quotazioni OMI usate con cautela (zona non riconosciuta dall\'indirizzo, o dati della zona incerti: vedi «La zona») per la superficie indicata'
   };
   var LIVELLI = ['bassa', 'media', 'alta'];
   var TETTO_INCERTO = 54;   // punteggio massimo quando il valore di mercato ha affidabilità bassa (fascia "Da valutare")
+  var CONCORDANZA = 1.35;   // due valori concordano se il più alto supera il più basso al massimo del 35%
 
   function num(x) { var n = Number(x); return isFinite(n) ? n : 0; }
   function abbassa(liv) { return LIVELLI[Math.max(0, LIVELLI.indexOf(liv) - 1)]; }
@@ -81,7 +83,10 @@
     var scelto = prim, aff = prim.aff;
     if (sec) {
       var r = sec.v / prim.v;
-      if (r >= 0.65 && r <= 1.35) { if (prim.fonte === 'omi') aff = 'alta'; }   // due fonti indipendenti concordano
+      // due fonti indipendenti concordano se il valore più alto supera il più basso al massimo del 35%, nei due sensi:
+      // prima un OMI fino al 54% sopra il perito contava come "concorde" e il valore scelto era l'OMI (caso reale
+      // pvp-4623595, box a Lerici: prima asta 33.000 €, OMI 49.500 €, sconto gonfiato al 42%)
+      if (r >= 1 / CONCORDANZA && r <= CONCORDANZA) { if (prim.fonte === 'omi') aff = 'alta'; }
       else {
         // non concordano: per prudenza si usa il valore più basso (lo sconto non si gonfia mai)
         var forte = r < 0.5 || r > 1.6, fo = prim.fonte.indexOf('omi') === 0 ? prim : sec, fp = fo === prim ? sec : prim;
@@ -117,8 +122,61 @@
         }
       }
     }
+    // beni mobili (merci, mobili, attrezzature): nessuna seconda fonte conferma il perito, che da solo non basta per
+    // un "Ottimo affare" (casi reali pvp-4595365 "Merci in giacenza" e pvp-4594979 "Mobili da ufficio", Nuoro)
+    if (a.categoria === 'beni' && NOME_PERITO[fonte]) {
+      aff = 'bassa';
+      controlli.push('Bene mobile: il valore viene solo ' + { perizia: 'dalla stima del perito', 'primo-prezzo': 'dal prezzo della prima asta', 'prima-asta': 'dal prezzo base della prima asta' }[fonte] +
+        ', senza una seconda fonte che lo confermi, e rivendendo merci, arredi o attrezzature ' +
+        'si ricava spesso molto meno. Per prudenza il punteggio resta al massimo ' + TETTO_INCERTO + ' ("Da valutare").');
+    }
     return { centrale: Math.round(centrale), min: Math.round(min != null ? min : centrale * (1 - f)), max: Math.round(max != null ? max : centrale * (1 + f)),
       fonte: fonte, etichetta: ETICHETTE[fonte], affidabilita: aff, controlli: controlli, zona: zona };
+  }
+
+  /* Tentativo minimo dedotto dai prezzi, come stima dichiarata: quando nell'indice del Portale mancano aste intermedie il
+   * tentativo è sottostimato. Se il prezzo base di oggi è esattamente il prezzo della prima asta ridotto k volte del 25% (al
+   * centesimo, o all'euro se il prezzo è arrotondato all'euro), prima di questa ci sono state almeno k aste. Solo immobili:
+   * nelle esecuzioni il ribasso massimo è di un quarto fino al quarto tentativo deserto (art. 591 c.p.c.). Caso reale
+   * pvp-4566904, Sant'Elpidio a Mare: 534.800 € × 0,75⁴ = 169.214,06 €, almeno il 5° tentativo, l'indice ne mostra 3.
+   * Dopo il quarto tentativo deserto il ribasso può arrivare alla metà: due quarti (0,5625) possono essere un solo ribasso
+   * del 43,75%, quindi oltre il quarto ribasso il tentativo minimo è quello dei ribassi massimi di legge, non k + 1
+   * (revisione del 30/10/2026: pvp-4480064, Augusta, 62.850 € × 0,75⁵ = 14.914,61 €, si diceva "almeno il 6°" ma con un
+   * ribasso della metà dopo il quarto tentativo può essere il 5°).
+   * Con lo storico delle vendite (a.storico della scheda: [data, prezzo, esito] dal più vecchio) conta anche il prezzo dei
+   * tentativi precedenti: se un tentativo dello storico era già almeno il M°, questa asta, che viene dopo quello e dopo gli
+   * altri D tentativi dello storico, è almeno la (M + D + 1)ª. Le vendite sospese non contano come tentativi. Revisione del
+   * 2/11/2026, pvp-4635605 Porto Recanati: 400.000 → 168.750 (× 0,75³: almeno il 4°) → 126.562,50 → oggi 94.921,88, almeno
+   * il 6° (dal solo prezzo di oggi almeno il 5°).
+   * → { tentativo, ribassi, storico?: { data, prezzo, tentativo, dopo } } se è più alto del tentativo dell'indice, altrimenti
+   *   null (nessuna stima); "storico" c'è quando la stima viene da un tentativo precedente (ribassi = i suoi). */
+  function daiPrezzi(primo, prezzo) {
+    if (!(prezzo > 0) || !(primo > prezzo)) return null;
+    for (var k = 1; k <= 10; k++) {
+      var atteso = primo * Math.pow(0.75, k);
+      if (Math.abs(Math.round(atteso * 100) / 100 - prezzo) <= 0.011 || (prezzo === Math.round(prezzo) && Math.abs(atteso - prezzo) < 1)) {
+        // primo tentativo a cui si arriva a questo prezzo con i ribassi massimi: un quarto per volta fino al 4° tentativo,
+        // poi fino alla metà
+        var n = 1, f = 1, quota = Math.pow(0.75, k) * 1.0001;
+        while (f > quota) { n++; f *= n <= 4 ? 0.75 : 0.5; }
+        return { tentativo: n, ribassi: k };
+      }
+      if (atteso < prezzo - 1) return null;
+    }
+    return null;
+  }
+  function tentativoMinimo(a) {
+    var t = num(a.tentativo), primo = num(a.primoPrezzo), base = num(a.prezzoBase);
+    if (a.categoria !== 'immobile' || t < 2 || !(base > 0) || !(primo > base)) return null;
+    var out = daiPrezzi(primo, base);
+    var prec = Array.isArray(a.storico) ? a.storico.filter(function (s) { return Array.isArray(s) && s[2] !== 'sospesa'; }) : [];
+    prec.forEach(function (s, i) {
+      var q = daiPrezzi(primo, num(s[1])), dopo = prec.length - 1 - i;
+      if (q && q.tentativo + dopo + 1 > (out ? out.tentativo : 0)) {
+        out = { tentativo: q.tentativo + dopo + 1, ribassi: q.ribassi, storico: { data: s[0] || null, prezzo: num(s[1]), tentativo: q.tentativo, dopo: dopo } };
+      }
+    });
+    return out && out.tentativo > t ? out : null;
   }
 
   function inputCosto(a, valoreMercato) {
@@ -188,7 +246,8 @@
     return { chiave: 'basso', etichetta: 'Poco interessante' };
   }
 
-  var Punteggio = { PESI: PESI, PENALITA: PENALITA, IPOTESI: IPOTESI, TETTO_INCERTO: TETTO_INCERTO, indiceZone: indiceZone, valore: valore, valuta: valuta, compatto: compatto, fascia: fascia };
+  var Punteggio = { PESI: PESI, PENALITA: PENALITA, IPOTESI: IPOTESI, TETTO_INCERTO: TETTO_INCERTO, indiceZone: indiceZone, valore: valore, valuta: valuta, compatto: compatto, fascia: fascia,
+    tentativoMinimo: tentativoMinimo };
   if (NODE) module.exports = Punteggio;
   else root.Punteggio = Punteggio;
 })(typeof window !== 'undefined' ? window : globalThis);

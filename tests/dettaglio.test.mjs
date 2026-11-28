@@ -5,10 +5,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import {
-  pulisci, descrizione, urlRisorsa, termine, mqChiari, catasto, cauzione, estrai, ordina, scarica, nomeFileSicuro, MAX_FOTO, MAX_DESCRIZIONE
+  pulisci, descrizione, urlRisorsa, termine, mqChiari, catasto, cauzione, estrai, ordina, scarica, nomeFileSicuro, segnaposto, MAX_FOTO, MAX_DESCRIZIONE
 } from '../scripts/lib/dettaglio-pvp.mjs';
-import { componi, daVecchia, scriviSchede, leggiSchede, record, valutaTutte, arricchisci } from '../scripts/lib/arricchimento.mjs';
+import { componi, daVecchia, scriviSchede, leggiSchede, record, valutaTutte, arricchisci, copertinaDa } from '../scripts/lib/arricchimento.mjs';
 import { FonteBloccata } from '../scripts/lib/http.mjs';
+import { converti } from '../scripts/fonti/pvp.mjs';
 
 const require = createRequire(import.meta.url);
 const Dettagli = require('../js/dettagli.js');
@@ -214,6 +215,33 @@ test('componi: senza dettaglio, descrizione dalla ricerca, superficie e rischi d
   assert.equal(componi(asta({ _pvp: { id: 77, descLotto: '' } }), { oggi: OGGI }).corti.rischi, undefined);
 });
 
+// caso reale: vendita 4649172 (Prato), tra gli "Affari di oggi" del 22/10/2026 con il titolo "NESSUNA"
+test('descrizione "NESSUNA" della fonte (pvp-4649172): titolo da categoria e comune, niente descrizione né rischi', async () => {
+  const f = JSON.parse(await readFile(new URL('./fixture/pvp-4649172.json', import.meta.url), 'utf8'));
+  const a = converti(f.ricerca);
+  assert.equal(a.titolo, 'Abbigliamento e calzature – Prato');
+  assert.deepEqual([a.comune, a.provincia, a.prezzoBase, a.categoria], ['Prato', 'PO', 2500, 'beni']);
+  const d = estrai(f.dettaglio, { oggi: '2026-10-22', descLotto: f.ricerca.descLotto });
+  assert.equal(d.descrizione, undefined);
+  assert.equal(d.stima, 6500);
+  // né dalla ricerca né dal dettaglio: nessun testo, quindi nessun "controllato, nessun rischio"
+  for (const nuovoDettaglio of [null, f.dettaglio]) {
+    const { scheda, corti } = componi(a, { nuovoDettaglio, oggi: '2026-10-22' });
+    assert.equal(scheda.descrizione, undefined);
+    assert.equal(corti.rischi, undefined);
+  }
+  // scheda letta il 22/10 prima della correzione e conservata nella cache: "NESSUNA." si toglie anche lì
+  const vecchiaScheda = { dettaglio: '2026-10-22', descrizione: 'NESSUNA.', stima: 6500, rischi: [] };
+  const c = componi(a, { vecchiaScheda, oggi: '2026-10-23' });
+  assert.equal(c.scheda.descrizione, undefined);
+  assert.equal(c.corti.rischi, undefined);
+  assert.equal(c.corti.stima, 6500);
+  assert.equal(segnaposto('NESSUNA'), true);
+  assert.equal(segnaposto(' Nessuno. '), true);
+  assert.equal(segnaposto('Nessuna servitù passiva'), false);
+  assert.equal(descrizione('Garage', [{ descrizione: 'NESSUNA' }]), 'Garage.');
+});
+
 test('componi: dettaglio nuovo (superficie dai beni) e dettaglio conservato da un pezzo precedente', () => {
   const { scheda, corti } = componi(asta(), { nuovoDettaglio: corpo(), oggi: OGGI });
   assert.equal(corti.superficieMq, 92.5);
@@ -328,6 +356,30 @@ test('punteggio nella raccolta: campi corti uniti all\'asta, dettaglio per il pe
   assert.ok(r.parti && r.mancanti && r.zona);
 });
 
+test('copertina: la prima foto della scheda letta (solo resource-pvp.giustizia.it), nell\'elenco e non ripetuta nel pezzo', () => {
+  const { scheda, corti } = componi(asta(), { nuovoDettaglio: corpo(), oggi: OGGI });
+  assert.equal(corti.copertina, scheda.foto[0]);
+  assert.equal(corti.copertina, 'https://resource-pvp.giustizia.it/immagini-beni/77/1/foto0.jpg?versionId=v0');
+  // il pezzo ha già tutte le foto: la copertina resta solo nell'elenco (data/aste.js)
+  const salvato = record({ ...asta(), ...corti }, ['id', 'dettaglio', 'nFoto', 'copertina'], scheda);
+  assert.equal(salvato.copertina, undefined);
+  assert.equal(salvato.nFoto, 11);
+  assert.deepEqual(salvato.foto, scheda.foto);
+  // il giorno dopo, con il dettaglio conservato nel pezzo, la copertina è la stessa (nessuna nuova richiesta)
+  assert.equal(componi(asta(), { vecchiaScheda: JSON.parse(JSON.stringify(salvato)), oggi: '2026-10-14' }).corti.copertina, corti.copertina);
+  // dettaglio senza foto: nessuna copertina, nemmeno una "di repertorio"
+  const senza = corpo();
+  senza.beni[0].allegati = [];
+  const c = componi(asta(), { nuovoDettaglio: senza, oggi: OGGI });
+  assert.equal(c.corti.nFoto, 0);
+  assert.equal('copertina' in c.corti, false);
+  // si salta tutto ciò che non è un'immagine di resource-pvp.giustizia.it
+  assert.equal(copertinaDa(['https://esempio.invalid/a.jpg', 'http://resource-pvp.giustizia.it/b.jpg', 'https://resource-pvp.giustizia.it/allegati/1/perizia.pdf',
+    'https://resource-pvp.giustizia.it/immagini-beni/1/2/c.JPG?versionId=x-1']), 'https://resource-pvp.giustizia.it/immagini-beni/1/2/c.JPG?versionId=x-1');
+  assert.equal(copertinaDa([{ url: 'https://resource-pvp.giustizia.it/immagini-beni/1/2/d.png' }]), 'https://resource-pvp.giustizia.it/immagini-beni/1/2/d.png');
+  for (const v of [undefined, null, [], ['javascript:alert(1)//x.jpg'], ['//esempio.invalid/x.jpg'], 'https://resource-pvp.giustizia.it/x.jpg']) assert.equal(copertinaDa(v), null, JSON.stringify(v));
+});
+
 test('arricchisci senza rete: storico dall\'indice, dettagli conservati, aste di altre fonti con i dati di prima', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'radar-arr-'));
   try {
@@ -347,9 +399,32 @@ test('arricchisci senza rete: storico dall\'indice, dettagli conservati, aste di
     assert.equal(aste[0].stima, 150000);       // dal dettaglio salvato nel pezzo
     assert.equal(aste[0].dettaglio, '2026-10-10');
     assert.equal(aste[0].nFoto, 1);
+    assert.equal(aste[0].copertina, 'https://resource-pvp.giustizia.it/x.jpg'); // prima foto del pezzo salvato
+    assert.equal(aste[1].copertina, undefined);
     assert.equal(aste[0].superficieMq, 70);
     assert.equal(aste[0]._pvp !== undefined, true); // _pvp lo toglie la raccolta
     assert.equal(schede.get('dem-1').descrizione, 'Terreno demaniale');
     assert.equal(stat.catene, 1);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('copertina: non resta quella vecchia quando la scheda salvata cambia o non ha più foto', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'radar-cop-'));
+  try {
+    const cartella = path.join(dir, 'dettagli');
+    const vecchia = 'https://resource-pvp.giustizia.it/immagini-beni/1/1/vecchia.jpg';
+    await scriviSchede(cartella, new Map([
+      ['pvp-6', { id: 'pvp-6', dettaglio: '2026-10-10', foto: [] }],
+      ['pvp-7', { id: 'pvp-7', dettaglio: '2026-10-10', foto: ['https://resource-pvp.giustizia.it/immagini-beni/7/1/nuova.jpg', vecchia] }]]));
+    const pvp = (id) => ({ id: 'pvp-' + id, categoria: 'beni', prezzoBase: 1000, dataAsta: '2026-11-20', copertina: vecchia, nFoto: 3,
+      _pvp: { id, codiceTribunale: 'T1', procedura: String(id), numeroLotto: '1', dataVendita: '2026-11-20', prezzoBaseAsta: 1000, descLotto: 'Lotto' } });
+    // le aste arrivano con la copertina del giorno prima (data/aste.js), le schede salvate dicono altro
+    const aste = [pvp(6), pvp(7), pvp(8)];
+    await arricchisci({ aste, oggi: OGGI, cartella, fileIndice: path.join(dir, 'manca.json'), rete: false, log: () => {} });
+    assert.equal('copertina' in aste[0], false, 'scheda senza foto: niente copertina');
+    assert.equal(aste[0].nFoto, 0);
+    assert.equal(aste[1].copertina, 'https://resource-pvp.giustizia.it/immagini-beni/7/1/nuova.jpg', 'la prima foto della scheda, non quella di ieri');
+    assert.equal('copertina' in aste[2], false, 'scheda non ancora letta: niente copertina');
+    assert.equal('nFoto' in aste[2], false);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });

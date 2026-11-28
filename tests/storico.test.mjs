@@ -151,3 +151,22 @@ test('workflow: OMI dal repository privato (mai pubblicate), Cacciatore e Telegr
   assert.match(sito, /test ! -e _site\/data\/omi/);
   assert.match(y, /data\/cacciatore-storico\.json/);
 });
+
+test('workflow: fino a 1000 schede di dettaglio al giorno, con le stesse pause, nei tempi del lavoro', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const y = await readFile(new URL('../.github/workflows/aggiorna-aste.yml', import.meta.url), 'utf8');
+  const m = y.match(/node scripts\/raccogli\.mjs --max-dettagli (\d+) --tempo-max (\d+)/);
+  assert.ok(m, 'raccolta con --max-dettagli e --tempo-max');
+  const max = Number(m[1]), tempoMax = Number(m[2]), timeout = Number(y.match(/timeout-minutes:\s*(\d+)/)[1]);
+  assert.deepEqual([max, tempoMax, timeout], [1000, 85, 110]);
+  // pause invariate: una scheda ogni 3 s (scripts/lib/dettaglio-pvp.mjs), il resto dalle attese di scripts/lib/http.mjs
+  const det = await readFile(new URL('../scripts/lib/dettaglio-pvp.mjs', import.meta.url), 'utf8');
+  assert.match(det, /const INTERVALLO_MS = 3000;/);
+  assert.match(det, /intervalloMs: INTERVALLO_MS/);
+  // circa 3,1 s a scheda con la risposta: ~52 minuti, più raccolta (~5), storico (~2) e assistenti (~1) entro --tempo-max,
+  // e dopo --tempo-max almeno 15 minuti per punteggio, pubblicazione e Cloudflare prima del timeout del lavoro
+  const minuti = 5 + 2 + max * 3.1 / 60 + 1;
+  assert.ok(minuti < tempoMax, `stima ${minuti.toFixed(0)} min oltre --tempo-max ${tempoMax}`);
+  assert.ok(tempoMax + 15 <= timeout);
+  assert.match(y, /fino a 1000 dettagli del PVP[^\n]*\n[^\n]*~52 min/, 'commento con la stima dei tempi aggiornato');
+});

@@ -10,12 +10,16 @@
   function dataOra(d, ora) { var p = (ora || '').match(/^(\d{1,2})[:.](\d{2})/); return d.replace(/-/g, '') + (p ? 'T' + ('0' + p[1]).slice(-2) + p[2] + '00' : ''); }
   function piu(d, giorni) { var x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + giorni); return x.toISOString().slice(0, 10); }
 
+  var F = typeof module !== 'undefined' && module.exports ? require('./formato.js') : null;
+
   /* Scadenze di un'asta: [{ chiave, titolo, data, ora?, nota }] */
   function scadenze(a) {
     var out = [];
-    // termineOfferte arriva come 'AAAA-MM-GG' o 'AAAA-MM-GGTHH:MM' (dal dettaglio del Portale)
-    if (a.termineOfferte) { var t = String(a.termineOfferte).split('T'); out.push({ chiave: 'offerte', titolo: 'Termine per le offerte', data: t[0], ora: t[1] ? t[1].slice(0, 5) : a.oraTermine, nota: 'Termine indicato nell\'avviso di vendita.' }); }
-    if (a.dataAsta) out.push({ chiave: 'asta', titolo: 'Asta', data: a.dataAsta, ora: a.ora, nota: 'Data e ora dell\'esperimento di vendita indicate nell\'avviso.' });
+    // giorno dell'asta e termine per le offerte ('AAAA-MM-GG' o 'AAAA-MM-GGTHH:MM') letti con js/formato.js: del Demanio
+    // a volte si conosce solo il termine, e allora nel calendario non c'è nessun giorno d'asta inventato
+    var D = (F || root.Formato).date(a);
+    if (D.termine) out.push({ chiave: 'offerte', titolo: 'Termine per le offerte', data: D.termine.data, ora: D.termine.ora, nota: 'Termine indicato nell\'avviso di vendita.' });
+    if (D.asta) out.push({ chiave: 'asta', titolo: 'Asta', data: D.asta.data, ora: D.asta.ora, nota: a.fonte === 'Agenzia del Demanio' ? 'Giorno dell\'asta indicato nell\'avviso.' : 'Data e ora dell\'esperimento di vendita indicate nell\'avviso.' });
     if (a.termineSaldo) out.push({ chiave: 'saldo', titolo: 'Termine per il saldo', data: a.termineSaldo, nota: 'Termine per il versamento del saldo indicato nell\'avviso.' });
     return out;
   }

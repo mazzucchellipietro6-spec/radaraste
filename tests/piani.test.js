@@ -72,14 +72,29 @@ test('vantaggi: i limiti del piano Gratis tornano con i numeri e ciò che non es
   assert.match(g, /10 aste seguite/);
   assert.match(g, /regole del sito/);
   const inArrivo = (l, re) => assert.ok(l.some((v) => re.test(v) && /\(in arrivo\)$/.test(v)), re + ' deve essere "(in arrivo)"');
-  inArrivo(base.vantaggi, /PDF/);
+  const esiste = (l, re) => assert.ok(l.some((v) => re.test(v) && !/in arrivo/.test(v)), re + ' esiste già: niente "(in arrivo)"');
   inArrivo(base.vantaggi, /Avvisi/);
-  inArrivo(pro.vantaggi, /intelligenza artificiale/);
   inArrivo(pro.vantaggi, /Statistiche avanzate/);
   // ciò che c'è già non è segnato come in arrivo
-  assert.ok(pro.vantaggi.some((v) => /^Stratega d'asta/.test(v) && !/in arrivo/.test(v)));
-  assert.ok(pro.vantaggi.includes('14 giorni di prova gratuita'));
-  assert.ok(base.vantaggi.some((v) => /selezione personale/.test(v)));
+  esiste(pro.vantaggi, /^Stratega d'asta/);
+  esiste(base.vantaggi, /selezione personale/);
+  assert.ok(pro.vantaggi.includes('14 giorni di prova gratuita al primo abbonamento'));
+});
+
+test('vantaggi: "(in arrivo)" segue quello che il sito fa davvero oggi', () => {
+  const [, base, pro] = CFG.piani;
+  const leggi = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+  const marca = (l, re) => { const v = l.find((x) => re.test(x)); assert.ok(v, re + ' manca'); return /\(in arrivo\)$/.test(v); };
+  // il report PDF c'è già nella scheda dell'asta ("Stampa o salva in PDF", 19/10)
+  assert.match(leggi('js/pages/scheda.js'), /Stampa o salva in PDF/);
+  assert.equal(marca(base.vantaggi, /Report PDF/), false, 'Report PDF esiste già');
+  // il consulente con AI è pronto ma spento finché config/consulente.js non ha il "ponte"
+  const consulente = require('../config/consulente.js');
+  assert.equal(marca(pro.vantaggi, /intelligenza artificiale/), consulente.ponte == null);
+  // le pagine delle funzioni vendute come già disponibili esistono
+  for (const f of ['affari.html', 'combinazioni.html', 'stratega.html', 'mie-aste.html', 'consulente.html', 'calcolatore.html', 'mutuo.html', 'confronta.html', 'guida.html', 'tariffe.html', 'mappa.html']) {
+    assert.ok(fs.existsSync(path.join(__dirname, '..', f)), f);
+  }
 });
 
 test('spenti (configurazione di oggi): nessun blocco, nessun limite, nessuna anteprima', () => {
@@ -153,9 +168,15 @@ test('piano dallo stato di Stripe', () => {
     ['trialing in prova', ab('pro', 'trialing', { fineProva: tra(5), finePeriodo: tra(5) }), 'pro'],
     ['trialing con prova finita', ab('pro', 'trialing', { fineProva: tra(-1), finePeriodo: tra(10) }), 'gratis'],
     ['trialing senza fine prova: vale la fine del periodo', ab('pro', 'trialing', { fineProva: null, finePeriodo: tra(3) }), 'pro'],
-    ['past_due entro 7 giorni', ab('base', 'past_due', { finePeriodo: tra(-6) }), 'base'],
-    ['past_due a 7 giorni esatti', ab('pro', 'past_due', { finePeriodo: tra(-7) }), 'pro'],
-    ['past_due oltre 7 giorni', ab('base', 'past_due', { finePeriodo: tra(-8) }), 'gratis'],
+    // past_due come lo scrive Stripe: al rinnovo finePeriodo passa subito alla fine del periodo NON pagato
+    ['past_due mensile, rinnovo fallito 6 giorni fa', ab('base', 'past_due', { finePeriodo: tra(28 - 6) }), 'base'],
+    ['past_due mensile, a 7 giorni esatti', ab('pro', 'past_due', { finePeriodo: tra(28 - 7) }), 'pro'],
+    ['past_due mensile, oltre 7 giorni', ab('base', 'past_due', { finePeriodo: tra(28 - 8) }), 'gratis'],
+    ['past_due mensile, rinnovo fallito 20 giorni fa', ab('pro', 'past_due', { finePeriodo: tra(10) }), 'gratis'],
+    ['past_due annuale, rinnovo fallito 3 giorni fa', ab('pro', 'past_due', { periodo: 'annuale', finePeriodo: tra(365 - 3) }), 'pro'],
+    ['past_due annuale, rinnovo fallito 200 giorni fa', ab('pro', 'past_due', { periodo: 'annuale', finePeriodo: tra(165) }), 'gratis'],
+    ['past_due senza periodo: come il mensile', ab('base', 'past_due', { periodo: null, finePeriodo: tra(25) }), 'base'],
+    ['past_due con la fine periodo già passata (dati vecchi)', ab('base', 'past_due', { finePeriodo: tra(-6) }), 'gratis'],
     ['past_due senza data', ab('base', 'past_due', { finePeriodo: null }), 'gratis'],
     ['canceled', ab('pro', 'canceled'), 'gratis'],
     ['incomplete', ab('pro', 'incomplete'), 'gratis'],
@@ -175,10 +196,30 @@ test('piano dallo stato di Stripe', () => {
   assert.equal(P.piano(ab('pro', 'active').abbonamento, ADESSO), 'pro');
   // senza "adesso" vale l'ora attuale
   assert.equal(P.piano({ abbonamento: { piano: 'base', stato: 'active', finePeriodo: new Date(Date.now() + GIORNO).toISOString() } }), 'base');
+  // valori strani: mai un piano a pagamento per sbaglio
+  for (const strano of ['pro', 42, [], { piano: ['pro'], stato: 'active' }, { piano: { toString: () => 'pro' }, stato: 'active' }, { piano: 'pro', stato: 'ACTIVE' }, { piano: 'pro' }]) {
+    assert.equal(P.piano(strano, ADESSO), 'gratis', JSON.stringify(strano));
+  }
+});
+
+test('past_due: mai meno di 7 giorni dalla fine del periodo pagato, anche con i mesi di 31 giorni', () => {
+  // rinnovo del 1/10 fallito: Stripe scrive come fine il 1/11 (31 giorni dopo)
+  const sub = { piano: 'pro', periodo: 'mensile', stato: 'past_due', finePeriodo: '2026-11-01T00:00:00Z' };
+  assert.equal(P.piano(sub, '2026-10-08T00:00:00Z'), 'pro', '7 giorni dopo il rinnovo fallito');
+  assert.equal(P.piano(sub, '2026-10-11T00:00:00Z'), 'pro');
+  assert.equal(P.piano(sub, '2026-10-11T00:00:01Z'), 'gratis');
+  // la data da scrivere all'utente ("resta attivo fino al…") è la stessa usata da piano()
+  assert.equal(P.fineRitardo(sub), '2026-10-11T00:00:00.000Z');
+  assert.equal(P.fineRitardo({ utente: {}, abbonamento: sub }), '2026-10-11T00:00:00.000Z');
+  assert.equal(P.fineRitardo(Object.assign({}, sub, { periodo: 'annuale', finePeriodo: '2027-10-01T00:00:00Z' })), '2026-10-08T00:00:00.000Z');
+  assert.equal(P.fineRitardo(Object.assign({}, sub, { finePeriodo: null })), null);
+  assert.equal(P.fineRitardo(null), null);
 });
 
 test('stato e piano dell\'account corrente da window.Account', () => {
-  globale('Account', { statoCorrente: () => ab('pro', 'active') });
+  // fine periodo rispetto a oggi: le chiamate senza "adesso" usano l'ora vera (niente test che scadono)
+  const pro = ab('pro', 'active', { finePeriodo: new Date(Date.now() + 20 * GIORNO).toISOString() });
+  globale('Account', { statoCorrente: () => pro });
   try {
     assert.equal(P.stato().utente.id, 'utente-finto');
     assert.equal(P.piano(undefined, ADESSO), 'pro');
@@ -244,19 +285,37 @@ test('prezzi in italiano e risparmio con l\'annuale', () => {
 });
 
 test('giorni di prova rimasti', () => {
-  const inProva = { piano: 'pro', stato: 'trialing', fineProva: '2026-10-27T12:00:00Z' };
+  // giorni di calendario nel fuso di chi guarda: la fine della prova è a mezzogiorno del 27/10 nel fuso del test
+  const inProva = { piano: 'pro', stato: 'trialing', fineProva: new Date(2026, 9, 27, 12).toISOString() };
   assert.equal(P.giorniProva(inProva, '2026-10-13'), 14);
   assert.equal(P.giorniProva(inProva, '2026-10-26'), 1);
   assert.equal(P.giorniProva(inProva, '2026-10-27'), 0);
   assert.equal(P.giorniProva(inProva, '2026-11-02'), 0);
-  assert.equal(P.giorniProva(inProva, '2026-10-26T12:00:00Z'), 1);
-  assert.equal(P.giorniProva(inProva, '2026-10-26T13:00:00Z'), 1, 'giorno iniziato conta');
+  // con un istante: giorni da 24 ore, per eccesso
+  const utc = { piano: 'pro', stato: 'trialing', fineProva: '2026-10-27T12:00:00Z' };
+  assert.equal(P.giorniProva(utc, '2026-10-26T12:00:00Z'), 1);
+  assert.equal(P.giorniProva(utc, '2026-10-26T13:00:00Z'), 1, 'giorno iniziato conta');
+  assert.equal(P.giorniProva(utc, '2026-10-27T12:00:01Z'), 0);
   assert.equal(P.giorniProva({ utente: {}, abbonamento: inProva }, '2026-10-20'), 7, 'anche dallo stato completo');
   assert.equal(P.giorniProva(Object.assign({}, inProva, { stato: 'active' }), '2026-10-13'), 0, 'già pagato: niente prova');
   assert.equal(P.giorniProva(Object.assign({}, inProva, { stato: 'canceled' }), '2026-10-13'), 0);
+  assert.equal(P.giorniProva({ piano: 'pro', fineProva: inProva.fineProva }, '2026-10-13'), 0, 'senza stato non è una prova');
   assert.equal(P.giorniProva({ piano: 'pro', stato: 'trialing', fineProva: null }, '2026-10-13'), 0);
+  assert.equal(P.giorniProva({ utente: {}, abbonamento: null }, '2026-10-13'), 0);
   assert.equal(P.giorniProva(null, '2026-10-13'), 0);
   assert.ok(P.giorniProva({ piano: 'pro', stato: 'trialing', fineProva: new Date(Date.now() + 3 * GIORNO).toISOString() }) >= 2);
+});
+
+test('giorni di prova: il giorno di fine è quello del calendario di chi guarda (fusi orari)', () => {
+  // la prova finisce alle 23:30 UTC del 27/10: a Roma è già il 28, a Los Angeles è ancora il 27
+  const sub = { piano: 'pro', stato: 'trialing', fineProva: '2026-10-27T23:30:00Z' };
+  const prima = process.env.TZ;
+  const conFuso = (tz, fn) => { process.env.TZ = tz; try { return fn(); } finally { if (prima === undefined) delete process.env.TZ; else process.env.TZ = prima; } };
+  conFuso('Europe/Rome', () => assert.equal(P.giorniProva(sub, '2026-10-26'), 2));
+  conFuso('America/Los_Angeles', () => assert.equal(P.giorniProva(sub, '2026-10-26'), 1));
+  conFuso('Pacific/Auckland', () => assert.equal(P.giorniProva(sub, '2026-10-26'), 2));
+  // cambio dell'ora (25/10 in Italia): i giorni restano interi
+  conFuso('Europe/Rome', () => assert.equal(P.giorniProva({ stato: 'trialing', fineProva: '2026-10-27T10:00:00Z' }, '2026-10-24'), 3));
 });
 
 test('blocco: riquadro accessibile con il pulsante verso il piano giusto', () => {
@@ -268,7 +327,7 @@ test('blocco: riquadro accessibile con il pulsante verso il piano giusto', () =>
   assert.match(h, /<a class="btn" href="prezzi\.html#pro">Sblocca con Pro<\/a>/);
   assert.match(h, /stratega d&#39;asta/, 'dice cosa si sblocca');
   assert.match(h, /24 € al mese oppure 240 € all&#39;anno \(risparmi 48 €\), IVA inclusa/);
-  assert.match(h, /provarlo gratis per 14 giorni/);
+  assert.match(h, /Al primo abbonamento puoi provarlo gratis per 14 giorni/);
   assert.match(h, /href="accedi\.html"/);
   assert.match(h, /<\/section>$/);
   // id diversi per due riquadri nella stessa pagina
@@ -278,12 +337,73 @@ test('blocco: riquadro accessibile con il pulsante verso il piano giusto', () =>
   assert.match(b, /href="prezzi\.html#base">Sblocca con Base</);
   assert.match(b, /<h3 class="blocco-piano-titolo"/);
   assert.match(b, /tutti gli affari di oggi/);
-  assert.match(b, /Il piano Pro, che comprende anche questa funzione, si può provare gratis per 14 giorni/);
+  assert.match(b, /Al primo abbonamento puoi provare gratis per 14 giorni il piano Pro, che comprende anche questa funzione/);
   // funzione sconosciuta: il primo piano a pagamento, mai "Sblocca con Gratis"
   const x = P.blocco({ funzione: 'inesistente' });
   assert.match(x, /prezzi\.html#base/);
   assert.doesNotMatch(x, /Sblocca con Gratis/);
   assert.match(P.blocco({ funzione: 'avvisi', titolo: 'Avvisi ogni mattina', testo: 'Ricevi le nuove aste.' }), /Avvisi ogni mattina<\/span><\/h2><p class="blocco-piano-testo">Ricevi le nuove aste\.<\/p>/);
+});
+
+test('blocco: la prova gratuita non è promessa a chi ha già avuto un abbonamento', () => {
+  const PROVA = /prova|provar/i;
+  const conStato = (s, fn) => { globale('Account', { statoCorrente: () => s }); try { return fn(); } finally { togli('Account'); } };
+  const utente = { id: 'utente-finto', email: 'prova@example.com' };
+  // registrato da poco, nessun abbonamento (riga "gratis" con stato null): la prova vale
+  conStato({ utente, abbonamento: { piano: 'gratis', periodo: null, stato: null, fineProva: null, finePeriodo: null } },
+    () => assert.match(P.blocco({ funzione: 'stratega' }), /Al primo abbonamento puoi provarlo gratis per 14 giorni/));
+  // abbonamento non ancora letto: non sappiamo, vale la frase con la condizione
+  conStato({ utente, abbonamento: null }, () => assert.match(P.blocco({ funzione: 'stratega' }), /Al primo abbonamento/));
+  // abbonato Base che guarda lo Stratega: cambia piano dal portale, senza prova
+  conStato({ utente, abbonamento: { piano: 'base', periodo: 'mensile', stato: 'active', fineProva: null, finePeriodo: tra(20) } }, () => {
+    const h = P.blocco({ funzione: 'stratega' });
+    assert.doesNotMatch(h, PROVA);
+    assert.match(h, /href="prezzi\.html#pro">Sblocca con Pro/);
+  });
+  // ex abbonato (disdetto) o con la prova già usata
+  conStato({ utente, abbonamento: { piano: 'gratis', periodo: 'mensile', stato: 'canceled', fineProva: null, finePeriodo: tra(-30) } },
+    () => assert.doesNotMatch(P.blocco({ funzione: 'stratega' }), PROVA));
+  conStato({ utente, abbonamento: { piano: 'gratis', periodo: null, stato: null, fineProva: tra(-40), finePeriodo: null } },
+    () => assert.doesNotMatch(P.blocco({ funzione: 'affari-tutti' }), PROVA));
+  // la stessa regola è disponibile per le pagine (come haGiaAvuto in servizi/stripe.js)
+  assert.equal(P.provaGiaUsata(null), false);
+  assert.equal(P.provaGiaUsata({ utente, abbonamento: null }), false);
+  assert.equal(P.provaGiaUsata({ utente, abbonamento: { piano: 'gratis', stato: null, fineProva: null } }), false);
+  assert.equal(P.provaGiaUsata({ utente, abbonamento: { piano: 'gratis', stato: 'canceled' } }), true);
+  assert.equal(P.provaGiaUsata({ piano: 'gratis', stato: 'incomplete_expired' }), true);
+  assert.equal(P.provaGiaUsata({ piano: 'gratis', stato: null, fineProva: tra(-1) }), true);
+  // prezzo e IVA restano
+  conStato({ utente, abbonamento: { piano: 'pro', stato: 'unpaid', fineProva: null, finePeriodo: tra(-3) } },
+    () => assert.match(P.blocco({ funzione: 'stratega' }), /24 € al mese oppure 240 € all&#39;anno/));
+});
+
+test('blocco: con un pagamento non riuscito indica il proprio account, non un nuovo abbonamento', () => {
+  const conStato = (s, fn) => { globale('Account', { statoCorrente: () => s }); try { return fn(); } finally { togli('Account'); } };
+  const utente = { id: 'utente-finto' };
+  for (const stato of ['past_due', 'unpaid', 'paused', 'incomplete']) {
+    conStato({ utente, abbonamento: { piano: 'pro', periodo: 'mensile', stato, fineProva: null, finePeriodo: tra(-40) } }, () => {
+      const h = P.blocco({ funzione: 'stratega' });
+      assert.match(h, /pagamento del tuo abbonamento non è riuscito: <a href="account\.html">aggiorna il metodo di pagamento<\/a>/, stato);
+      assert.doesNotMatch(h, /accedi\.html/, stato);
+    });
+  }
+  for (const s of [{ utente, abbonamento: { piano: 'gratis', stato: 'canceled' } }, { utente, abbonamento: { piano: 'base', stato: 'active', finePeriodo: tra(20) } }, { utente, abbonamento: null }]) {
+    conStato(s, () => assert.doesNotMatch(P.blocco({ funzione: 'stratega' }), /account\.html|accedi\.html/, JSON.stringify(s)));
+  }
+});
+
+test('nomi come "constructor" o "toString" non sono funzioni né limiti della configurazione', () => {
+  for (const k of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+    assert.equal(P.pianoMinimo(k), 'gratis', k);
+    const h = P.blocco({ funzione: k });
+    assert.doesNotMatch(h, /function|native code|\[object/, k);
+    assert.match(h, /Questa funzione fa parte del piano Base\./, k);
+  }
+  attivi(() => {
+    assert.equal(P.puo('constructor', null, ADESSO), true);
+    assert.equal(P.limite('constructor', null, ADESSO), Infinity);
+    assert.equal(P.limite('__proto__', null, ADESSO), Infinity);
+  });
 });
 
 test('blocco: nessun HTML iniettabile dai parametri', () => {

@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import {
   controllaCoordinate, soloBiciclette, prezzo, anomalia, adessoRoma, giaIniziata, togliPrefisso, frase, tuttoMaiuscolo, fileCollegati
 } from '../scripts/lib/correzioni.mjs';
-import { converti, tipo, titolo, numeroLotto } from '../scripts/fonti/pvp.mjs';
+import { converti, tipo, titolo, numeroLotto, entita, segniIniziali } from '../scripts/fonti/pvp.mjs';
 import { CAMPI, argomenti } from '../scripts/raccogli.mjs';
 
 const require = createRequire(import.meta.url);
@@ -108,6 +108,27 @@ test('titoli: prefissi tolti, maiuscolo → frase normale, sigle e comune scritt
   assert.equal(titolo(x({ descLotto: 'Appartamento a Frosinone (FR) - Vicolo Moccia 78, piano S2.Trattasi di un appartamento' }), 'Frosinone', 'FR'),
     'Appartamento a Frosinone (FR) - Vicolo Moccia 78, piano S2. Trattasi di un appartamento');
   assert.equal(titolo(x({ descLotto: 'Capannone della Rossi S.p.A. al Fg.19 di 1.200 mq' }), 'Genova', 'GE'), 'Capannone della Rossi S.p.A. al Fg.19 di 1.200 mq');
+});
+
+test('titoli: segni iniziali senza senso tolti, entità HTML codificate due volte decodificate, testo vero intatto (casi reali del 13/10)', () => {
+  // inizio delle descrizioni del lotto (descLotto) delle aste reali
+  assert.equal(titolo(x({ descLotto: 'LOTTO 7° costituito dalla proprietà di locale ad uso box all’interno di autorimessa sita in Comune di Genova con accesso da Via Al Poligono di Quezzi n.53 R (sub 48)' }), 'Genova', 'GE'),
+    'Costituito dalla proprietà di locale ad uso box all’interno di autorimessa sita in Comune di Genova con…'); // pvp-4618989
+  assert.equal(titolo(x({ descLotto: 'Terreni a destinazione prevalentemente commerciale situati in Roma, quartiere &amp;quot;Serpentara&amp;quot;, via Lucignano oltre immobili di natura residenziale' }), 'Roma', 'RM'),
+    'Terreni a destinazione prevalentemente commerciale situati in Roma, quartiere "Serpentara", via Lucignano…'); // pvp-4641380
+  assert.equal(titolo(x({ descLotto: '• Piena proprietà dell’immobile sito in Policoro (MT)' }), 'Policoro', 'MT'), 'Piena proprietà dell’immobile sito in Policoro (MT)'); // pvp-4625741
+  assert.equal(titolo(x({ descLotto: '-Appartamento sito in Grotte (AG) via Padre Vinti n. 38' }), 'Grotte', 'AG'), 'Appartamento sito in Grotte (AG) via Padre Vinti n. 38'); // pvp-4521994
+  assert.equal(titolo(x({ descLotto: 'Lotto 4/D: Cinque collane a maglia di diversa lavorazione' }), 'Roma', 'RM'), 'Cinque collane a maglia di diversa lavorazione'); // pvp-4641441
+  assert.match(titolo(x({ descLotto: '►LOTTO N.3: QUOTA 1/2 DI PIENA PROPRIETA’ N.C.E.U.- Comune di TARANTO' }), 'Taranto', 'TA'), /^Quota 1\/2 di piena proprieta’ /); // pvp-4639770
+  assert.equal(titolo(x({ descLotto: '\uf0fc LOTTO 4: Armadietti in metallo varie dimensioni' }), 'Roma', 'RM'), 'Armadietti in metallo varie dimensioni'); // pvp-4627926
+  assert.equal(titolo(x({ descLotto: 'LOTTO 3_Piena proprietà 1/1 su: magazzino' }), 'Roma', 'RM'), 'Piena proprietà 1/1 su: magazzino'); // pvp-4635259
+  // testo vero: parentesi, virgolette, "½", "&" dei nomi, "N°" dentro il testo
+  assert.equal(titolo(x({ descLotto: '(Proprietà per 1/1) BOX - interno A31' }), 'Roma', 'RM'), '(Proprietà per 1/1) BOX - interno A31');
+  assert.equal(titolo(x({ descLotto: '½ della piena proprietà indivisa di un appartamento' }), 'Roma', 'RM'), '½ della piena proprietà indivisa di un appartamento');
+  assert.equal(titolo(x({ descLotto: '“Piastra da cucina Fry Top a gas, in acciaio inox, 90 x90 cm”' }), 'Roma', 'RM'), '“Piastra da cucina Fry Top a gas, in acciaio inox, 90 x90 cm”');
+  assert.equal(titolo(x({ descLotto: 'Attrezzature da officina a marchio Makita, Bosch, Black&Decker e altri' }), 'Roma', 'RM'), 'Attrezzature da officina a marchio Makita, Bosch, Black&Decker e altri');
+  assert.equal(entita('M&amp;amp;G &#8220;Srl&#8221; &egrave; &foo;'), 'M&G “Srl” è &foo;');
+  assert.equal(segniIniziali('° costituito'), 'costituito');
 });
 
 /* f. offerta minima sopra il prezzo base */

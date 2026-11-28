@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analizzaRobots, consentito } from '../scripts/lib/http.mjs';
+import { analizzaRobots, consentito, richiesta, FonteBloccata, ATTESE } from '../scripts/lib/http.mjs';
 import { provincia, titolo } from '../scripts/lib/luoghi.mjs';
 
 test('robots.txt: regole per tutti gli agenti', () => {
@@ -18,6 +18,54 @@ test('robots.txt: gruppo specifico per il nostro agente', () => {
 test('robots.txt vuoto o "Disallow:" vuoto non vieta nulla', () => {
   assert.equal(consentito(analizzaRobots(''), '/x'), true);
   assert.equal(consentito(analizzaRobots('User-agent: *\nDisallow:\n'), '/x'), true);
+});
+
+// fetch finto: risposte in ordine per ogni indirizzo (un Error = errore di rete); restituisce gli indirizzi chiesti
+function fetchFinto(risposte) {
+  const chiesti = [], vero = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    chiesti.push(String(url));
+    const r = (risposte[String(url)] || []).shift();
+    if (r instanceof Error) throw r;
+    return new Response(r.corpo ?? '', { status: r.stato });
+  };
+  return { chiesti, ripristina: () => { globalThis.fetch = vero; } };
+}
+// stesso errore della raccolta locale del 22/10/2026 sul robots.txt del PVP
+const timeout = () => new TypeError('fetch failed', { cause: { code: 'UND_ERR_CONNECT_TIMEOUT' } });
+
+test('robots.txt: un errore di rete si riprova, non ferma la fonte (raccolta del 22/10/2026)', async () => {
+  const attese = { ...ATTESE }; ATTESE.reteMs = 0; ATTESE.sitoMs = 0;
+  const f = fetchFinto({
+    'https://rete.prova.invalid/robots.txt': [timeout(), { stato: 404, corpo: 'HTTP Status 404 – Not Found' }],
+    'https://rete.prova.invalid/vendite': [{ stato: 200, corpo: 'ok' }],
+    'https://giu.prova.invalid/robots.txt': [timeout(), timeout(), timeout()]
+  });
+  try {
+    assert.equal(await richiesta('https://rete.prova.invalid/vendite', { intervalloMs: 0 }), 'ok');
+    assert.equal(f.chiesti.filter((u) => u.endsWith('/robots.txt')).length, 2);
+    // sempre irraggiungibile: dopo 3 tentativi la fonte si ferma con lo stesso messaggio di prima
+    await assert.rejects(richiesta('https://giu.prova.invalid/vendite', { intervalloMs: 0 }),
+      (e) => e instanceof FonteBloccata && e.stato === 'errore' && e.message === 'sito non raggiungibile (UND_ERR_CONNECT_TIMEOUT)');
+    assert.equal(f.chiesti.filter((u) => u.startsWith('https://giu.')).length, 3);
+  } finally { f.ripristina(); Object.assign(ATTESE, attese); }
+});
+
+test('robots.txt in errore 5xx: si riprova, e se resta in errore la fonte si ferma (regole sconosciute)', async () => {
+  const attese = { ...ATTESE }; ATTESE.reteMs = 0; ATTESE.sitoMs = 0;
+  const f = fetchFinto({
+    'https://cinque.prova.invalid/robots.txt': [{ stato: 503 }, { stato: 200, corpo: 'User-agent: *\nDisallow: /privato\n' }],
+    'https://cinque.prova.invalid/aste': [{ stato: 200, corpo: 'aste' }],
+    'https://sempre.prova.invalid/robots.txt': [{ stato: 500 }, { stato: 502 }, { stato: 503 }]
+  });
+  try {
+    assert.equal(await richiesta('https://cinque.prova.invalid/aste', { intervalloMs: 0 }), 'aste');
+    await assert.rejects(richiesta('https://cinque.prova.invalid/privato/1', { intervalloMs: 0 }), (e) => e.stato === 'vietata');
+    await assert.rejects(richiesta('https://sempre.prova.invalid/aste', { intervalloMs: 0 }),
+      (e) => e instanceof FonteBloccata && e.stato === 'errore' && e.http === 503 && /robots\.txt non disponibile/.test(e.message));
+    assert.ok(!f.chiesti.includes('https://sempre.prova.invalid/aste'), 'nessuna richiesta senza conoscere le regole');
+    assert.ok(!f.chiesti.includes('https://cinque.prova.invalid/privato/1'), 'percorso vietato mai chiesto');
+  } finally { f.ripristina(); Object.assign(ATTESE, attese); }
 });
 
 test('province scritte in modi diversi', () => {
@@ -78,4 +126,71 @@ test('formato compatto: andata e ritorno senza perdite', () => {
   assert.equal(enc.dizionari.fonte.length, 2);
   assert.match(enc.righe[0][6], /^~\d+~1$/);
   assert.deepEqual(Formato.decodifica(JSON.parse(JSON.stringify(enc))), aste);
+});
+
+test('formato compatto: copertina salvata senza "https://resource-pvp.giustizia.it/" e ricostruita solo con quel dominio', async () => {
+  const { RISORSE } = await import('../scripts/lib/dettaglio-pvp.mjs');
+  const { CAMPI } = await import('../scripts/raccogli.mjs');
+  assert.equal(Formato.RISORSE, RISORSE + '/', 'stesso dominio delle foto lette dal dettaglio');
+  assert.ok(CAMPI.includes('copertina'), 'la raccolta scrive la copertina in data/aste.js');
+  const foto = 'https://resource-pvp.giustizia.it/immagini-beni/4635330/3222253/LOTTO%201%20(1).jpg?versionId=efecf346-a6b5-4886-9a3f-13c7c90797cb';
+  const aste = [{ id: 'pvp-1', titolo: 'Casa', copertina: foto }, { id: 'pvp-2', titolo: 'Box' }];
+  const campi = ['id', 'titolo', 'copertina'];
+  const enc = Formato.codifica(aste, campi);
+  // nel file solo il percorso: il dominio non si ripete in ogni riga
+  assert.equal(enc.righe[0][2], 'immagini-beni/4635330/3222253/LOTTO%201%20(1).jpg?versionId=efecf346-a6b5-4886-9a3f-13c7c90797cb');
+  assert.doesNotMatch(JSON.stringify(enc), /resource-pvp/);
+  assert.deepEqual(enc.righe[1], ['pvp-2', 'Box']);
+  assert.deepEqual(Formato.decodifica(JSON.parse(JSON.stringify(enc))), aste);
+  // in scrittura: indirizzi di altri siti, http, non immagini o con caratteri strani non si salvano
+  const rifiutati = ['https://esempio.invalid/a.jpg', 'http://resource-pvp.giustizia.it/a.jpg', 'https://resource-pvp.giustizia.it.esempio.invalid/a.jpg',
+    'https://resource-pvp.giustizia.it/allegati/1/perizia.pdf', 'https://resource-pvp.giustizia.it/immagini-beni/1/a b.jpg', 'https://resource-pvp.giustizia.it/../x.jpg',
+    'javascript:alert(1)//a.jpg', '//esempio.invalid/a.jpg', 'immagini-beni/1/a.jpg"onerror="x', 42, { url: foto }];
+  for (const v of rifiutati) assert.deepEqual(Formato.codifica([{ id: 'x', copertina: v }], ['id', 'copertina']).righe[0], ['x'], 'scritta: ' + JSON.stringify(v));
+  // in lettura: un file modificato a mano con un indirizzo completo di un altro sito non passa
+  const letto = Formato.decodifica({ versione: 2, campi: ['id', 'copertina'], dizionari: {}, prefissi: [],
+    righe: [['a', 'https://esempio.invalid/a.jpg'], ['b', '//esempio.invalid/b.jpg'], ['c', 'immagini-beni/../../c.jpg'], ['d', 'immagini-beni/1/d.webp'], ['e', foto]] });
+  assert.deepEqual(letto, [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd', copertina: 'https://resource-pvp.giustizia.it/immagini-beni/1/d.webp' }, { id: 'e', copertina: foto }]);
+  assert.equal(Formato.copertina('https://esempio.invalid/a.jpg'), null);
+  assert.equal(Formato.copertina(foto), foto);
+});
+
+test('formato compatto: copertina da un data/aste.js manomesso, codifiche strane e indirizzi che il browser riscriverebbe', () => {
+  const ok = 'immagini-beni/1/2/LOTTO%201%20(1)%5Bb%5D%C3%A0.jpg?versionId=efecf346-a6b5';
+  assert.equal(Formato.copertina(ok), 'https://resource-pvp.giustizia.it/' + ok);
+  // "%" solo con due cifre esadecimali; mai un punto codificato ("%2e%2e" il browser lo legge come "..") o un carattere di controllo
+  for (const v of ['immagini-beni/%2e%2e/%2E%2e/x.jpg', 'immagini-beni/.%2e/x.jpg', 'immagini-beni/%zz/x.jpg', 'immagini-beni/%2/x.jpg', 'immagini-beni/x%.jpg',
+    'immagini-beni/%00/x.jpg', 'immagini-beni/%0a/x.jpg', 'immagini-beni/%1F/x.jpg', 'immagini-beni/%7f/x.jpg', 'immagini-beni/x.jpg?v=%0d%0a',
+    'immagini-beni/x.jpg\n', ' immagini-beni/x.jpg', 'immagini-beni/x.jpg#a', 'immagini-beni\\x.jpg', '\\\\esempio.invalid/x.jpg', '/\\esempio.invalid/x.jpg',
+    'immagini-beni/x.jpg?a=b?c', 'immagini-beni/@esempio.invalid/x.jpg', 'https://resource-pvp.giustizia.it//esempio.invalid/x.jpg',
+    'HTTPS://resource-pvp.giustizia.it/x/x.jpg', 'https://resource-pvp.giustizia.it@esempio.invalid/x.jpg', 'immagini-beni/x.jpg' + 'a'.repeat(400) + '.jpg']) {
+    assert.equal(Formato.copertina(v), null, JSON.stringify(v));
+  }
+  // ogni indirizzo accettato resta sul dominio delle foto e il browser non lo riscrive (niente ".." nascosti)
+  const pezzi = ['a', 'Z', '0', '.', '..', '%2e', '%2f', '%5c', '%20', '%', '/', '//', '\\', ':', '@', '?', '#', '&', '=', '~', '(', "'", '"', '<', 'jpg', '.jpg', '\t', '%0a', '-'];
+  let semi = 7, accettati = 0;
+  const caso = () => { semi = (semi * 1103515245 + 12345) % 2147483648; return semi; };
+  for (let n = 0; n < 20000; n++) {
+    let v = 'immagini-beni/';
+    const k = 1 + (caso() % 8);
+    for (let i = 0; i < k; i++) v += pezzi[caso() % pezzi.length];
+    v += ['.jpg', '.png', '.jpg?versionId=1', ''][caso() % 4];
+    const u = Formato.copertina(v);
+    if (!u) continue;
+    accettati++;
+    const url = new URL(u);
+    assert.equal(url.origin, 'https://resource-pvp.giustizia.it', v);
+    assert.equal(url.href, u, 'riscritto dal browser: ' + v);
+    assert.doesNotMatch(u.slice(8), /[\s"<>\\#@:]|\/\/|%(?![0-9A-Fa-f]{2})|%2e/i, v);
+  }
+  assert.ok(accettati > 100, 'il generatore produce anche indirizzi validi: ' + accettati);
+  // in lettura la copertina si controlla anche se arriva da un dizionario o da un prefisso aggiunti a mano nel file
+  const letto = Formato.decodifica({ versione: 2, campi: ['id', 'copertina'], dizionari: { copertina: ['javascript:alert(1)//a.jpg', 'immagini-beni/1/d.jpg'] },
+    prefissi: [], righe: [['a', 0], ['b', 1]] });
+  assert.deepEqual(letto, [{ id: 'a' }, { id: 'b', copertina: 'https://resource-pvp.giustizia.it/immagini-beni/1/d.jpg' }]);
+  // formato più vecchio (dati.aste): stessa regola, l'oggetto originale non si tocca
+  const vecchie = [{ id: 'v1', copertina: 'https://esempio.invalid/a.jpg' }, { id: 'v2', copertina: 'immagini-beni/1/e.png' }, { id: 'v3' }];
+  assert.deepEqual(Formato.decodifica({ aste: vecchie }), [{ id: 'v1' }, { id: 'v2', copertina: 'https://resource-pvp.giustizia.it/immagini-beni/1/e.png' }, { id: 'v3' }]);
+  assert.equal(vecchie[0].copertina, 'https://esempio.invalid/a.jpg');
+  assert.equal(Formato.decodifica({ aste: vecchie })[2], vecchie[2]);
 });

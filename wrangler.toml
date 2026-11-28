@@ -1,0 +1,15 @@
+# Cloudflare Pages per Radar Aste Italia (guida completa in ABBONAMENTI.md).
+#
+# QUI NESSUNA CHIAVE E NESSUN SEGRETO. Le variabili d'ambiente delle funzioni (STRIPE_SECRET_KEY,
+# SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY...) si impostano SOLO nel pannello di Cloudflare: Workers e Pages →
+# progetto → Impostazioni → Variabili e segreti, tipo "Segreto".
+#
+# Il sito si prepara nella cartella _site (passo "Prepara il sito" del workflow quotidiano). Le funzioni in functions/
+# (con il codice condiviso di servizi/) le impacchetta wrangler al momento della pubblicazione, che parte dalla
+# radice del repository.
+
+# nome del progetto su Cloudflare Pages: lo stesso della variabile CF_PAGES_PROGETTO del repository GitHub
+name = "radaraste"
+pages_build_output_dir = "_site"
+# data fissa: le funzioni girano sempre con le regole di Cloudflare di questa data, anche quando Cloudflare cambia
+compatibility_date = "2026-10-01"

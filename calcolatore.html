@@ -42,7 +42,7 @@
     <form class="panel stack" id="fImm" autocomplete="off">
       <div>
         <h2>Dati dell'asta</h2>
-        <p class="note">Prendili dall'avviso di vendita e dalla perizia. L'offerta minima ammessa è il 75% del prezzo base (art. 571 c.p.c.).</p>
+        <p class="note">Prendili dall'avviso di vendita e dalla perizia. L'offerta minima ammessa è il 75% del prezzo base (art. 571 c.p.c.), salvo un importo diverso scritto nell'avviso.</p>
       </div>
       <div class="fields">
         <label>Prezzo base (€)<input type="number" id="iBase" min="0" step="1000" inputmode="decimal"></label>
@@ -51,6 +51,7 @@
         <label class="wide">Regime fiscale<select id="iRegime"></select></label>
         <label>Rendita catastale (€)<input type="number" id="iRendita" min="0" step="10" inputmode="decimal" placeholder="dalla visura"></label>
       </div>
+      <p class="note" id="iValoreSito" hidden></p>
       <h3>Costi oltre all'offerta</h3>
       <div class="fields">
         <label>Condominio arretrato anno in corso (€)<input type="number" id="iCondCorr" min="0" step="100" inputmode="decimal"></label>
@@ -58,6 +59,7 @@
         <label>Lavori / ristrutturazione (€)<input type="number" id="iLavori" min="0" step="500" inputmode="decimal"></label>
         <label>Stato dell'immobile<select id="iOccupazione">
           <option value="0">Libero</option>
+          <option value="3000">Occupato, non si sa da chi (stima prudente 3.000 €, come la scheda)</option>
           <option value="1500">Occupato dal debitore (stima 1.500 €)</option>
           <option value="3000">Occupato da terzi senza titolo (stima 3.000 €)</option>
           <option value="6000">Locato con contratto opponibile (stima 6.000 € + tempi)</option>
@@ -111,6 +113,7 @@
         <label>IVA sui diritti<select id="vIvaDiritti"><option value="1">Sì, 22%</option><option value="0">No</option></select></label>
         <label>IVA sul prezzo<select id="vIvaPrezzo"><option value="0">No (venditore privato)</option><option value="1">Sì, 22% (venditore impresa)</option></select></label>
       </div>
+      <p class="note" id="vValoreSito" hidden></p>
       <div class="fields" id="vPassaggio">
         <label class="vAuto">Potenza (kW)<input type="number" id="vKw" min="1" step="1" inputmode="numeric" value="70"></label>
         <label>Provincia di residenza (IPT)<select id="vProvincia"></select></label>
