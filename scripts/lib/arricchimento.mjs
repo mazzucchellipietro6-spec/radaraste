@@ -29,10 +29,10 @@ const RISCHI_PER = {
 };
 
 // campi della scheda che vengono dal dettaglio /restricted (si conservano da una raccolta all'altra)
-export const DAL_DETTAGLIO = ['descrizione', 'foto', 'fotoTotali', 'allegati', 'catasto', 'vani', 'piano', 'cauzione', 'cauzionePerc',
+export const DAL_DETTAGLIO = ['descrizione', 'foto', 'fotoKb', 'fotoTotali', 'allegati', 'catasto', 'vani', 'piano', 'cauzione', 'cauzionePerc',
   'contoSpese', 'contoSpesePerc', 'modalita', 'tipoVendita', 'rialzo', 'stima', 'termineOfferte', 'rge', 'annoProcedura', 'rito', 'esito'];
 // dati lunghi della scheda (oltre ai campi corti dell'elenco); i campi del punteggio si ricalcolano ogni volta
-export const LUNGHI = ['descrizione', 'foto', 'fotoTotali', 'allegati', 'catasto', 'vani', 'piano', 'cauzione', 'cauzionePerc', 'contoSpese',
+export const LUNGHI = ['descrizione', 'foto', 'fotoKb', 'fotoTotali', 'allegati', 'catasto', 'vani', 'piano', 'cauzione', 'cauzionePerc', 'contoSpese',
   'contoSpesePerc', 'modalita', 'tipoVendita', 'rito', 'esito', 'rge', 'rischi', 'superficieDa', 'superficieProva', 'storico', 'storicoNota'];
 export const DAL_PUNTEGGIO = ['valoreEtichetta', 'parti', 'mancanti', 'controlli', 'zona', 'omi', 'limitato'];
 // campi corti del punteggio (Punteggio.compatto)
@@ -45,14 +45,24 @@ const CORTI = ['tentativo', 'rischi', 'superficieMq', 'deserte', 'primoPrezzo', 
 // campi dell'elenco che non si ripetono nel pezzo: la copertina è già la prima delle foto della scheda
 const SOLO_ELENCO = ['copertina'];
 
-// Foto di copertina per l'elenco e le card: la prima foto della scheda che sia un'immagine di resource-pvp.giustizia.it
-// (js/formato.js), o null. Mai una foto che la scheda non ha.
-export function copertinaDa(foto) {
-  for (const f of Array.isArray(foto) ? foto : []) {
+// Foto di copertina per l'elenco, le card e la mappa: un'immagine di resource-pvp.giustizia.it (js/formato.js) tra quelle
+// della scheda, o null. Mai una foto che la scheda non ha. Il Portale dà solo i file originali (da 0,1 a quasi 4 MB, verifica
+// del 28/11/2026): con il peso di ogni foto (kb, stesso ordine) si prende la prima fino a LEGGERA_KB, altrimenti la più
+// leggera; senza pesi (schede lette prima del 28/11) la prima, come prima.
+export const LEGGERA_KB = 700;
+export function copertinaDa(foto, kb) {
+  const valide = [];
+  (Array.isArray(foto) ? foto : []).forEach((f, i) => {
     const u = Formato.copertina(typeof f === 'string' ? f : f && (f.url || f.src));
-    if (u) return u;
-  }
-  return null;
+    const peso = Array.isArray(kb) && Number.isFinite(kb[i]) && kb[i] > 0 ? kb[i] : null;
+    if (u) valide.push({ u, peso });
+  });
+  if (!valide.length) return null;
+  const leggera = valide.find((v) => v.peso != null && v.peso <= LEGGERA_KB);
+  if (leggera) return leggera.u;
+  const pesate = valide.filter((v) => v.peso != null);
+  if (pesate.length === valide.length) return pesate.reduce((a, b) => (b.peso < a.peso ? b : a)).u;
+  return valide[0].u;
 }
 
 const PEZZO = /^([0-9a-f]{2})\.js$/;
@@ -168,7 +178,7 @@ export function componi(a, { vecchiaScheda = null, nuovoDettaglio = null, prima 
     corti.stima = det.stima;
     corti.termineOfferte = det.termineOfferte;
     corti.nFoto = det.fotoTotali || (det.foto ? det.foto.length : 0);
-    corti.copertina = copertinaDa(det.foto);
+    corti.copertina = copertinaDa(det.foto, det.fotoKb);
     corti.annoProcedura = det.annoProcedura;
     corti.dettaglio = det.dettaglio;
     if (det.rialzo > 0) corti.rialzo = det.rialzo;

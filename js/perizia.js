@@ -302,10 +302,12 @@
   // Una frase rassicurante negata non è rassicurante: "non è libero", "non si presenta in buono stato" (negazione
   // subito prima), "gli impianti non sono a norma", "la planimetria catastale non è conforme" (dentro, dove la regola
   // salta qualche parola), "il certificato di agibilità n. 45 non è stato rinvenuto" (subito dopo, nella stessa frase).
-  // Dentro e dopo non valgono per i temi le cui frasi rassicuranti sono già negazioni ("non risultano vincoli").
+  // Dentro e dopo non valgono per i temi le cui frasi rassicuranti sono già negazioni ("non risultano vincoli"); prima
+  // non vale davanti a una frase già negativa ("..., non è recintato e non vi è condominio"), ma sì davanti a "libero da"
+  // ("non è libero da vincoli").
   var NON_DOPO = R(/^[^.;:,]{0,60}?\bnon\s+(?:(?:(?:è|sono|risulta|risultano|sia|siano|appare|appaiono)\s+)(?:stat[oaie]\s+)?(?:(?:mai|ancora|più)\s+)?(?:conform|corrispond|regolar|rilasciat|reperit|rinvenut|present[ei]\b|depositat|aggiornat|a\s+norma|valid|in\s+buon)|sussist|corrispond)/i);
   function okRovesciato(tema, f, ok) {
-    var negativa = /^(?:non|nessun\w*|assenza|senza|liber[oaie]\s+da)\b/i.test(ok[0]);
+    var negativa = /^(?:non|nessun\w*|assenza|senza)\b/i.test(ok[0]);
     if (!negativa && /\bnon\s+(?:[\w']+\s+){0,4}$/i.test(f.slice(Math.max(0, ok.index - 45), ok.index))) return true;
     if (tema.okNegato) return false;
     return /\bnon\b/i.test(ok[0]) || NON_DOPO.test(f.slice(ok.index + ok[0].length));

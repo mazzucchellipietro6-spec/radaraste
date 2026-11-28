@@ -58,3 +58,26 @@ test('"Azzera i filtri" toglie anche la distanza, che conta tra i filtri attivi'
   assert.match(togli, /disegnaCerchio\(\);/);
   assert.match(togli, /cambiaFiltri\(\);/);
 });
+
+test('link verso l\'elenco: vicino alla persona la zona non va nell\'indirizzo ed è allargata a circa 10 km', () => {
+  const link = js.slice(js.indexOf('function linkElenco('), js.indexOf('function bboxVista()'));
+  assert.match(link, /var privato = !!f\.bbox && vicinoATe\(\);/);
+  assert.match(link, /if \(privato\) \{ f = copia\(f\); f\.bbox = bboxLargo\(f\.bbox\); \}/);
+  assert.match(link, /el\.href = vuoto \|\| privato \? 'aste\.html' : 'aste\.html\?filtri=' \+ encodeURIComponent\(j\);/);
+  assert.match(js, /function vicinoATe\(\) \{ return !!mappa && \(!!\(raggio && raggio\.te\) \|\| vistaSuDiTe\(mappa\.getCenter\(\)\)\); \}/);
+  // allargata verso l'esterno a 0,1°
+  const largo = js.slice(js.indexOf('function bboxLargo('), js.indexOf('function bboxLargo(') + 260);
+  assert.match(largo, /Math\.floor\(x \* 10\) \/ 10/);
+  assert.match(largo, /Math\.ceil\(x \* 10\) \/ 10/);
+  assert.match(html, /la zona passa dentro il browser, allargata a circa 10 km/);
+});
+
+test('miniature delle foto nelle voci: solo immagini del Portale, senza testo alternativo, con la stessa regola delle card', () => {
+  const f = js.slice(js.indexOf('function miniatura(a)'), js.indexOf('function voce(a)'));
+  assert.match(f, /F\.copertina\(a\.copertina\)/, 'solo indirizzi validati da js/formato.js');
+  assert.match(f, /alt=""/);
+  assert.match(f, /referrerpolicy="no-referrer"/);
+  assert.match(f, /data-copertina/, 'js/ui.js toglie le foto che non si aprono');
+  assert.match(f, /: '';/, 'senza foto, niente miniatura');
+  assert.match(js, /'<\/small><\/span>' \+ miniatura\(a\) \+ '<\/button><\/li>'/);
+});

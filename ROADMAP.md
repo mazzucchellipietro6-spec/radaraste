@@ -167,6 +167,7 @@ Ultimo aggiornamento: 28/11/2026 (mappa più interattiva e lettore della perizia
   - quando l'avviso ha delle foto, la prima compare in alto nelle card di home, elenco, affari e mappa; se non si apre torna l'icona;
   - le schede lette ogni giorno passano da 600 a 1000, con le stesse pause;
   - oggi le foto sono pubblicate per circa metà delle aste di cui si legge il dettaglio.
+  - dal 28/11 anche una miniatura in ogni voce dell'elenco della mappa; e la copertina è la prima foto leggera dell'immobile (fino a circa 700 KB, altrimenti la più leggera): il Portale dà solo i file originali, da 0,1 a quasi 4 MB. La galleria della scheda resta con tutte le foto. Vale per le schede lette da ora in poi.
 - ✅ **Squadra quotidiana** attiva dal 20/10 ([SQUADRA.md](SQUADRA.md)). Dal 26/10 lavora leggera: al massimo 3 agenti al giorno.
 
 ---
@@ -215,6 +216,9 @@ Ultimo aggiornamento: 28/11/2026 (mappa più interattiva e lettore della perizia
   - le perizie contengono nomi e codici fiscali: nel sito andrebbero solo gli esiti per tema ("abusi: da verificare"), mai le frasi;
   - prima vanno rilette le condizioni d'uso del Portale per questo uso.
 - **Perizie scansionate.** Per leggerle servirebbe il riconoscimento del testo (OCR). Si può fare gratis nel browser (Tesseract.js, alcuni MB e qualche decina di secondi per perizia), oppure con un servizio AI a pagamento che capirebbe anche il contesto: i costi vanno in `CONSULENTE.md` e decidi tu.
+- **Testi legali e posizione.** La pagina dei cookie ora dice che i filtri della mappa possono contenere il centro del cerchio della distanza; l'informativa privacy (bozza) non parla ancora della posizione né delle tile di OpenStreetMap, che vedono la zona guardata come in ogni mappa. Sono testi tuoi da approvare.
+- **Mappa, ritocchi minori trovati dal Revisore:** «Sconto minimo» non passa all'elenco, che non ha questo filtro; i numeri della ricerca dei luoghi non tengono conto dei filtri; con «Vicino a me» l'elenco riceve un riquadro di circa 10 km invece del cerchio.
+- **Lettore, ritocchi minori:** avviso quando solo alcune pagine sono scansionate; avanzamento annunciato meno spesso ai lettori di schermo; altre frasi da riconoscere («la conformità urbanistica non sussiste») e altri falsi allarmi da togliere.
 - **Prova con il tuo browser.** Il Portale permette di leggere le perizie da altri siti (intestazioni CORS presenti), ma il suo firewall blocca i browser automatici che uso per le prove, e non l'ho aggirato. Quindi "Leggi la perizia" è provato fino allo scarico. Dopo il Merge provalo su un immobile: se il Portale non lo lascia scaricare, la scheda lo dice e propone di scegliere il PDF a mano, che funziona.
 
 **Nuove del 30/10-2/11:**

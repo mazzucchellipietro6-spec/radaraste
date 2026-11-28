@@ -173,15 +173,19 @@ export function cauzione(s) {
 }
 
 const IMMAGINE = /\.(jpe?g|png|webp|gif)(\?|$)/i;
+// foto del bene, in ordine: { url, kb } (kb = peso dichiarato dal Portale in dimensioneAllegato, o null)
 function foto(beni) {
-  const out = [];
+  const out = [], visti = new Set();
   for (const b of beni) {
     for (const a of b.allegati || []) {
       const link = a && a.linkAllegato;
       if (!link) continue;
       if (!(/IMMAGINE/i.test(a.descrizione || '') || /^\/?immagini-beni\//.test(link)) || !IMMAGINE.test(link) || !nomeFileSicuro(link)) continue;
       const u = urlRisorsa(link);
-      if (u && !out.includes(u)) out.push(u);
+      if (!u || visti.has(u)) continue;
+      visti.add(u);
+      const byte = Number(a.dimensioneAllegato);
+      out.push({ url: u, kb: Number.isFinite(byte) && byte > 0 ? Math.max(1, Math.round(byte / 1024)) : null });
     }
   }
   return out;
@@ -227,7 +231,9 @@ export function estrai(b, { oggi, descLotto } = {}) {
   const s = {
     dettaglio: oggi || new Date().toISOString().slice(0, 10),
     descrizione: descrizione(descLotto || lotto.descLotto, beni),
-    foto: fotoTutte.slice(0, MAX_FOTO),
+    foto: fotoTutte.slice(0, MAX_FOTO).map((f) => f.url),
+    // peso in KB di ogni foto della galleria (stesso ordine): serve a scegliere una copertina leggera per card e mappa
+    fotoKb: fotoTutte.slice(0, MAX_FOTO).map((f) => f.kb),
     fotoTotali: fotoTutte.length,
     allegati: allegati(b.allegati),
     catasto: catasto(beni),

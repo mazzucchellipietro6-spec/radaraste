@@ -428,3 +428,26 @@ test('copertina: non resta quella vecchia quando la scheda salvata cambia o non 
     assert.equal('nFoto' in aste[2], false);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test('copertina leggera: la prima foto fino a 700 KB, altrimenti la più leggera; senza pesi la prima (28/11)', () => {
+  const R = 'https://resource-pvp.giustizia.it/immagini-beni/1/2/';
+  // il Portale dà solo i file originali: si sceglie una foto leggera per card e mappa, la galleria resta com'è
+  assert.equal(copertinaDa([R + 'a.jpg', R + 'b.jpg', R + 'c.jpg'], [3800, 650, 120]), R + 'b.jpg');
+  assert.equal(copertinaDa([R + 'a.jpg', R + 'b.jpg'], [2900, 1600]), R + 'b.jpg', 'tutte pesanti: la più leggera');
+  assert.equal(copertinaDa([R + 'a.jpg', R + 'b.jpg'], [500, 100]), R + 'a.jpg', 'la prima, se è già leggera');
+  assert.equal(copertinaDa([R + 'a.jpg', R + 'b.jpg']), R + 'a.jpg', 'schede lette prima: la prima');
+  assert.equal(copertinaDa([R + 'a.jpg', R + 'b.jpg'], [null, 3000]), R + 'a.jpg', 'pesi incompleti: la prima');
+  // un indirizzo non valido non diventa copertina nemmeno se è il più leggero
+  assert.equal(copertinaDa(['https://esempio.invalid/x.jpg', R + 'b.jpg'], [10, 2000]), R + 'b.jpg');
+  // dal dettaglio del Portale: il peso arriva da dimensioneAllegato, in KB, nello stesso ordine delle foto
+  const c = corpo();
+  c.beni[0].allegati = [
+    { descrizione: 'IMMAGINE BENE', linkAllegato: '/immagini-beni/77/1/grande.jpg?versionId=a', dimensioneAllegato: 2764139 },
+    { descrizione: 'IMMAGINE BENE', linkAllegato: '/immagini-beni/77/1/piccola.jpg?versionId=b', dimensioneAllegato: 110000 }
+  ];
+  const s = estrai(c, { oggi: OGGI });
+  assert.deepEqual(s.fotoKb, [2699, 107]);
+  assert.match(s.foto[0], /grande\.jpg/, 'galleria nello stesso ordine');
+  const x = componi(asta(), { nuovoDettaglio: c, oggi: OGGI });
+  assert.match(x.corti.copertina, /piccola\.jpg/);
+});

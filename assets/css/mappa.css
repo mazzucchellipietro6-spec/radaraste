@@ -294,3 +294,10 @@
 @media (prefers-reduced-motion: reduce) { .m-sopra span { animation: none; } .m-prezzo span { transition: none; } }
 /* su computer il riquadro della regione sta sotto la ricerca dei luoghi */
 @media (min-width: 900px) { .m-regione { top: 66px; max-height: calc(100% - 252px); } }
+
+/* miniatura della foto dell'annuncio nelle voci della zona e dello stesso punto (28/11) */
+.m-voce { grid-template-columns: 40px minmax(0, 1fr) auto; }
+.m-mini { width: 64px; height: 48px; border-radius: var(--r-1); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); flex: none; }
+.m-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.m-mini.senza-foto { display: none; }
+@media (max-width: 899px) { .m-mini { width: 56px; height: 42px; } }
