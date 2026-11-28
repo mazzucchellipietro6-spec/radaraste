@@ -243,7 +243,9 @@ test('nome accessibile che comincia con il testo visibile (WCAG 2.5.3): ricerca 
   assert.ok(btn, 'pulsante di ricerca');
   assert.ok(btn[2].startsWith(btn[1]), btn[1] + ' ≠ ' + btn[2]);
   const mappa = await readFile(path.join(RADICE, 'js/pages/mappa.js'), 'utf8');
-  assert.match(mappa, /\$\('#mApriZona'\)\.setAttribute\('aria-label', breve\(conta\) \+ ' ' \+ \(conta === 1 \? 'asta' : 'aste'\) \+ ' qui · le migliori/);
+  // la pillola: il nome comincia con il suo testo visibile (letto dall'elemento stesso, qualunque sia l'ordinamento scelto)
+  assert.match(mappa, /\$\('#mApriZona'\)\.setAttribute\('aria-label', \$\('#mPillTesto'\)\.textContent \+ ': '/);
+  assert.match(mappa, /\$\('#mPillTesto'\)\.innerHTML = '<b>' \+ breve\(conta\) \+ '<\/b> ' \+ \(conta === 1 \? 'asta' : 'aste'\) \+ ' qui · '/);
 });
 
 test('Stratega, «Il patrimonio nel tempo»: «Cosa non sappiamo» con lo stesso stile delle liste «Ipotesi» e «Fonti»', async () => {

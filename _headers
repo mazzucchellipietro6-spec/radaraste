@@ -31,16 +31,17 @@
 #
 # Referrer-Policy: verso gli altri siti va solo l'indirizzo del sito, senza pagina né parametri. Le regole d'uso
 # delle tile e di Nominatim di OpenStreetMap chiedono che il sito si faccia riconoscere: non usare no-referrer.
-# Permissions-Policy: spegne fotocamera, microfono, posizione, pagamenti nel browser e sensori, che il sito non usa.
-# "Condividi" (scheda dell'asta) e lo schermo intero restano permessi al sito, come di norma. Se un giorno servirà
-# la posizione ("vicino a me"), cambia geolocation=(self).
+# Permissions-Policy: spegne fotocamera, microfono, pagamenti nel browser e sensori, che il sito non usa. La posizione
+# resta permessa solo al sito (geolocation=(self)) per "Vicino a me" della mappa: la chiede il browser, e il punto resta
+# nella scheda del browser (mai inviato, mai nei link).
+# "Condividi" (scheda dell'asta, vista della mappa) e lo schermo intero (mappa) restano permessi al sito, come di norma.
 
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-AuRrEURHuEvIPVaIwyFxbQnSFt5SRQtPHQyFcTZ7IAE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org https://resource-pvp.giustizia.it; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org https://resource-pvp.giustizia.it https://*.supabase.co https://tiles.openfreemap.org https://tile.openstreetmap.org; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), midi=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=(), browsing-topics=()
+  Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(), usb=(), serial=(), hid=(), midi=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=(), browsing-topics=()
   Cross-Origin-Opener-Policy: same-origin
   Strict-Transport-Security: max-age=31536000
 

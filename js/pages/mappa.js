@@ -12,6 +12,11 @@
  * - Mappa di calore degli sconti (interruttore nei filtri, js/calore.js): quadrati di circa 40 px disegnati su una tela
  *   sotto i puntini, colorati con lo sconto medio delle sole aste con valore di affidabilità media o alta (almeno 3).
  *
+ * - Più interattiva (27/11/2026): "Colora per" punteggio, sconto (solo affidabilità media o alta) o data dell'asta; prezzo
+ *   base sui puntini quando si avvicina la mappa; ricerca di un luogo (regioni, province, comuni e tribunali con aste);
+ *   "Vicino a me" o un punto scelto con un cerchio di 5-100 km (la posizione resta nel browser, mai nei link);
+ *   filtri per data dell'asta e sconto minimo; elenco della zona ordinabile e collegato ai puntini; link della vista.
+ *
  * Il file parte prima di data/aste.js (sfondo e confini compaiono subito); le aste si leggono a DOMContentLoaded. */
 (function () {
   'use strict';
@@ -30,8 +35,12 @@
   var AFFIDABILE = { media: 1, alta: 1 };
   var K_FILTRI = 'radaraste.mappa.filtri', K_VISTA = 'radaraste.mappa.vista', K_AVVISO = 'radaraste.mappa.avvisoChiuso', K_STRATI = 'radaraste.mappa.strati';
   var CAL = window.Calore, PAD_CALORE = 0.1, OPACITA_CALORE = 0.82;
-  var VUOTI = { cat: '', max: '', pmin: 0, libere: false, conPunteggio: false, seguite: false };
+  var VUOTI = { cat: '', max: '', pmin: 0, libere: false, conPunteggio: false, seguite: false, giorni: 0, smin: 0 };
+  var GIORNI = [7, 14, 30, 60, 90], SCONTI = [0.1, 0.2, 0.3, 0.4], KM = [5, 10, 25, 50, 100];
+  var ZOOM_PREZZI = 12.5;                                 // da qui il puntino singolo mostra il prezzo base
+  var MODI = ['punteggio', 'sconto', 'data'];
   var MENO = '<svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>';
+  var SCHERMO = '<svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
   var CHIUDI = '<button class="m-x" type="button" data-chiudi aria-label="Chiudi">' + U.icona('chiudi') + '</button>';
   var MANIGLIA = '<span class="maniglia" aria-hidden="true"></span>';
 
@@ -42,7 +51,8 @@
   var filtri = copia(VUOTI), extra = {}, parole = [], OGGI = '';
   var fallback = false, primi = false, datiPronti = false, timerRegione = null, inAttesa = false, ritornoFuoco = null;
   var tileOk = 0, tileKo = 0;
-  var strati = { puntini: true, calore: false }, calore = null, celle = null, versione = 0, cacheXY = null;
+  var strati = { puntini: true, calore: false, prezzi: true, colore: 'punteggio' }, calore = null, celle = null, versione = 0, cacheXY = null;
+  var raggio = null, cerchio = null, distanze = {}, sceltaPunto = false, ordineZona = 'migliori', luoghi = null, sopra = null, LIMITE = '', vistaUrl = null;
   var cellaSopra = null, cellaFissa = null, COLC = null, timerCella = null;
 
   /* ---------- utilità ---------- */
@@ -72,6 +82,27 @@
     if (v == null || v === '') return null;
     v = Number(v);
     return isFinite(v) ? v : null;
+  }
+  // sconto usato per colori e filtri: solo con valore di affidabilità media o alta (come la mappa di calore)
+  function scontoAffidabile(a) { var s = sconto(a); return s != null && AFFIDABILE[a.affidabilita] ? s : null; }
+  function piuGiorni(data, g) { var d = new Date(data + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + g); return d.toISOString().slice(0, 10); }
+  function giorniA(a) {
+    if (!a.dataAsta || !/^\d{4}-\d{2}-\d{2}/.test(a.dataAsta)) return null;
+    var g = Math.round((Date.parse(a.dataAsta.slice(0, 10) + 'T12:00:00Z') - Date.parse(OGGI + 'T12:00:00Z')) / 864e5);
+    return isFinite(g) && g >= 0 ? g : null;
+  }
+  function distanzaKm(lat1, lng1, lat2, lng2) {
+    var r = Math.PI / 180, dLat = (lat2 - lat1) * r, dLng = (lng2 - lng1) * r;
+    var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  }
+  function km(d) { return d < 10 ? (Math.round(d * 10) / 10).toLocaleString('it-IT') + ' km' : Math.round(d) + ' km'; }
+  // prezzo sul puntino: 950 €, 85k €, 1,2 mln €
+  function prezzoBreve(x) {
+    if (x >= 999500) return (Math.round(x / 100000) / 10).toLocaleString('it-IT') + ' mln €';
+    if (x >= 10000) return Math.round(x / 1000) + 'k €';
+    if (x >= 1000) return (Math.round(x / 100) / 10).toLocaleString('it-IT') + 'k €';
+    return Math.round(x) + ' €';
   }
   function fascia(p) {
     var P = window.Punteggio;
@@ -138,6 +169,7 @@
   function filtriAttivi() {
     var n = 0;
     if (filtri.cat) n++; if (filtri.max) n++; if (filtri.pmin) n++; if (filtri.libere) n++; if (filtri.conPunteggio) n++; if (filtri.seguite) n++;
+    if (filtri.giorni) n++; if (filtri.smin) n++; if (raggio) n++;
     Object.keys(extra).forEach(function (k) { if (k !== 'ordina') n++; });
     return n;
   }
@@ -147,7 +179,7 @@
   // filtri arrivati dall'elenco (?filtri=<json> o data-passa="filtri:<json>"): quelli che la mappa conosce diventano controlli,
   // gli altri (testo, regione, provincia, comune, tribunale, prezzo minimo, date, zona) restano attivi e si vedono come etichette
   function daElenco(f) {
-    filtri = copia(VUOTI); extra = {};
+    filtri = copia(VUOTI); extra = {}; raggio = null;
     if (f.cat && NOMI_CAT[f.cat]) filtri.cat = f.cat;
     if (+f.max > 0) filtri.max = String(+f.max);
     if (f.stato === 'libero') filtri.libere = true; else if (f.stato) extra.stato = String(f.stato);
@@ -155,6 +187,8 @@
     if (pm > 0 && pm <= 100) filtri.pmin = pm;
     if (f.soloConPunteggio || f.conPunteggio) filtri.conPunteggio = true;
     if (f.seguite) filtri.seguite = true;
+    if (GIORNI.indexOf(+f.giorni) >= 0) filtri.giorni = +f.giorni;
+    if (SCONTI.indexOf(+f.smin) >= 0) filtri.smin = +f.smin;
     ['testo', 'regione', 'provincia', 'comune', 'tribunale', 'dal', 'al'].forEach(function (k) { if (f[k]) extra[k] = String(f[k]).trim(); });
     if (+f.min > 0) extra.min = String(+f.min);
     if (bboxValido(f.bbox)) extra.bbox = f.bbox.map(Number);
@@ -164,6 +198,7 @@
   function leggiFiltri() {
     var s = leggiSessione(K_FILTRI);
     if (s && s.filtri) { for (var k in VUOTI) if (k in s.filtri) filtri[k] = s.filtri[k]; extra = s.extra || {}; }
+    raggio = s && raggioValido(s.raggio) ? s.raggio : null;
     var arrivo = null, nellUrl = new URLSearchParams(location.search).get('filtri');
     try { arrivo = U.parametro('filtri'); } catch (e) {}
     // se i filtri sono nell'indirizzo, il valore lasciato in sessionStorage dallo stesso link è già usato
@@ -171,7 +206,12 @@
     if (arrivo) { try { var f = JSON.parse(arrivo); if (f && typeof f === 'object') { daElenco(f); return true; } } catch (e) {} }
     return false;
   }
-  function salvaFiltri() { scriviSessione(K_FILTRI, { filtri: filtri, extra: extra }); }
+  // il raggio resta solo in questa scheda del browser (sessionStorage): la posizione non entra nei link
+  function salvaFiltri() { scriviSessione(K_FILTRI, { filtri: filtri, extra: extra, raggio: raggio }); }
+  function raggioValido(r) {
+    return !!r && typeof r === 'object' && isFinite(r.lat) && isFinite(r.lng) && r.lat >= DENTRO.s - 1 && r.lat <= DENTRO.n + 1 &&
+      r.lng >= DENTRO.o - 1 && r.lng <= DENTRO.e + 1 && KM.indexOf(+r.km) >= 0;
+  }
 
   // gli stessi filtri, nel formato dell'elenco (aste.html)
   function perElenco(conZona) {
@@ -183,8 +223,14 @@
     if (filtri.conPunteggio) f.soloConPunteggio = true;
     if (filtri.seguite) f.seguite = true;
     ['testo', 'regione', 'provincia', 'comune', 'tribunale', 'min', 'dal', 'al', 'ordina'].forEach(function (k) { if (extra[k]) f[k] = extra[k]; });
-    if (conZona && mappa) f.bbox = bboxVista(); else if (extra.bbox) f.bbox = extra.bbox;
+    // l'elenco non conosce "entro N giorni": diventa la data "al"
+    if (filtri.giorni) { var lim = piuGiorni(oggi(), filtri.giorni); if (!f.al || f.al > lim) f.al = lim; }
+    if (conZona && mappa) f.bbox = bboxVista(); else if (raggio) f.bbox = bboxRaggio(); else if (extra.bbox) f.bbox = extra.bbox;
     return f;
+  }
+  function bboxRaggio() {
+    var dLat = raggio.km / 111.2, dLng = raggio.km / (111.32 * Math.cos(raggio.lat * Math.PI / 180)), r = function (x) { return Math.round(x * 10000) / 10000; };
+    return [r(raggio.lat - dLat), r(raggio.lng - dLng), r(raggio.lat + dLat), r(raggio.lng + dLng)];
   }
   function linkElenco(el, f) {
     var vuoto = !Object.keys(f).length, j = JSON.stringify(f);
@@ -205,6 +251,14 @@
     if (filtri.pmin || filtri.conPunteggio) {
       var p = punti(a);
       if (p == null || (filtri.pmin && p < filtri.pmin)) return false;
+    }
+    if (filtri.giorni && !(a.dataAsta && a.dataAsta.slice(0, 10) <= LIMITE)) return false;
+    if (filtri.smin) { var sa = scontoAffidabile(a); if (sa == null || sa < filtri.smin) return false; }
+    if (raggio) {
+      if (!conPosizione(a)) return false;
+      var d = distanzaKm(raggio.lat, raggio.lng, a.lat, a.lng);
+      if (d > raggio.km) return false;
+      distanze[a.id] = d;
     }
     if (extra.stato && !filtri.libere && a.stato !== extra.stato) return false;
     if (extra.regione && a.regione !== extra.regione) return false;
@@ -231,6 +285,8 @@
   /* ---------- dati ---------- */
   function ricalcola() {
     OGGI = oggi();
+    LIMITE = filtri.giorni ? piuGiorni(OGGI, filtri.giorni) : '';
+    distanze = {};
     parole = senzaAccenti(extra.testo).split(/\s+/).filter(Boolean);
     correnti = []; sulMappa = []; perId = {}; statReg = {}; senzaPos = 0; senzaReg = 0; versione++;
     for (var i = 0; i < tutte.length; i++) {
@@ -256,48 +312,90 @@
     var feats = new Array(sulMappa.length);
     for (var i = 0; i < sulMappa.length; i++) {
       var a = sulMappa[i], p = punti(a);
-      feats[i] = { type: 'Feature', properties: { i: i, p: p == null ? -1 : p }, geometry: { type: 'Point', coordinates: [a.lng, a.lat] } };
+      var sa = scontoAffidabile(a), g = giorniA(a);
+      feats[i] = { type: 'Feature', properties: { i: i, p: p == null ? -1 : p, s: sa == null ? -9 : sa, g: g == null ? 1e6 : g }, geometry: { type: 'Point', coordinates: [a.lng, a.lat] } };
     }
+    // ogni gruppo ricorda il miglior punteggio, lo sconto più alto e la prima data: "Colora per" sceglie quale usare
     indice = new window.Supercluster({
       radius: TOCCO.matches ? 64 : 56, extent: 256, maxZoom: MAX_ZOOM_GRUPPI, minPoints: 2,
-      map: function (pr) { return { best: pr.p }; },
-      reduce: function (acc, pr) { if (pr.best > acc.best) acc.best = pr.best; }
+      map: function (pr) { return { best: pr.p, sb: pr.s, gm: pr.g }; },
+      reduce: function (acc, pr) { if (pr.best > acc.best) acc.best = pr.best; if (pr.sb > acc.sb) acc.sb = pr.sb; if (pr.gm < acc.gm) acc.gm = pr.gm; }
     });
     indice.load(feats);
     generazione++;
   }
 
   /* ---------- marcatori ---------- */
+  // "Colora per": classe di colore, ordine (chi sta sopra) e testo per il puntatore
+  function valoreAsta(a) { return strati.colore === 'sconto' ? scontoAffidabile(a) : strati.colore === 'data' ? giorniA(a) : punti(a); }
+  function valoreGruppo(pr) {
+    if (strati.colore === 'sconto') return pr.sb > -9 ? pr.sb : null;
+    if (strati.colore === 'data') return pr.gm < 1e6 ? pr.gm : null;
+    return pr.best >= 0 ? pr.best : null;
+  }
+  function classeColore(v) {
+    var m = strati.colore;
+    if (m === 'sconto') return v == null ? 'f-nd' : v >= 0.4 ? 'f-ottimo' : v >= 0.25 ? 'f-buono' : v >= 0.1 ? 'f-medio' : 'f-basso';
+    if (m === 'data') return v == null ? 'f-nd' : v <= 7 ? 'd-1' : v <= 30 ? 'd-2' : v <= 90 ? 'd-3' : 'd-4';
+    return 'f-' + fascia(v).chiave;
+  }
+  function ordineColore(v) {
+    if (v == null) return -1;
+    if (strati.colore === 'sconto') return Math.max(0, Math.min(100, Math.round(v * 100)));
+    if (strati.colore === 'data') return Math.max(0, 100 - Math.min(100, Math.round(v / 4)));
+    return Math.round(v);
+  }
+  function testoColore(v, gruppo) {
+    if (strati.colore === 'sconto') {
+      if (v == null) return gruppo ? 'nessuna con sconto affidabile' : 'sconto non stimato o poco affidabile';
+      if (v < 0) return (gruppo ? 'anche la migliore costa ' : 'costo totale sopra il valore del ') + (gruppo ? Math.round(-v * 100) + '% sopra il valore' : Math.round(-v * 100) + '%');
+      return (gruppo ? 'lo sconto più alto è ' : 'sconto ') + Math.round(v * 100) + '%';
+    }
+    if (strati.colore === 'data') return v == null ? 'data non indicata' : (gruppo ? 'la prima asta è ' : 'asta ') + (v === 0 ? 'oggi' : v === 1 ? 'domani' : 'tra ' + v + ' giorni');
+    return v == null ? (gruppo ? 'nessuna con punteggio' : 'senza punteggio') : (gruppo ? 'il migliore ha ' : '') + Math.round(v) + ' punti (' + fascia(v).etichetta.toLowerCase() + ')';
+  }
+  function conPrezzi() { return strati.prezzi && mappa && mappa.getZoom() >= ZOOM_PREZZI; }
   function marcatore(f) {
-    var c = f.geometry.coordinates, pr = f.properties, m;
+    var c = f.geometry.coordinates, pr = f.properties, m, v, cls;
     if (pr.cluster) {
-      var n = pr.point_count, best = pr.best >= 0 ? pr.best : null, fa = fascia(best);
+      var n = pr.point_count;
+      v = valoreGruppo(pr); cls = classeColore(v);
       var d = n < 10 ? 34 : n < 100 ? 40 : n < 1000 ? 48 : 56;
       m = L.marker([c[1], c[0]], {
-        icon: L.divIcon({ className: 'm-gruppo f-' + fa.chiave, iconSize: [d, d], html: '<span>' + breve(n) + '</span>' }),
-        keyboard: false, riseOnHover: true, zIndexOffset: Math.round((best == null ? -1 : best) + 2) * 1000,
-        title: aste(n) + (best != null ? ': il migliore ha ' + Math.round(best) + ' punti (' + fa.etichetta.toLowerCase() + ')' : ', nessuna con punteggio') + '. Clic per avvicinare.'
+        icon: L.divIcon({ className: 'm-gruppo ' + cls, iconSize: [d, d], html: '<span>' + breve(n) + '</span>' }),
+        keyboard: false, riseOnHover: true, zIndexOffset: (ordineColore(v) + 2) * 1000,
+        title: aste(n) + ': ' + testoColore(v, true) + '. Clic per avvicinare.'
       });
       m._gruppo = pr.cluster_id;
       return m;
     }
-    var a = sulMappa[pr.i], p = punti(a), fp = fascia(p), s = TOCCO.matches ? 36 : 24;
-    m = L.marker([c[1], c[0]], {
-      icon: L.divIcon({ className: 'm-punto f-' + fp.chiave + (a.id === scelta ? ' scelto' : ''), iconSize: [s, s], html: '<i></i>' }),
-      keyboard: false, riseOnHover: true, zIndexOffset: Math.round((p == null ? -1 : p) + 2) * 1000,
-      title: String(a.titolo || '').slice(0, 90) + ' · ' + (p == null ? 'senza punteggio' : Math.round(p) + '/100')
-    });
+    var a = sulMappa[pr.i], s = TOCCO.matches ? 36 : 24;
+    v = valoreAsta(a); cls = classeColore(v);
+    var titolo = String(a.titolo || '').slice(0, 90) + ' · ' + (a.prezzoBase ? U.eur(a.prezzoBase) + ' · ' : '') + testoColore(v, false) +
+      (raggio && distanze[a.id] != null ? ' · ' + km(distanze[a.id]) : '');
+    if (conPrezzi() && a.prezzoBase > 0) {
+      // pillola con il prezzo base: elemento di misura zero sul punto, testo centrato con il CSS
+      m = L.marker([c[1], c[0]], {
+        icon: L.divIcon({ className: 'm-prezzo ' + cls + (a.id === scelta ? ' scelto' : ''), iconSize: [0, 0], html: '<span>' + prezzoBreve(a.prezzoBase) + '</span>' }),
+        keyboard: false, riseOnHover: true, zIndexOffset: (ordineColore(v) + 2) * 1000, title: titolo
+      });
+    } else {
+      m = L.marker([c[1], c[0]], {
+        icon: L.divIcon({ className: 'm-punto ' + cls + (a.id === scelta ? ' scelto' : ''), iconSize: [s, s], html: '<i></i>' }),
+        keyboard: false, riseOnHover: true, zIndexOffset: (ordineColore(v) + 2) * 1000, title: titolo
+      });
+    }
     m._asta = a;
     return m;
   }
   function disegna() {
     if (!mappa || !indice || !strati.puntini) return;
-    var b = mappa.getBounds().pad(0.35), z = Math.round(mappa.getZoom());
+    var b = mappa.getBounds().pad(0.35), z = Math.round(mappa.getZoom()), prezzi = conPrezzi();
     var lista = indice.getClusters([Math.max(-180, b.getWest()), Math.max(-85, b.getSouth()), Math.min(180, b.getEast()), Math.min(85, b.getNorth())], Math.min(z, MAX_ZOOM_GRUPPI + 1));
     var visti = {}, nuovi = [], k;
     for (var i = 0; i < lista.length; i++) {
       var pr = lista[i].properties;
-      k = generazione + (pr.cluster ? 'g' + pr.cluster_id : 'p' + pr.i);
+      k = generazione + (pr.cluster ? 'g' + pr.cluster_id : 'p' + pr.i + (prezzi ? 'e' : ''));
       visti[k] = 1;
       if (!marcatori[k]) { marcatori[k] = marcatore(lista[i]); nuovi.push(marcatori[k]); }
     }
@@ -351,32 +449,54 @@
   /* ---------- "In questa zona" ---------- */
   function voce(a) {
     var p = punti(a), fa = fascia(p);
-    var dett = [luogoBreve(a), a.prezzoBase ? U.eur(a.prezzoBase) : '', U.dataIt(a.dataAsta)].filter(Boolean).join(' · ');
+    var dett = [raggio && distanze[a.id] != null ? km(distanze[a.id]) : '', luogoBreve(a), a.prezzoBase ? U.eur(a.prezzoBase) : '', U.dataIt(a.dataAsta)].filter(Boolean).join(' · ');
     return '<li><button type="button" class="m-voce" data-id="' + esc(a.id) + '">' +
       '<span class="m-voto f-' + fa.chiave + '" aria-hidden="true">' + (p == null ? '–' : Math.round(p)) + '</span>' +
       '<span class="m-voce-t"><span class="sr-only">' + (p == null ? 'Senza punteggio. ' : 'Punteggio ' + Math.round(p) + ' su 100. ') + '</span><b>' + esc(a.titolo) + '</b><small>' + esc(dett) + '</small></span></button></li>';
   }
+  var ORDINI_ZONA = {
+    migliori: { cmp: migliore, titolo: function (n) { return n === 1 ? 'L\'unica con punteggio' : 'Le ' + n + ' migliori per punteggio'; } },
+    vicine: { cmp: function (x, y) { return (distanze[x.id] || 0) - (distanze[y.id] || 0); }, titolo: function (n) { return n === 1 ? 'L\'unica nel raggio' : 'Le ' + n + ' più vicine'; } },
+    data: { cmp: primaData, titolo: function (n) { return n === 1 ? 'L\'unica con la data' : 'Le prime ' + n + ' per data dell\'asta'; } },
+    prezzo: { cmp: function (x, y) { return (x.prezzoBase > 0 ? x.prezzoBase : 1e15) - (y.prezzoBase > 0 ? y.prezzoBase : 1e15) || primaData(x, y); }, titolo: function (n) { return n === 1 ? 'L\'unica con il prezzo' : 'Le ' + n + ' con il prezzo base più basso'; } }
+  };
+  var N_ZONA = 8;
   function aggiornaZona() {
     var b = mappa.getBounds(), s = b.getSouth(), w = b.getWest(), n = b.getNorth(), e = b.getEast();
-    var conta = 0, conP = 0, top = [], perData = [];
+    if (ordineZona === 'vicine' && !raggio) ordineZona = 'migliori';
+    var conta = 0, conP = 0, top = [], perData = [], O = ORDINI_ZONA[ordineZona];
     for (var i = 0; i < sulMappa.length; i++) {
       var a = sulMappa[i];
       if (a.lat < s || a.lat > n || a.lng < w || a.lng > e) continue;
       conta++;
-      if (punti(a) != null) { conP++; inserisci(top, a, migliore, 5); }
-      else if (!conP) inserisci(perData, a, primaData, 5);
+      if (ordineZona !== 'migliori') { inserisci(top, a, O.cmp, N_ZONA); continue; }
+      if (punti(a) != null) { conP++; inserisci(top, a, migliore, N_ZONA); }
+      else if (!conP) inserisci(perData, a, primaData, N_ZONA);
     }
-    var lista = conP ? top : perData;
-    $('#mZonaN').innerHTML = conta ? '<b>' + num(conta) + '</b> ' + (conta === 1 ? 'asta' : 'aste') + ' con posizione in questa zona' : 'Nessuna asta con posizione in questa zona: allontana la mappa o cambia i filtri.';
-    $('#mZonaTitolo').textContent = !conta ? '' : conP ? (conP === 1 ? 'L\'unica con punteggio' : 'Le ' + Math.min(5, conP) + ' migliori per punteggio') :
+    var lista = ordineZona !== 'migliori' || conP ? top : perData;
+    $('#mZonaN').innerHTML = conta ? '<b>' + num(conta) + '</b> ' + (conta === 1 ? 'asta' : 'aste') + ' con posizione in questa zona' + (raggio ? ' e nel raggio di ' + raggio.km + ' km' : '') :
+      'Nessuna asta con posizione in questa zona: allontana la mappa o cambia i filtri.';
+    $('#mZonaTitolo').textContent = !conta ? '' : ordineZona !== 'migliori' ? O.titolo(lista.length) : conP ? O.titolo(Math.min(N_ZONA, conP)) :
       'Nessuna ha ancora un punteggio: ecco le prime per data dell\'asta';
+    $$('#mOrdina .chip').forEach(function (c) {
+      c.setAttribute('aria-pressed', String(c.dataset.ord === ordineZona));
+      if (c.dataset.ord === 'vicine') c.hidden = !raggio;
+    });
     // l'elenco si riscrive: chi lo usa da tastiera resta sulla stessa voce
     var att = document.activeElement, idFuoco = att && att.closest && att.closest('#mMigliori') ? att.getAttribute('data-id') : null;
     $('#mMigliori').innerHTML = lista.map(voce).join('');
     if (idFuoco) { var el = $$('#mMigliori .m-voce').filter(function (x) { return x.getAttribute('data-id') === idFuoco; })[0]; fuoco(el || $('#mMigliori .m-voce') || $('#mCercaZona')); }
-    $('#mPillTesto').innerHTML = '<b>' + breve(conta) + '</b> ' + (conta === 1 ? 'asta' : 'aste') + ' qui · le migliori';
+    $('#mPillTesto').innerHTML = '<b>' + breve(conta) + '</b> ' + (conta === 1 ? 'asta' : 'aste') + ' qui · ' + (ordineZona === 'vicine' ? 'le più vicine' : ordineZona === 'data' ? 'le prime' : ordineZona === 'prezzo' ? 'le più economiche' : 'le migliori');
     // il nome per i lettori di schermo comincia con il testo visibile (chi usa i comandi vocali dice quello che vede)
-    $('#mApriZona').setAttribute('aria-label', breve(conta) + ' ' + (conta === 1 ? 'asta' : 'aste') + ' qui · le migliori: ' + aste(conta) + ' con posizione in questa zona');
+    $('#mApriZona').setAttribute('aria-label', $('#mPillTesto').textContent + ': ' + aste(conta) + ' con posizione in questa zona');
+  }
+  // passando su una voce dell'elenco (o con il fuoco da tastiera) un anello mostra dov'è sulla mappa
+  function mostraSopra(a) {
+    if (!mappa) return;
+    if (!a || !conPosizione(a)) { if (sopra) { mappa.removeLayer(sopra); sopra = null; } return; }
+    var ll = [a.lat, a.lng];
+    if (!sopra) sopra = L.marker(ll, { icon: L.divIcon({ className: 'm-sopra', iconSize: [40, 40], html: '<span></span>' }), interactive: false, keyboard: false, zIndexOffset: 400000 }).addTo(mappa);
+    else sopra.setLatLng(ll);
   }
 
   /* ---------- anteprima ---------- */
@@ -400,7 +520,7 @@
         '<figcaption>' + esc(NOMI_CAT[cat] + (a.tipo && a.tipo !== NOMI_CAT[cat] ? ' · ' + a.tipo : '')) + '</figcaption></figure>' +
       '<div class="m-prev-testa">' + htmlAnello(a) + '<div class="m-prev-titolo"><p class="m-fascia f-' + fa.chiave + '">' + esc(fa.etichetta) +
         (p != null && a.punteggioCompleto === false ? ' · parziale' : '') + '</p><h2 id="hScheda" tabindex="-1">' + esc(a.titolo) + '</h2></div></div>' +
-      (luogo(a) ? '<p class="m-luogo">' + U.icona('luogo') + '<span>' + esc(luogo(a)) + '</span></p>' : '') +
+      (luogo(a) ? '<p class="m-luogo">' + U.icona('luogo') + '<span>' + esc(luogo(a)) + (raggio && distanze[a.id] != null ? ' · <b>' + km(distanze[a.id]) + '</b> da ' + esc(nomeRaggio()) : '') + '</span></p>' : '') +
       '<dl class="kv m-kv">' +
         // del Demanio a volte si conosce solo il termine per le offerte (js/formato.js)
         '<div><dt>' + (D.asta || !D.termine ? 'Data asta' : 'Termine offerte') + '</dt><dd>' + (xd ? U.dataIt(xd.data) + (xd.ora ? ' ' + esc(xd.ora) : '') : '—') + (q ? ' <small>(' + esc(q) + ')</small>' : '') + '</dd></div>' +
@@ -706,11 +826,20 @@
   }
   function leggiStrati() {
     var s = leggiSessione(K_STRATI);
-    if (s && typeof s === 'object') { strati.puntini = s.puntini !== false; strati.calore = !!s.calore; }
+    if (s && typeof s === 'object') {
+      strati.puntini = s.puntini !== false; strati.calore = !!s.calore; strati.prezzi = s.prezzi !== false;
+      if (MODI.indexOf(s.colore) >= 0) strati.colore = s.colore;
+    }
+    // un link con ?colore=sconto (Condividi questa vista) sceglie il colore dei puntini
+    var c = new URLSearchParams(location.search).get('colore');
+    if (MODI.indexOf(c) >= 0) strati.colore = c;
     if (!CAL) strati.calore = false;
   }
   function applicaStrati() {
     $('#mPuntini').checked = strati.puntini;
+    $('#mPrezzi').checked = strati.prezzi;
+    $('#mPrezzi').disabled = !strati.puntini;
+    $('#mColora').value = strati.colore;
     $('#mCalore').checked = strati.calore;
     $('#mCalore').disabled = !CAL;
     $('#mCaloreMetodo').hidden = !strati.calore;
@@ -725,6 +854,13 @@
     legende();
   }
   function cambiaStrati() { scriviSessione(K_STRATI, strati); applicaStrati(); }
+  // colore o prezzi cambiati: si rifanno i marcatori visibili
+  function rifaiMarcatori() {
+    if (!strato) return;
+    for (var k in marcatori) strato.removeLayer(marcatori[k]);
+    marcatori = {}; generazione++;
+    if (datiPronti) disegna();
+  }
 
   /* ---------- regioni ---------- */
   function colori() {
@@ -973,6 +1109,11 @@
     sm.value = filtri.max || '';
     riempiPunteggio();
     $('#mLibere').checked = !!filtri.libere; $('#mConPunt').checked = !!filtri.conPunteggio; $('#mSeguite').checked = !!filtri.seguite;
+    $('#mGiorni').value = String(filtri.giorni || 0);
+    $('#mSconto').value = String(filtri.smin || 0);
+    $('#mRaggio').hidden = !raggio;
+    if (raggio) { $('#mKm').value = String(raggio.km); $('#mRaggioDa').textContent = 'da ' + nomeRaggio(); }
+    $('#mVicino').classList.toggle('attivo', !!(raggio && raggio.te));
     var et = [], E = extra;
     if (E.testo) et.push(['testo', 'Parole: «' + E.testo + '»']);
     if (E.regione) et.push(['regione', E.regione]);
@@ -1009,6 +1150,7 @@
     var daGeo = correnti.filter(daGeocodificare), bg = $('#geocodifica');
     bg.hidden = !daGeo.length;
     if (!bg.disabled) bg.textContent = 'Posiziona con precisione le tue aste (' + daGeo.length + ')';
+    disegnaCerchio();
     aggiorna();
   }
   function sintesi() {
@@ -1029,15 +1171,33 @@
     if (senzaZ) { senzaZ.textContent = t; senzaZ.hidden = !t; }
   }
   function legenda() {
-    var s = soglie(), ord = ['ottimo', 'buono', 'medio', 'basso'], voci = [];
-    ord.forEach(function (k, i) {
-      if (s[k] == null) return;
-      var sup = null;
-      for (var j = i - 1; j >= 0; j--) if (s[ord[j]] != null) { sup = s[ord[j]] - 1; break; }
-      voci.push('<li><i class="m-dot f-' + k + '" aria-hidden="true"></i>' + esc(fascia(s[k]).etichetta) + '<span>' + (sup == null ? s[k] + '+' : s[k] + '–' + sup) + '</span></li>');
-    });
-    voci.push('<li><i class="m-dot f-nd" aria-hidden="true"></i>Senza punteggio</li>');
-    return '<p class="m-legenda-t">Punteggio affare</p><ul>' + voci.join('') + '</ul><p class="m-legenda-n">Un gruppo ha il colore del suo affare migliore.</p>';
+    var voci = [], titolo, nota;
+    if (strati.colore === 'sconto') {
+      titolo = 'Sconto sul valore';
+      [['f-ottimo', '40% o più'], ['f-buono', '25–39%'], ['f-medio', '10–24%'], ['f-basso', 'meno del 10%'], ['f-nd', 'Non stimato o poco affidabile']].forEach(function (x) {
+        voci.push('<li><i class="m-dot ' + x[0] + '" aria-hidden="true"></i>' + x[1] + '</li>');
+      });
+      nota = 'Solo sconti con valore di affidabilità media o alta. Un gruppo ha il colore del suo sconto più alto.';
+    } else if (strati.colore === 'data') {
+      titolo = 'Data dell\'asta';
+      [['d-1', 'Entro 7 giorni'], ['d-2', 'Entro 30 giorni'], ['d-3', 'Entro 90 giorni'], ['d-4', 'Oltre 90 giorni'], ['f-nd', 'Data non indicata']].forEach(function (x) {
+        voci.push('<li><i class="m-dot ' + x[0] + '" aria-hidden="true"></i>' + x[1] + '</li>');
+      });
+      nota = 'Un gruppo ha il colore della sua asta più vicina nel tempo.';
+    } else {
+      var s = soglie(), ord = ['ottimo', 'buono', 'medio', 'basso'];
+      titolo = 'Punteggio affare';
+      ord.forEach(function (k, i) {
+        if (s[k] == null) return;
+        var sup = null;
+        for (var j = i - 1; j >= 0; j--) if (s[ord[j]] != null) { sup = s[ord[j]] - 1; break; }
+        voci.push('<li><i class="m-dot f-' + k + '" aria-hidden="true"></i>' + esc(fascia(s[k]).etichetta) + '<span>' + (sup == null ? s[k] + '+' : s[k] + '–' + sup) + '</span></li>');
+      });
+      voci.push('<li><i class="m-dot f-nd" aria-hidden="true"></i>Senza punteggio</li>');
+      nota = 'Un gruppo ha il colore del suo affare migliore.';
+    }
+    return '<p class="m-legenda-t">' + titolo + '</p><ul>' + voci.join('') + '</ul><p class="m-legenda-n">' + nota +
+      (strati.prezzi ? ' Avvicinando la mappa, il puntino mostra il prezzo base.' : '') + '</p>';
   }
 
   /* ---------- geocodifica delle aste inserite a mano (Nominatim, 1 richiesta al secondo) ---------- */
@@ -1062,6 +1222,184 @@
     })();
   }
 
+  /* ---------- distanza: "Vicino a me" o un punto scelto, con un cerchio ---------- */
+  function nomeRaggio() { return raggio && raggio.te ? 'te' : 'il punto scelto'; }
+  function disegnaCerchio() {
+    if (!mappa) return;
+    if (!raggio) { if (cerchio) { mappa.removeLayer(cerchio); cerchio = null; } return; }
+    var ll = [raggio.lat, raggio.lng];
+    if (!cerchio) {
+      cerchio = L.layerGroup([
+        L.circle(ll, { radius: raggio.km * 1000, className: 'm-cerchio', interactive: false }),
+        L.marker(ll, { icon: L.divIcon({ className: 'm-centro' + (raggio.te ? ' te' : ''), iconSize: [18, 18], html: '<i></i>' }), interactive: false, keyboard: false, zIndexOffset: 300000 })
+      ]).addTo(mappa);
+    } else cerchio.eachLayer(function (l) { l.setLatLng(ll); if (l.setRadius) l.setRadius(raggio.km * 1000); });
+    cerchio.eachLayer(function (l) { var el = l.getElement && l.getElement(); if (el && l.setRadius === undefined) el.classList.toggle('te', !!raggio.te); });
+  }
+  function boundsRaggio() { var b = bboxRaggio(); return [[b[0], b[1]], [b[2], b[3]]]; }
+  function impostaRaggio(lat, lng, te) {
+    var k = raggio ? raggio.km : 25;
+    if (cerchio) { mappa.removeLayer(cerchio); cerchio = null; }
+    raggio = { lat: Math.round(lat * 1e5) / 1e5, lng: Math.round(lng * 1e5) / 1e5, km: k, te: !!te };
+    ordineZona = 'vicine';
+    cambiaFiltri();
+    disegnaCerchio();
+    adatta(boundsRaggio());
+    if (TELEFONO.matches) { chiudiFoglio('filtri', true); apriFoglio('zona'); fuoco($('#hZona')); }
+  }
+  function togliRaggio() {
+    raggio = null;
+    if (ordineZona === 'vicine') ordineZona = 'migliori';
+    disegnaCerchio();
+    cambiaFiltri();
+  }
+  function armaPunto(si) {
+    sceltaPunto = si;
+    $('#mScegliPunto').setAttribute('aria-pressed', String(si));
+    $('#mMappa').classList.toggle('m-scegli', si);
+    if (si) {
+      if (TELEFONO.matches) chiudiFoglio('filtri', true);
+      U.toast((TOCCO.matches ? 'Tocca' : 'Fai clic su') + ' la mappa nel punto da cui misurare la distanza');
+    }
+  }
+  function vicinoAMe() {
+    var b = $('#mVicino');
+    if (!navigator.geolocation) { U.toast('Questo browser non sa dire dove ti trovi: scegli un punto sulla mappa'); return; }
+    if (b.disabled) return;
+    var t = b.innerHTML;
+    b.disabled = true; $('span', b).textContent = 'Cerco la tua posizione…';
+    navigator.geolocation.getCurrentPosition(function (p) {
+      b.disabled = false; b.innerHTML = t;
+      var c = p.coords;
+      if (c.latitude < DENTRO.s - 0.5 || c.latitude > DENTRO.n + 0.5 || c.longitude < DENTRO.o - 0.5 || c.longitude > DENTRO.e + 0.5) {
+        U.toast('Sembri fuori dall\'Italia: scegli un punto sulla mappa', 6000); return;
+      }
+      impostaRaggio(c.latitude, c.longitude, true);
+    }, function (e) {
+      b.disabled = false; b.innerHTML = t;
+      U.toast(e && e.code === 1 ? 'Posizione non permessa: puoi scegliere un punto sulla mappa' : 'Posizione non disponibile: riprova o scegli un punto sulla mappa', 6000);
+    }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
+  }
+
+  /* ---------- cerca un luogo: regioni, province, comuni e tribunali con aste ---------- */
+  var TIPI_LUOGO = { Comune: 0, Provincia: 1, Regione: 2, Tribunale: 3 };
+  function estendi(o, k, a) {
+    var x = o[k] || (o[k] = { n: 0, s: 90, w: 180, nn: -90, e: -180 });
+    x.n++; if (a.lat < x.s) x.s = a.lat; if (a.lat > x.nn) x.nn = a.lat; if (a.lng < x.w) x.w = a.lng; if (a.lng > x.e) x.e = a.lng;
+  }
+  function costruisciLuoghi() {
+    var com = {}, trib = {}, prov = {}, oggiS = oggi();
+    for (var i = 0; i < tutte.length; i++) {
+      var a = tutte[i];
+      if (!conPosizione(a) || (a.dataAsta && a.dataAsta < oggiS)) continue;
+      if (a.comune) estendi(com, a.comune + '|' + (a.provincia || ''), a);
+      if (a.tribunale) estendi(trib, a.tribunale, a);
+      if (a.provincia) estendi(prov, a.provincia, a);
+    }
+    luoghi = [];
+    (G.regioni || []).forEach(function (r) { luoghi.push({ tipo: 'Regione', nome: r, chiave: senzaAccenti(r), regione: r }); });
+    Object.keys(G.province).forEach(function (sg) {
+      var p = G.province[sg];
+      luoghi.push({ tipo: 'Provincia', nome: p.nome + ' (' + sg + ')', chiave: senzaAccenti(p.nome + ' ' + sg), b: prov[sg], n: prov[sg] ? prov[sg].n : 0, centro: [p.lat, p.lng] });
+    });
+    Object.keys(com).forEach(function (k) {
+      var x = k.split('|');
+      luoghi.push({ tipo: 'Comune', nome: x[0] + (x[1] ? ' (' + x[1] + ')' : ''), chiave: senzaAccenti(x[0]), b: com[k], n: com[k].n });
+    });
+    Object.keys(trib).forEach(function (t) { luoghi.push({ tipo: 'Tribunale', nome: 'Tribunale di ' + t, chiave: senzaAccenti(t + ' tribunale'), b: trib[t], n: trib[t].n }); });
+  }
+  function trovaLuoghi(q) {
+    var t = senzaAccenti(q).trim().replace(/\s+/g, ' ');
+    if (t.length < 2 || !luoghi) return [];
+    var out = [];
+    for (var i = 0; i < luoghi.length; i++) {
+      var l = luoghi[i], j = l.chiave.indexOf(t);
+      if (j < 0) continue;
+      var pos = j === 0 ? 0 : /[\s'(-]/.test(l.chiave.charAt(j - 1)) ? 1 : 2;
+      out.push([pos * 10 + TIPI_LUOGO[l.tipo], -(l.n || 0), l]);
+    }
+    out.sort(function (x, y) { return x[0] - y[0] || x[1] - y[1] || x[2].nome.localeCompare(y[2].nome, 'it'); });
+    return out.slice(0, 8).map(function (x) { return x[2]; });
+  }
+  var trovati = [], attivo = -1;
+  function mostraLuoghi() {
+    var inp = $('#mCercaInput'), ul = $('#mCercaLista');
+    trovati = trovaLuoghi(inp.value); attivo = trovati.length ? 0 : -1;
+    var q = inp.value.trim();
+    if (!q || q.length < 2) { ul.hidden = true; inp.setAttribute('aria-expanded', 'false'); inp.removeAttribute('aria-activedescendant'); return; }
+    ul.innerHTML = trovati.length ? trovati.map(function (l, i) {
+      return '<li role="option" id="mLuogo' + i + '" data-i="' + i + '" aria-selected="' + (i === attivo) + '"><b>' + esc(l.nome) + '</b><small>' + l.tipo +
+        (l.tipo === 'Regione' ? '' : ' · ' + (l.n ? aste(l.n) + ' sulla mappa' : 'nessuna asta sulla mappa')) + '</small></li>';
+    }).join('') : '<li class="m-cerca-vuoto" role="option" aria-disabled="true">Nessun luogo con aste trovato</li>';
+    ul.hidden = false; inp.setAttribute('aria-expanded', 'true');
+    if (attivo >= 0) inp.setAttribute('aria-activedescendant', 'mLuogo' + attivo); else inp.removeAttribute('aria-activedescendant');
+  }
+  function evidenziaLuogo(i) {
+    attivo = i;
+    $$('#mCercaLista [role="option"]').forEach(function (li, k) { li.setAttribute('aria-selected', String(k === i)); if (k === i) li.scrollIntoView({ block: 'nearest' }); });
+    if (i >= 0) $('#mCercaInput').setAttribute('aria-activedescendant', 'mLuogo' + i);
+  }
+  function chiudiLuoghi() { $('#mCercaLista').hidden = true; $('#mCercaInput').setAttribute('aria-expanded', 'false'); $('#mCercaInput').removeAttribute('aria-activedescendant'); }
+  function vaiLuogo(l) {
+    if (!l || !mappa) return;
+    if (l.tipo === 'Regione') { var r = confiniDi(l.regione); if (r) adatta(r); }
+    else if (l.b && l.b.n) {
+      if (l.b.n === 1 || (l.b.nn - l.b.s < 0.004 && l.b.e - l.b.w < 0.004)) vai([(l.b.s + l.b.nn) / 2, (l.b.w + l.b.e) / 2], 14);
+      else { var o = paddingVista(); o.maxZoom = 14; o.animate = !CALMO.matches; mappa.fitBounds([[l.b.s, l.b.w], [l.b.nn, l.b.e]], o); }
+    } else if (l.centro) vai(l.centro, 10);
+    $('#mCercaInput').value = l.nome;
+    chiudiLuoghi();
+    if (TELEFONO.matches) chiudiCerca(false);
+    U.toast(l.tipo === 'Regione' || (l.b && l.b.n) ? 'Ecco ' + l.nome : l.nome + ': nessuna asta con posizione, ti porto nel capoluogo');
+  }
+  function apriCerca() {
+    var f = $('#mCerca');
+    f.classList.add('aperta'); $('#mApriCerca').setAttribute('aria-expanded', 'true');
+    fuoco($('#mCercaInput'));
+  }
+  function chiudiCerca(rifuoco) {
+    chiudiLuoghi();
+    $('#mCerca').classList.remove('aperta'); $('#mApriCerca').setAttribute('aria-expanded', 'false');
+    if (rifuoco && TELEFONO.matches) fuoco($('#mApriCerca'));
+  }
+
+  /* ---------- condividi la vista: centro, zoom, colore e filtri (mai la posizione) ---------- */
+  function linkVista() {
+    var c = mappa.getCenter(), z = Math.round(mappa.getZoom() * 4) / 4;
+    var f = perElenco(false);
+    delete f.al; if (extra.al) f.al = extra.al;      // nella mappa "entro N giorni" resta relativo a oggi
+    if (raggio) { delete f.bbox; if (extra.bbox) f.bbox = extra.bbox; }
+    if (filtri.giorni) f.giorni = filtri.giorni;
+    if (filtri.smin) f.smin = filtri.smin;
+    // con "Vicino a me" la vista è centrata sulla posizione di chi usa la mappa: il link non la porta
+    var parti = [];
+    if (!(raggio && raggio.te)) parti.push('vista=' + c.lat.toFixed(4) + ',' + c.lng.toFixed(4) + ',' + z);
+    if (strati.colore !== 'punteggio') parti.push('colore=' + strati.colore);
+    if (Object.keys(f).length) parti.push('filtri=' + encodeURIComponent(JSON.stringify(f)));
+    return location.origin + location.pathname + (parti.length ? '?' + parti.join('&') : '');
+  }
+  function condividiVista() {
+    if (!mappa) return;
+    var u = linkVista(), nota = raggio && raggio.te ? ' (senza la tua posizione né la vista intorno a te)' : raggio ? ' (senza il cerchio della distanza)' : '';
+    if (navigator.share && TOCCO.matches) { navigator.share({ title: 'Mappa delle aste – Radar Aste Italia', url: u }).catch(function () {}); return; }
+    function ok() { U.toast('Link della vista copiato' + nota); }
+    function ripiego() {
+      var t = document.createElement('textarea'); t.value = u; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;opacity:0;top:0';
+      document.body.appendChild(t); t.select();
+      var riuscito = false; try { riuscito = document.execCommand('copy'); } catch (e) {}
+      t.remove();
+      if (riuscito) ok(); else U.toast('Copia non riuscita. Il link è: ' + u, 9000);
+    }
+    try { navigator.clipboard.writeText(u).then(ok, ripiego); } catch (e) { ripiego(); }
+  }
+  // ?vista=lat,lng,zoom: la vista del link condiviso
+  function leggiVista() {
+    var v = (new URLSearchParams(location.search).get('vista') || '').split(',').map(Number);
+    if (v.length !== 3 || !v.every(isFinite)) return null;
+    if (v[0] < LIMITI[0][0] || v[0] > LIMITI[1][0] || v[1] < LIMITI[0][1] || v[1] > LIMITI[1][1]) return null;
+    return { c: [v[0], v[1]], z: Math.max(4, Math.min(19, v[2])) };
+  }
+
   /* ---------- avvio ---------- */
   function creaMappa() {
     var calmo = CALMO.matches;
@@ -1084,6 +1422,35 @@
       }
     });
     new Casa().addTo(mappa);
+    // "Vicino a me" e schermo intero (solo dove il browser lo permette)
+    var Altri = L.Control.extend({
+      options: { position: 'topright' },
+      onAdd: function () {
+        var d = L.DomUtil.create('div', 'leaflet-bar m-altri'), a = L.DomUtil.create('a', '', d);
+        a.href = '#'; a.title = 'Vicino a me'; a.setAttribute('role', 'button'); a.setAttribute('aria-label', 'Aste vicino a me');
+        a.innerHTML = U.icona('mirino');
+        L.DomEvent.on(a, 'click', function (e) { L.DomEvent.preventDefault(e); vicinoAMe(); });
+        var app = $('.m-app');
+        if (document.fullscreenEnabled && app && app.requestFullscreen) {
+          var fs = L.DomUtil.create('a', 'm-schermo', d);
+          fs.href = '#'; fs.title = 'Schermo intero'; fs.setAttribute('role', 'button'); fs.setAttribute('aria-label', 'Mappa a schermo intero'); fs.setAttribute('aria-pressed', 'false');
+          fs.innerHTML = SCHERMO;
+          L.DomEvent.on(fs, 'click', function (e) {
+            L.DomEvent.preventDefault(e);
+            if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
+            else app.requestFullscreen().catch(function () { U.toast('Schermo intero non disponibile'); });
+          });
+          document.addEventListener('fullscreenchange', function () {
+            var su = !!document.fullscreenElement;
+            fs.setAttribute('aria-pressed', String(su)); fs.title = su ? 'Esci dallo schermo intero' : 'Schermo intero';
+            setTimeout(function () { mappa.invalidateSize({ pan: false }); programma(); }, 60);
+          });
+        }
+        L.DomEvent.disableClickPropagation(d);
+        return d;
+      }
+    });
+    new Altri().addTo(mappa);
     sfondo = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19, className: 'm-tile',
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
@@ -1099,6 +1466,7 @@
     mappa.on('mousemove', sopraMappa);
     mappa.on('mouseout', function () { if (!cellaFissa && cellaSopra) nascondiCellaPresto(); });
     mappa.on('click', function (e) {
+      if (sceltaPunto) { armaPunto(false); impostaRaggio(e.latlng.lat, e.latlng.lng, false); return; }
       var c = cellaIn(e.containerPoint);
       if (c) fissaCella(c); else if (cellaFissa) chiudiCella();
       if (regioneFissa) chiudiFoglio('regione');
@@ -1106,8 +1474,12 @@
     });
     // vista iniziale: l'Italia intera su qualunque schermo (tornando indietro, dove si era)
     var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0], v = leggiSessione(K_VISTA);
-    if (nav && nav.type === 'back_forward' && v && v.c && isFinite(v.z)) mappa.setView(v.c, v.z, { animate: false });
+    vistaUrl = leggiVista();
+    if (vistaUrl) mappa.setView(vistaUrl.c, vistaUrl.z, { animate: false });
+    else if (nav && nav.type === 'back_forward' && v && v.c && isFinite(v.z)) mappa.setView(v.c, v.z, { animate: false });
     else mappa.fitBounds(ITALIA, paddingVista());
+    // tasto destro (computer): misura la distanza da quel punto
+    mappa.on('contextmenu', function (e) { if (!TOCCO.matches && datiPronti) impostaRaggio(e.latlng.lat, e.latlng.lng, false); });
   }
 
   function vistaDaFiltri() {
@@ -1130,6 +1502,43 @@
     $('#mConPunt').addEventListener('change', function () { filtri.conPunteggio = this.checked; cambiaFiltri(); });
     $('#mSeguite').addEventListener('change', function () { filtri.seguite = this.checked; cambiaFiltri(); });
     $('#mPuntini').addEventListener('change', function () { strati.puntini = this.checked; cambiaStrati(); });
+    $('#mPrezzi').addEventListener('change', function () { strati.prezzi = this.checked; cambiaStrati(); rifaiMarcatori(); });
+    $('#mColora').addEventListener('change', function () { if (MODI.indexOf(this.value) >= 0) { strati.colore = this.value; cambiaStrati(); rifaiMarcatori(); } });
+    $('#mGiorni').addEventListener('change', function () { filtri.giorni = GIORNI.indexOf(+this.value) >= 0 ? +this.value : 0; cambiaFiltri(); });
+    $('#mSconto').addEventListener('change', function () { filtri.smin = SCONTI.indexOf(+this.value) >= 0 ? +this.value : 0; cambiaFiltri(); });
+    $('#mVicino').addEventListener('click', vicinoAMe);
+    $('#mScegliPunto').addEventListener('click', function () { armaPunto(!sceltaPunto); });
+    $('#mTogliRaggio').addEventListener('click', function () { togliRaggio(); fuoco($('#mVicino')); });
+    $('#mKm').addEventListener('change', function () {
+      if (!raggio || KM.indexOf(+this.value) < 0) return;
+      raggio.km = +this.value; cambiaFiltri(); disegnaCerchio(); adatta(boundsRaggio());
+    });
+    $('#mCondividi').addEventListener('click', condividiVista);
+    $('#mOrdina').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip'); if (!c || !ORDINI_ZONA[c.dataset.ord]) return;
+      ordineZona = c.dataset.ord; aggiornaZona();
+    });
+    // anello sulla mappa per la voce sotto il puntatore o con il fuoco
+    var sopraVoce = function (e) { var v = e.target.closest && e.target.closest('.m-voce'); mostraSopra(v ? perId[v.getAttribute('data-id')] : null); };
+    ['mouseover', 'focusin'].forEach(function (t) { $('#mMigliori').addEventListener(t, sopraVoce); $('#mScheda').addEventListener(t, sopraVoce); });
+    ['mouseleave', 'focusout'].forEach(function (t) { $('#mMigliori').addEventListener(t, function () { mostraSopra(null); }); $('#mScheda').addEventListener(t, function () { mostraSopra(null); }); });
+    // ricerca dei luoghi
+    var inp = $('#mCercaInput');
+    inp.addEventListener('input', mostraLuoghi);
+    inp.addEventListener('focus', function () { if (inp.value.trim().length >= 2) mostraLuoghi(); });
+    inp.addEventListener('keydown', function (e) {
+      var n = trovati.length;
+      if (e.key === 'ArrowDown' && n) { e.preventDefault(); if ($('#mCercaLista').hidden) mostraLuoghi(); evidenziaLuogo((attivo + 1) % n); }
+      else if (e.key === 'ArrowUp' && n) { e.preventDefault(); evidenziaLuogo((attivo - 1 + n) % n); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (attivo >= 0 && trovati[attivo]) vaiLuogo(trovati[attivo]); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (!$('#mCercaLista').hidden) chiudiLuoghi(); else chiudiCerca(true); }
+    });
+    $('#mCercaLista').addEventListener('mousedown', function (e) { e.preventDefault(); });   // il clic non toglie il fuoco al campo
+    $('#mCercaLista').addEventListener('click', function (e) { var li = e.target.closest('[data-i]'); if (li) vaiLuogo(trovati[+li.getAttribute('data-i')]); });
+    $('#mCerca').addEventListener('submit', function (e) { e.preventDefault(); if (attivo >= 0 && trovati[attivo]) vaiLuogo(trovati[attivo]); });
+    $('#mCerca').addEventListener('focusout', function (e) { if (!$('#mCerca').contains(e.relatedTarget)) chiudiLuoghi(); });
+    $('#mApriCerca').addEventListener('click', function () { if ($('#mCerca').classList.contains('aperta')) chiudiCerca(true); else apriCerca(); });
+    $('#mCercaChiudi').addEventListener('click', function () { inp.value = ''; chiudiCerca(true); });
     $('#mCalore').addEventListener('change', function () { strati.calore = this.checked; cambiaStrati(); });
     $('#mCaloreMini').addEventListener('click', function () {
       apriFoglio('filtri', $('#mCalore'));
@@ -1163,6 +1572,7 @@
     $('#mRegione').addEventListener('mouseleave', function () { if (!regioneFissa) timerRegione = setTimeout(nascondiRegione, 260); });
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (sceltaPunto) { armaPunto(false); e.preventDefault(); return; }
       if (!$('#mCella').hidden) { chiudiCella($('#mCella').contains(document.activeElement)); e.preventDefault(); }
       else if (aperto('scheda')) { chiudiFoglio('scheda'); e.preventDefault(); }
       else if (aperto('regione')) { chiudiFoglio('regione'); e.preventDefault(); }
@@ -1208,7 +1618,8 @@
       seguite = S ? S.idSeguite() : {};
       ricalcola();
       datiPronti = true;
-      if (daFuori) { salvaFiltri(); vistaDaFiltri(); }
+      costruisciLuoghi();
+      if (daFuori) { salvaFiltri(); if (!vistaUrl) vistaDaFiltri(); }
       dopoRicalcolo();
       $('#mCarico').hidden = true;
       if (!tutte.length) {

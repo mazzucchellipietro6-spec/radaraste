@@ -369,7 +369,9 @@ test('pagina della mappa: interruttore accessibile, metodo e fonte spiegati, mod
   const html = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'mappa.html'), 'utf8');
   // un vero checkbox dentro la sua etichetta, descritto dal riquadro del metodo
   assert.match(html, /<label class="check"><input type="checkbox" id="mCalore" aria-describedby="mCaloreMetodo"> Mappa di calore degli sconti<\/label>/);
-  const metodo = html.slice(html.indexOf('id="mCaloreMetodo"'), html.indexOf('</fieldset>'));
+  const inizio = html.indexOf('id="mCaloreMetodo"');
+  const metodo = html.slice(inizio, html.indexOf('</fieldset>', inizio));
+  assert.ok(metodo.length > 100, 'riquadro del metodo trovato');
   assert.match(metodo, /sconto medio/);
   assert.match(metodo, /affidabilità media o alta/);
   assert.match(metodo, /meno di 3 aste/);
